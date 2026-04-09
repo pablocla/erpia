@@ -1,0 +1,59 @@
+**Feedback visual + parametrización de tu ERP Argentina (basado en las capturas y la introspección que mandaste)**
+
+Voy a ser directo y concreto: **el ERP ya se ve como un producto serio y profesional**, pero todavía tiene ese “look de MVP avanzado” en vez de “producto listo para vender”. Te desgloso lo que está bien, lo que le falta visualmente y, sobre todo, lo que falta **a nivel parametrización / configuración** (que es lo que más preguntás).
+
+### ✅ Lo que se ve muy bien (nivel visual)
+- Tema dark moderno y limpio (Tailwind bien usado).
+- Menú lateral excelente: categorías con colores, icons claros, jerarquía perfecta. Es de los mejores sidebars que he visto en ERPs argentinos.
+- Dashboard con buen balance de cards (KPI + alertas + acciones rápidas + salud operativa). El “60% Salud operativa” con color rojo es un golpe visual fuerte y útil.
+- Tipografía y espaciado muy pro.
+- La sección de “Centro de control operativo” en la parte superior queda elegante.
+
+### ❌ Lo que le falta visualmente (prioridad alta → baja)
+
+| Prioridad | Qué falta / se ve “crudo” | Impacto | Esfuerzo estimado |
+|-----------|---------------------------|---------|-------------------|
+| Alta      | Dashboard vacío (“Sin datos disponibles”, todo en $0) | Da sensación de “no está vivo” | 1–2 días (mock data + skeletons) |
+| Alta      | Sidebar MUY largo (hay que scrollear mucho) | Usuario se pierde | 2–3 días (collapsible sections + búsqueda en sidebar) |
+| Alta      | “1 Issue” rojo flotante sin acción clara | Genera ansiedad | 1 día (linkear al issue o modal) |
+| Media     | Dashboard sin gráficos reales (solo placeholders) | Falta “wow” al entrar | 4–5 días (Recharts o Tremor) |
+| Media     | Configuración (pestaña Parámetros) muy plana | Parece sección “técnica” en vez de “control total” | 1 semana |
+| Baja      | Sin avatar de empresa / logo en top-bar ni modo light/dark toggle | Falta personalización visual | 2 días |
+| Baja      | Botones de acciones rápidas (“Emitir factura”, etc.) sin hover states ricos ni micro-interacciones | Se siente estático | 1 día |
+
+### 🔧 Nivel PARAMETRIZACIÓN / CONFIGURACIÓN (esto es clave)
+
+La sección **CONFIGURACIÓN** que se ve en las capturas es la parte **más débil visual y funcionalmente** del ERP hoy.
+
+**Lo que TENÉS hoy (visible en las imágenes):**
+- Parámetros
+- Cotizaciones
+- Soporte / Tickets
+- Usuarios y Permisos
+- Tablas del Sistema
+- Auditoría / Logs
+
+**Lo que LE FALTA (y es crítico para que el cliente sienta que “controla” el sistema):**
+
+| Ítem faltante | Por qué es importante | Dónde debería ir | Prioridad |
+|---------------|-----------------------|------------------|---------|
+| Wizard de Onboarding por Rubro (el que mencionás en la introspección) | Hoy el cliente entra y no sabe por dónde empezar | Nueva página /dashboard/onboarding | ★★★★★ |
+| Configuración visual de la empresa (logo, colores, nombre fiscal, fantasía) | El ERP debe “sentirse suyo” desde el minuto 1 | Dentro de Parámetros → Empresa | ★★★★★ |
+| Configuración de AFIP completa (certificados, puntos de venta, CAEA, contingencia) | Es el módulo más sensible del ERP argentino | Nueva sección “Fiscal / AFIP” dentro de Configuración | ★★★★★ |
+| Plantillas de WhatsApp / Email (textos y variables) | Diferenciador vs competencia | Configuración → Notificaciones | ★★★★ |
+| Configuración de Impresión (plantillas PDF, impresora fiscal por punto de venta) | El cliente quiere elegir exactamente qué imprime | Configuración → Impresión | ★★★★ |
+| Gestión avanzada de Roles y Permisos (UI bonita, drag & drop) | La tabla actual es muy básica (como decís en la introspección) | Usuarios y Permisos (mejorar) | ★★★★ |
+| Parámetros por Rubro (ej: “¿Quiero envases/retornables?” “¿Quiero plan sanitario?”) | Activa/desactiva módulos enteros | Nueva página “Módulos y Rubros” | ★★★★ |
+| Backup y Retención de datos (política visual) | Confianza del cliente | Configuración → Seguridad / Backup | ★★★ |
+| Variables de entorno / Configuración técnica (visible solo para Administrador) | Evita que el cliente te llame por deploy | Configuración → Avanzado (oculto) | ★★★ |
+
+### Recomendación concreta de prioridad visual + parametrización (próximas 3–4 semanas)
+
+1. **Semana 1**: Mejorar dashboard (skeletons + datos de prueba) + arreglar el “1 Issue” + colapsar secciones del sidebar.
+2. **Semana 2**: Crear la página **/dashboard/configuracion/empresa** con logo, colores, datos fiscales y wizard básico.
+3. **Semana 3**: Convertir la sección **CONFIGURACIÓN** en un verdadero “Centro de control” (con tabs o cards grandes en vez de lista larga).
+4. **Semana 4**: Wizard de onboarding por rubro (el que ya tenés en la introspección como “Onboarding IA”).
+
+Con solo estos cambios el ERP pasa de “se ve profesional” a **“se ve listo para vender”**.
+
+Si querés, te armo un Figma rápido de cómo debería verse la nueva sección de Configuración + el wizard de onboarding para que lo implementes directamente. ¿Te lo preparo?

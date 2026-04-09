@@ -1,0 +1,334 @@
+Perdón por eso. Te lo paso directo como texto, copiá y pegá en Copilot Chat (modo Agent):
+
+---
+
+# CONTEXTO DEL PROYECTO
+
+Sos un senior full-stack developer trabajando en un ERP SaaS para el mercado argentino construido con:
+- Next.js 14 (App Router), TypeScript, Prisma ORM, PostgreSQL (Supabase), shadcn/ui, Tailwind CSS
+- El schema tiene 121 modelos en prisma/schema.prisma (~3.036 líneas)
+- 122 rutas API en /app/api, 50 páginas en /app/dashboard
+- Facturación AFIP real (CAE/CAEA), multi-empresa, multi-sucursal, 9 roles RBAC
+
+El sistema está al 70% funcional. Tu objetivo es llevar cada módulo a producción.
+NUNCA rompas tipos TypeScript existentes. SIEMPRE usá Prisma para DB, nunca SQL crudo.
+SIEMPRE agregá manejo de errores con try/catch. SIEMPRE usá `prisma.$transaction()` en operaciones que tocan múltiples tablas.
+
+---
+
+# 🔴 B1 — TESTS DE INTEGRACIÓN
+
+Estado actual: solo 18 test files para 122 rutas. No hay cobertura mínima viable.
+
+Creá tests con Jest + Supertest para estos módulos críticos:
+
+**ventas.test.ts**
+- POST /api/ventas: crear venta + descontar stock + emitir factura AFIP mock + actualizar CC cliente
+- POST /api/ventas con stock insuficiente: retornar 400 y NO crear nada (verificar rollback en DB)
+- POST /api/ventas con AFIP que falla: retornar error y verificar que el stock NO se descontó
+
+**caja.test.ts**
+- POST /api/caja/abrir: crear turno con base de apertura
+- POST /api/caja/movimiento: registrar ingreso/egreso
+- POST /api/caja/cierre: calcular cuadre, detectar diferencias, cerrar turno
+
+**afip.test.ts**
+- POST /api/afip/factura: mock de WSFE → retorna CAE ficticio, guarda en DB
+- POST /api/afip/nota-credito: referencia factura existente → retorna CAE NC
+
+**stock.test.ts**
+- Entrada, salida con insuficiente (debe retornar 400), transferencia entre depósitos (atómica)
+
+Setup requerido:
+- Usá DATABASE_URL_TEST en .env.test con DB aislada
+- Seed mínimo antes de cada suite: 1 empresa + 1 usuario admin + config AFIP mock
+- Mockeá lib/afip/wsfe.ts con jest.mock()
+
+---
+
+# 🔴 B2 — CIERRE DE CAJA CON CUADRE REAL
+
+Implementá en /app/api/caja/cierre/route.ts:
+
+```typescript
+type CierreCajaRequest = {
+  turnoId: string
+  conteoEfectivo: number
+  conteoTarjetaDebito: number
+  conteoTarjetaCredito: number
+  conteoTransferencia: number
+  conteoMercadoPago: number
+  observaciones?: string
+}
+```
+
+Lógica:
+1. Sumar MovimientoCaja agrupado por medioPago para ese turnoId
+2. Calcular diferencia: sistema - conteo por cada medio
+3. Si |diferencia efectivo| > empresa.umbralDiferenciaCaja → requiereAutorizacion: true
+4. Actualizar CajaTurno.estado = 'CERRADO' con timestamp
+5. Retornar resumen completo para mostrar y generar PDF
+
+Creá /app/dashboard/caja/cierre/page.tsx:
+- Un input numérico por medio de pago para el conteo físico
+- Tabla reactiva: Sistema | Contado | Diferencia con semáforo verde/rojo
+- Botón "Confirmar cierre" que llama al endpoint
+
+---
+
+# 🔴 B3 — FLUJO POS UNIFICADO
+
+Creá /app/api/pos/venta-completa/route.ts con operación 100% atómica usando `prisma.$transaction()`:
+
+1. Validar stock disponible por ítem
+2. Crear Venta + LineasVenta
+3. MovimientoStock tipo SALIDA por cada ítem
+4. Calcular IVA según condición fiscal del cliente (A/B/C), percepciones IIBB por provincia
+5. Emitir factura AFIP → obtener CAE → guardar Comprobante
+6. Registrar pagos en MovimientoCaja (uno por cada medio)
+7. Actualizar CuentaCorrienteCliente si corresponde
+8. **Si falla AFIP (paso 5): NO commitear nada, retornar error claro**
+
+Creá /app/dashboard/pos/page.tsx:
+- Layout 2 columnas: izquierda = buscador + tabla de ítems | derecha = cliente + comprobante + medios de pago
+- Mostrar subtotal, IVA desglosado, total en tiempo real
+- Botón F10 Cobrar → ejecuta la transacción completa
+
+---
+
+# 🔴 B4 — MOTOR DE PRECIOS
+
+Creá /lib/precios/motor-precios.ts con esta lógica de prioridad:
+
+1. PrecioEspecialCliente (si existe para ese producto + cliente)
+2. ListaPrecio asignada al cliente (campo listaPrecios en Cliente)
+3. EscalonPrecio: si cantidad >= mínimo configurado
+4. ListaPrecio default de la empresa vigente en la fecha
+5. Fallback: Producto.precioVenta
+
+```typescript
+export async function calcularPrecio(params: {
+  productoId: string
+  clienteId?: string
+  cantidad: number
+  fecha: Date
+  empresaId: string
+}): Promise<{ precioFinal: number, listaAplicada?: string, descuentoAplicado?: number, origen: string }>
+```
+
+Integrá en: /api/pos/venta-completa, /api/ventas, /api/portal/pedidos, /api/vendedor/pedidos
+
+---
+
+# 🔴 B5 — GESTIÓN DE USUARIOS DESDE UI
+
+Creá /app/dashboard/usuarios/nuevo/page.tsx con:
+- Campos: nombre, apellido, email, contraseña (con confirmación), rol (Select de 9 roles), empresa(s) y sucursal(es) autorizadas (MultiSelect), activo (Switch)
+
+Creá /app/api/usuarios/route.ts POST:
+- Validar con Zod, verificar email único
+- Hash con bcrypt (12 rounds)
+- Crear Usuario + UsuarioEmpresa + UsuarioSucursal + permisos del rol
+- Enviar email de bienvenida con Resend
+
+Actualizá /app/dashboard/usuarios/page.tsx:
+- DataTable: nombre, email, rol (badge con color por rol), sucursales, estado, último acceso
+- Filtros por rol y sucursal, acciones editar/desactivar
+
+---
+
+# 🔴 B6 — SEED COMPLETO MULTI-RUBRO
+
+Reescribí prisma/seed.ts en este orden:
+
+1. `seedProvincias()`: 24 provincias con código AFIP, sigla, alícuota IIBB default
+2. `seedLocalidades()`: Gran Rosario completo + capitales de provincia
+3. `seedCondicionesPago()`: Contado, 7/15/30 días, 30/60, 30/60/90
+4. `seedFormasPago()`: Efectivo, Transferencia, Cheque, Débito, Crédito, MercadoPago, QR
+5. `seedAlicuotasIVA()`: 0%, 2.5%, 5%, 10.5%, 21%, 27%
+6. `seedRolesPermisos()`: los 9 roles con matriz de permisos por módulo
+7. `seedPlanCuentas()`: plan contable estándar PyME argentina
+8. `seedRubro(rubro)`: función que acepta 'KIOSCO'|'FERRETERIA'|'VETERINARIA'|'DISTRIBUIDORA'|'GASTRONOMIA'|'SALUD'|'GYM' y crea categorías + configuraciones específicas de cada uno
+
+---
+
+# 🔴 B7 — CONFIG DE DEPLOY
+
+1. Creá /lib/config/validate-env.ts: al importar, verificar que existan DATABASE_URL, NEXTAUTH_SECRET, AFIP_CERT_PROD, AFIP_KEY_PROD, AFIP_CUIT_EMPRESA, RESEND_API_KEY. Si falta alguna → throw Error con mensaje claro. Exportá objeto `env` tipado.
+
+2. Creá docker-compose.yml: postgres:15 + app next.js en modo dev con hot reload + variables desde .env.local
+
+3. Creá railway.toml:
+```toml
+[build]
+command = "npm run build"
+[deploy]
+startCommand = "npx prisma migrate deploy && npm start"
+healthcheckPath = "/api/health"
+```
+
+4. Creá /app/api/health/route.ts: GET → verifica DB (SELECT 1) + AFIP reachable → retorna `{ db: 'ok'|'error', afip: 'ok'|'degraded', uptime: number }`
+
+5. Creá .env.example con TODAS las variables comentadas con descripción y ejemplo de valor
+
+---
+
+# 🟠 A1 — ENVASES/RETORNABLES
+
+Agregá en schema.prisma:
+- `TipoEnvase`: id, empresaId, nombre, capacidad?, valorDeposito
+- `MovimientoEnvase`: id, empresaId, clienteId, tipoEnvaseId, cantidad, tipo (ENTREGA|DEVOLUCION|AJUSTE), ventaId?, fecha
+- `SaldoEnvaseCliente`: id, empresaId, clienteId, tipoEnvaseId, saldo Int — @@unique([clienteId, tipoEnvaseId])
+
+Al crear una venta con productos que tienen tipoEnvaseId asociado: automáticamente registrar MovimientoEnvase tipo ENTREGA y actualizar SaldoEnvaseCliente.
+
+Creá /app/dashboard/envases/page.tsx: tabla de saldos por cliente con badge rojo si saldo > umbral configurable.
+
+---
+
+# 🟠 A2 — WHATSAPP BUSINESS API
+
+Creá /lib/whatsapp/whatsapp-service.ts con Twilio como provider (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM):
+- `sendMessage(to, body)`
+- `sendTemplate(to, templateName, params[])`
+
+Templates a crear (aprobar en Meta Business antes):
+- `turno_recordatorio`: "Hola {nombre}, recordatorio turno {fecha} a las {hora} en {empresa}. Respondé CONFIRMAR o CANCELAR."
+- `pedido_confirmado`: "Tu pedido #{numero} confirmado. Total: ${monto}. Te avisamos cuando esté listo."
+- `deuda_recordatorio`: "Hola {nombre}, saldo pendiente de ${monto} con vencimiento {fecha}."
+- `vacuna_recordatorio`: "{mascota} tiene pendiente {vacuna}. Llamanos al {telefono}."
+
+Creá /app/api/webhooks/whatsapp/route.ts:
+- GET: verificación Meta (hub.challenge)
+- POST: si mensaje = "CONFIRMAR" → Turno.estado = CONFIRMADO | si "CANCELAR" → CANCELADO + liberar horario
+
+Cron en /app/api/cron/recordatorios/route.ts:
+- Turnos del día siguiente → WhatsApp recordatorio
+- Facturas vencidas hoy → WhatsApp deuda
+
+---
+
+# 🟠 A3 — PLAN SANITARIO VETERINARIA
+
+Creá model PlanSanitario: id, empresaId, pacienteId (mascota), tipo (vacuna|desparasitacion|control), nombre, fechaAplicacion, fechaProxima, notificado Boolean @default(false)
+
+Cron en /app/api/cron/plan-sanitario/route.ts:
+- Buscar donde fechaProxima <= hoy + 7 días y notificado = false
+- Enviar WhatsApp al dueño
+- Marcar notificado = true
+
+---
+
+# 🟠 A4 — CONCILIACIÓN BANCARIA AUTO
+
+Creá /lib/bancos/parsers/ con un parser por banco: galicia-parser.ts, bbva-parser.ts, santander-parser.ts, macro-parser.ts
+
+Cada parser exporta:
+```typescript
+type MovimientoBancario = { fecha: Date; descripcion: string; importe: number; referencia?: string }
+export function parse(csvContent: string): MovimientoBancario[]
+```
+
+Creá /app/api/banco/conciliacion/import/route.ts:
+- POST multipart con CSV
+- Auto-detectar banco por headers del CSV
+- Para cada movimiento: buscar match en MovimientoTesoreria (fecha ±2 días, importe exacto)
+- Con match → marcar CONCILIADO en ambos
+- Sin match → crear como pendiente de identificación manual
+- Retornar: `{ conciliados: number, pendientes: number, totalDiferencia: number }`
+
+---
+
+# 🆕 NUEVO MÓDULO — PEDIDO ONLINE / DARK KITCHEN
+
+**Problema urgente:** Comanda.mesaId es actualmente obligatorio. Fix inmediato:
+
+En schema.prisma, cambiá `mesaId Int` → `mesaId String?` y agregá `canal String?` (mesa|delivery|takeaway|web|whatsapp)
+
+Creá model PedidoOnline: id, empresaId, canal, estado (recibido→confirmado→en_preparacion→listo→en_camino→entregado→cancelado), clienteNombre, clienteTelefono, direccionEntrega?, tipoEntrega (delivery|takeaway), items Json, subtotal, costoEnvio, total, medioPago, estadoPago (pendiente|pagado), tiempoEstimado Int?, comandaId?, ventaId?
+
+Endpoints:
+- POST /api/pedidos-online: crear pedido → calcular tiempo estimado (comandas abiertas × tiempo promedio) → crear Comanda sin mesa → notificar cocina
+- GET /api/pedidos-online/[id]/estado: tracking público sin auth
+- PATCH /api/pedidos-online/[id]/estado: cambiar estado → WhatsApp al cliente
+- GET /api/menu-publico?empresaId=: catálogo sin auth, cacheado 5 min
+
+---
+
+# 🆕 NUEVO MÓDULO — TALLER MECÁNICO
+
+Modelos:
+- `VehiculoCliente`: id, empresaId, clienteId, patente, marca, modelo, anio?, km?, vin?
+- `OrdenReparacion`: id, empresaId, vehiculoId, clienteId, numero (autoincremental por empresa), estado (recibido|diagnostico|presupuestado|aprobado|en_reparacion|listo|entregado), presupuestoTotal?, aprobadoPorCliente Boolean @default(false), trabajosRealizados?, repuestosUsados Json?
+
+Lógica: cuando estado cambia a 'presupuestado' → enviar WhatsApp al cliente con link de aprobación. El link llama a POST /api/taller/ordenes/:id/aprobar (endpoint público sin auth) que marca aprobadoPorCliente = true.
+
+UI: /app/dashboard/taller/page.tsx → Kanban board con columnas por estado
+
+---
+
+# 🆕 SERVICIOS TRANSVERSALES
+
+## Programa de Fidelidad
+Modelos: ConfigFidelidad (empresaId @unique, puntosXPeso, valorPunto, vencimientoDias?), PuntosCliente (empresaId + clienteId @@unique, puntos Int), MovimientoPuntos (puntos Int positivo=ganados/negativo=canjeados, motivo, ventaId?)
+
+Service /lib/fidelidad/fidelidad-service.ts con métodos: `acreditarPuntos(ventaId)`, `canjearPuntos(clienteId, puntos, ventaId)`, `getSaldoPuntos(clienteId)`
+
+Integrá en POS: al seleccionar cliente mostrar saldo, al finalizar venta acreditar puntos automáticamente.
+
+## Servicio como entidad (separado de Producto)
+Creá model Servicio: id, empresaId, nombre, duracionMin Int, precio, comisionPct?, activo
+Creá model ServicioInsumo: servicioId, productoId, cantidadUsada (materiales que consume el servicio)
+Modificá Turno: agregá `servicioId String?`
+Al facturar turno con servicio → crear LineaVenta + descontar insumos del stock
+
+## Seña / Pago parcial anticipado
+Creá model Sena: id, empresaId, clienteId, monto, concepto, estado (activa|aplicada|vencida|devuelta), ventaId?, turnoId?
+
+Al crear venta: verificar señas activas del cliente → proponer aplicar → si acepta: aplicar + estado = 'aplicada' + ajustar monto a cobrar.
+
+## MercadoPago Checkout Pro
+Creá /lib/mercadopago/mp-service.ts:
+- `createPreference(items, payer, backUrls)` → retorna initPoint URL
+- `validateWebhook(headers, body)` → verifica firma HMAC con MP_WEBHOOK_SECRET
+- `getPayment(paymentId)` → estado del pago
+
+Creá /app/api/webhooks/mercadopago/route.ts: al recibir payment approved → buscar en metadata el pedidoId/membresiaid → actualizar estado + disparar confirmación.
+
+Integrá en: tienda pública, portal B2B, membresías.
+
+## Agenda pública (booking online sin login)
+Creá /app/api/agenda-publica/[empresaSlug]/route.ts (sin auth):
+- GET ?fecha=&servicioId=: retorna horarios disponibles = horarios de atención - turnos ocupados - bloqueos
+
+Creá /app/agenda-online/[empresaSlug]/page.tsx (página pública sin dashboard):
+- Paso 1: elegir servicio → Paso 2: elegir fecha → Paso 3: elegir horario → Paso 4: datos del cliente
+- Al confirmar: turno queda 10 min en estado PENDIENTE_CONFIRMACION → link por WhatsApp para confirmar → si no confirman → liberar slot
+
+---
+
+# CHECKLIST DE SEGURIDAD — REVISÁ TODO EL CODEBASE
+
+1. **JWT**: middleware.ts debe validar token en TODAS las rutas /api EXCEPTO: /api/health, /api/menu-publico, /api/webhooks/*, /api/auth/*, /api/agenda-publica/*
+
+2. **Rate limiting**: /api/auth/login → máx 5 intentos por IP cada 15 min
+
+3. **Transacciones**: buscar findMany/create/update que toquen 2+ tablas sin prisma.$transaction() → refactorizarlos
+
+4. **Soft delete**: verificar que todos los findMany excluyan `where: { deletedAt: null }`
+
+5. **Pagination**: ningún findMany sin take/skip. Default: take=50, skip=0 desde query params
+
+6. **Índices en schema.prisma**: agregar `@@index([empresaId, createdAt])` en Venta, Compra, MovimientoStock, MovimientoCaja, Turno, Comanda
+
+---
+
+# INSTRUCCIONES FINALES
+
+- Trabajá módulo por módulo. Empezá siempre por los 🔴 BLOQUEANTES en orden B1→B7
+- Antes de crear un modelo nuevo, verificá que no exista ya en schema.prisma
+- Cuando modifiques schema.prisma ejecutá: `npx prisma migrate dev --name nombre_descriptivo`
+- Usá Zod para validar inputs en todos los endpoints
+- Todos los endpoints retornan: `{ success: boolean, data?: any, error?: string }`
+- Los errores de AFIP deben incluir el código de error original de AFIP para debugging
+- NUNCA uses SQL crudo. SIEMPRE Prisma.

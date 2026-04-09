@@ -1,0 +1,534 @@
+════════════════════════════════════════════════════════════════════════════════
+ERP ARGENTINA — INTROSPECCIÓN DE COSTOS, ESTADO Y ROADMAP A PRODUCCIÓN
+Fecha de análisis: Abril 2026
+════════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. MÉTRICAS DEL SISTEMA HOY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Archivos fuente (TSX + TS):        182
+Modelos Prisma (tablas DB):        121
+Rutas API (endpoints REST):        122
+Páginas Dashboard:                  50
+Archivos de tests:                  18
+Líneas en schema.prisma:         3.036
+Líneas en código estimadas:     ~35.000
+
+Módulos funcionales implementados:
+  ✅ Ventas / Facturación AFIP (A, B, C, CAEA, contingencia)
+  ✅ Compras con 3-way matching (OC → Recepción → Factura)
+  ✅ Inventario multi-depósito con lotes y vencimientos
+  ✅ Clientes CRM con segmentación y cuenta corriente
+  ✅ Proveedores con datos fiscales
+  ✅ Caja por turno con multi-medios de pago
+  ✅ Banco + conciliación básica
+  ✅ Cheques (cartera, propios, estados, alertas vencimiento)
+  ✅ Cuentas a Cobrar / Cuentas a Pagar con aging
+  ✅ Órdenes de pago y recibos
+  ✅ Contabilidad completa (plan de cuentas, asientos, libro mayor, balance)
+  ✅ Impuestos: IVA, IIBB, SICORE, Padrón AFIP, presentación digital
+  ✅ TES (Tax Engine para AR / MX / CL — multi-país)
+  ✅ Factura electrónica AFIP real con CAE y CAEA
+  ✅ Hospitalidad: mesas, comandas, KDS
+  ✅ Agenda de turnos (salud, veterinaria, belleza)
+  ✅ Historia clínica (humana + veterinaria)
+  ✅ Membresías con estados y planes
+  ✅ Distribución: hojas de ruta, vehículos, choferes
+  ✅ POD: firma digital + GPS (foto pendiente de storage)
+  ✅ Logística con transportistas y envíos
+  ✅ Picking con modo tablet full-screen
+  ✅ Industria: BOM + órdenes de producción
+  ✅ IoT: dispositivos, telemetría, alertas
+  ✅ Portal B2B para clientes (login CUIT, catálogo, pedidos, cuenta)
+  ✅ App Vendedor en Ruta (mobile-first, offline-first)
+  ✅ E-commerce / tienda pública
+  ✅ Onboarding IA por rubro (< 10 min a primera venta)
+  ✅ Roles y permisos granulares (9 roles predefinidos)
+  ✅ Auditoría inmutable de acciones
+  ✅ Multi-empresa / multi-sucursal
+  ✅ Impresión: fiscal (Epson/Hasar), PDF, email
+  ✅ Presupuestos con conversión a pedido
+  ✅ Notas de crédito / débito
+  ✅ Remitos electrónicos
+  ✅ Listas de precio con vigencia
+  ✅ Series de comprobantes por punto de venta
+  ✅ Activos fijos con depreciación
+  ✅ Centros de costo
+  ✅ Períodos fiscales
+  ✅ Cotizaciones de moneda
+  ✅ Soporte / tickets interno
+  ✅ Exportación estadísticas (CSV/Excel)
+  ✅ Padrón IIBB + percepciones por provincia
+  ✅ SICORE (retenciones Ganancias e IVA)
+  ✅ Veterinaria: pacientes, consultas, HC por mascota
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. QUÉ FALTA PARA MVP DE PRODUCCIÓN
+   (ordenado por prioridad real de bloqueo)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 BLOQUEANTES ABSOLUTOS — Sin esto no puede salir a producción
+
+  [B1] Tests de integración insuficientes
+       → Solo 18 test files para 122 rutas API
+       → Mínimo necesario: test para cada módulo crítico (ventas, caja, AFIP, stock)
+       → Esfuerzo: 3-4 semanas de 1 dev sénior dedicado
+       → Sin tests → primer día en prod hay data corrupta
+
+  [B2] Apertura y cierre de caja con cuadre real
+       → Existe la UI pero falta cuadre por medio de pago
+       → Falta diferencia entre base de apertura y contado real
+       → Sin esto ningún comercio puede cerrar su jornada correctamente
+       → Esfuerzo: 1 semana
+
+  [B3] Cierre de caja y factura AFIP en POS sin flujo completo
+       → El POS emite factura pero falta el flujo: seleccionar cliente →
+         calcular impuestos automáticos → multi-pago → emitir → actualizar CC
+       → Hoy cada paso está separado, no hay un flujo POS unificado
+       → Esfuerzo: 2 semanas
+
+  [B4] Motor de precios con escalones y listas
+       → Las listas de precio existen en DB pero no se aplican automáticamente
+         en ventas (precio final = precioVenta siempre)
+       → Sin esto: todos los clientes pagan lo mismo
+       → Esfuerzo: 1 semana
+
+  [B5] Gestión de usuarios con alta desde UI
+       → Existe la tabla Usuario pero la página /dashboard/usuarios
+         es básica (sin form de alta completo, sin asignación de rol visual)
+       → Esfuerzo: 3 días
+
+  [B6] Seed de datos base completo para todos los rubros
+       → El seed.ts existe pero está incompleto (faltan maestros base:
+         provincias, localidades rosarinas, condiciones de pago estándar,
+         formas de pago, categorías por rubro)
+       → Sin seed → cada empresa arranca con pantallas vacías sin poder operar
+       → Esfuerzo: 1 semana
+
+  [B7] Variables de entorno documentadas + deploy config
+       → Falta docker-compose.yml, railway.toml o vercel.json de producción
+       → Falta checklist de variables de entorno (DATABASE_URL, JWT_SECRET,
+         claves AFIP, etc.) con validación al arrancar
+       → Esfuerzo: 2-3 días
+
+🟠 ALTA PRIORIDAD — Bloquean rubros específicos
+
+  [A1] Envases / Retornables (distribuidora bebidas)
+       → Requiere schema migration: TipoEnvase, MovimientoEnvase, SaldoEnvaseCliente
+       → Sin esto: distribuidoras de bebidas no pueden operar (los cajones son activos)
+       → Esfuerzo: 1 semana
+
+  [A2] WhatsApp Business API para notificaciones
+       → Diferenciador clave vs competidores
+       → Eventos: pedido recibido, despachado, entregado, deuda, turno mañana
+       → Requiere cuenta Meta Business o Twilio (ver lib/email/email-service.ts como base)
+       → Esfuerzo: 2 semanas (incluyendo aprobación de templates en Meta)
+
+  [A3] Plan Sanitario Veterinaria + recordatorios
+       → Requiere schema PlanSanitario + cron job
+       → Sin esto la veterinaria no puede programar vacunas automáticamente
+       → Esfuerzo: 1 semana
+
+  [A4] Conciliación bancaria automática (import extracto)
+       → Hoy existe la UI pero el matching es manual
+       → Falta parser de extractos CSV Galicia / BBVA / Santander / Macro / Provincia
+       → Esfuerzo: 2 semanas
+
+  [A5] POD completo con foto (Supabase Storage)
+       → Firma y geo están implementados
+       → Falta upload de foto del remito firmado a S3/Supabase
+       → Esfuerzo: 3-4 días
+
+  [A6] Cobro recurrente automático (membresías / gimnasio)
+       → Requiere Mercado Pago Subscripciones API
+       → Sin esto gimnasios deben cobrar manualmente cada mes
+       → Esfuerzo: 2 semanas
+
+🟡 MEDIA PRIORIDAD — Importantes pero no bloquean el lanzamiento
+
+  [M1] PWA manifest.json + service worker
+       → Para que Portal B2B y App Vendedor sean instalables en pantalla de inicio
+       → Esfuerzo: 2 días
+
+  [M2] Picking auto-generado desde pedidos confirmados
+       → Hoy las listas de picking se crean manualmente
+       → Debería generarse automáticamente al confirmar pedido B2B o de ruta
+       → Esfuerzo: 3 días
+
+  [M3] Gastronomía: workflow completo Pedido → Comanda → KDS → Factura
+       → KDS existe pero falta el ciclo completo
+       → Esfuerzo: 2 semanas
+
+  [M4] RRHH: liquidación de comisiones de vendedores
+       → Los vendedores no pueden ver sus comisiones calculadas automáticamente
+       → Esfuerzo: 1 semana
+
+  [M5] Agenda: recordatorio automático de turnos (cron job)
+       → Falta job diario que detecte turnos del día siguiente → notifica
+       → Esfuerzo: 3 días + WhatsApp API
+
+  [M6] Salud: facturación por prestación + obras sociales
+       → Alta de Profesional con prestaciones, tarifas por obra social
+       → Liquidación diferida a la obra social
+       → Esfuerzo: 3 semanas
+
+🟢 POST-MVP — Para v1.1 o v1.2
+
+  [P1] Integración Mercado Libre (sincronización stock + pedidos)
+  [P2] Importación masiva de productos desde Excel/CSV
+  [P3] Ruteo OSRM (optimización de recorrido de reparto)
+  [P4] Peluquería: comisión por servicio configurable por profesional
+  [P5] Farmacia: PAMI / obras sociales + troqueado ANMAT
+  [P6] Agro: ticket de balanza, contrato de granos, portal productor
+  [P7] Dashboard BI avanzado con comparativo vs mismo período año anterior
+  [P8] Exportación contable a Tango / Bejerman / Xubio
+  [P9] 2FA (TOTP o SMS)
+  [P10] Multi-idioma (para expansión CL / MX con TES ya implementado)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. CUÁNTO COSTARÍA QUE UNA EMPRESA EXTERNA LO HICIERA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+METODOLOGÍA: Estimación basada en horas hombre para construir desde cero
+el sistema en su estado actual, con un equipo típico de software house argentina.
+
+TARIFAS DE MERCADO (Argentina, Q1 2026):
+  Junior dev:          $2.000–3.500 USD/mes
+  Semi-senior:         $4.000–6.000 USD/mes
+  Senior dev:          $7.000–12.000 USD/mes
+  Tech lead / Arch:    $12.000–20.000 USD/mes
+  QA / Tester:         $2.500–4.500 USD/mes
+  PM:                  $5.000–9.000 USD/mes
+  Hora sénior facturable (empresa): $80–120 USD/h
+  Hora sénior facturable (freelance): $50–80 USD/h
+
+─────────────────────────────────────────────────────
+DESGLOSE POR MÓDULO — COSTO SI LO HACE UNA EMPRESA EXTERNA
+─────────────────────────────────────────────────────
+
+Arquitectura, diseño DB, DevOps setup         200 hs × $100  =   $20.000
+Schema Prisma (121 modelos, relaciones)       300 hs × $100  =   $30.000
+Auth JWT + roles + multi-tenant               100 hs × $100  =   $10.000
+
+AFIP Factura electrónica (WS-FE, CAE, CAEA)  400 hs × $100  =   $40.000
+  (el más caro porque AFIP es un infierno.
+   Solo esto cuesta $40–50k en el mercado)
+IIBB / SICORE / Padrón / CAEA                200 hs × $100  =   $20.000
+TES multi-país (AR/MX/CL)                    150 hs × $100  =   $15.000
+
+Ventas / POS / Facturación UI                250 hs × $100  =   $25.000
+Compras + 3-way matching                     200 hs × $100  =   $20.000
+Inventario multi-depósito + lotes            200 hs × $100  =   $20.000
+Clientes CRM + CC + segmentación             180 hs × $100  =   $18.000
+Proveedores + retenciones                    100 hs × $100  =   $10.000
+
+Caja por turno + medios pago                 150 hs × $100  =   $15.000
+Banco + conciliación                         150 hs × $100  =   $15.000
+Cheques (cartera, estados, alertas)          100 hs × $100  =   $10.000
+Cuentas cobrar/pagar + aging                 180 hs × $100  =   $18.000
+Órdenes de pago + recibos                    120 hs × $100  =   $12.000
+
+Contabilidad completa (asientos, balance)    400 hs × $100  =   $40.000
+  (plan de cuentas dinámico, libro mayor,
+   balance sumas, estado resultados)
+
+Distribución (hojas de ruta, POD, GPS)       300 hs × $100  =   $30.000
+Logística + transportistas + envíos          150 hs × $100  =   $15.000
+Picking + modo tablet                        150 hs × $100  =   $15.000
+Industria BOM + órdenes producción           200 hs × $100  =   $20.000
+IoT (dispositivos, telemetría, alertas)      150 hs × $100  =   $15.000
+
+Portal B2B (login CUIT, catálogo, carrito)   200 hs × $100  =   $20.000
+App Vendedor (mobile, offline-first)         250 hs × $100  =   $25.000
+E-commerce / tienda pública                  150 hs × $100  =   $15.000
+
+Hospitalidad (mesas, comandas, KDS)          200 hs × $100  =   $20.000
+Agenda de turnos                             150 hs × $100  =   $15.000
+Historia clínica (humana + veterinaria)      200 hs × $100  =   $20.000
+Membresías + planes                          100 hs × $100  =   $10.000
+Veterinaria (pacientes, consultas)           100 hs × $100  =   $10.000
+
+Impresión (fiscal Epson/Hasar, PDF, email)   150 hs × $100  =   $15.000
+Onboarding IA por rubro                      150 hs × $100  =   $15.000
+Configuración (parámetros, módulos, audit)   200 hs × $100  =   $20.000
+Soporte / tickets interno                     80 hs × $100  =    $8.000
+Presupuestos, remitos, NC/ND                 150 hs × $100  =   $15.000
+Listas de precio + series + puntos venta     120 hs × $100  =   $12.000
+
+QA y testing (solo 18 tests existentes)      300 hs × $70   =   $21.000
+Documentación técnica + funcional            100 hs × $70   =    $7.000
+PM y coordinación (15% del total)                            =   ~$80.000
+
+────────────────────────────────────────────────────
+TOTAL ESTIMADO SI UNA EMPRESA LO CONSTRUYE DESDE CERO
+
+  Horas totales de desarrollo:        ~5.500 horas
+  Tiempo real con equipo de 5 devs:   ~14 meses
+  COSTO TOTAL:                        $530.000–620.000 USD
+
+  Rango real de mercado (empresa AR → empresa AR):
+    → Software house boutique:        $400.000–500.000 USD
+    → Software house grande (TSOFT,
+      Globant, Santex, Arroyo):      $600.000–900.000 USD
+    → Offshore (India, Europa):       $300.000–450.000 USD
+
+  Como referencia en pesos (TC $1.200):
+    → $480.000.000 — $744.000.000 ARS
+
+  Alternativa SaaS en el mercado argentino hoy:
+    → Bind ERP:           $350.000–1.200.000 ARS/mes (sin AFIP real)
+    → Siigo:              $500.000–2.000.000 ARS/mes
+    → Odoo Argentina:     $2.000.000–5.000.000 ARS/mes + implementación
+    → A la medida (este): se amortiza en 3–5 años vs SaaS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. ESTADO DEL SISTEMA HOY EN PORCENTAJE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Módulo                         Completo  Falta
+  ─────────────────────────────────────────────
+  Schema / Modelos DB             95%       5% (envases, plan sanitario, POD campos)
+  Facturación AFIP                90%       10% (flujo POS unificado, contingencia total)
+  Ventas / POS                    70%       30% (flujo completo, motor precios escalones)
+  Compras                         85%       15% (aprobación por monto, control calidad)
+  Inventario                      80%       20% (kits armables, producto pesable balanza)
+  Clientes CRM                    85%       15% (múltiples domicilios entrega, score)
+  Caja                            65%       35% (cuadre por medio de pago, PDF cierre)
+  Banco / Conciliación            60%       40% (import extracto, matching automático)
+  Cheques                         85%       15% (endoso a proveedor, rebote → CC auto)
+  Contabilidad                    80%       20% (asiento automático ventas/compras)
+  Impuestos / AFIP                85%       15% (presentación digital automática)
+  Portal B2B                      70%       30% (pago online, descarga facturas, notif)
+  App Vendedor                    65%       35% (comisiones, mapa, check-in foto)
+  Picking                         75%       25% (auto-gen desde pedido, escaneo barras)
+  Distribución / POD              75%       25% (foto remito, notif cliente, reagenda)
+  Hospitalidad / Gastro           60%       40% (flujo comanda→KDS→factura completo)
+  Veterinaria                     60%       40% (plan sanitario, internación, recordatorio)
+  Agenda                          70%       30% (recordatorio WhatsApp, factura por turno)
+  Membresías                      65%       35% (cobro recurrente automático)
+  Industria / BOM                 70%       30% (consumo materiales ligado a producción)
+  IoT                             70%       30% (rules engine, authHeaders consistente)
+  Tests                           15%       85% (crítico: necesita mínimo 80% cobertura)
+  DevOps / Deploy                 20%       80% (docker, CI/CD, monitoring, backup)
+  Documentación                   40%       60% (falta manual de usuario)
+
+  PROMEDIO GENERAL: ~70% funcional
+  → Listo para demo/piloto con un cliente real
+  → NO listo para SaaS con múltiples empresas pagando
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. ROADMAP A PRODUCCIÓN — CUÁNTO FALTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPCIÓN A — MVP MÍNIMO (1 rubro, 1 cliente piloto)
+─────────────────────────────────────────────────
+Objetivo: sacar 1 distribuidora de bebidas rosarina en producción
+Tiempo: 8–10 semanas con 2 devs sénior dedicados
+
+  Semana 1–2:  Cierre de caja completo + cuadre medios pago
+  Semana 1–2:  Motor de precios con listas y escalones
+  Semana 3:    Flujo POS unificado (cliente → ticket → cobro → factura AFIP)
+  Semana 3–4:  Picking auto-generado desde pedidos
+  Semana 4:    Envases/retornables (schema + UI)
+  Semana 5:    Tests críticos: ventas, caja, stock, AFIP (cobertura mínima 60%)
+  Semana 6:    Seed completo para distribuidora + onboarding wizard funcional
+  Semana 7:    Deploy en producción (Railway o Render + Supabase)
+  Semana 7:    AFIP en modo producción (certificados reales, punto de venta real)
+  Semana 8:    Prueba piloto con 1 empresa real, soporte diario
+  Semana 9–10: Corrección de bugs producción, performance bajo carga real
+
+  Costo estimado (2 devs sénior × 10 semanas):
+    → $16.000–20.000 USD si son empleados propios
+    → $30.000–40.000 USD si se contratan en el mercado
+
+─────────────────────────────────────────────────
+OPCIÓN B — LANZAMIENTO SaaS MULTI-RUBRO
+─────────────────────────────────────────────────
+Objetivo: plataforma lista para 10+ empresas en simultáneo, multi-rubro
+Tiempo: 6–8 meses con equipo de 4–5 personas
+
+  Mes 1–2:  Todo lo de Opción A + WhatsApp notifications
+  Mes 2–3:  Flujo gastronomía completo + membresías automáticas
+  Mes 3–4:  Veterinaria completa + agenda recordatorios
+  Mes 4–5:  Conciliación bancaria automática + importación extractos
+  Mes 4–5:  Tests automatizados (meta: 80% cobertura)
+  Mes 5–6:  Monitoring (Sentry), alertas, backups automáticos, SLA
+  Mes 6:    Panel de superadmin (onboarding de nuevas empresas en < 1 hora)
+  Mes 6–7:  Landing page + sistema de cobro de suscripciones (Stripe o MP)
+  Mes 7–8:  Security audit externo + pentest básico
+  Mes 8:    Lanzamiento público
+
+  Equipo ideal:
+    1 Tech Lead (arquitectura + AFIP + review)     $15.000 USD/mes
+    2 Full-Stack Sénior (features + bugs)          $9.000 USD/mes cada uno
+    1 QA Sénior (tests + manual testing)           $5.000 USD/mes
+    1 PM / Customer Success                        $4.000 USD/mes
+    ────────────────────────────────────────────
+    Total equipo:                                  $42.000 USD/mes
+    Total 8 meses:                                 ~$336.000 USD
+
+  + Infraestructura (ver sección 6)
+  + TOTAL OPCIÓN B: $360.000–400.000 USD
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. COSTOS DE INFRAESTRUCTURA PARA PRODUCCIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STACK RECOMENDADO (sin servidor propio):
+
+  Servicio           Proveedor         Costo/mes
+  ───────────────────────────────────────────────
+  App (Next.js)      Vercel Pro         $20 USD/mes
+                     o Railway Starter  $20 USD/mes
+  Base de datos      Supabase Pro       $25 USD/mes
+  (PostgreSQL)       (hasta 8GB, PITR)
+  Storage (fotos,    Supabase Storage   incluido en Pro
+  firmas, PDFs)
+  Email              Resend             $20 USD/mes (50k emails)
+  WhatsApp           Twilio / Meta      $0.006–0.015 USD/msg
+                     (estimado 1000     ~$10–15 USD/mes
+                     msgs/mes)
+  Monitoring         Sentry             $26 USD/mes
+  CDN/caché          Vercel Edge        incluido
+  CI/CD              GitHub Actions     $0 (free tier)
+  ───────────────────────────────────────────────
+  TOTAL MVP (1–5 empresas):             ~$100–120 USD/mes
+  TOTAL ESCALA (50+ empresas):          ~$400–800 USD/mes
+
+ESCALADO CON CLIENTES (referencia):
+  1–10 empresas:     $100–150 USD/mes infra
+  10–50 empresas:    $300–600 USD/mes infra
+  50–200 empresas:   $800–2.000 USD/mes infra
+  (Supabase escala automáticamente; Vercel cobra por función)
+
+PRICING SUGERIDO PARA MONETIZAR:
+  Plan Básico (kiosco, peluquería):    $35.000–50.000 ARS/mes
+  Plan Profesional (ferretería, vet):  $80.000–120.000 ARS/mes
+  Plan Distribuidora:                  $150.000–250.000 ARS/mes
+  Plan Enterprise (multi-sucursal):    $350.000–500.000 ARS/mes
+
+  Margen bruto estimado (infra vs precio):  75–85%
+  Break even con equipo de soporte:         ~30–40 clientes activos
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. RIESGOS REALES ANTES DEL LANZAMIENTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔴 RIESGO ALTO
+  - AFIP cambia los web services sin aviso (pasó en 2024 con ARCA)
+    → Mitigación: mantener lib/afip actualizada, suscribirse al boletín AFIP
+  - Bugs en facturación → multa al cliente
+    → Mitigación: tests de integración reales contra homologación AFIP
+  - Pérdida de datos por no tener backup automático
+    → Mitigación: Supabase PITR ($25/mes) o pg_dump diario a S3
+  - N+1 queries en listas con muchos registros → timeout
+    → Mitigación: pagination server-side + índices en campos filtrados
+
+🟠 RIESGO MEDIO
+  - El JWT no expira correctamente en mobile → sesión infinita
+    → Revisión del middleware.ts y refresh token
+  - Rate limiting insuficiente → DDoS o brute force
+    → lib/auth/rate-limiter.ts existe pero revisar cobertura
+  - Transacciones DB sin rollback en operaciones críticas
+    → Agregar prisma.$transaction() en: venta + movimiento stock + factura
+
+🟡 RIESGO BAJO
+  - Tailwind v4 con cambios de API → actualización de estilos
+  - React 19 con features experimentales → algunos componentes pueden romper
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. COMPARATIVA VS ALTERNATIVAS DEL MERCADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                        ESTE ERP   Bind     Siigo    Odoo AR
+  AFIP real (CAE)         ✅        ✅       ✅       ✅
+  Multi-rubro             ✅        ⚠️       ⚠️       ✅
+  Portal B2B clientes     ✅        ❌       ❌       ✅
+  App vendedor en ruta    ✅        ❌       ❌       ⚠️
+  Picking tablet          ✅        ❌       ❌       ⚠️
+  Veterinaria completa    ✅        ❌       ❌       ⚠️
+  POD firma digital       ✅        ❌       ❌       ✅
+  IoT / cadena frío       ✅        ❌       ❌       ⚠️
+  Contab. completa        ✅        ⚠️       ✅       ✅
+  Onboarding < 10 min     ✅        ❌       ❌       ❌
+  Multi-país (TES)        ✅        ❌       ✅       ✅
+  Open source / propio    ✅        ❌       ❌       ✅
+  Precio/mes (PME)        $TUYO     $$$      $$$      $$$$
+
+  ⚠️ = parcial o con módulo adicional pago
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. CHECKLIST TÉCNICO PARA PRODUCCIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SEGURIDAD
+  [ ] JWT_SECRET generado con crypto.randomBytes(64) — no string hardcodeado
+  [ ] HTTPS forzado en todos los endpoints
+  [ ] Rate limiting en /api/auth/login (máx 5 intentos por IP por 15 min)
+  [ ] CORS restringido a dominios propios
+  [ ] Content Security Policy en next.config
+  [ ] Variables de entorno en secreto del servidor (no en .env del repo)
+  [ ] Validación de CUIT contra formato 11 dígitos en todos los forms
+  [ ] Sanitización de inputs en campos de texto libre (XSS)
+
+BASE DE DATOS
+  [ ] CONNECTION POOL configurado (Prisma connection_limit)
+  [ ] Índices en: empresaId+activo, cuit, createdAt, estado en tablas grandes
+  [ ] Soft delete (deletedAt) en TODOS los modelos principales ← revisar que no falte
+  [ ] Backup automático diario con retención 30 días
+  [ ] Point-in-time recovery habilitado (Supabase PITR)
+  [ ] Transacciones en: venta→stock→factura, compra→stock→CC
+
+AFIP / FISCAL
+  [ ] Certificados AFIP de PRODUCCIÓN (no homologación) instalados
+  [ ] Punto de venta aprobado ante AFIP (tramitar en ARCA)
+  [ ] CAEA configurado si el comercio necesita contingencia offline
+  [ ] Test real contra producción AFIP con 1 factura de $1 antes de lanzar
+
+PERFORMANCE
+  [ ] Pagination en TODAS las listas (ninguna trae más de 500 registros)
+  [ ] Índices en campos de búsqueda frecuente (nombre, numero, fecha)
+  [ ] Compresión gzip en responses (Next.js lo hace automáticamente)
+  [ ] Imágenes optimizadas con next/image
+
+MONITORING
+  [ ] Sentry instalado en cliente y servidor
+  [ ] Alertas para: error 500, timeout DB, fallo AFIP, caja sin cerrar 24h
+  [ ] Health check endpoint /api/health que devuelve DB + AFIP status
+  [ ] Logs de auditoría funcionando (LogActividad en DB)
+
+DEPLOY
+  [ ] CI/CD: GitHub Actions que corre tests antes de merge a main
+  [ ] Staging environment separado del producción
+  [ ] Migration de DB automatizada en deploy (prisma migrate deploy)
+  [ ] Seed de datos base ejecutado en nueva empresa (prisma db seed)
+  [ ] Rollback plan documentado
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. RESUMEN EJECUTIVO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LO QUE SE CONSTRUYÓ
+  Sistema ERP completo para el mercado argentino con 121 modelos de DB,
+  122 endpoints API, 50 páginas de admin, integración AFIP real, módulos
+  para 10+ rubros, portal B2B, app vendedor en ruta y picking para tablet.
+  Si se valuara en el mercado: $500.000–620.000 USD de desarrollo.
+
+PARA LANZAR CON 1 CLIENTE PILOTO (distribuidora)
+  Tiempo: 8–10 semanas con 2 devs sénior
+  Costo: $30.000–40.000 USD (externos) / $16.000–20.000 USD (propios)
+  Infra: $100–120 USD/mes
+
+PARA LANZAR COMO SAAS MULTI-RUBRO
+  Tiempo: 6–8 meses con equipo de 5
+  Costo: $360.000–400.000 USD total
+  Infra: $400–800 USD/mes escalando
+
+EL SISTEMA HOY
+  → Está en el 70% del camino
+  → Tiene lo más difícil hecho (AFIP real, schema completo, multi-tenant)
+  → Lo que falta es más mecánico que arquitectónico
+  → Falta principalmente: tests, flujo POS completo, notificaciones,
+    conciliación auto, DevOps/deploy y seed de datos
+  → Con foco de 2 meses puede salir a producción con un cliente real

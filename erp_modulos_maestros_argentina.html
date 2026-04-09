@@ -1,0 +1,541 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary)}
+.wrap{padding:1rem 0;display:flex;flex-direction:column;gap:24px}
+.section{border:1px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.section-header{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-bottom:1px solid var(--color-border-tertiary)}
+.section-header:hover{background:var(--color-background-secondary)}
+.section-title{font-size:14px;font-weight:500}
+.section-badge{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500}
+.section-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:14px;background:var(--color-background-secondary)}
+.section-body.hidden{display:none}
+.card{background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px;display:flex;flex-direction:column;gap:6px}
+.card-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.card ul{list-style:none;padding:0}
+.card ul li{font-size:11px;color:var(--color-text-secondary);padding:2px 0;border-bottom:1px solid var(--color-border-tertiary);line-height:1.5}
+.card ul li:last-child{border-bottom:none}
+.card ul li span.tag{font-size:10px;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:500}
+.tag-oblig{background:#EAF3DE;color:#3B6D11}
+.tag-afip{background:#E6F1FB;color:#0C447C}
+.tag-serie{background:#FAEEDA;color:#633806}
+.tag-crit{background:#FCEBEB;color:#791F1F}
+.tag-have{background:#E6F6EA;color:#1E6B3C}
+.tag-miss{background:#FCEBEB;color:#791F1F}
+.tag-partial{background:#FFF4D6;color:#8A5B0A}
+.legend{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 4px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--color-text-secondary)}
+.legend-tag{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:500}
+.chevron{font-size:12px;transition:transform 0.2s;color:var(--color-text-secondary)}
+.chevron.open{transform:rotate(180deg)}
+/* dark mode */
+@media(prefers-color-scheme:dark){
+.tag-oblig{background:#27500A;color:#C0DD97}
+.tag-afip{background:#042C53;color:#B5D4F4}
+.tag-serie{background:#412402;color:#FAC775}
+.tag-crit{background:#501313;color:#F7C1C1}
+.tag-have{background:#0F3B1E;color:#BCE7C9}
+.tag-miss{background:#501313;color:#F7C1C1}
+.tag-partial{background:#3C2A05;color:#F1D28A}
+}
+</style>
+<div class="wrap" id="root"></div>
+<script>
+const data=[
+{title:"🏢 Maestro de Proveedores",color:"#534AB7",badge:"Compras / Pagos",badgeColor:"#EEEDFE",badgeText:"#3C3489",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: CUIT, razón social, condición IVA, domicilio y contacto básico",["have"]],
+  ["Implementado: provincia/pais/localidad, rubro y condición de pago",["have"]],
+  ["Falta: datos bancarios, IIBB/AFIP, retenciones, estado proveedor, adjuntos",["miss"]],
+  ["Parcial: clasificación interna avanzada y scoring",["partial"]]
+ ]},
+ {name:"Identificación y datos legales",items:[
+  ["CUIT/CUIL",["oblig"]],["Razón Social",["oblig"]],["Nombre Fantasía",[]],
+  ["Tipo de Persona (Física/Jurídica)",["oblig"]],["Condición IVA (RI/Mono/Exento/No Resp)",["oblig","afip"]],
+  ["Condición Ingresos Brutos",["afip"]],["Nº Ingresos Brutos",["afip"]],
+  ["Fecha de inicio de actividad",[]],["Actividad AFIP (código F883)",["afip"]],["IIBB Multilateral",["afip"]]
+ ]},
+ {name:"Domicilio y contacto",items:[
+  ["Domicilio fiscal completo",["oblig"]],["Calle / Número / Piso / Dpto",[]],
+  ["Localidad / Provincia / CP",["oblig"]],["País",["oblig"]],
+  ["Teléfono fijo",[]],["Celular",[]],["Email de contacto",[]],
+  ["Email facturación electrónica",["afip"]],["Sitio Web",[]],["Contacto principal (nombre)",[]],
+  ["Cargo del contacto",[]]
+ ]},
+ {name:"Datos bancarios y pago",items:[
+  ["CBU",["oblig"]],["ALIAS CBU",[]],["Banco",[]],["Sucursal bancaria",[]],
+  ["Nº de Cuenta",[]],["Tipo de Cuenta (CC/CA)",[]],["Moneda cuenta (ARS/USD)",[]],
+  ["Condición de pago (30/60/90 días)",["oblig"]],["Plazo de pago en días",["oblig"]],
+  ["Descuento por pago contado (%)",[]],["Límite de crédito otorgado",[]]
+ ]},
+ {name:"Parámetros tributarios",items:[
+  ["Sujeto a retención IVA",["afip"]],["% Retención IVA",["afip"]],
+  ["Sujeto a retención Ganancias",["afip"]],["% Retención Ganancias",["afip"]],
+  ["Sujeto a retención IIBB",["afip"]],["% Retención IIBB por provincia",["afip"]],
+  ["Tipo de retención SIRCREB",["afip"]],["Padrón AFIP (A/B/C/D/NI)",["afip","crit"]],
+  ["Régimen de percepción aplicable",["afip"]]
+ ]},
+ {name:"Clasificación interna",items:[
+  ["Tipo proveedor (nacional/importado/servicios)",[]],["Rubro / Categoría",[]],
+  ["Zona geográfica",[]],["Vendedor asignado (proveedor → comprador)",[]],
+  ["Código externo / SAP / ERP anterior",[]],["Fecha alta",["oblig"]],
+  ["Fecha baja",[]],["Motivo baja",[]],["Estado (Activo/Suspendido/Bloqueado)",["oblig"]],
+  ["Observaciones",[]],["Documentos adjuntos (constancia AFIP, IIBB)",["afip"]]
+ ]}
+]},
+{title:"🧑‍💼 Maestro de Clientes",color:"#0F6E56",badge:"Ventas / Cobros",badgeColor:"#E1F5EE",badgeText:"#085041",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: identificación fiscal, condición IVA/IIBB, contacto y domicilios básicos",["have"]],
+  ["Implementado: condición de pago, lista de precios, vendedor, rubro/canal/segmento",["have"]],
+  ["Implementado: límite crédito, descuento, moneda habitual, activo/inactivo",["have"]],
+  ["Falta: domicilios múltiples, WhatsApp, contacto de compras, score crediticio",["miss"]]
+ ]},
+ {name:"Identificación y datos legales",items:[
+  ["CUIT/CUIL/DNI",["oblig"]],["Tipo documento (CUIT/CUIL/DNI/Pasaporte)",["oblig","afip"]],
+  ["Razón Social / Apellido y Nombre",["oblig"]],["Nombre Fantasía",[]],
+  ["Condición IVA (RI/Mono/CF/Exento)",["oblig","afip"]],["Condición IIBB",["afip"]],
+  ["Nº IIBB",["afip"]],["Actividad AFIP",["afip"]],["Categoría monotributo (A-K)",["afip","crit"]],
+  ["Tipo de cliente (Mayorista/Minorista/Consumidor Final)",["oblig"]]
+ ]},
+ {name:"Domicilio y contacto",items:[
+  ["Domicilio fiscal",["oblig"]],["Domicilio de entrega / envío",[]],
+  ["Múltiples domicilios de entrega",[]],["Calle / Número / Piso / Dpto",[]],
+  ["Localidad / Provincia / CP",["oblig"]],["País",["oblig"]],
+  ["Teléfono / Celular",[]],["Email",[]],["Email para remisión de comprobantes",["afip"]],
+  ["WhatsApp",[]],["Contacto de compras (nombre + cargo)",[]]
+ ]},
+ {name:"Condiciones comerciales",items:[
+  ["Lista de precios asignada",["oblig"]],["% Descuento habitual",[]],
+  ["Condición de pago (Contado/30/60/90 días)",["oblig"]],
+  ["Límite de crédito en ARS",["crit"]],["Saldo deudor actual",["crit"]],
+  ["Moneda de operación (ARS/USD)",[]],["Tasa de cambio pactada",[]],
+  ["Percepción IVA aplicable",["afip"]],["Percepción IIBB aplicable",["afip"]],
+  ["Vendedor asignado",[]],["Zona de ventas",[]]
+ ]},
+ {name:"Parámetros tributarios",items:[
+  ["Sujeto a percepción IVA",["afip"]],["Sujeto a percepción IIBB",["afip"]],
+  ["Padrón AFIP categoría (A/B/C/D/NI)",["afip","crit"]],
+  ["Retención por pago (si el cliente retiene)",["afip"]],
+  ["Exento IVA (con constancia)",["afip"]],["Número resolución exención",[]]
+ ]},
+ {name:"Clasificación interna",items:[
+  ["Rubro del negocio (kiosco/ferretería/etc.)",[]],["Canal (mostrador/delivery/B2B)",[]],
+  ["Grupo económico / Cadena",[]],["Código externo / código propio",[]],
+  ["Fecha alta",["oblig"]],["Estado (Activo/Suspendido/Bloqueado)",["oblig"]],
+  ["Score crediticio interno",[]],["Observaciones",[]],
+  ["Documentos adjuntos (constancia AFIP)",["afip"]]
+ ]}
+]},
+{title:"📦 Maestro de Artículos / Productos",color:"#993C1D",badge:"Stock / Ventas / Compras",badgeColor:"#FAECE7",badgeText:"#4A1B0C",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: código, nombre, precio compra/venta, IVA, stock, unidad, categoría",["have"]],
+  ["Parcial: stock por depósito y lotes (modelo existente)",["partial"]],
+  ["Falta: EAN/GTIN, NCM, peso/dimensiones, packs y conversiones",["miss"]]
+ ]},
+ {name:"Identificación",items:[
+  ["Código interno",["oblig"]],["Código de barras EAN-13 / EAN-8",["oblig"]],
+  ["Código alternativo (proveedor / SAP)",[]],["Descripción corta",["oblig"]],
+  ["Descripción larga / etiqueta",[]],["SKU / referencia",[]],
+  ["Marca",[]],["Modelo",[]],["Origen (nacional/importado)",[]],
+  ["Número de serie habilitado (S/N)",["serie","crit"]]
+ ]},
+ {name:"Clasificación y jerarquía",items:[
+  ["Rubro / Familia / Subfamilia",["oblig"]],["Línea de producto",[]],
+  ["Categoría para e-commerce / MercadoLibre",[]],["Tags / Palabras clave",[]],
+  ["Producto estrella / destacado (S/N)",[]],["Producto perecedero (S/N)",["crit"]],
+  ["Requiere refrigeración",[]],["Controlado por lote (S/N)",["serie"]],
+  ["Controlado por número de serie (S/N)",["serie"]]
+ ]},
+ {name:"Unidades y conversiones",items:[
+  ["Unidad de medida de compra",["oblig"]],["Unidad de medida de venta",["oblig"]],
+  ["Factor de conversión compra→venta",["crit"]],["Unidad de inventario",["oblig"]],
+  ["Peso (kg)",[]],["Volumen (m³)",[]],["Dimensiones (largo/ancho/alto)",[]],
+  ["Unidad de embalaje (pack / docena / caja)",[]],["Cantidad mínima de venta",[]]
+ ]},
+ {name:"Tributos y clasificaciones fiscales",items:[
+  ["Alícuota IVA (0/10.5/21/27%)",["oblig","afip"]],["Exento IVA (S/N)",["afip"]],
+  ["Percepción IIBB (S/N y %)",["afip"]],["Código NCM (nomenclatura arancelaria)",["afip"]],
+  ["Código SIM (sistema de información de medicamentos)",[]],
+  ["Código GTIN / GS1",[]],["Bien de uso (S/N)",[]],
+  ["Servicio vs Bien (para facturas electrónicas)",["afip","crit"]]
+ ]},
+ {name:"Precios y costos",items:[
+  ["Costo de compra sin IVA",["oblig"]],["Última actualización de costo",["crit"]],
+  ["Precio de lista 1 (ARS sin IVA)",["oblig"]],["Precio de lista 2 / mayorista",[]],
+  ["Precio especial / promoción",[]],["% Margen objetivo",[]],
+  ["Precio con IVA incluido (mostrador)",["oblig"]],["Precio en USD",[]],
+  ["Tipo de cambio aplicable",[]]
+ ]},
+ {name:"Stock y reposición",items:[
+  ["Stock mínimo",["crit"]],["Stock máximo",[]],["Punto de reorden",["crit"]],
+  ["Lead time proveedor (días)",[]],["Proveedor principal",["oblig"]],
+  ["Proveedor alternativo 1 / 2",[]],["Código artículo en proveedor",[]],
+  ["Depósito / ubicación física (estante / sector)",[]],["Permite stock negativo (S/N)",["crit"]]
+ ]}
+]},
+{title:"🔢 Series y Correlatividades (Comprobantes)",color:"#185FA5",badge:"AFIP / Numeración",badgeColor:"#E6F1FB",badgeText:"#042C53",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: puntos de venta AFIP, series por comprobante, numeradores internos",["have"]],
+  ["Parcial: correlativas para recibos/OP y control de rangos",["partial"]],
+  ["Falta: FCE MiPyMEs y CAEA completo",["miss"]]
+ ]},
+ {name:"Maestro de Puntos de Venta AFIP",items:[
+  ["Nº de punto de venta (001-999)",["oblig","afip","serie"]],
+  ["Tipo (CAE online / FECAE / CAEA / BFEMISIÓN)",["afip","serie"]],
+  ["Tipo de sistema emisor (web services / POS / facturador)",["afip"]],
+  ["Dirección fiscal asociada al punto de venta",["afip","oblig"]],
+  ["Habilitado (S/N)",["afip"]],["Fecha de alta AFIP",["afip"]],
+  ["Fecha de baja AFIP",["afip"]]
+ ]},
+ {name:"Tipos de comprobante y correlativas",items:[
+  ["Factura A (RI → RI)",["afip","serie"]],["Factura B (RI → CF/Mono)",["afip","serie"]],
+  ["Factura C (Mono → cualquiera)",["afip","serie"]],
+  ["Factura de Exportación E",["afip","serie"]],
+  ["Nota de Débito A/B/C",["afip","serie"]],["Nota de Crédito A/B/C",["afip","serie"]],
+  ["Recibo A/B (cobros)",["serie"]],["Remito X/R",["serie"]],
+  ["Orden de Compra (interna)",["serie"]],["Presupuesto (interna)",["serie"]],
+  ["FCE MiPyMEs A/B (Ley 27.440)",["afip","serie","crit"]]
+ ]},
+ {name:"Parámetros por serie / talonario",items:[
+  ["Letra del comprobante (A/B/C/E/M/R/T/X)",["oblig","afip","serie"]],
+  ["Nº desde / Nº hasta (rango habilitado)",["oblig","serie"]],
+  ["Nº actual (último emitido)",["oblig","serie","crit"]],
+  ["Correlativa automática o manual",["serie"]],
+  ["Permite saltar numeración (S/N)",["crit"]],
+  ["Permite anular sin CAE (S/N)",["afip","crit"]],
+  ["Requiere CAE (S/N)",["afip"]],["Requiere CAEA (S/N)",["afip"]],
+  ["Habilitado para qué punto de venta",["afip","serie"]],
+  ["Impresora asignada (talonario físico)",[]],
+  ["Fecha de vencimiento talonario",["crit"]],
+  ["Alerta por agotamiento de rango (%)",["crit"]]
+ ]},
+ {name:"Maestro de Recibos",items:[
+  ["Número de recibo (serie + correlativo)",["oblig","serie"]],
+  ["Fecha de emisión",["oblig"]],["CUIT del pagador",["afip"]],
+  ["Razón Social del pagador",["oblig"]],["Concepto del cobro",["oblig"]],
+  ["Importe total",["oblig"]],["Moneda (ARS/USD)",[]],
+  ["Tipo de cobro: efectivo / transferencia / cheque / tarjeta / QR",["oblig","crit"]],
+  ["CBU origen (para transferencia)",[]],["Nº cheque / banco / plaza / fecha",[]],
+  ["Nº de operación (transferencia / tarjeta)",[]],
+  ["Cuotas (en caso de tarjeta)",[]],["Comisión tarjeta aplicada (%)",[]],
+  ["Facturas imputadas (Nº factura + importe parcial)",["oblig","crit"]],
+  ["Saldo pendiente post-cobro",["crit"]],["Firmado por (operador)",["oblig"]],
+  ["Observaciones",[]]
+ ]}
+]},
+{title:"🧾 Comprobantes de Venta (Detalle campos)",color:"#3B6D11",badge:"FE / AFIP / Flujo caja",badgeColor:"#EAF3DE",badgeText:"#173404",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: CAE, QR AFIP, totales con IVA/percepciones, multi-moneda parcial",["have"]],
+  ["Falta: FCE MiPyMEs y opcionales AFIP avanzados",["miss"]]
+ ]},
+ {name:"Encabezado de factura",items:[
+  ["Tipo de comprobante (letra/código AFIP)",["oblig","afip"]],
+  ["Punto de venta (001-999)",["oblig","afip"]],
+  ["Número de comprobante (correlativo)",["oblig","afip","serie"]],
+  ["Fecha de emisión",["oblig","afip"]],
+  ["Fecha de vencimiento del comprobante",["afip"]],
+  ["CUIT emisor",["oblig","afip"]],["Razón Social emisor",["oblig"]],
+  ["Condición IVA emisor",["oblig","afip"]],
+  ["Domicilio emisor",["oblig","afip"]],["IIBB emisor",["afip"]],
+  ["Inicio de actividad",["afip"]],["Logo / datos imprenta (para físicos)",[]]
+ ]},
+ {name:"Receptor / cliente",items:[
+  ["CUIT/CUIL/DNI receptor",["oblig","afip"]],["Razón Social receptor",["oblig"]],
+  ["Condición IVA receptor",["oblig","afip"]],["Domicilio receptor",["oblig"]],
+  ["IIBB receptor",[]],["Condición de pago",["oblig"]],
+  ["Referencia de pedido / OC cliente",[]],
+  ["Vendedor que realizó la venta",[]]
+ ]},
+ {name:"Detalle de ítems",items:[
+  ["Código artículo",["oblig"]],["Descripción del ítem",["oblig","afip"]],
+  ["Cantidad",["oblig"]],["Unidad de medida",["oblig","afip"]],
+  ["Precio unitario sin IVA",["oblig"]],["% Descuento ítem",[]],
+  ["Subtotal sin IVA",["oblig"]],["Alícuota IVA del ítem",["oblig","afip"]],
+  ["Importe IVA del ítem",["oblig"]],["Subtotal con IVA",[]]
+ ]},
+ {name:"Totales y tributos",items:[
+  ["Subtotal gravado 21%",["oblig","afip"]],["Subtotal gravado 10.5%",["afip"]],
+  ["Subtotal exento",["afip"]],["Subtotal no gravado",["afip"]],
+  ["IVA 21%",["oblig","afip"]],["IVA 10.5%",["afip"]],
+  ["Percepciones IVA (por padrón)",["afip"]],["Percepciones IIBB",["afip"]],
+  ["Otros tributos (tasa municipal, etc.)",["afip"]],
+  ["Total del comprobante",["oblig","afip"]]
+ ]},
+ {name:"CAE y validación electrónica",items:[
+  ["CAE (Código de Autorización Electrónico)",["oblig","afip","crit"]],
+  ["Fecha de vencimiento CAE",["oblig","afip","crit"]],
+  ["CAEA (para contingencias sin internet)",["afip"]],
+  ["Nº de WSFE request (trazabilidad)",["afip"]],["Código QR AFIP",["afip","crit"]],
+  ["Resultado AFIP (Aprobado/Observado)",["afip","crit"]],
+  ["Observaciones AFIP (errores / alertas)",["afip"]]
+ ]},
+ {name:"FCE MiPyMEs (extras Ley 27.440)",items:[
+  ["CBU emisor (obligatorio para FCE)",["afip","crit"]],
+  ["Indicador de transferencia (Sí/No)",["afip","crit"]],
+  ["Tipo de operación anulación (solo A)",["afip"]],
+  ["Opcionales AFIP (campo libre XML)",["afip"]]
+ ]}
+]},
+{title:"🛒 Módulos por Rubro (Retail Argentina)",color:"#854F0B",badge:"Kiosco / Ferretería / Clínica / Vet / Bar",badgeColor:"#FAEEDA",badgeText:"#412402",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: POS core, logística, industria, iot, salud/hospitalidad",["have"]],
+  ["Parcial: flujos finos por rubro (delivery, lotes/serie, e-commerce)",["partial"]]
+ ]},
+ {name:"Kiosco / Almacén",items:[
+  ["Venta rápida por código de barras",["crit"]],
+  ["Gestión de artículos por unidad y fracción",[]],
+  ["Control de vencimientos (perecederos)",["crit"]],
+  ["Caja con apertura/cierre y arqueo",["oblig","crit"]],
+  ["Medios de pago múltiples por ticket",["oblig"]],
+  ["Mercado Pago / QR integrado",["crit"]],
+  ["Remitos de proveedor vs stock",[]],
+  ["Maestro de proveedores regionales",[]]
+ ]},
+ {name:"Ferretería / Depósito",items:[
+  ["Depósitos múltiples (local / depósito trasero)",["crit"]],
+  ["Artículos por metro / kilo / litro (granel)",["crit"]],
+  ["Presupuesto → Pedido → Remito → Factura",["oblig","serie"]],
+  ["Control de lotes y vencimiento (pinturas/adhesivos)",[]],
+  ["Orden de compra con aprobación",["serie"]],
+  ["Cuenta corriente cliente (crédito)",["crit"]],
+  ["Inventario rotativo por sector",[]],
+  ["Trazabilidad producto (serie si corresponde)",["serie"]]
+ ]},
+ {name:"Clínica / Centro médico",items:[
+  ["Maestro de pacientes (CUIL/DNI + OS)",["oblig"]],
+  ["Obra social / prepaga (padrón + código OS)",["oblig","crit"]],
+  ["Nº de afiliado / credencial",["oblig"]],
+  ["Copago y cobertura % por práctica",["crit"]],
+  ["Agenda de turnos (profesional + sala)",["oblig"]],
+  ["Maestro de profesionales (matrícula)",["oblig"]],
+  ["Prestaciones / códigos PMO / NOMENCLADOR",["crit"]],
+  ["Facturación a OS (lote mensual)",["afip","serie","crit"]],
+  ["Historia clínica (link a prestación)",[]],
+  ["Recibo de pago copago (correlativo)",["serie"]]
+ ]},
+ {name:"Veterinaria",items:[
+  ["Maestro de pacientes animales (especie/raza/nombre/dueño)",["oblig"]],
+  ["Ficha del dueño (cliente/tutor)",["oblig"]],
+  ["Vencimiento de vacunas (alertas)",["crit"]],
+  ["Medicamentos con número de lote y vto",["serie","crit"]],
+  ["Recetas veterinarias (correlativo)",["serie"]],
+  ["Servicios (baño, cirugía, consulta) vs productos",["oblig"]],
+  ["Alícuota IVA diferenciada (medicamentos 10.5%)",["afip","crit"]],
+  ["Internación / estadía (costo por día)",[]],
+  ["Factura B (CF) como principal emisión",["afip"]]
+ ]},
+ {name:"Bar / Restaurante / Delivery",items:[
+  ["Mesas / sectores (mapa de salón)",[]],
+  ["Comandas por mesa (apertura → cierre)",["serie","crit"]],
+  ["Artículos con modificadores (sin sal, extra queso)",[]],
+  ["Cocina: ticket de comanda impreso",["crit"]],
+  ["Propina separada del total",["crit"]],
+  ["División de cuenta entre comensales",[]],
+  ["Delivery: dirección cliente + zona + repartidor",[]],
+  ["Delivery: plataforma origen (Rappi/PedidosYa/MeLi)",[]],
+  ["Ticket fiscal + Factura B al cerrar mesa",["afip","serie","crit"]],
+  ["Inventario de insumos → control de merma",["crit"]]
+ ]}
+]},
+{title:"💸 Módulo de Caja, Tesorería y Cobranzas",color:"#993556",badge:"Flujo de caja / Cobros / Pagos",badgeColor:"#FBEAF0",badgeText:"#4B1528",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: caja con arqueo, movimientos, cheques, banco y conciliación",["have"]],
+  ["Implementado: recibos y órdenes de pago con retenciones",["have"]],
+  ["Falta: maestro medios de pago avanzado y transferencias caja-banco",["miss"]]
+ ]},
+ {name:"Maestro de Cajas",items:[
+  ["Código de caja",["oblig","serie"]],["Nombre / descripción",["oblig"]],
+  ["Sucursal / sector asociado",[]],["Responsable (operador)",["oblig"]],
+  ["Moneda de la caja (ARS/USD)",["oblig"]],
+  ["Fondo fijo / saldo inicial",["oblig","crit"]],
+  ["Saldo mínimo permitido",["crit"]],["Estado (Abierta/Cerrada)",["oblig","crit"]]
+ ]},
+ {name:"Movimientos de caja",items:[
+  ["Nº de movimiento (correlativo)",["oblig","serie"]],
+  ["Tipo (Ingreso/Egreso/Transferencia)",["oblig"]],
+  ["Fecha / Hora",["oblig"]],["Importe",["oblig"]],
+  ["Moneda y TC si aplica",[]],["Concepto",["oblig"]],
+  ["Medio de pago (efectivo/cheque/QR/tarjeta)",["oblig","crit"]],
+  ["Comprobante origen (factura/recibo/OC)",["crit"]],
+  ["Proveedor o cliente imputado",[]],
+  ["Firmado por / autorizado por",["oblig"]]
+ ]},
+ {name:"Maestro de Medios de Pago",items:[
+  ["Código medio de pago",["oblig"]],["Descripción",["oblig"]],
+  ["Tipo (efectivo/débito/crédito/transferencia/cheque/QR)",["oblig","crit"]],
+  ["Entidad (banco/procesador/billetera)",[]],
+  ["% comisión",["crit"]],["Días de acreditación",["crit"]],
+  ["Cuenta contable destino",[]],["Habilitado (S/N)",["oblig"]]
+ ]},
+ {name:"Cheques recibidos",items:[
+  ["Nº cheque",["oblig","serie"]],["Banco emisor",["oblig"]],
+  ["Sucursal banco",[]],["Fecha de emisión",["oblig"]],
+  ["Fecha de pago (diferido)",["oblig","crit"]],["Importe",["oblig"]],
+  ["Titular del cheque",["oblig"]],["CUIT titular",["afip"]],
+  ["Estado (cartera/depositado/rechazado/endosado)",["oblig","crit"]],
+  ["Proveedor/cliente origen",["oblig"]],["Cuenta bancaria destino",[]]
+ ]}
+]}
+,{title:"🏦 Banco y Transferencias",color:"#0B6D7A",badge:"Tesorería / Bancos",badgeColor:"#E1F4F6",badgeText:"#0B4A52",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: cuentas bancarias, movimientos y conciliación simple",["have"]],
+  ["Implementado: transferencias entre cuentas bancarias",["have"]],
+  ["Falta: importación de extractos y conciliación automática",["miss"]]
+ ]},
+ {name:"Movimientos bancarios",items:[
+  ["Alta manual de movimientos (crédito/débito)",["have"]],
+  ["Referencia y descripción",["have"]],
+  ["Filtro por cuenta bancaria",["have"]]
+ ]},
+ {name:"Transferencias",items:[
+  ["Transferencia entre cuentas (débito/crédito)",["have"]],
+  ["Referencia TRF y descripción cruzada",["have"]],
+  ["Transferencias caja-banco",["miss"]]
+ ]},
+ {name:"Conciliación",items:[
+  ["Conciliado manual por movimiento",["have"]],
+  ["Conciliación por lote/extracto",["miss"]]
+ ]}
+]}
+,{title:"📑 Cuenta Corriente 360",color:"#5B2E91",badge:"Clientes / Proveedores",badgeColor:"#EFE7FA",badgeText:"#3D1D6B",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: aging CC/CP con filtros",["have"]],
+  ["Implementado: recibos y órdenes de pago recientes",["have"]],
+  ["Parcial: vista 360 por cliente/proveedor",["partial"]]
+ ]},
+ {name:"Clientes (CC)",items:[
+  ["Aging 30/60/90/+90",["have"]],
+  ["Filtro por cliente",["have"]],
+  ["Recibos emitidos recientes",["have"]]
+ ]},
+ {name:"Proveedores (CP)",items:[
+  ["Aging 30/60/90/+90",["have"]],
+  ["Filtro por proveedor",["have"]],
+  ["Órdenes de pago recientes",["have"]]
+ ]},
+ {name:"Pendiente",items:[
+  ["Ficha 360 con historial completo y adjuntos",["miss"]],
+  ["Score de riesgo y alertas de crédito",["miss"]]
+ ]}
+]}
+,{title:"🚚 Remitos Parametrizables",color:"#1A7F4B",badge:"Logística / Despacho",badgeColor:"#E0F4EA",badgeText:"#0F4B2D",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Implementado: numeración, estados, relación a factura e incoterms",["have"]],
+  ["Falta: transportista, depósito, bultos/peso, seguro, trazabilidad avanzada",["miss"]]
+ ]},
+ {name:"Campos del remito",items:[
+  ["Número correlativo",["have"]],
+  ["Estado (pendiente/entregado/anulado)",["have"]],
+  ["Incoterm",["have"]]
+ ]},
+ {name:"Parametrización logística",items:[
+  ["Transportista asignado",["miss"]],
+  ["Depósito origen",["miss"]],
+  ["Peso / bultos / volumen",["miss"]]
+ ]}
+]}
+,{title:"🚚 Distribución y Hoja de Ruta",color:"#1C4E89",badge:"Logística / Distribuidora",badgeColor:"#E4F0FB",badgeText:"#153B68",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Parcial: envíos + transportistas con estados básicos",["partial"]],
+  ["Parcial: hoja de ruta (vehículos, choferes, paradas)",["partial"]],
+  ["Parcial: POD básico (evidencia) sin app móvil",["partial"]],
+  ["Falta: costos de flete, SLA y KPIs OTIF",["miss"]]
+ ]},
+ {name:"Hoja de ruta",items:[
+  ["Asignación de vehículo y chofer",["crit","have"]],
+  ["Orden y secuencia de paradas",["crit","have"]],
+  ["Ventana horaria por cliente",["partial"]],
+  ["Mapa y navegación",["miss"]],
+  ["Reintentos y devoluciones",["miss"]]
+ ]},
+ {name:"Entrega / POD",items:[
+  ["Firma o DNI receptor",["crit","partial"]],
+  ["Foto/scan de remito",["partial"]],
+  ["Geolocalización de entrega",["partial"]],
+  ["Motivo de no entrega",["crit","miss"]]
+ ]},
+ {name:"Integración operativa",items:[
+  ["Enlace Remito → Envío → Hoja de Ruta",["crit","partial"]],
+  ["Notificaciones al cliente (ETA)",["miss"]],
+  ["Cobranza en ruta (efectivo/QR)",["miss"]]
+ ]}
+]}
+,{title:"🛍️ E-commerce B2B/B2C",color:"#8A3D2A",badge:"Canal Digital",badgeColor:"#FBE8E2",badgeText:"#5C2316",sections:[
+ {name:"Estado en el sistema",items:[
+  ["Falta: catálogo público y carrito",["miss"]],
+  ["Falta: checkout con medios de pago",["miss"]],
+  ["Falta: pedidos online integrados a stock",["miss"]]
+ ]},
+ {name:"Catálogo y stock",items:[
+  ["Stock en tiempo real",["crit","miss"]],
+  ["Listas de precio por cliente",["crit","miss"]],
+  ["Promos y cupones",["miss"]],
+  ["Variantes / atributos",["miss"]]
+ ]},
+ {name:"Checkout y pagos",items:[
+  ["Dirección de envío",["oblig","miss"]],
+  ["Integración pagos (MP/QR/transferencia)",["crit","miss"]],
+  ["Impuestos y percepciones",["afip","miss"]],
+  ["Estado de pago",["crit","miss"]]
+ ]},
+ {name:"Pedidos y postventa",items:[
+  ["Pedido → PedidoVenta",["crit","miss"]],
+  ["Tracking y notificaciones",["miss"]],
+  ["Devoluciones / NC",["miss"]]
+ ]}
+]}
+];
+
+const colorDots={oblig:"#639922",afip:"#185FA5",serie:"#BA7517",crit:"#A32D2D"};
+
+function tagHTML(tags){
+ return tags.map(t=>{
+    const map={oblig:"obligatorio",afip:"AFIP",serie:"serie/corr.",crit:"crítico",have:"tiene",miss:"falta",partial:"parcial"};
+  return `<span class="tag tag-${t}">${map[t]}</span>`;
+ }).join("");
+}
+
+function renderSection(s){
+ let li=s.items.map(([label,tags])=>
+  `<li>${label}${tagHTML(tags)}</li>`
+ ).join("");
+ return `<div class="card">
+  <div class="card-title">${s.name}</div>
+  <ul>${li}</ul>
+ </div>`;
+}
+
+function renderModule(m,idx){
+ let secs=m.sections.map(renderSection).join("");
+ return `<div class="section">
+  <div class="section-header" onclick="toggle(${idx})">
+   <span class="section-title" style="color:${m.color}">${m.title}</span>
+   <span style="display:flex;align-items:center;gap:8px">
+    <span class="section-badge" style="background:${m.badgeColor};color:${m.badgeText}">${m.badge}</span>
+    <span class="chevron" id="chev-${idx}">▼</span>
+   </span>
+  </div>
+  <div class="section-body" id="body-${idx}">${secs}</div>
+ </div>`;
+}
+
+function toggle(idx){
+ const b=document.getElementById("body-"+idx);
+ const c=document.getElementById("chev-"+idx);
+ b.classList.toggle("hidden");
+ c.classList.toggle("open");
+}
+
+const legend=`<div class="legend">
+ <div class="legend-item"><span class="legend-tag tag-oblig">obligatorio</span> Campo requerido siempre</div>
+ <div class="legend-item"><span class="legend-tag tag-afip">AFIP</span> Exigido por normativa AFIP/ARCA</div>
+ <div class="legend-item"><span class="legend-tag tag-serie">serie/corr.</span> Afecta numeración / correlativa</div>
+ <div class="legend-item"><span class="legend-tag tag-crit">crítico</span> Error de negocio si falta</div>
+ <div class="legend-item"><span class="legend-tag tag-have">tiene</span> Implementado en el sistema</div>
+ <div class="legend-item"><span class="legend-tag tag-partial">parcial</span> Implementación parcial / en curso</div>
+ <div class="legend-item"><span class="legend-tag tag-miss">falta</span> No implementado todavía</div>
+</div>`;
+
+document.getElementById("root").innerHTML=legend+data.map(renderModule).join("");
+</script>

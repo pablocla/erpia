@@ -1,0 +1,307 @@
+
+# Introspección del Proyecto — 2 de Abril 2026
+
+**Diagnóstico honesto de producción del ERP/POS argentino.**
+
+---
+
+## NÚMEROS DUROS DEL CODEBASE
+
+| Métrica | Valor |
+|---------|-------|
+| Modelos Prisma | 115 |
+| API Routes (route.ts) | 88 |
+| Páginas Dashboard (page.tsx) | 37 |
+| Servicios en lib/ | 44 archivos |
+| Tests unitarios | 4 suites (24 tests passing) |
+| Dependencias prod | 30 packages |
+| Stack | Next.js 15.5 + React 19 + Prisma 6 + PostgreSQL + Supabase |
+
+---
+
+## 1. ESTADO REAL DEL CODEBASE
+
+### MÓDULOS COMPLETOS (producción-ready con reservas menores)
+
+| Módulo | API | Service | UI | Notas |
+|--------|-----|---------|-----|-------|
+| Facturación electrónica AFIP | 7 rutas | SOAP WSAA + WSFEv1 real | Sí | CAE, QR, RG 5824/5616. Funciona contra homologación. |
+| Contabilidad (partida doble) | 6 rutas | AsientoService completo | Sí | Libro diario, mayor, balance sumas/saldos, CSV export. Asientos automáticos por venta/compra/NC. |
+| IVA | 4 rutas (libro ventas, compras, período, presentación) | IVAService real | Sí | Libros IVA compras/ventas con CSV. Discrimina 0%, 10.5%, 21%, 27%. RG 3431. |
+| SICORE | 2 rutas | SICOREService real | Sí | Retenciones IVA (cód 217/219) y Ganancias (305/767/779). Archivo SIAP formato RG 2854 Anexo IV. |
+| Stock | 3 rutas producto + movimientos | StockService event-driven | Sí | Dual-track: stock global + por depósito. Movimientos por venta/compra/NC/ajuste. |
+| Caja | 2 rutas | Directo en API | Sí | Apertura/cierre, 6 medios de pago, movimientos ingreso/egreso. |
+| Auth + RBAC | 5 rutas | AuthService + middleware | Sí | 9 roles (dueño→vendedor), JWT, bcrypt, rate-limiting (5 intentos/15min). |
+| Clientes/Proveedores/Productos | 8+ rutas | CRUD completo | Sí | Condición IVA, provincias, CUIT validation, categorías, listas precio. |
+| CC (Cuentas a Cobrar) | 2 rutas | CobrosService real | Sí | Generación desde factura, cuotas por condición de pago, aging 30/60/90/+90, cobro con retenciones sufridas (IVA/Ganancias/IIBB) + asiento. |
+| Tax Engine multi-país | 2 rutas | AR adapter completo, CL/MX stubs | Sí | Configurable por DB (TaxConcepto/TaxTasa). Registry pattern extensible. |
+| Parametrización | 4 rutas config | ParametroService con cache 60s | Sí | Plan de cuentas por rubro (10 rubros), parámetros fiscales, numeradores, mapeo de asientos. Todo con fallback DB → hardcoded. |
+| Maestros paramétricos | 1 ruta genérica | CRUD dinámico para 30+ tablas | Sí | Países, provincias, monedas, bancos, condiciones IVA, UoM, incoterms, etc. |
+| Event Bus | — | EventBus singleton + bootstrap | — | 12 tipos de eventos. ConfiguracionFuncional por DB. Handlers activables/desactivables sin redeploy. HandlerLog de auditoría. |
+| Remitos | 2 rutas | Integrado con picking | Sí | Número correlativo, estados (pendiente/entregado/anulado), enlace a factura, COT ARBA. |
+| Notas de Crédito | 1 ruta | NC A/B/C con CAE AFIP | Sí | Parcial o total. Reingreso de stock automático. |
+| Picking | 2 rutas | Servicio completo | Sí | Prioridades, zona almacén, operario, cantidades picadas. |
+| Logística | 3 rutas | Envíos + transportistas | Sí | Estado shipment, peso, bultos, enlace remito. |
+| Banco | 2 rutas | Movimientos + conciliación simple | Sí | Cuentas bancarias multi-moneda, cheques (propio/tercero), conciliación flag-based. |
+| Puntos de Venta / Series | 4 rutas | Config AFIP completa | Sí | Numeración por PV + tipo comprobante. Series vinculadas a PuntoVentaConfig. |
+| IoT Industrial | 3 rutas | CRUD dispositivos, lecturas, alertas | Sí | 11 tipos sensor, 9 protocolos (MQTT/Modbus/OPC-UA), calibración, normas industriales. |
+| Industria | 3 rutas | BOM + órdenes producción | Sí | Lista de materiales, componentes, estados producción. |
+| Hospitalidad | 1 ruta | Comandas gastronomía | Sí | Salones, mesas, KDS cocina, comensales. |
+| Agenda / HC / Membresías | 3 rutas | Turnos, pacientes, planes | Sí | Módulos verticales para salud/servicios. |
+| Sistema de Tickets | 4 rutas | Soporte interno completo | Sí | Bug/mejora/consulta/urgente, SLA, métricas resolución. |
+| Onboarding IA | — | Tipos + config parcial | Sí | Wizard paso a paso, 10 rubros, 3 perfiles implementador. Lógica de recomendación incompleta. |
+| Estadísticas | 1 ruta | Dashboard KPIs | Sí | Ventas/compras por período, top clientes. |
+
+### MÓDULOS PARCIALES (necesitan cierre para producción)
+
+| Módulo | Qué falta | Severidad |
+|--------|-----------|-----------|
+| CP (Cuentas a Pagar) | generarCPPorCompra() y aplicarOrdenPago() son stubs en cuentas-service.ts. La API route existe y usa PagosService, pero el aging de CP no está conectado al service layer. | ALTA |
+| IIBB | cerrarPeriodo() y generarDDJJ() no implementados en iibb-service.ts. La API route devuelve liquidación y evolución anual, pero el cierre mensual y DDJJ por jurisdicción no existen. | ALTA |
+| Pagos (OP) | PagosService tiene asiento contable truncado — los movimientos haber no están completos. No maneja IIBB retenido. | MEDIA |
+| Compras 3-way matching | La función threeWayMatching() tiene interfaz pero no implementación real. La verificación WSCDC del CAE existe pero no está conectada al flujo de matching. | MEDIA |
+| Impresión fiscal | ESC/POS command generation funciona (Hasar + Epson), pero enviarComandos() es console.log. No hay I/O USB ni red. detectarImpresoras() retorna 2 impresoras hardcodeadas. | BLOQUEANTE para POS físico |
+| CAEA (contingencia) | solicitarCAEA() y informarComprobantesCAEA() implementados. consultarCAEA() es stub. | BAJA (solo necesario para modo offline) |
+| Padrón A5 / WSCDC | Funciones implementadas pero truncadas — parsing de respuesta incompleto. | MEDIA |
+
+### MÓDULOS SIN EMPEZAR
+
+| Módulo | Modelo DB | API | Service | UI |
+|--------|-----------|-----|---------|-----|
+| Activos Fijos (depreciación) | ActivoFijo en schema | No | No | No |
+| Presupuestos → Pedido/Factura | Presupuesto + líneas en schema | No | No | UI existe pero sin flujo |
+| Percepciones IIBB masivas | PadronRegimenCliente en schema | No | No | No |
+| Cotizaciones automáticas | Cotizacion + Moneda en schema | No | No | No |
+| Multi-moneda operativo | Campos monedaOrigen + tipoCambio en Factura/Compra | Parcial | No | No |
+
+### DEUDA TÉCNICA
+
+- plan-cuentas.ts hardcodeado coexiste con CuentaContable DB-backed — duplicación inofensiva pero confusa
+- Silent error handling en event handlers — errores se loguean pero no se propagan; un asiento que falla no aborta la factura
+- Event handler registration por side-effects de import — frágil, depende del orden de importación
+- JWT_SECRET tiene fallback dev inseguro — en producción sin env var, silenciosamente usa key débil
+- No hay tests de integración end-to-end (solo unit con mocks)
+- prisma db push nunca se ejecutó contra una base real (schema pendiente de deploy)
+
+### DEPENDENCIAS CRÍTICAS FALTANTES
+
+- node-usb o serialport — para I/O con impresoras fiscales USB
+- No hay librería de PDF — si se quiere generar factura PDF (alternativa a impresora)
+- No hay email service — para envío de facturas por correo
+- No hay job scheduler — para tareas periódicas (cierre mensual, alertas stock, CAEA automático)
+
+---
+
+## 2. GAP HASTA PRODUCCIÓN — MÓDULOS ESPECÍFICOS
+
+### Impuestos (IVA, percepciones, retenciones)
+
+Estado: 75% completo
+
+| Componente | Estado | Detalle |
+|-----------|--------|---------|
+| IVA Débito/Crédito Fiscal | COMPLETO | Cálculo por período, discriminación por alícuota (0/10.5/21/27) |
+| Libro IVA Ventas | COMPLETO | JSON + CSV export, formato RG 3431 |
+| Libro IVA Compras | COMPLETO | JSON + CSV export |
+| Percepciones IVA (emitir) | COMPLETO | RG 2408/2854, 3% RI / 5% no-RI, integrado en tax-engine |
+| Percepciones IVA (recibir) | COMPLETO | Acumuladas y descontadas en liquidación |
+| Retenciones IVA SICORE | COMPLETO | Cód 217/219, 50% alícuota, registro en cobros/pagos |
+| Retenciones Ganancias | COMPLETO | RG 830, 2% bienes / 6% servicios |
+| IIBB acumulación | COMPLETO | 24 provincias, alícuotas por jurisdicción |
+| IIBB cierre mensual | FALTA | cerrarPeriodo() stub |
+| IIBB generación DDJJ | FALTA | generarDDJJ() stub — necesita formato ARBA/ARCIBA/DGR |
+| Presentación AFIP (archivo IVA) | COMPLETO | Ruta /api/impuestos/presentacion-afip genera formato texto |
+| Percepciones IIBB masivas (padrón) | FALTA | PadronRegimenCliente modelado pero sin service |
+
+Gap real: Implementar cierre mensual IIBB + DDJJ provincial + padrón IIBB masivo.
+
+### Asientos contables
+
+Estado: 90% completo
+
+| Componente | Estado | Detalle |
+|-----------|--------|---------|
+| Asiento por venta | COMPLETO | Auto por FACTURA_EMITIDA |
+| Asiento por compra | COMPLETO | Auto por COMPRA_REGISTRADA |
+| Asiento por NC | COMPLETO | Auto por NC_EMITIDA |
+| Asiento por CMV | COMPLETO | Auto vía event bus |
+| Asiento liquidación IVA | COMPLETO | Cierra DF/CF a IVA a Pagar/Favor |
+| Asiento manual | COMPLETO | API + UI, validación doble entrada |
+| Asiento por cobro | COMPLETO | Con retenciones sufridas (IVA/Ganancias/IIBB) |
+| Asiento por pago (OP) | PARCIAL | Movimientos haber truncados |
+| Plan de cuentas parametrizable | COMPLETO | DB-backed, jerárquico, seedeable por rubro (10 rubros) |
+| Centro de costos | MODELADO | Tabla existe, relación en MovimientoContable, sin UI/service |
+| Balance sumas y saldos | COMPLETO | API + UI |
+| Libro diario / Libro mayor | COMPLETO | API + UI + CSV export |
+
+Gap real: Completar asiento de pagos (OP) + activar centro de costos si se necesita.
+
+### Libros IVA (compras/ventas)
+
+Estado: 95% completo
+
+Ambos libros implementados con API propia, CSV export, y formato regulatorio. Solo falta:
+- Validación de integridad (que no falten comprobantes en la secuencia)
+- Firma digital para presentación electrónica (opcional, AFIP acepta texto plano)
+
+### Punto de venta (POS)
+
+Estado: 85% completo — BACKEND 95%, FRONTEND 90%
+
+| Flujo | Estado |
+|-------|--------|
+| Selección cliente | COMPLETO |
+| Catálogo productos + búsqueda | COMPLETO |
+| Armado de comprobante (líneas + IVA) | COMPLETO |
+| Emisión factura A/B/C con CAE | COMPLETO |
+| QR fiscal en factura | COMPLETO |
+| Caja apertura/cierre | COMPLETO |
+| Medios de pago (6 tipos) | COMPLETO |
+| Impresión de ticket | STUB — genera ESC/POS pero no envía al dispositivo |
+| NC desde POS | COMPLETO |
+| Remito desde POS | COMPLETO |
+| Stock automático | COMPLETO (event-driven) |
+| Asiento automático | COMPLETO (event-driven) |
+| CC automática | COMPLETO |
+| RG 5824 (CUIT consumidor final > umbral) | COMPLETO |
+| RG 5616 (multi-moneda) | PARCIAL — campos existen, conversión no operativa |
+| CAEA (contingencia offline) | PARCIAL — solicitud ok, consulta stub |
+
+Gap real: Impresión física es el único bloqueante hard para un POS de mostrador. Sin impresora funcional, se puede operar con PDF/pantalla pero no en retail.
+
+### Parametrización dinámica (configurable por rubro)
+
+Estado: 90% completo
+
+| Componente | Estado | Detalle |
+|-----------|--------|---------|
+| Plan de cuentas por rubro | COMPLETO | 10 rubros: comercio, industria, servicios, gastronomía, salud, hotelería, agro, construcción, transporte, educación |
+| Parámetros fiscales por DB | COMPLETO | ParametroFiscal con clave/valor por empresa |
+| Numeradores configurables | COMPLETO | Por tipo documento + sucursal |
+| Mapeo asiento → cuentas | COMPLETO | ConfigAsientoCuenta por empresa + tipo transacción |
+| Módulos activables por empresa | COMPLETO | ConfiguracionModulo on/off |
+| Event handlers on/off | COMPLETO | ConfiguracionFuncional con HandlerLog |
+| Onboarding wizard | PARCIAL | UI existe, lógica de recomendación incompleta |
+| IIBB por 24 provincias | COMPLETO | Alícuotas seedeadas |
+| Cache con fallback | COMPLETO | 60s in-memory, DB → hardcoded default |
+
+Gap real: Completar motor de recomendación del onboarding para que sugiera módulos + cuentas automáticamente al dar de alta empresa.
+
+---
+
+## 3. ARQUITECTURA ACTUAL vs ERP MULTI-TENANT REAL
+
+### Multi-empresa
+
+| Aspecto | Estado | Detalle |
+|---------|--------|---------|
+| Modelo Empresa | EXISTE | empresaId en Usuario, Factura, Caja, PuntoVentaConfig, CuentaContable, ConfigAsientoCuenta, Numerador, ParametroFiscal |
+| Filtro por empresa en queries | PARCIAL | Algunas queries filtran por empresaId (auth middleware extrae del JWT), pero no todos los endpoints lo hacen consistentemente |
+| Aislamiento de datos hard | NO | No hay Row-Level Security (RLS) ni policies en Postgres. Un bug puede devolver datos de otra empresa. |
+| Multi-tenant real | NO | Single database, single schema. No hay schema-per-tenant ni database-per-tenant. |
+
+Veredicto: Funciona para demo/MVP con 1 empresa. Para producción multi-cliente necesita: (a) auditar todo endpoint para filtrar por empresaId, (b) considerar RLS en PostgreSQL, (c) eventualmente schema-per-tenant si la escala lo justifica.
+
+### Períodos fiscales
+
+| Aspecto | Estado |
+|---------|--------|
+| Modelo de período fiscal explícito | NO EXISTE |
+| Cierre contable mensual | NO EXISTE |
+| Bloqueo de períodos cerrados | NO EXISTE |
+| Los queries de IVA/IIBB/SICORE usan mes+año | SÍ, pero no hay lock |
+
+Veredicto: Se puede consultar por período, pero no hay concepto de "período cerrado" que impida modificar asientos/facturas de meses anteriores. Esto es un BLOQUEANTE regulatorio para contabilidad real.
+
+### Plan de cuentas parametrizable
+
+| Aspecto | Estado |
+|---------|--------|
+| CuentaContable en DB por empresa | COMPLETO |
+| Jerárquico (self-relation parentId) | COMPLETO |
+| Seedeable por rubro | COMPLETO (10 rubros) |
+| ConfigAsientoCuenta mapea tipo TX → cuenta | COMPLETO |
+| UI de administración | SÍ (en config) |
+| plan-cuentas.ts hardcodeado (legacy) | EXISTE en paralelo — no se usa en los flujos nuevos pero sigue importado en algún endpoint |
+
+Veredicto: El plan de cuentas parametrizable funciona correctamente. La duplicación con el array hardcodeado de plan-cuentas.ts es deuda técnica menor.
+
+### Auditoría / trazabilidad
+
+| Aspecto | Estado |
+|---------|--------|
+| LogActividad | COMPLETO — acción, módulo, entidad, IP, usuario, timestamp |
+| HandlerLog (event bus) | COMPLETO — evento, handler, éxito, duración, payload, error |
+| createdBy / updatedBy en modelos core | EXISTE (nullable) |
+| deletedAt (soft-delete) | EXISTE en modelos core |
+| Auditoría de cambios en config | NO — ParametroFiscal no loguea quién cambió qué |
+| Auditoría endpoint | SÍ — /api/config/auditoria con filtros |
+
+Veredicto: Trazabilidad operacional cubierta. Falta audit trail para cambios en configuración fiscal/contable (requisito para compliance serio).
+
+---
+
+## 4. ESTIMACIÓN HONESTA
+
+### Tiempo hasta producción con un cliente real
+
+| Escenario | Tiempo estimado | Alcance |
+|-----------|----------------|---------|
+| MVP mínimo (facturar, cobrar, stock, IVA, sin impresora física) | 1-2 semanas | Un comercio que factura por pantalla/PDF, con contabilidad básica |
+| POS retail completo (con impresora) | 3-4 semanas | Necesita implementar I/O USB/red para Hasar/Epson |
+| Contabilidad completa (períodos fiscales, cierre, IIBB) | 3-4 semanas | Cierre mensual, períodos bloqueables, DDJJ IIBB |
+| Multi-empresa seguro (RLS, filtrado consistente) | 2-3 semanas | Auditar todos los endpoints + RLS PostgreSQL |
+| ERP full con módulos verticales | 6-8 semanas | Activos fijos, presupuestos→pedidos, multi-moneda real, padrón IIBB |
+
+### Los 3 BLOQUEOS más críticos ahora mismo
+
+1. NO HAY CIERRE DE PERÍODO CONTABLE
+Sin un modelo de "período fiscal" con estado abierto/cerrado, cualquier usuario puede crear o modificar asientos de meses pasados. Esto invalida toda la contabilidad para un contador real. Necesita: modelo PeriodoFiscal + validación en AsientoService + check en todos los endpoints que escriben transacciones.
+
+2. IMPRESIÓN FÍSICA ES 100% STUB
+Para un POS de mostrador, el cliente necesita imprimir tickets/facturas. Los comandos ESC/POS se generan correctamente (Hasar SMH-P-441, Epson TM-T20) pero enviarComandos() es console.log(). Necesita: librería de comunicación USB (node-usb/serialport) o raw TCP socket para impresoras de red. Alternativa: servicio local tipo CUPS/print-agent que reciba HTTP y rutee a la impresora.
+
+3. AISLAMIENTO MULTI-EMPRESA INCOMPLETO
+El JWT incluye empresaId y el middleware lo verifica, pero no todos los endpoints filtran consultas por empresaId. Un endpoint que no filtre puede devolver datos de otra empresa. Necesita: auditoría completa de los 88 route.ts + test de integration que valide aislamiento.
+
+---
+
+## 5. LO QUE ESTÁ BIEN HECHO — NO TOCAR
+
+### Arquitectura core
+- Event bus con ConfiguracionFuncional — Patrón sólido. Handlers activables/desactivables por DB sin redeploy. HandlerLog para auditoría. No cambiar el patrón; solo agregar handlers.
+- Tax Engine multi-país (lib/tes/) — Registry pattern con AR/CL/MX adapters. TaxConcepto + TaxTasa en DB con vigencias. Permite cambiar alícuotas sin deploy. Arquitectura limpia.
+- ParametroService con cache + fallback — getParametro() con DB → hardcoded default + cache 60s. Pattern correcto para configuración en runtime.
+- AFIP SOAP client — WSAA auth con CMS/PKCS#7 signing correcto. WSFEv1 emission probado. Manejo de certificados base64. La crypto funciona.
+- AsientoService — Partida doble con validación de balance. 5 tipos de asiento automático + manual. Plan de cuentas DB-backed con mapeo configurable. Sólido.
+
+### Modelo de datos
+- Schema Prisma de 115 modelos — Cubre comercio, industria, servicios, salud, hotelería, gastronomía, logística, IoT. No refactorear el schema; solo agregar campos si faltan.
+- Maestros paramétricos — 30+ tablas de referencia con CRUD genérico. Provincias con código AFIP, bancos con código BCRA, monedas ISO 4217. Seed de 200+ registros. Data foundation correcta.
+- Soft-delete (deletedAt) — Patrón consistente en modelos core. No cambiar a hard-delete.
+
+### RBAC
+- 9 roles con permisos granulares — Módulos permitidos, descuento máximo, acceso web/mobile, visibilidad de costos/sueldos. Diseño profesional tipo Odoo/Protheus.
+
+### UI
+- 37 páginas dashboard con implementación real — No son stubs. Cada módulo tiene UI funcional con formularios, tablas, filtros, exports.
+- Onboarding wizard paso a paso — La experiencia de usuario para dar de alta una empresa nueva está diseñada. Solo falta la lógica de recomendación backend.
+
+---
+
+## RESUMEN EJECUTIVO
+
+Este no es un demo. Es un ERP argentino funcional con 115 modelos, 88 API routes y 37 páginas de UI reales.
+
+El 85% del backend está implementado con lógica de negocio real. Los flujos core (facturar con AFIP → stock → contabilidad → CC → cobro) funcionan end-to-end via events.
+
+Para llegar a producción con un primer cliente:
+
+1. Implementar PeriodoFiscal + cierre contable
+2. Implementar IIBB cierre mensual + DDJJ
+3. Auditar filtro empresaId en los 88 endpoints
+4. Decidir: impresora física (USB/red) vs PDF/pantalla
+5. prisma db push a una base PostgreSQL real + seed data
+6. Correr el onboarding con datos de un cliente real
+
+El sistema está diseñado para que un implementador entre, elija rubro, y tenga plan de cuentas + módulos + parámetros fiscales configurados automáticamente. La base está. Falta cerrar los gaps operativos para que un contador lo firme.

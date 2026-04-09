@@ -1,0 +1,550 @@
+Auditoría funcional por rubro (parametrizable)
+
+🔴 BLOQUEANTE: Gastronomía/KDS sin ABM de platos/recetas, sin inventario de insumos, sin impresión de comandas y sin integración venta→comanda. Solo hay comanda “manual” en route.ts:1 y UI básica en page.tsx:1. Falta el maestro “Plato/Receta/Modificador/Combo”.
+🔴 BLOQUEANTE: Salud (agenda/HC) sin maestros clínicos: no hay ABM de profesionales, prestaciones, obras sociales, nomenclador, ni facturación por prácticas. La agenda opera con Profesional pero no hay ABM dedicado (solo lectura desde route.ts:1).
+🟠 ALTA: Membresías (fitness) no permite altas de socios/membresías activas ni cobros recurrentes. Solo ABM de planes en route.ts:1 y UI de planes en page.tsx:1.
+🟠 ALTA: Distribución sin POD real (firma, foto remito, geoloc, motivo no entrega). Hay hoja de ruta básica en route.ts:1 y UI en page.tsx:1.
+🟠 ALTA: Logística sin conciliación de costos de flete y SLA/OTIF; no hay costo por envío, ni KPIs de entregas en route.ts:1.
+🟡 MEDIA: Industria sin explosión de BOM por orden ni consumo de stock ligado a producción; hoy es ABM de orden/BOM en route.ts:1 y route.ts:1.
+🟡 MEDIA: Picking sin integración automática con pedidos/remitos; lista es manual en route.ts:1.
+🟡 MEDIA: IoT usa verificarToken en lecturas/alertas pero sin authHeaders consistente; además no hay rules engine para alertas automáticas (solo ABM de dispositivo + registro manual de lectura).
+🟢 BAJA: Hospitalidad/KDS con UX sólida, pero falta mapa de salón, horarios, y roles (mozos/cocina).
+Maestros faltantes (parametrizables por rubro)
+
+Gastronomía: Plato, Receta, Ingrediente/Insumo, Modificador, Combo, Sector cocina, Estación, Tiempo objetivo, Unidad receta.
+Salud: Profesional, Especialidad, Prestación/Práctica, ObraSocial, Cobertura, Nomenclador, Sala/Consultorio.
+Fitness: Socio, Membresía (instancia), Cobranza recurrente, Plan de pagos.
+Logística: Motivo de no entrega, Tipo de evidencia POD, SLA por cliente/canal.
+Distribución: Ruteo (geo), KPI entregas, costos por KM.
+IoT: Regla de alerta por dispositivo/tipo; plan de mantenimiento/calibración.
+Campos faltantes en maestros existentes (corporativo)
+
+Productos: EAN/GTIN, lotes/serie, UoM conversión, peso/volumen, control vencimiento, NCM. Hoy solo básicos en page.tsx:1.
+Proveedores: datos bancarios completos, retenciones/percepciones avanzadas, adjuntos fiscales; gap visible en mapa HTML.
+Clientes: múltiples domicilios, contactos por rol, score crediticio.
+Ingeniería funcional faltante (por menú)
+
+Hospitalidad/KDS: falta workflow completo (pedido→comanda→cocina→ticket→factura).
+Agenda/HC: falta facturación por prestación y cierre de turno; también agenda sin recordatorios.
+Membresías: falta renovación automática, estados por mora y cobranzas.
+Logística/Distribución: falta POD y geolocalización; falta reintentos y devoluciones.
+Industria: falta consumo de materiales y costo estándar por orden.
+Picking: falta generación automática desde pedido/remito.
+Propuesta de pruebas por módulo (Vitest)
+
+Gastronomía: comanda->mesa ocupada, cierre mesa, integración stock/venta, estados de línea.
+Salud: alta de profesional, turno con validaciones, consulta con diagnóstico y proxima visita.
+Membresías: creación plan, alta membresía, cálculo fecha fin, vencimiento.
+Logística: creación envío, validación número único, filtros por estado.
+Distribución: hoja de ruta con paradas válidas, validación de envío inexistente.
+Industria: BOM create con componentes, orden con estado, validación número duplicado.
+Picking: lista con líneas mínimas, actualización cantidades picadas, cambio de estado.
+IoT: alta dispositivo, lectura con calidad, alerta resolve.
+Actualización realizada
+
+Añadí el Delta Sprint 20 en introspeccion.md con la auditoría funcional por rubros y el plan de tests.
+Si querés, puedo empezar a cerrar el primer bloque (gastronomía: ABM platos/recetas + integración comanda→venta) y los tests en una iteración.
+
+Resumen de Iteración
+✅ Completado: Auditoría funcional por rubros, actualización de introspección
+🔄 En progreso: —
+📋 Próxima iteración: 1) ABM Platos/Recetas 2) Profesional/Prestaciones 3) Membresías activas
+🧪 Tests: 0 nuevos, 68 passing, 0 failing
+
+════════════════════════════════════════════════════════════════════
+AMPLIACIÓN ERP FUNCIONAL — RETAIL ROSARINO
+Análisis por ítem de navbar + módulos faltantes + parametrización por rubro
+════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+0. PRINCIPIO DE PARAMETRIZACIÓN POR RUBRO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cada módulo, ítem de navbar, campo y flujo tiene una tabla rubro_modulo_config
+con el flag visible (boolean), requerido (boolean) y alias (string).
+El sistema NO muestra en navbar ni en formularios los módulos que no aplican al rubro activo.
+Configuración inicial por wizard de onboarding; editable por superadmin.
+
+Tabla de aplicabilidad por rubro (muestra):
+
+Módulo                  | Distrib | Retail | Gastro | Salud | Fitness | Industria | Veterinaria | Agro
+------------------------|---------|--------|--------|-------|---------|-----------|-------------|-----
+Portal B2B clientes     |   ✅   |   ⚪   |   ⚪   |  ⚪   |   ✅   |    ⚪     |     ⚪      |  ✅
+App vendedor (PWA)      |   ✅   |   ⚪   |   ⚪   |  ⚪   |   ⚪   |    ⚪     |     ⚪      |  ✅
+Picking tablet          |   ✅   |   ✅   |   ⚪   |  ⚪   |   ⚪   |    ✅     |     ⚪      |  ✅
+Envases/Retornables     |   ✅   |   ⚪   |   ✅   |  ⚪   |   ⚪   |    ⚪     |     ⚪      |  ⚪
+Cadena de frío / IoT    |   ✅   |   ⚪   |   ✅   |  ✅   |   ⚪   |    ✅     |     ✅      |  ✅
+Historia clínica        |   ⚪   |   ⚪   |   ⚪   |  ✅   |   ⚪   |    ⚪     |     ✅      |  ⚪
+Vacunación/Desparasit.  |   ⚪   |   ⚪   |   ⚪   |  ⚪   |   ⚪   |    ⚪     |     ✅      |  ✅
+Ficha mascota/animal    |   ⚪   |   ⚪   |   ⚪   |  ⚪   |   ⚪   |    ⚪     |     ✅      |  ✅
+Ruteo GPS / POD         |   ✅   |   ⚪   |   ⚪   |  ⚪   |   ⚪   |    ⚪     |     ⚪      |  ✅
+Comisiones vendedores   |   ✅   |   ✅   |   ⚪   |  ✅   |   ✅   |    ⚪     |     ✅      |  ✅
+Control de obras soc.   |   ⚪   |   ⚪   |   ⚪   |  ✅   |   ⚪   |    ⚪     |     ⚪      |  ⚪
+Peluquería / turno rápido| ⚪   |   ⚪   |   ⚪   |  ✅   |   ✅   |    ⚪     |     ✅      |  ⚪
+BOM / Producción        |   ⚪   |   ⚪   |   ✅   |  ⚪   |   ⚪   |    ✅     |     ⚪      |  ⚪
+
+✅ = aplica y debe mostrarse | ⚪ = no aplica, ocultar del navbar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ANÁLISIS POR ÍTEM DE NAVBAR — QUÉ FALTA PARA SER ERP FUNCIONAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▌ DASHBOARD / INICIO
+  Falta:
+  - KPIs en tiempo real: ventas del día vs objetivo, caja actual, pedidos pendientes, deuda vencida, stock crítico
+  - Widgets configurables por rol (vendedor vs admin vs depósito vs cajero)
+  - Alertas activas en superficie (stock bajo mínimo, vencimientos próximos, cheques a vencer, facturas por cobrar)
+  - Acceso rápido a funciones más usadas (por rubro y rol)
+  - Gráfico ventas últimos 30 días vs mismo período año anterior
+  - Top 10 productos / clientes del período
+
+▌ VENTAS / POS
+  Falta:
+  - Múltiples medios de pago en una sola transacción (efectivo + débito + cuenta corriente)
+  - Gestión de cuenta corriente de clientes con límite de crédito configurable
+  - Descuentos por volumen / escalones (ej: +10 cajas → 5% off) configurables por lista de precios
+  - Precios diferenciados por lista (mayorista, minorista, distribuidor, mostrador)
+  - Integración con balanza (ítems pesables — aplica: carnicería, verdulería, deli)
+  - Apertura y cierre de caja por turno con cuadre de medios de pago
+  - Caja chica con movimientos y rendición
+  - Nota de crédito y devolución parcial
+  - Proforma / presupuesto con vigencia y conversión a pedido
+  - Retención de venta (suspender ticket y atender otro cliente)
+  - Fidelización: acumulación de puntos y canje (aplica: farmacia, veterinaria, retail)
+  - Talonario de facturación electrónica AFIP A/B/C con contingencia offline
+  - Remito electrónico ligado a la venta (aplica: distribución, industria)
+  - Redondeo automático a $0.50/$1 (inflación argentina)
+  - Tip / propina (aplica: gastronomía, delivery)
+  - Control de vuelto con sugerencia de billetes
+
+▌ COMPRAS / PROVEEDORES
+  Falta:
+  - Orden de compra con aprobación por monto (workflow de autorizaciones)
+  - Comparación de cotizaciones multi-proveedor
+  - Recepción parcial de mercadería con pendientes
+  - Control de calidad en recepción (aplica: alimentos, farmacia, veterinaria)
+  - Gestión de retenciones IIBB / Ganancias / IVA en compras (especificidad argentina)
+  - Percepciones por provincia (Rosario → Santa Fe)
+  - Conciliación de factura de proveedor vs orden de compra vs remito
+  - ABM de condiciones de pago (30/60/90 días, cheque, transferencia)
+  - Gestión de cheques propios emitidos y diferidos
+  - Importación de facturas electrónicas AFIP (XML ARCA/AFIP) desde proveedores
+  - Adjunto de remito y factura (PDF/imagen) por comprobante
+  - Planificación de pagos futuros (cash forecast semanal/mensual)
+  - Proveedores bloqueados por deuda o problema de calidad
+
+▌ INVENTARIO / STOCK
+  Falta:
+  - Múltiples depósitos con transferencias entre ellos
+  - Stock mínimo / máximo / punto de reorden por depósito y producto
+  - Trazabilidad completa por lote y número de serie
+  - Control de vencimientos con alertas configurables (X días antes)
+  - Gestión de envases / retornables (cajones, bidones, barriles — aplica: distribución bebidas)
+  - Inventario cíclico (contar por sector sin cerrar operación)
+  - Toma de inventario con soporte de pistola/escáner o app tablet
+  - Valorización por FIFO / LIFO / Promedio ponderado (configurable por rubro)
+  - Merma / rotura / ajuste con motivo y responsable
+  - Kits / combos (armar producto compuesto desde componentes)
+  - Matriz de variantes (talle/color/sabor/capacidad)
+  - Unidades de medida múltiples con conversión (caja→unidad→fracción)
+  - Producto con peso variable (aplica: carnicería, verdulería)
+  - Gestión de muestras / product placement (aplica: distribución)
+  - Cuarentena de stock (mercadería en revisión)
+
+▌ CLIENTES / CRM
+  Falta:
+  - Segmentación de clientes (canal, zona, categoría de riesgo, frecuencia de compra)
+  - Múltiples domicilios de entrega por cliente
+  - Múltiples contactos con rol (compras, pagos, recepción)
+  - Límite de crédito configurable con bloqueo automático al superarlo
+  - Score crediticio interno (días promedio de pago, cheques rechazados)
+  - Historial completo: ventas, cobros, reclamos, visitas del vendedor
+  - Clasificación ABC automática por facturación del período
+  - WhatsApp API: envío automático de facturas, estados de pedido, recordatorio de deuda
+  - Asignación de vendedor y zona por cliente
+  - Registro de visitas de vendedores en campo (con GPS y foto)
+  - Gestión de reclamos y notas de servicio
+  - Condición fiscal (Resp. Inscripto, Monotributista, Consumidor Final, Exento)
+  - CUIL/CUIT validado con API AFIP
+  - Padrón de clientes del exterior para exportaciones (aplica: industria, agro)
+
+▌ LOGÍSTICA / DISTRIBUCIÓN / ENTREGAS
+  Falta:
+  - Generación automática de hoja de ruta desde pedidos confirmados
+  - Optimización de recorrido (OSRM/Google Maps API — minimizar km)
+  - Asignación de vehículo y chofer por ruta
+  - POD completo: firma digital del receptor, foto de remito entregado, foto de mercadería, geolocalización con timestamp
+  - Motivos de no entrega parametrizables (ausente, rechazó, dirección incorrecta, etc.)
+  - Reintento de entrega con reprogramación
+  - Devolución en ruta (mercadería rechazada o en mal estado)
+  - Tracking en tiempo real del vehículo (para cliente y operador)
+  - Liquidación de flete a transportista tercero (costo por bulto, kg, km)
+  - KPIs de entregas: OTIF, % primera entrega exitosa, costo por entrega
+  - Integración con Andreani / OCA / correo argentino (aplica: e-commerce, industria)
+  - Gestión de zonas de entrega con días y horarios permitidos
+  - Control de temperatura en viaje (IoT — aplica: alimentos, medicamentos, bebidas)
+
+▌ COBRANZAS / CUENTAS POR COBRAR
+  Falta (módulo hoy ausente o muy incompleto):
+  - Aging de deuda por cliente (0-30, 31-60, 61-90, +90 días)
+  - Gestión de cheques recibidos: cartera, al cobro, cobrado, rebotado
+  - Conciliación bancaria automática (CBU origen + monto + fecha vs movimiento esperado)
+  - Recibo electrónico (vinculado a facturas que cancela, con saldo)
+  - Gestión de mora: interés configurable, carta documento, bloqueo de crédito
+  - Comisión de cobranza al cobrador en campo
+  - Rendición de cobranzas del día por cobrador
+  - Exportación de extracto de cuenta por cliente (PDF/email)
+  - Integración con Mercado Pago / Modo / transferencias (conciliación automática)
+
+▌ PEDIDOS / B2B (módulo NUEVO — aplica: distribución, mayorista, agro, fitness)
+  Falta: módulo completo. Ver sección 2 (Portal B2B).
+
+▌ FACTURACIÓN ELECTRÓNICA AFIP
+  Falta (profundizar lo existente):
+  - Soporte Factura A, B, C, M, NC/ND electrónica (ARCA/AFIP)
+  - Contingencia offline: factura manual con posterior envío por lote
+  - Gestión de puntos de venta múltiples (multi-sucursal, multi-empresa)
+  - Liquidación de IVA (libro IVA ventas/compras exportable para estudio contable)
+  - Percepciones y retenciones en ventas (IIBB Santa Fe / Rosario)
+  - Padrón ARCA: validación de condición impositiva de clientes/proveedores en tiempo real
+  - Comprobante de retención emitido (formato AFIP)
+  - Exportación a formatos contables (Tango, Bejerman, Xubio, Excel plano)
+  - Remito electrónico (COT para traslado de mercadería en Santa Fe)
+
+▌ REPORTES / BI
+  Falta:
+  - Dashboard de ventas por período, vendedor, zona, producto, categoría, cliente
+  - Reporte de margen bruto por producto/categoría
+  - Reporte de rotación de inventario (días de stock)
+  - Reporte de cobranzas y morosidad
+  - Reporte de comisiones de vendedores
+  - Reporte de productividad de picking (bultos/hora, errores)
+  - Exportación a Excel/CSV/PDF con filtros ad-hoc
+  - Reportes programados por email (diario/semanal/mensual)
+  - Comparativo vs período anterior (same-store sales)
+  - Benchmark de vendedores entre sí
+
+▌ CONFIGURACIÓN / PARAMETRIZACIÓN
+  Falta:
+  - Wizard de onboarding: selección de rubro → activa módulos relevantes → oculta el resto
+  - ABM de listas de precios con vigencia y clonación
+  - ABM de condiciones de pago
+  - ABM de zonas de venta / zonas de entrega
+  - ABM de motivos (no entrega, ajuste, devolución, reclamo)
+  - ABM de impuestos (alícuotas IVA, IIBB por provincia)
+  - ABM de numeración de comprobantes por punto de venta
+  - Control de acceso: roles + permisos granulares por módulo y acción
+  - Log de auditoría inmutable (quién hizo qué y cuándo)
+  - Multi-empresa / multi-sucursal con consolidación
+  - Backup automático programado
+  - Notificaciones configurables (email, push, WhatsApp) por evento
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PORTAL B2B — "EL CHINO HACE SU PEDIDO"
+   (aplica: distribución, mayorista, agro, fitness/wellness)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Módulo nuevo: /portal o subdominio portal.miempresa.com
+
+AUTENTICACIÓN
+  - Login con CUIT + contraseña (sin registro propio: el admin activa el cliente)
+  - Recupero de contraseña por email/SMS
+  - Sesión persistente en móvil (PWA installable)
+
+CATÁLOGO
+  - Lista de precios del cliente (precio segmentado, sin mostrar precio de otros segmentos)
+  - Fotos de productos, descripción, unidad de venta (caja/sixpack/unidad)
+  - Disponibilidad de stock en tiempo real (o stock oculto con solo "disponible/sin stock")
+  - Buscador por nombre, código, categoría
+  - Favoritos / lista habitual del cliente (basado en historial de compras)
+  - Oferta del día / promociones vigentes destacadas
+  - Filtros por categoría (gaseosas, cervezas, jugos, aguas)
+
+CARRITO Y PEDIDO
+  - Carrito persistente (no se pierde si cierra el navegador)
+  - Validación de mínimo de pedido (configurable por cliente/zona)
+  - Sugerencia de completar caja (si compró 9 y el mínimo es 12)
+  - Selección de fecha de entrega (dentro de los días habilitados para su zona)
+  - Observaciones por pedido y por línea
+  - Confirmación con resumen y número de pedido asignado
+
+HISTORIAL Y CUENTA
+  - Historial de pedidos con estado (pendiente/en preparación/en ruta/entregado)
+  - Descarga de remitos y facturas en PDF
+  - Estado de cuenta corriente: saldo actual, facturas vencidas, próximos vencimientos
+  - Pago online (Mercado Pago / transferencia bancaria) con conciliación automática
+  - Reclamos: formulario de reclamo por entrega, con foto adjunta
+
+NOTIFICACIONES (push/WhatsApp/email)
+  - Pedido recibido por el distribuidor
+  - Pedido en preparación (picking iniciado)
+  - Pedido despachado (con datos del chofer y horario estimado)
+  - Pedido entregado (con foto de POD)
+  - Factura disponible
+  - Recordatorio de deuda vencida
+
+BACKEND / ADMIN (lo que ve el operador del distribuidor)
+  - Cola de pedidos B2B en tiempo real
+  - Aprobación / rechazo / modificación de pedidos antes de confirmar
+  - Asignación a hoja de ruta de entrega
+  - Configuración de días y horarios de corte por zona
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. PWA / APP VENDEDOR EN CAMPO
+   (aplica: distribución, retail con vendedores externos, agro)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Acceso: /vendedor — PWA installable en Android/iOS, full responsive, sin app store
+
+CARTERA Y PLANIFICACIÓN
+  - Lista de clientes asignados con mapa de visitas del día
+  - Orden de visita optimizado por GPS
+  - Objetivo de venta del día / semana por cliente y zona
+  - Historial de última visita, último pedido, deuda actual
+
+TOMA DE PEDIDO EN CAMPO
+  - Catálogo con precios del cliente, con/sin fotos (modo liviano offline)
+  - Toma de pedido offline (sincroniza al recuperar señal — crítico para zonas con mala cobertura)
+  - Escaneo de código de barras con cámara del teléfono para agregar ítems
+  - Descuentos autorizados dentro del % máximo asignado al vendedor
+  - Creación de pedido → genera automáticamente tarea de picking y entrega
+
+COBRANZA EN CAMPO
+  - Registro de cobros: efectivo, transferencia, cheque
+  - Foto del cheque recibido (captura con cámara)
+  - Recibo generado al instante (PDF o WhatsApp al cliente)
+  - Rendición diaria de cobranzas al cerrar turno
+
+REGISTRO DE VISITA
+  - Check-in con geolocalización automática (registra que estuvo en el punto)
+  - Foto del frente del local o de la góndola (evidencia de visita)
+  - Motivo de no venta si no concretó pedido (parametrizable)
+  - Nota de visita libre para CRM
+
+COMISIONES
+  - El vendedor ve en tiempo real su comisión acumulada del período
+  - Detalle por venta, descuento aplicado, comisión neta
+  - Proyección al fin del mes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. MÓDULO PICKING — OPTIMIZADO PARA TABLET
+   (aplica: distribución, retail con depósito, industria, agro)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Acceso: /picking — diseño 100% táctil, fuente grande, sin hover states, sin teclado requerido
+
+GENERACIÓN DE LISTA
+  - Auto-generación desde pedidos confirmados (B2B, POS, vendedor)
+  - Agrupación por zona de depósito / pasillo / estante para minimizar recorrido
+  - Una lista por operario de picking (asignación por el supervisor)
+  - Prioridad por hora de corte de entrega
+
+EJECUCIÓN
+  - Pantalla de ítem actual: foto, nombre grande, cantidad a pickear, ubicación en depósito
+  - Confirmación por escaneo de código de barras (cámara tablet) o teclado numérico grande
+  - Control de lote y vencimiento al escanear (alerta si vencimiento muy próximo)
+  - Parcial: si no hay stock completo → registra faltante y continúa
+  - Botón de pausa de lista y reasignación
+
+CONTROL DE CALIDAD
+  - Peso verificado al pickear (si el producto tiene peso variable)
+  - Foto obligatoria para ítems frágiles o de alto valor (configurable por producto)
+  - Doble confirmación en ítems de alto riesgo
+
+CIERRE
+  - Al terminar: lista de faltantes para reposición urgente
+  - Genera el remito de salida vinculado a la hoja de ruta
+  - Productividad del operario: bultos/hora, tiempo total, errores (para KPI interno)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. INGENIERÍA NO MENCIONADA PERO CRÍTICA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▌ MOTOR DE PRECIOS Y DESCUENTOS
+  - Prioridad de reglas: lista base → descuento por cliente → descuento por cantidad → promoción temporal → cupón
+  - Escalones por cantidad (6u=0%, 12u=3%, 24u=6%, 48u=10%)
+  - Precio por unidad vs por caja con conversión automática
+  - Vigencia de precios (desde/hasta fecha)
+  - Precio de exportación / precio de mercado interno separados
+
+▌ MOTOR DE NOTIFICACIONES
+  - Eventos configurables por el admin (no hardcoded)
+  - Canales: email (Resend/SendGrid), WhatsApp Business API (Meta), push (Firebase FCM), SMS (Twilio)
+  - Plantillas editables con variables ({{cliente}}, {{monto}}, {{fecha}})
+  - Log de notificaciones enviadas con estado de entrega
+
+▌ MULTI-EMPRESA / MULTI-SUCURSAL
+  - Una instancia → N empresas con CUIT propios
+  - Stock separado por sucursal, consolidado para compras
+  - Transferencias inter-sucursal con remito interno
+  - P&L por sucursal
+
+▌ GESTIÓN DE CHEQUES (crítico Argentina)
+  - Cartera de cheques: propios emitidos y de terceros recibidos
+  - Estados: en cartera → al cobro → cobrado / rebotado / endosado
+  - Alerta de cheques a vencer en X días
+  - Endoso a proveedor (registra cesión)
+  - Rechazo: genera deuda automáticamente al cliente
+
+▌ CONCILIACIÓN BANCARIA
+  - Importación de extracto bancario (CSV/OFX de los bancos argentinos más usados: Galicia, BBVA, Santander, Macro, Provincia)
+  - Match automático por monto + fecha ± 2 días
+  - Partidas pendientes de conciliar con sugerencias
+  - Diferencias con explicación libre
+
+▌ FLUJO DE CAJA / TESORERÍA
+  - Forecast semanal y mensual de ingresos (cobranzas esperadas) vs egresos (pagos a proveedores, sueldos, impuestos)
+  - Posición de caja del día en tiempo real
+  - Gestión de cajas físicas por sucursal/caja/turno
+
+▌ LIQUIDACIÓN DE SUELDOS / COMISIONES (liviano, no reemplaza a SUELDOS)
+  - Cálculo de comisiones por vendedor por período
+  - Aplicación de bonos por superación de objetivo
+  - Exportación a liquidador externo (Excel)
+
+▌ IMPORTACIONES / ADUANA (aplica: industria, agro, distribución de importados)
+  - ABM de DUA / despacho de importación
+  - Costo de desaduanización prorrateado a productos
+  - Control de pólizas de seguro de transporte
+
+▌ INTEGRACIONES
+  - AFIP/ARCA: factura electrónica, padrón, COT, RG3685 (libro IVA digital)
+  - Mercado Libre (aplica: retail con e-commerce): sincronización de stock y pedidos
+  - Mercado Pago / Modo: cobros y conciliación
+  - WhatsApp Business API
+  - Google Maps / OSRM (ruteo y POD geo)
+  - Balanza electrónica (serial/Bluetooth)
+  - Impresora fiscal Epson TM-T20 y similares (nativa argentina)
+  - Pistola escáner Honeywell / Zebra (HID / USB)
+
+▌ SEGURIDAD Y AUDITORÍA
+  - JWT + refresh tokens; sesiones revocables
+  - Log de auditoría inmutable: entidad, acción, usuario, IP, timestamp, valor anterior/nuevo
+  - 2FA configurable (TOTP / SMS)
+  - Rate limiting por endpoint (evitar fuerza bruta en facturación)
+  - Backup cifrado automático (S3 / local) con punto de restauración por día
+
+▌ PERFORMANCE / ARQUITECTURA
+  - Soporte offline-first en PWA vendedor (IndexedDB + sync en background)
+  - Paginación server-side en todas las listas (evitar cargar 50.000 productos)
+  - Índices de DB en campos de búsqueda frecuente (CUIT, código producto, fecha, estado)
+  - Cola de trabajos (BullMQ) para: envío masivo de notificaciones, importación de catálogos, generación de PDF, sincronización AFIP
+  - Websockets para dashboard en tiempo real (caja, pedidos B2B, estados de entrega)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. EJEMPLO RUBRO: DISTRIBUIDORA DE GASEOSAS / CERVEZAS (ROSARIO)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Módulos activos: Ventas·POS, Compras, Inventario (multi-depósito + lotes + vencimientos),
+Clientes·CRM, Portal B2B, App Vendedor, Picking tablet, Logística·POD, Cobranzas,
+Facturación AFIP, Cheques, Conciliación, IoT (cadena de frío), Reportes.
+
+Flujos específicos que deben funcionar end-to-end:
+1. Vendedor visita kiosco → toma pedido en PWA offline → sincroniza → entra en cola de picking
+2. Kiosco entra al portal → hace su propio pedido → recibe confirmación por WhatsApp
+3. Picking en tablet: lista generada, ordenada por pasillo, escaneo de cada cajón, control lote/vencimiento
+4. Hoja de ruta optimizada (Rosario: zonas Norte/Sur/Centro/Oeste) → chofer con POD app
+5. Chofer entrega → foto remito firmado → factura electrónica generada al instante → WhatsApp al kiosco
+6. Kiosco paga con transferencia → conciliación automática → descarga factura del portal
+7. Cajones vacíos retornados → módulo envases: el kiosco tiene deuda de envases hasta devolver
+8. Cierre del día: cuadre de caja, rendición de cobranzas de vendedores, posición de cheques
+
+Maestros específicos del rubro (todos parametrizables):
+- Envase / Tipo de envase (cajón 24u, botellón 20L, barril 50L, sixpack)
+- Depósito de origen / punto de temperatura (heladera, temperatura ambiente)
+- Zona de entrega (Rosario Norte, Sur, Gran Rosario, Interior)
+- Vehículo (patente, tipo, capacidad en bultos/kg, refrigerado s/n)
+- Línea de producto (gaseosas, cervezas, aguas, jugos, energizantes)
+- Proveedor ligado a línea (Coca-Cola, Quilmes, Grupo Peñaflor)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. EJEMPLO RUBRO: VETERINARIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Módulos activos: POS (venta de productos y servicios), Inventario (medicamentos + vencimientos),
+Clientes·CRM (dueño), Pacientes (mascota), Agenda, Historia Clínica Veterinaria,
+Facturación AFIP, Reportes, Fidelización (puntos).
+
+Maestros específicos:
+- Paciente (mascota): nombre, especie (perro/gato/ave/exótico), raza, fecha nac., peso, sexo, esterilizado, color, microchip, foto
+- Propietario: CUIT/DNI, teléfono, email, dirección, mascotas a cargo
+- Médico veterinario: matrícula SENASA, especialidad, agenda propia
+- Práctica / Prestación: consulta, cirugía, internación/día, radiografía, ecografía (precio + duración estimada)
+- Plan sanitario: vacuna + fecha + vencimiento + lote → genera recordatorio automático
+- Medicamento: principio activo, presentación, laboratorio, temperatura almacenamiento, controlado s/n (psicotrópicos)
+- Diagnóstico (CIE-VET o código interno)
+- Dieta recomendada
+
+Flujos específicos:
+1. Turno: dueño pide turno online/WhatsApp → agenda muestra disponibilidad por profesional → recordatorio 24h antes por WhatsApp
+2. Consulta: apertura de HC del paciente, registro de peso/temperatura/motivo, diagnóstico, prescripción (descuenta stock de medicamentos), indicaciones
+3. Vacunación: marcar vacuna aplicada → genera próximo recordatorio automático (30 días / 1 año según vacuna)
+4. Internación: apertura de internación, registro de evolución diaria, alta con factura por días + prácticas
+5. Venta de accesorios / alimento balanceado: POS normal con fidelización (puntos acumulados)
+6. Cierre de turno: factura electrónica por consulta + productos + prácticas, cobro multi-medio
+7. Recordatorios masivos: campaña de antiparasitario estacional → push / WhatsApp a todos los pacientes activos
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. OTROS RUBROS RÁPIDOS (activar/desactivar por wizard)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FARMACIA
+  + Stock con vencimientos + lotes + controlados con libro de psicotrópicos
+  + Receta médica: número, profesional, retención de receta
+  + PAMI / obras sociales: autorización online, descuento en mostrador, liquidación diferida
+  + Troqueado (lectura de código ANMAT en medicamentos)
+  + Fidelización por puntos (Punto Farma style)
+
+FERRETERÍA / PINTORERÍA
+  + Variantes de color (mezcla de colores con fórmula — aplica pintorería)
+  + Venta por fracción (clavos por 100g, pintura por litro)
+  + Presupuesto por obra con ítems y cómputo de materiales
+  + Cuenta corriente de constructores / contratistas
+
+LIBRERÍA / BAZAR / JUGUETERÍA
+  + Temporadas (inicio de clases, navidad) con listas escolares
+  + Código de artículo interno + EAN con multi-código por producto
+
+PELUQUERÍA / BARBERÍA / SPA
+  + Agenda de turnos por profesional y box
+  + Comisión por servicio configurable por profesional
+  + Venta de productos en mostrador post-servicio
+  + Paquetes y abonos (10 cortes prepagos)
+
+CARNICERÍA / FIAMBRERÍA
+  + Integración balanza con tara y precio por kg
+  + Gestión de medias reses / primals con explosión de cortes (BOM inverso)
+  + Temperatura y fecha de faena por lote
+
+AGRO / ACOPIO (aplica: rosario tiene alto movimiento agrario)
+  + Contrato de compra de grano con condiciones de precio (Rosario Board)
+  + Tickets de balanza de pesaje
+  + Control de humedad y calidad al ingreso
+  + Liquidación al productor con retenciones AFIP rurales
+  + Portal del productor (igual que B2B pero para acopiar/vender grano)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. RESUMEN DE GAPS CRÍTICOS (PRIORIDAD PARA SPRINT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔴 BLOQUEANTES NUEVOS:
+  - Motor de precios y listas (sin esto ningún rubro puede cotizar correctamente)
+  - Apertura/cierre de caja con cuadre de medios de pago (POS básico inútil sin esto)
+  - Factura electrónica AFIP A/B/C con contingencia offline
+  - Límite de crédito + cuenta corriente de clientes (retail básico lo necesita)
+
+🟠 ALTA PRIORIDAD:
+  - Portal B2B (diferenciador de negocio para distribuidoras)
+  - PWA vendedor con offline-first
+  - Picking tablet con generación automática desde pedidos
+  - Gestión de cheques (imprescindible en mercado argentino)
+  - Envases / retornables (bloqueante para distribuidoras de bebidas)
+  - POD completo (firma + foto + geo)
+  - WhatsApp Business API (notificaciones)
+
+🟡 MEDIA PRIORIDAD:
+  - Conciliación bancaria
+  - Comisiones de vendedores
+  - Trazabilidad de lotes / vencimientos completa
+  - Multi-depósito con transferencias
+  - Reportes de margen y rotación
+
+🟢 BAJA PRIORIDAD (post-MVP):
+  - Importación extracto bancario automático
+  - Ruteo con OSRM
+  - Integración Mercado Libre
+  - BOM / Producción (industria)
+  - Módulo agro / acopio

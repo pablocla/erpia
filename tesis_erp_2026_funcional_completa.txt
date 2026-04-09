@@ -1,0 +1,1208 @@
+================================================================================
+  TESIS DE INGENIERÍA FUNCIONAL — ERP 2026
+  MÓDULO IMPOSITIVO INTEGRAL CON CUMPLIMIENTO MULTI-LATAM
+  
+  Versión extendida: Ciclos operativos completos
+  (Compras, Ventas, Logística, Financiero, Contable)
+  
+  Normativa vigente: marzo 2026
+  Chile (SII) · Argentina (ARCA) · México (SAT)
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE I — RESUMEN EJECUTIVO Y OBJETIVOS
+════════════════════════════════════════════════════════════════════════════════
+
+1. RESUMEN EJECUTIVO
+────────────────────
+
+El presente documento define la ingeniería funcional completa de un sistema ERP
+2026, con el módulo impositivo/tributario como componente central e indispensable.
+
+A diferencia de un enfoque puramente técnico, esta tesis recorre los CICLOS
+OPERATIVOS REALES de una empresa — compras, ventas, logística, finanzas,
+contabilidad — y en cada paso identifica:
+
+  • Qué documento tributario se genera o se recibe
+  • Qué validaciones fiscales son obligatorias
+  • Qué asiento contable se dispara automáticamente
+  • Qué normativa específica aplica (Chile, Argentina, México)
+
+El enfoque es Multi-LATAM: arquitectura con motor de reglas fiscales configurable
+por país, permitiendo incorporar nuevas jurisdicciones sin rediseño.
+
+DATOS CLAVE 2026:
+  → Chile: Anexo Técnico 2.5 obligatorio desde 01/05/2026 (Res. Ex. SII N°154/2025)
+  → Argentina: RG ARCA 5824/2026 amplía facturación electrónica desde 01/07/2026
+  → México: RMF 2026 con CFDI 4.0 catálogos actualizados + Carta Porte 3.1
+
+
+2. OBJETIVOS
+────────────
+
+  1. Definir los requisitos funcionales de un ERP moderno Multi-LATAM 2026.
+  2. Recorrer cada ciclo operativo (compras, ventas, logística, financiero,
+     contable) identificando los puntos de contacto con el módulo impositivo.
+  3. Especificar la integración con autoridades tributarias (SII, ARCA, SAT).
+  4. Proveer pseudocódigo, diagramas de flujo y matrices de trazabilidad normativa.
+  5. Servir como base técnica para implementación o evaluación de soluciones ERP.
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE II — CONTEXTO NORMATIVO 2026
+════════════════════════════════════════════════════════════════════════════════
+
+3. CHILE — SERVICIO DE IMPUESTOS INTERNOS (SII)
+────────────────────────────────────────────────
+
+3.1 Marco general
+  • Facturación electrónica obligatoria desde 2018 (Ley 20.727).
+  • Documentos Tributarios Electrónicos (DTE) en formato XML firmado digitalmente.
+  • Validación previa por el SII antes de tener validez tributaria.
+
+3.2 Cambios 2025-2026
+
+  Resolución Exenta N°154/2025 (05/11/2025):
+    - Nuevos requisitos para guías de despacho y traslado de bienes muebles.
+    - Información OBLIGATORIA en guías de despacho:
+      · Dirección de origen y destino
+      · Identificación del transporte: patente, conductor, transportista
+      · Descripción detallada de bienes: cantidad, peso/volumen, precio unitario
+      · Naturaleza del movimiento: venta, traslado interno, devolución, consignación
+
+  Anexo Técnico 2.5 (publicado 20/02/2026):
+    - Nuevos esquemas XSD para factura afecta (tipo 33) y exenta (tipo 34).
+    - Nodos adicionales en la estructura XML para mayor trazabilidad.
+    - Cambios específicos para sector madera + cambios generales para todos.
+    - OBLIGATORIO desde 01/05/2026. Sin prórrogas informadas.
+
+  Resolución Exenta N°53/2025:
+    - Obligación de entregar boleta electrónica al consumidor en venta presencial.
+    - Desde mayo 2025: entrega impresa si hay impresora (POS).
+    - Desde marzo 2026: entrega digital (email, SMS, WhatsApp, QR) si no hay impresora.
+
+  Resolución Exenta N°99/2025:
+    - Plataformas de pago y marketplaces deben verificar inicio de actividades
+      de vendedores/proveedores registrados.
+
+3.3 Documentos tributarios electrónicos (DTE) que el ERP debe soportar
+
+  Código | Documento                          | Uso principal
+  ─────────────────────────────────────────────────────────────────────
+  33     | Factura electrónica afecta          | Ventas B2B con IVA
+  34     | Factura electrónica exenta          | Ventas exentas de IVA
+  39     | Boleta electrónica afecta           | Ventas B2C con IVA
+  41     | Boleta electrónica exenta           | Ventas B2C exentas
+  46     | Factura de compra electrónica       | Compras a terceros (cambio sujeto)
+  52     | Guía de despacho electrónica        | Traslado de bienes
+  56     | Nota de débito electrónica          | Aumento de monto
+  61     | Nota de crédito electrónica         | Anulación/devolución
+  43     | Liquidación-factura electrónica     | Operaciones de consignación
+
+3.4 Infraestructura requerida
+  • Certificado digital vigente (X.509)
+  • Folios CAF (Código de Autorización de Folios) — solicitud y renovación automática
+  • Timbre electrónico PDF417
+  • Registro de Compras y Ventas (RCV) — envío mensual automático
+  • Libros electrónicos de compra y venta
+
+
+4. ARGENTINA — ARCA (EX AFIP)
+──────────────────────────────
+
+4.1 Marco general
+  • Facturación electrónica vía webservices (WSAA + WSFEv1/WSFEX/WSCT).
+  • Comprobantes clase A, B, C, E, M según condición IVA emisor/receptor.
+  • CAE (Código de Autorización Electrónico) online como modalidad principal.
+
+4.2 Cambios 2025-2026
+
+  RG 5824/2026 (13/02/2026) — CAMBIO ESTRUCTURAL:
+    - Amplía universo de obligados a facturación electrónica desde 01/07/2026:
+      · Directores de SA, socios gerentes de SRL (por honorarios)
+      · Profesionales con honorarios judiciales (abogados, peritos, auxiliares)
+      · Colegios privados, prepagas, entidades financieras (Ley 21.526)
+      · Administradoras de tarjetas de crédito
+    - Crea el "Comprobante de Liquidación Electrónica Mensual":
+      · Un único comprobante por cliente por mes (para emisores de alto volumen)
+      · Emisión hasta último día del mes, puesta a disposición en 10 días
+    - Umbral de identificación: operaciones > $10.000.000 ARS requieren
+      datos completos del consumidor final (CUIT/CUIL obligatorio).
+    - Vinculación punto de venta ↔ actividad económica (para IVA Simple).
+    - Objetivo: "facturación total" para finales de 2026.
+
+  RG 5782/2025:
+    - CAEA pasa a ser excepcional (solo contingencia).
+    - Prioriza emisión online vía CAE desde junio 2026.
+
+  RG 5762/2025:
+    - Simplifica régimen de habilitación de comprobantes clase A.
+    - Evaluación cuatrimestral automática del comportamiento fiscal.
+
+  RG 5616/2024:
+    - Operaciones en moneda extranjera: obligatorio consignar tipo de cambio
+      vendedor del BNA del día hábil anterior.
+    - Condición ante IVA del comprador obligatoria en todos los comprobantes.
+
+4.3 Webservices que el ERP debe integrar
+
+  Servicio | Función                                | Autenticación
+  ─────────────────────────────────────────────────────────────────────
+  WSAA     | Autenticación y autorización            | Certificado digital
+  WSFEv1   | Factura electrónica (mercado interno)   | Token WSAA
+  WSFEX    | Factura de exportación                  | Token WSAA
+  WSCT     | Comprobantes de turismo                 | Token WSAA
+  WSCDC    | Constatación de comprobantes            | Token WSAA
+  PadronA5 | Consulta de datos de contribuyentes     | Token WSAA
+
+4.4 Tipos de comprobante
+
+  Tipo  | Clase | Emisor → Receptor
+  ─────────────────────────────────────────────────
+  FC A  | A     | Resp. Inscripto → Resp. Inscripto
+  FC B  | B     | Resp. Inscripto → Consumidor Final / Monotributo / Exento
+  FC C  | C     | Monotributo → Cualquiera
+  FC E  | E     | Exportación
+  FC M  | M     | Nuevo inscripto (control especial)
+  NC/ND | A/B/C | Notas de crédito y débito (misma clase que original)
+  REC   | A/B/C | Recibo (asociado a cobranza)
+
+
+5. MÉXICO — SERVICIO DE ADMINISTRACIÓN TRIBUTARIA (SAT)
+───────────────────────────────────────────────────────
+
+5.1 Marco general
+  • CFDI (Comprobante Fiscal Digital por Internet) versión 4.0.
+  • Timbrado obligatorio vía PAC (Proveedor Autorizado de Certificación).
+  • CSD (Certificado de Sello Digital) para firma.
+  • Catálogos del SAT como "columna vertebral" de la facturación.
+
+5.2 Cambios 2025-2026
+
+  RMF 2026 (publicada 28/12/2025 en DOF):
+    - Regla 2.7.1.1: Almacenamiento obligatorio de CFDI en XML.
+    - Regla 2.7.1.2: Cumplimiento estricto del Anexo 20 para generación y sellado.
+    - Regla 2.7.1.8: Complementos publicados son de uso obligatorio.
+    - Regla 2.7.1.21: CFDI global (público en general) — RESICO solo mensual.
+    - Regla 2.7.1.34: Cancelación requiere aceptación del receptor en 3 días.
+    - Regla 2.7.1.35: Cancelación sin aceptación: montos ≤ $1.000, nómina, egresos, traslado.
+
+  Catálogos CFDI 4.0 actualizados al 13/02/2026:
+    - Más de 55.000 claves en c_ClaveProdServ.
+    - Actualización de c_NumPedimentoAduana, regímenes fiscales, formas de pago.
+    - Claves obsoletas causan rechazo automático de timbrado.
+
+  Carta Porte 3.1 (obligatoria desde julio 2024):
+    - Catálogos actualizados al 13/01/2026 (material peligroso IATA 2026).
+    - Validaciones 2026 más estrictas:
+      · Coordenadas exactas de origen/destino (no aproximadas)
+      · Descripción detallada de mercancía (no "productos varios")
+      · Verificación automática de placas vehiculares
+      · Control de peso vs. capacidad del vehículo
+    - Multas: hasta $97.330 MXN por documento con errores.
+
+  Guía de llenado actualizada 29/12/2025:
+    - Productos con nicotina: obligatorio indicar peso de tabaco, cantidad
+      de cigarros, miligramos de nicotina.
+
+  Cancelación CFDI 2026:
+    - Hidrocarburos y ciertas claves de combustible en Carta Porte:
+      requieren aceptación EXPRESA del receptor (sin aceptación tácita).
+
+5.3 Tipos de CFDI
+
+  Tipo     | Uso                              | Complementos posibles
+  ─────────────────────────────────────────────────────────────────────
+  Ingreso  | Ventas, servicios, arrendamiento | Carta Porte, Pagos, etc.
+  Egreso   | Notas de crédito, devoluciones   | —
+  Traslado | Movimiento de mercancías propias  | Carta Porte (obligatorio)
+  Pago     | REP (Recepción de Pagos)         | Complemento de Pagos
+  Nómina   | Sueldos y salarios               | Complemento Nómina
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE III — CICLOS OPERATIVOS CON NORMATIVA FISCAL
+════════════════════════════════════════════════════════════════════════════════
+
+================================================================================
+6. CICLO DE COMPRAS: ORDEN DE COMPRA → REMITO → FACTURA PROVEEDOR
+================================================================================
+
+6.1 FLUJO FUNCIONAL COMPLETO
+─────────────────────────────
+
+  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │ Solicitud   │───>│ Orden de    │───>│ Recepción   │───>│ Factura     │
+  │ de compra   │    │ compra (OC) │    │ + Remito    │    │ proveedor   │
+  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+        │                  │                  │                  │
+        │                  │                  │                  │
+        v                  v                  v                  v
+  Sin impacto       Sin impacto       Impacto en          Impacto fiscal
+  fiscal directo    fiscal directo    inventario          COMPLETO
+                    (puede generar    (valorización       (IVA crédito,
+                     anticipo con     de stock)            retenciones,
+                     factura)                              contabilización)
+
+6.2 PASO A PASO CON NORMATIVA
+──────────────────────────────
+
+PASO 1: SOLICITUD DE COMPRA (INTERNA)
+  • Documento interno, sin impacto tributario.
+  • Funciones: identificar necesidad, presupuesto, aprobaciones internas.
+  • El ERP debe: validar disponibilidad presupuestaria, workflow de aprobación.
+
+PASO 2: ORDEN DE COMPRA (OC)
+  • Documento que formaliza el compromiso de compra con el proveedor.
+  • Impacto fiscal INDIRECTO:
+    - Si la OC genera un anticipo, puede requerir factura de anticipo:
+      · Argentina: Comprobante tipo A/B/C según condición IVA.
+      · México: CFDI de ingreso del proveedor (anticipo según regla SAT).
+      · Chile: Factura de anticipo si corresponde.
+  • El ERP debe:
+    - Validar datos fiscales del proveedor: RUT (CL), CUIT (AR), RFC (MX).
+    - Verificar que el proveedor esté activo ante la autoridad tributaria.
+    - Verificar condición ante IVA del proveedor (Resp. Inscripto, Monotributo, etc.).
+    - Almacenar condiciones comerciales (precios, moneda, incoterms si importación).
+
+  Normativa aplicable:
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ Chile: Validar RUT activo en SII. Verificar giro/actividad económica. │
+  │ Argentina: Validar CUIT en padrón ARCA (PadronA5). RG 5616 exige     │
+  │   condición IVA del proveedor. Si hay anticipo, solicitar CAE.        │
+  │ México: Validar RFC en lista del SAT. Verificar régimen fiscal.       │
+  │   Catálogo c_RegimenFiscal debe coincidir con lo declarado ante SAT.  │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+PASO 3: RECEPCIÓN DE MERCADERÍA + REMITO
+  • El proveedor entrega la mercadería con un remito o guía de despacho.
+  • Impacto:
+    - Ingreso a inventario (valorización de stock).
+    - Control de cantidades recibidas vs. OC.
+    - Verificación de calidad.
+  • Desde la perspectiva fiscal:
+    - En Chile: El proveedor emite la Guía de Despacho (DTE 52) con toda la
+      información logística exigida por la Res. 154/2025 (origen, destino,
+      transporte, descripción de bienes). El ERP receptor debe registrarla.
+    - En Argentina: El remito no es un documento fiscal per se, pero el COT
+      (Código de Operación de Transporte) puede ser exigido por algunas
+      provincias (ej: Buenos Aires, ARBA). El ERP debe soportar generación
+      o recepción de COT según jurisdicción.
+    - En México: Si el proveedor transporta, debe emitir CFDI con Carta Porte
+      3.1 (tipo Traslado o Ingreso según caso). El receptor debe verificar
+      que el complemento esté correcto.
+
+  El ERP debe:
+    - Registrar la recepción con match contra OC (3-way matching: OC ↔ Remito ↔ Factura).
+    - Actualizar stock valorizado.
+    - Registrar datos logísticos del remito/guía recibido.
+    - NO generar asiento contable de gasto aún (eso ocurre con la factura).
+    - Generar asiento de mercadería en tránsito si la entrega es parcial.
+
+PASO 4: FACTURA DE PROVEEDOR (RECEPCIÓN DE DTE/CFDI)
+  • Este es el PUNTO CRÍTICO FISCAL del ciclo de compras.
+  • La factura del proveedor genera:
+    - Reconocimiento del gasto/activo.
+    - Crédito fiscal de IVA.
+    - Posibles retenciones (según régimen del comprador).
+    - Asiento contable automático.
+
+  Validaciones que el ERP DEBE realizar al recibir factura del proveedor:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ VALIDACIONES COMUNES (todos los países):                               │
+  │  1. Match contra OC y remito (3-way matching de cantidades y precios)  │
+  │  2. Datos fiscales del emisor coinciden con lo registrado              │
+  │  3. Cálculo de IVA correcto según tasas vigentes                      │
+  │  4. Moneda y tipo de cambio correctos                                 │
+  │  5. Fecha de emisión dentro de período fiscal válido                   │
+  │  6. Documento no duplicado (control de folio/CAE/UUID)                 │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  Chile (SII):
+    - Verificar que el DTE aparezca en el RCV (Registro de Compras y Ventas).
+    - Validar firma digital y timbre electrónico.
+    - Decidir: Aceptar / Reclamar / Aceptar con reclamo parcial.
+    - PLAZO: 8 días para reclamar ante el SII (Art. 3° Ley 19.983).
+    - El crédito fiscal de IVA se reconoce al registrar en libro de compras.
+    - Si es factura cedible, verificar estado en Registro Público de Cesión.
+
+  Argentina (ARCA):
+    - Verificar CAE válido en servicio WSCDC (Constatación de Comprobantes).
+    - Validar condición IVA del emisor vs. tipo de comprobante (A, B, C).
+    - Calcular y aplicar retenciones según régimen del comprador:
+      · Retención de IVA (RG 2854): según padrón de alícuotas ARCA.
+      · Retención de Ganancias (RG 830): según escala y tipo de renta.
+      · Retención SUSS (si aplica).
+      · Retenciones provinciales (IIBB): según convenio multilateral.
+    - Generar certificado de retención.
+    - Registrar en Libro IVA Digital / IVA Simple.
+
+  México (SAT):
+    - Verificar que el CFDI tenga UUID válido y esté activo (no cancelado).
+    - Validar que el RFC del emisor coincida con el registrado.
+    - Verificar catálogos: c_ClaveProdServ, c_UsoCFDI, c_FormaPago.
+    - El comprador debe indicar el UsoCFDI correcto al solicitar la factura:
+      · G01 (Adquisición de mercancías), G03 (Gastos en general), etc.
+    - IVA acreditable: solo si el CFDI cumple todos los requisitos del Art. 29-A CFF.
+    - Si el pago es diferido: el proveedor debe emitir CFDI de Pago (REP)
+      al momento del cobro. El IVA se acredita con el REP, no con la factura.
+
+  ASIENTO CONTABLE AUTOMÁTICO (al registrar factura proveedor):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  Ejemplo: Compra de mercadería $10.000 + IVA 21% (Argentina)          │
+  │                                                                        │
+  │  DEBE                              │  HABER                            │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  Mercaderías           $10.000,00  │                                   │
+  │  IVA Crédito Fiscal     $2.100,00  │                                   │
+  │                                    │  Proveedores        $11.830,00    │
+  │                                    │  Ret. IVA a pagar      $180,00   │
+  │                                    │  Ret. Ganancias         $90,00   │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  TOTAL                 $12.100,00  │  TOTAL              $12.100,00    │
+  │                                                                        │
+  │  (Retenciones calculadas según alícuotas del padrón ARCA y RG 830)    │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  PSEUDOCÓDIGO — Registro de factura proveedor:
+
+  FUNCIÓN registrarFacturaProveedor(factura, OC, remito):
+      // 1. Validar documento fiscal
+      validarDatosFiscales(factura.emisor, país)
+      verificarAutenticidad(factura, país)  // SII→RCV, ARCA→WSCDC, SAT→UUID
+      
+      // 2. Three-way matching
+      SI NOT matchOCRemitoFactura(OC, remito, factura):
+          generarExcepción("DISCREPANCIA_MATCHING", diferencias)
+          REQUIERE aprobación manual
+      
+      // 3. Calcular retenciones (si aplica)
+      retenciones = motorReglas.calcularRetenciones(factura, empresa, país)
+      
+      // 4. Generar asiento contable
+      asiento = generarAsientoCompra(factura, retenciones)
+      contabilidad.registrar(asiento)
+      
+      // 5. Actualizar libro de compras
+      libroCompras.agregar(factura, período)
+      
+      // 6. Registrar crédito fiscal
+      SI factura.tieneIVA:
+          registrarCréditoFiscal(factura.montoIVA, período)
+      
+      // 7. Generar certificados de retención
+      PARA CADA ret EN retenciones:
+          generarCertificadoRetención(ret, factura.emisor)
+      
+      // 8. Actualizar deuda con proveedor
+      cuentasPagar.registrar(factura.montoNeto - retenciones.total)
+      
+      RETORNAR éxito
+
+
+================================================================================
+7. CICLO DE VENTAS: PEDIDO → REMITO → FACTURA CLIENTE
+================================================================================
+
+7.1 FLUJO FUNCIONAL COMPLETO
+─────────────────────────────
+
+  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │ Pedido de   │───>│ Preparación │───>│ Remito /    │───>│ Factura     │
+  │ venta       │    │ + picking   │    │ Guía desp.  │    │ electrónica │
+  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+        │                  │                  │                  │
+        v                  v                  v                  v
+  Compromiso         Reserva de        IMPACTO FISCAL      IMPACTO FISCAL
+  comercial          inventario        (guía/remito con    COMPLETO
+  (sin impacto                         datos logísticos    (DTE/CFDI + IVA
+   fiscal)                             obligatorios)       débito + asiento)
+
+7.2 PASO A PASO CON NORMATIVA
+──────────────────────────────
+
+PASO 1: PEDIDO DE VENTA
+  • Documento comercial que formaliza el compromiso de venta.
+  • Sin impacto fiscal directo (no genera DTE ni CFDI).
+  • El ERP debe:
+    - Validar datos fiscales del cliente ANTES de aceptar el pedido:
+      · RUT activo en SII (Chile)
+      · CUIT activo y condición IVA en ARCA (Argentina)
+      · RFC válido y régimen fiscal en SAT (México)
+    - Determinar tipo de comprobante a emitir según condición del cliente:
+      · Chile: Factura (33/34) si es B2B, Boleta (39/41) si es B2C.
+      · Argentina: FC A (RI→RI), FC B (RI→CF/Mono/Ex), FC C (Mono→cualquiera).
+      · México: CFDI Ingreso con UsoCFDI según lo que indique el cliente.
+    - Verificar precios y aplicar impuestos según configuración:
+      · IVA estándar (19% CL, 21% AR, 16% MX)
+      · IVA reducido/diferenciado por producto (canasta básica, medicamentos, etc.)
+      · Impuestos específicos (ej: IEPS México, impuestos internos Argentina)
+    - Reservar stock si corresponde.
+    - Calcular fecha estimada de entrega.
+
+  Normativa aplicable:
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ Chile: Si el cliente es empresa, debe tener RUT e inicio de actividad │
+  │   vigente. Si es consumidor final, se emitirá boleta (con datos       │
+  │   obligatorios desde marzo 2026 si es digital).                       │
+  │ Argentina: RG 5616 → condición IVA del comprador obligatoria en       │
+  │   comprobante. Si operación > $10M → CUIT/CUIL obligatorio del CF.   │
+  │   Si es moneda extranjera → tipo de cambio vendedor BNA obligatorio. │
+  │ México: UsoCFDI lo define el receptor. RFC y régimen fiscal deben     │
+  │   coincidir con lo registrado ante el SAT. Catálogos actualizados.   │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+PASO 2: PREPARACIÓN Y PICKING
+  • Proceso interno de almacén: reserva, picking, packing.
+  • Sin impacto fiscal directo.
+  • El ERP debe preparar datos para el siguiente paso (remito/guía):
+    - Cantidades exactas despachadas (pueden diferir del pedido).
+    - Lotes, series, fechas de vencimiento.
+    - Peso, volumen, descripción detallada de cada ítem.
+
+PASO 3: REMITO / GUÍA DE DESPACHO
+  • Documento que acompaña la mercadería en tránsito.
+  • IMPACTO FISCAL SIGNIFICATIVO en 2026 (especialmente Chile y México).
+
+  Chile — Guía de Despacho Electrónica (DTE tipo 52):
+    Es un DTE completo que debe emitirse ANTES del traslado.
+    Requisitos Res. 154/2025 (obligatorios desde 01/05/2026):
+      • Dirección de origen (almacén/sucursal emisora)
+      • Dirección de destino (dirección del cliente/sucursal destino)
+      • Datos del transportista:
+        - Razón social o nombre
+        - RUT del transportista
+        - Patente del vehículo
+        - Nombre del conductor
+      • Descripción detallada de bienes:
+        - Cantidad por ítem
+        - Peso y/o volumen
+        - Precio unitario referencial
+      • Tipo de traslado:
+        - Venta (acompaña factura posterior)
+        - Traslado interno (entre sucursales)
+        - Devolución
+        - Consignación
+        - Exportación
+      • Válida para UN solo envío y UN solo vehículo.
+    
+    NOTA: La guía de despacho NO sustituye a la factura. Si el traslado
+    es por venta, la factura debe emitirse dentro de los plazos legales.
+
+  Argentina — Remito + COT (según provincia):
+    • El remito es un documento comercial (no tributario federal).
+    • PERO: algunas provincias exigen COT electrónico:
+      - Buenos Aires (ARBA): COT obligatorio para traslados.
+      - Córdoba, Santa Fe, Mendoza: regulaciones provinciales variables.
+    • El ERP debe soportar generación de COT según jurisdicción.
+    • Si el traslado es de exportación: requiere factura tipo E + MIC/DTA.
+
+  México — CFDI con Carta Porte 3.1:
+    • Si la empresa transporta mercancía propia: CFDI tipo Traslado + Carta Porte.
+    • Si contrata transportista: el transportista emite CFDI tipo Ingreso + Carta Porte.
+    • Requisitos obligatorios:
+      - Coordenadas exactas de origen y destino (lat/long)
+      - Descripción detallada de mercancía (clave SAT c_ClaveProdServ)
+      - Placas vehiculares (validación automática)
+      - Datos del operador (nombre, RFC, licencia)
+      - Material peligroso: claves IATA 2026
+      - Peso bruto total vs. capacidad del vehículo
+    • Debe emitirse ANTES de iniciar el traslado.
+    • El conductor debe portarla (impresa o digital) durante todo el trayecto.
+    • Multas por incumplimiento: hasta $97.330 MXN por documento.
+
+  ASIENTO CONTABLE (al emitir remito/guía — solo si afecta stock):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  Ejemplo: Despacho de mercadería (costo $8.000)                       │
+  │                                                                        │
+  │  DEBE                              │  HABER                            │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  CMV (Costo Mercadería Vendida)    │  Mercaderías           $8.000,00  │
+  │                        $8.000,00   │                                   │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  (El ingreso se reconoce con la factura, no con el remito)            │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+PASO 4: FACTURA ELECTRÓNICA AL CLIENTE
+  • PUNTO CRÍTICO FISCAL del ciclo de ventas.
+  • Genera: reconocimiento de ingreso, IVA débito fiscal, asiento contable completo.
+
+  El ERP debe ejecutar el siguiente proceso:
+
+  1. Determinar tipo de documento según país y cliente:
+     - Chile: DTE 33 (afecta), 34 (exenta), 39/41 (boleta B2C)
+     - Argentina: FC A, B, C, E según condiciones IVA emisor/receptor
+     - México: CFDI Ingreso con complementos que apliquen
+
+  2. Calcular impuestos via motor de reglas:
+     - IVA (tasa general + diferenciadas por producto)
+     - Impuestos específicos (IEPS México, Imp. Internos Argentina)
+     - Retenciones que pudiera sufrir el emisor (cambio de sujeto)
+
+  3. Generar XML según esquema del país:
+     - Chile: XML según Anexo Técnico 2.5 (desde 01/05/2026)
+     - Argentina: Request JSON/XML al WSFEv1 para obtener CAE
+     - México: XML según Anexo 20, envío a PAC para timbrado
+
+  4. Firmar digitalmente:
+     - Chile: Firma X.509 + timbre PDF417
+     - Argentina: Firma del request al WSAA
+     - México: Sellado con CSD
+
+  5. Enviar a autoridad tributaria y obtener autorización:
+     - Chile: Envío al SII → TrackID → Aceptado/Rechazado
+     - Argentina: Envío al WSFEv1 → CAE + fecha vencimiento
+     - México: Envío al PAC → UUID (folio fiscal) + sello SAT
+
+  6. Generar representación impresa / digital:
+     - Chile: PDF con timbre PDF417 (obligatoria entrega al cliente)
+     - Argentina: PDF con CAE, código QR con datos de verificación
+     - México: PDF con cadena original, sello digital, QR de verificación
+
+  7. Registrar en libros:
+     - Chile: RCV automático (el SII lo registra)
+     - Argentina: Libro IVA Digital / IVA Simple
+     - México: Archivo XML obligatorio
+
+  ASIENTO CONTABLE AUTOMÁTICO (al emitir factura de venta):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  Ejemplo: Venta $10.000 + IVA 21% (Argentina, FC tipo A)             │
+  │                                                                        │
+  │  DEBE                              │  HABER                            │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  Deudores por Ventas  $12.100,00   │                                   │
+  │                                    │  Ventas               $10.000,00  │
+  │                                    │  IVA Débito Fiscal     $2.100,00  │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │                                                                        │
+  │  Si hay retención sufrida (ej: cambio de sujeto IVA en Chile):        │
+  │  Deudores por Ventas  $11.720,00   │                                   │
+  │  Retención IVA sufrida   $380,00   │                                   │
+  │                                    │  Ventas               $10.000,00  │
+  │                                    │  IVA Débito Fiscal     $2.100,00  │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  PSEUDOCÓDIGO — Emisión de factura de venta:
+
+  FUNCIÓN emitirFacturaVenta(pedido, remito, país, empresa):
+      // 1. Validar datos del cliente
+      cliente = validarDatosFiscalesCliente(pedido.cliente, país)
+      
+      // 2. Determinar tipo de documento
+      tipoDoc = determinarTipoDocVenta(empresa.condIVA, cliente.condIVA, país)
+      
+      // 3. Calcular impuestos
+      items = construirDetalle(pedido.items, remito.cantidadesEntregadas)
+      impuestos = motorReglas.calcularImpuestosVenta(items, país, empresa)
+      
+      // 4. Verificar folios/certificados
+      SI país == "CL":
+          folio = obtenerFolioCAF(tipoDoc, empresa)
+          SI folio.disponibles < UMBRAL_MINIMO:
+              solicitarNuevosFoliosCAF(empresa, tipoDoc)
+      
+      // 5. Generar documento fiscal
+      SEGÚN país:
+          CASO "CL":
+              xml = generarDTE_SII(tipoDoc, items, impuestos, empresa, cliente)
+              xmlFirmado = firmarConCertificadoDigital(xml, empresa.certificado)
+              respuesta = enviarAlSII(xmlFirmado)
+          CASO "AR":
+              request = construirRequestWSFE(tipoDoc, items, impuestos, empresa, cliente)
+              tokenAuth = autenticarWSAA(empresa.certificado)
+              respuesta = invocarWSFEv1(request, tokenAuth)
+          CASO "MX":
+              xml = generarCFDI40(tipoDoc, items, impuestos, empresa, cliente)
+              xmlSellado = sellarConCSD(xml, empresa.csd)
+              respuesta = enviarAPAC(xmlSellado, empresa.pac)
+      
+      // 6. Procesar respuesta
+      SI respuesta.estado == "ACEPTADO":
+          factura = registrarFactura(respuesta, items, impuestos)
+          generarAsientoVenta(factura)
+          generarRepresentacionImpresa(factura, país)
+          actualizarCuentasPorCobrar(factura)
+          RETORNAR éxito(factura)
+      SINO:
+          registrarRechazo(respuesta)
+          notificarUsuario(respuesta.motivo)
+          RETORNAR error(respuesta.motivo)
+
+
+================================================================================
+8. CICLO FINANCIERO: COBROS, PAGOS Y MEDIOS DE PAGO
+================================================================================
+
+8.1 FLUJO DE COBRANZAS
+───────────────────────
+
+  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │ Factura     │───>│ Gestión de  │───>│ Cobro       │───>│ Registro    │
+  │ emitida     │    │ cobranza    │    │ recibido    │    │ + asiento   │
+  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                              │
+                                              v
+                                     ┌─────────────────┐
+                                     │ Impacto fiscal:  │
+                                     │ REP (México)     │
+                                     │ Recibo (Arg)     │
+                                     │ Conciliación     │
+                                     └─────────────────┘
+
+  Medios de cobro que el ERP debe soportar:
+    • Efectivo (con restricciones según umbral fiscal)
+    • Transferencia bancaria
+    • Cheque (al día / diferido)
+    • Tarjeta de crédito / débito
+    • E-cheq (Argentina)
+    • Pagaré electrónico
+    • Compensación (contra notas de crédito)
+    • Retenciones sufridas (se descuentan del cobro)
+
+  NORMATIVA FISCAL EN COBRANZAS:
+
+  México — CFDI de Pago (REP - Recepción de Pagos):
+    • OBLIGATORIO cuando el pago se realiza en fecha diferente a la factura.
+    • El proveedor debe emitir CFDI tipo Pago con complemento de Pagos.
+    • El IVA del comprador se acredita con el REP, NO con la factura original.
+    • Regla 2.7.1.32 RMF 2026: plazos de emisión del REP.
+    • Cada pago parcial genera un REP individual.
+    
+  Argentina — Recibo electrónico:
+    • El recibo es un comprobante asociado que registra el cobro.
+    • Si el cliente aplica retenciones al pagar:
+      · Retención de IVA: descuenta del monto a cobrar, genera crédito.
+      · Retención de Ganancias: ídem.
+      · Retención IIBB: según jurisdicción.
+      · El ERP debe registrar las retenciones sufridas como crédito fiscal.
+    • Desde RG 5824: los recibos deben facturarse electrónicamente.
+
+  Chile:
+    • No existe un "recibo fiscal" formal, pero el cobro se concilia contra
+      el RCV y la factura emitida.
+    • Si la factura fue cedida (factoring), el cobro lo recibe el cesionario.
+    • Verificar estado de cesión en Registro Público de Cesión del SII.
+
+  ASIENTO CONTABLE — Cobro con retenciones (Argentina):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  Ejemplo: Cobro de factura $12.100 con retenciones                    │
+  │                                                                        │
+  │  DEBE                              │  HABER                            │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  Banco c/c             $11.250,00  │                                   │
+  │  Ret. IVA sufrida         $500,00  │                                   │
+  │  Ret. Ganancias sufrida   $200,00  │                                   │
+  │  Ret. IIBB sufrida        $150,00  │                                   │
+  │                                    │  Deudores por Ventas $12.100,00   │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  (Las retenciones sufridas son crédito a favor del contribuyente)     │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+8.2 FLUJO DE PAGOS A PROVEEDORES
+─────────────────────────────────
+
+  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │ Factura     │───>│ Autorización│───>│ Ejecución   │───>│ Registro    │
+  │ aprobada    │    │ de pago     │    │ del pago    │    │ + asiento   │
+  └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                              │
+                                              v
+                                     ┌─────────────────────┐
+                                     │ Impacto fiscal:      │
+                                     │ Retenciones aplicadas│
+                                     │ Certificados emitidos│
+                                     │ OP registrada        │
+                                     └─────────────────────┘
+
+  Medios de pago que el ERP debe soportar:
+    • Transferencia bancaria (principal en todos los países)
+    • Cheque (al día / diferido)
+    • E-cheq (Argentina)
+    • Efectivo (con restricciones legales)
+    • Compensación (contra notas de crédito del proveedor)
+    • Débito automático
+
+  NORMATIVA FISCAL EN PAGOS:
+
+  Al momento de pagar, el ERP DEBE:
+
+  1. Calcular retenciones a aplicar al proveedor:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │ Argentina (es el país con mayor complejidad de retenciones):           │
+  │                                                                        │
+  │ Retención         │ Normativa    │ Base de cálculo                     │
+  │ ──────────────────────────────────────────────────────────────────────  │
+  │ IVA               │ RG 2854      │ Monto neto gravado × alícuota      │
+  │                   │              │ (padrón ARCA, se actualiza mensual) │
+  │ Ganancias         │ RG 830       │ Monto neto - mínimo no imponible   │
+  │                   │              │ × alícuota según tipo de renta      │
+  │ SUSS              │ RG 1769      │ Si proveedor de servicios de limpieza│
+  │                   │              │ o seguridad                         │
+  │ IIBB (por prov.)  │ Varies       │ Según padrón provincial (ARBA, etc)│
+  │ ──────────────────────────────────────────────────────────────────────  │
+  │ TOTAL RETENIDO = IVA + Ganancias + SUSS + IIBB                       │
+  │ NETO A PAGAR = Factura bruta - Retenciones                            │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  Chile:
+    • Retención de honorarios (boleta de prestación de servicios): actualmente
+      14,5% para año tributario 2026 (incremento gradual hasta 17%).
+    • Si la empresa es agente de retención de IVA (cambio de sujeto):
+      retiene IVA al proveedor y lo declara en F29.
+
+  México:
+    • Retención de ISR e IVA según tipo de servicio:
+      · Servicios profesionales: 10% ISR
+      · Arrendamiento: 10% ISR
+      · Fletes: 4% ISR
+    • Las retenciones se documentan en el mismo CFDI del proveedor.
+
+  2. Emitir Orden de Pago (OP):
+     • Documento interno que autoriza la salida de fondos.
+     • Asocia factura(s) + retenciones + medio de pago.
+
+  3. Emitir certificados de retención:
+     • Argentina: certificados electrónicos (RG 2233/RG 3726).
+       Se generan mensualmente y se informan a ARCA vía SICORE.
+     • Chile: certificados de retención de honorarios (DDJJ 1879).
+     • México: el certificado está implícito en el CFDI.
+
+  4. Registrar SICORE / declaración de retenciones:
+     • Argentina: SICORE mensual (declaración de retenciones/percepciones).
+     • Chile: F29 mensual incluye retenciones practicadas.
+
+  ASIENTO CONTABLE — Pago a proveedor con retenciones (Argentina):
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  Ejemplo: Pago factura $12.100 con retenciones aplicadas              │
+  │                                                                        │
+  │  DEBE                              │  HABER                            │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  Proveedores          $12.100,00   │                                   │
+  │                                    │  Banco c/c           $11.430,00   │
+  │                                    │  Ret. IVA a pagar       $380,00   │
+  │                                    │  Ret. Ganancias         $200,00   │
+  │                                    │  Ret. IIBB              $90,00    │
+  │  ─────────────────────────────────────────────────────────────────────  │
+  │  (Las cuentas "Ret. a pagar" se cancelan al presentar SICORE/F29)    │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+9. INGENIERÍA FUNCIONAL CONTABLE Y FINANCIERA
+================================================================================
+
+9.1 CONTABILIDAD GENERAL — REQUISITOS FUNCIONALES
+───────────────────────────────────────────────────
+
+  El módulo contable debe ser 100% integrado con el módulo impositivo:
+  NUNCA debe requerirse un asiento manual para registrar un hecho fiscal.
+
+  Funciones obligatorias:
+
+  1. Plan de cuentas configurable por país/empresa:
+     - Cuentas de IVA: Crédito Fiscal, Débito Fiscal, IVA No Computable,
+       IVA Proporcional, IVA Retenido.
+     - Cuentas de retenciones: por tipo (IVA, Ganancias, IIBB, ISR) y
+       por dirección (sufridas = activo, aplicadas = pasivo).
+     - Cuentas de impuestos por pagar: IVA a pagar, Retenciones a depositar,
+       Anticipos de impuestos, Provisión de impuesto a las ganancias/renta.
+
+  2. Asientos automáticos por evento fiscal:
+     ┌──────────────────────────────────────────────────────────────────────┐
+     │ Evento                      │ Asiento generado automáticamente      │
+     │ ────────────────────────────────────────────────────────────────────│
+     │ Factura de venta emitida    │ Deudores / Ventas + IVA Débito       │
+     │ Factura proveedor registrada│ Compras + IVA Crédito / Proveedores  │
+     │ Nota de crédito emitida     │ Reverso de venta + IVA               │
+     │ Nota de crédito recibida    │ Proveedores / Compras + reverso IVA  │
+     │ Cobro de cliente            │ Banco / Deudores (+ret. sufridas)    │
+     │ Pago a proveedor            │ Proveedores / Banco (+ret. aplicadas)│
+     │ Retención practicada        │ Proveedores / Ret. a depositar       │
+     │ Retención sufrida           │ Ret. a favor / Deudores              │
+     │ Depósito de retenciones     │ Ret. a depositar / Banco             │
+     │ Liquidación de IVA mensual  │ IVA Débito / IVA Crédito / IVA pagar│
+     │ Pago de IVA                 │ IVA a pagar / Banco                  │
+     │ Diferencia de cambio        │ Resultado +/- / Deudores-Proveedores │
+     └──────────────────────────────────────────────────────────────────────┘
+
+  3. Cierre fiscal automático:
+     - Cálculo de posición IVA mensual (débito - crédito = saldo).
+     - Generación de DJ de IVA (F29 Chile, DDJJ IVA Argentina, declaración México).
+     - Provisión de impuesto a las ganancias/renta trimestral/anual.
+     - Ajuste por inflación contable (Argentina: RT 6/NIC 29).
+     - Diferencias de cambio por operaciones en moneda extranjera.
+
+  4. Conciliación bancaria con impacto fiscal:
+     - Match de pagos/cobros con movimientos bancarios.
+     - Identificación de retenciones bancarias (percepciones IIBB, etc.).
+     - Registro automático de percepciones sufridas (crédito fiscal).
+
+9.2 LIQUIDACIÓN DE IVA — PROCESO MENSUAL
+──────────────────────────────────────────
+
+  PSEUDOCÓDIGO — Liquidación mensual de IVA:
+
+  FUNCIÓN liquidarIVAMensual(período, empresa, país):
+      // 1. Totalizar débito fiscal (ventas)
+      débitoFiscal = sumarLibroVentas(período, "IVA_DEBITO")
+      
+      // 2. Totalizar crédito fiscal (compras)
+      créditoFiscal = sumarLibroCompras(período, "IVA_CREDITO")
+      
+      // 3. Ajustes
+      SI país == "AR":
+          // Prorrateo de crédito fiscal si hay operaciones exentas
+          créditoComputable = prorratearCréditoFiscal(créditoFiscal, empresa)
+          // Retenciones y percepciones a favor
+          retencionesAfavor = sumarRetencionesSufridas(período, "IVA")
+          percepcionesAfavor = sumarPercepcionesSufridas(período, "IVA")
+      SINO:
+          créditoComputable = créditoFiscal
+          retencionesAfavor = 0
+          percepcionesAfavor = 0
+      
+      // 4. Calcular saldo
+      saldoIVA = débitoFiscal - créditoComputable - retencionesAfavor - percepcionesAfavor
+      
+      SI saldoIVA > 0:
+          // IVA a pagar
+          generarAsiento("IVA Débito Fiscal", "IVA Crédito Fiscal", "IVA a Pagar", saldoIVA)
+          generarVencimientoPago(saldoIVA, país)
+      SINO:
+          // Saldo a favor (arrastrar al siguiente período)
+          registrarSaldoAFavor(ABS(saldoIVA), período + 1)
+      
+      // 5. Generar declaración jurada
+      SEGÚN país:
+          CASO "CL": generarF29(período, débitoFiscal, créditoFiscal, saldoIVA)
+          CASO "AR": generarDJJIVA(período, débitoFiscal, créditoComputable,
+                                    retencionesAfavor, percepcionesAfavor, saldoIVA)
+          CASO "MX": generarDeclaraciónMensual(período, saldoIVA)
+      
+      // 6. Generar SICORE (Argentina) — retenciones/percepciones practicadas
+      SI país == "AR":
+          generarSICORE(período, empresa)
+      
+      RETORNAR { saldoIVA, débitoFiscal, créditoComputable }
+
+
+9.3 ESTADOS FINANCIEROS CON APERTURA FISCAL
+─────────────────────────────────────────────
+
+  El ERP debe generar estados financieros con apertura fiscal automática:
+
+  BALANCE GENERAL — Cuentas fiscales mínimas:
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │ ACTIVO                                                              │
+  │   Activo Corriente:                                                 │
+  │     IVA Crédito Fiscal                                              │
+  │     Retenciones de IVA sufridas (a favor)                           │
+  │     Retenciones de Ganancias/ISR sufridas (a favor)                 │
+  │     Retenciones IIBB sufridas (a favor)                             │
+  │     Anticipos de impuestos                                          │
+  │     Saldo a favor IVA períodos anteriores                           │
+  │     Créditos fiscales por exportación (Chile/Argentina)             │
+  │                                                                     │
+  │ PASIVO                                                              │
+  │   Pasivo Corriente:                                                 │
+  │     IVA Débito Fiscal                                               │
+  │     IVA a Pagar (neto del período)                                  │
+  │     Retenciones IVA a depositar (aplicadas a proveedores)           │
+  │     Retenciones Ganancias/ISR a depositar                           │
+  │     Retenciones IIBB a depositar                                    │
+  │     SUSS a depositar                                                │
+  │     Provisión Impuesto a las Ganancias/Renta                        │
+  │     Cargas sociales a pagar                                         │
+  │     Impuestos específicos a pagar (IEPS, internos, etc.)            │
+  │                                                                     │
+  │ ESTADO DE RESULTADOS                                                │
+  │   Impuesto a las ganancias/renta (corriente + diferido)             │
+  │   Impuestos sobre ingresos brutos (Argentina)                       │
+  │   Impuestos internos / específicos                                  │
+  └──────────────────────────────────────────────────────────────────────┘
+
+
+9.4 REPORTES FINANCIEROS FISCALES
+───────────────────────────────────
+
+  Reportes que el módulo debe generar automáticamente:
+
+  PERIÓDICOS (mensuales):
+    • Libro IVA Ventas / Compras (Chile: integrado en RCV)
+    • Libro IVA Digital / IVA Simple (Argentina)
+    • Posición de IVA con detalle de crédito/débito
+    • SICORE — retenciones y percepciones practicadas (Argentina)
+    • F29 (Chile) — declaración mensual
+    • Declaración mensual IVA (México)
+    • Conciliación de saldos de cuentas fiscales
+
+  ANUALES:
+    • DDJJ Ganancias / Impuesto a la Renta
+    • DDJJ 1879 (Chile) — retenciones de honorarios
+    • DDJJ 1887 (Chile) — retenciones de sueldos
+    • Declaración anual personas morales (México)
+    • Informativa de operaciones con terceros (DIOT México)
+    • Balances certificados con notas fiscales
+
+  AD-HOC:
+    • Dashboard de cumplimiento fiscal en tiempo real
+    • Alertas de vencimiento de DDJJ y pagos
+    • Proyección de carga impositiva
+    • Detección de anomalías (IA)
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE IV — ARQUITECTURA Y STACK TECNOLÓGICO
+════════════════════════════════════════════════════════════════════════════════
+
+10. ARQUITECTURA FUNCIONAL GENERAL
+────────────────────────────────────
+
+  Módulos del ERP y su integración con el motor impositivo:
+
+  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+  │   VENTAS    │  │  COMPRAS    │  │  LOGÍSTICA  │  │   RRHH/     │
+  │ Pedido→Fact │  │  OC→Fact    │  │ Guía/Remito │  │   NÓMINA    │
+  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+         │                │                │                │
+         └────────────────┴────────────────┴────────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │    MÓDULO IMPOSITIVO    │
+                    │  (Motor de Reglas)      │
+                    │                         │
+                    │  • Config fiscal/país   │
+                    │  • Cálculo impuestos    │
+                    │  • Generación XML/DTE   │
+                    │  • Firma digital        │
+                    │  • Comunicación con AT  │
+                    │  • Retenciones          │
+                    │  • Libros electrónicos  │
+                    │  • Conciliación         │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │    CONTABILIDAD /       │
+                    │    FINANZAS             │
+                    │                         │
+                    │  • Asientos automáticos │
+                    │  • Mayor general        │
+                    │  • Liquidación IVA      │
+                    │  • Estados financieros  │
+                    │  • Conciliación bancaria│
+                    │  • Tesorería            │
+                    └────────────┬────────────┘
+                                 │
+                    ┌────────────▼────────────┐
+                    │  INTEGRACIONES EXTERNAS │
+                    │                         │
+                    │  • SII (Chile)          │
+                    │  • ARCA/WSFE (Argentina)│
+                    │  • PAC/SAT (México)     │
+                    │  • Bancos               │
+                    │  • E-commerce           │
+                    └─────────────────────────┘
+
+11. STACK TECNOLÓGICO RECOMENDADO
+──────────────────────────────────
+
+  Capa              │ Tecnología / Enfoque
+  ──────────────────────────────────────────────────────────────────────
+  Arquitectura      │ Monolito modular, API-first, event-driven
+  Backend           │ TypeScript / Python, microservicios para integraciones
+  Frontend          │ React / Next.js, responsive, PWA (offline-first)
+  Base de datos     │ PostgreSQL (multi-tenant), Redis (caché), message queue
+  XML / Firma       │ Generación nativa XML/JSON, firma X.509, PDF417
+  Cloud             │ Cloud-native con opción on-premise híbrida
+  IA / ML           │ Detección anomalías fiscales, predicción normativa
+  Motor de reglas   │ Configurable por país (sin hardcodeo de tasas)
+  Offline           │ Sincronización eventual para operación sin conectividad
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE V — METODOLOGÍA, BENEFICIOS Y CONCLUSIONES
+════════════════════════════════════════════════════════════════════════════════
+
+12. METODOLOGÍA DE IMPLEMENTACIÓN
+───────────────────────────────────
+
+  Fase 1: Requisitos (4-6 semanas)
+    • Entrevistas: contadores, auditores, usuarios logísticos, tesorería.
+    • Análisis de normativa vigente por país.
+    • Definición de casos de uso y criterios de aceptación.
+    • Entregables: documento de requisitos, matriz normativa, casos de uso UML.
+
+  Fase 2: Diseño (4-6 semanas)
+    • Modelado UML: secuencia, clases, componentes.
+    • Diseño del motor de reglas fiscales.
+    • Prototipado de UI para emisión masiva.
+    • Entregables: arquitectura técnica, diseño de motor de reglas, prototipos.
+
+  Fase 3: MVP (8-12 semanas)
+    • Core: emisión, firma, envío de DTE/CFDI.
+    • Integración con sandbox de cada autoridad tributaria.
+    • Ciclo de compras y ventas completo con asientos automáticos.
+    • Entregables: MVP funcional, suite de tests, integración sandbox.
+
+  Fase 4: Validación (4-6 semanas)
+    • Pruebas de aceptación con usuarios reales.
+    • Escenarios de rechazo y contingencia.
+    • Certificación ante autoridad tributaria.
+    • Entregables: certificación, informe de pruebas, plan de contingencia.
+
+  Fase 5: Producción (2-4 semanas)
+    • Deploy progresivo por empresa/país.
+    • Monitoreo y alertas en tiempo real.
+
+  Fase 6: Evolución (continuo)
+    • Actualizaciones normativas (CI/CD).
+    • Incorporación de nuevos países.
+    • Mejora continua con métricas de cumplimiento.
+
+
+13. BENEFICIOS
+───────────────
+
+  • Reducción de errores fiscales: automatización elimina errores manuales.
+  • Ahorro operativo: declaraciones, libros y conciliaciones automáticas.
+  • Trazabilidad total: audit trail completo para auditorías.
+  • Preparación regulatoria: motor de reglas permite adaptarse sin interrupción.
+  • Ventaja competitiva: operar en múltiples países sin integraciones ad-hoc.
+  • Visibilidad financiera: posición fiscal en tiempo real para decisiones.
+
+
+14. CONCLUSIONES
+─────────────────
+
+  Un ERP 2026 sin un módulo impositivo robusto no solo genera riesgos de
+  multas y rechazos de documentos, sino que pierde eficiencia operativa por
+  retrabajo manual y conciliaciones tardías.
+
+  El módulo impositivo NO es un complemento opcional: es el CORAZÓN DEL
+  CUMPLIMIENTO en un ERP moderno.
+
+  Las tendencias regulatorias en Latinoamérica apuntan hacia un control
+  fiscal en tiempo real cada vez más estricto, con validación cruzada de
+  datos logísticos, financieros y tributarios.
+
+  RECOMENDACIONES FINALES:
+    1. Diseñar el módulo como pluggable para multi-país.
+    2. Incluir actualizaciones automáticas de esquemas XSD/catálogos vía API.
+    3. Considerar integración con motores de tax externos para complejidades globales.
+    4. Invertir en equipo de compliance regulatorio por jurisdicción.
+    5. Automatizar TODOS los asientos contables derivados de hechos fiscales.
+    6. Nunca separar el flujo operativo (OC→Remito→Factura) del flujo fiscal.
+
+
+════════════════════════════════════════════════════════════════════════════════
+PARTE VI — ANEXOS
+════════════════════════════════════════════════════════════════════════════════
+
+ANEXO A — MATRIZ DE REQUISITOS VS. NORMATIVA
+──────────────────────────────────────────────
+
+  Requisito Funcional                    │ Chile (SII) │ Argentina (ARCA) │ México (SAT)
+  ────────────────────────────────────────────────────────────────────────────────────────
+  Emisión factura electrónica XML        │ DTE         │ WSFE + CAE       │ CFDI 4.0
+  Firma digital X.509                    │ Sí          │ Sí               │ Sí (CSD)
+  Validación previa por autoridad        │ SII directo │ CAE online       │ PAC + SAT
+  Notas de crédito/débito electrónicas   │ DTE 61/56   │ Sí               │ CFDI Egreso
+  Guía de despacho / Carta Porte         │ DTE 52      │ COT provincial   │ CP 3.1
+  Datos transporte obligatorios          │ Res. 154    │ Parcial          │ CP 3.1
+  Coordenadas origen/destino             │ No exigido  │ No exigido       │ Sí (CP 3.1)
+  Boleta electrónica B2C                 │ DTE 39/41   │ FC tipo B        │ CFDI Global
+  Libro compras/ventas electrónico       │ RCV         │ Libro IVA Digital│ No aplica
+  Declaración jurada automática          │ F29 + DDJJ  │ IVA + Ganancias  │ Decl. mensual
+  Conciliación con autoridad             │ RCV         │ Mis Comprobantes │ Visor CFDI
+  Multi-moneda con tipo de cambio        │ Sí          │ Sí (RG 5616)     │ Sí
+  Retenciones en pagos                   │ Honorarios  │ IVA+Gan+IIBB     │ ISR+IVA
+  Liquidación mensual consolidada        │ No aplica   │ Sí (RG 5824)     │ CFDI Global
+  CFDI de Pago (REP)                     │ No aplica   │ No aplica        │ Obligatorio
+  Certificado de retención               │ DDJJ 1879   │ SICORE           │ En CFDI
+  Umbral identificación consumidor       │ No espec.   │ $10M ARS         │ No espec.
+  CAEA / contingencia offline            │ No aplica   │ Sí (excepcional) │ No aplica
+
+
+ANEXO B — GLOSARIO DE TÉRMINOS TRIBUTARIOS
+────────────────────────────────────────────
+
+  DTE      Documento Tributario Electrónico (Chile)
+  CFDI     Comprobante Fiscal Digital por Internet (México)
+  CAE      Código de Autorización Electrónico (Argentina)
+  CAEA     Código de Autorización Electrónico Anticipado (Argentina)
+  CAF      Código de Autorización de Folios (Chile)
+  PAC      Proveedor Autorizado de Certificación (México)
+  CSD      Certificado de Sello Digital (México)
+  RCV      Registro de Compras y Ventas (Chile)
+  RUT      Rol Único Tributario (Chile)
+  CUIT     Clave Única de Identificación Tributaria (Argentina)
+  RFC      Registro Federal de Contribuyentes (México)
+  WSAA     Web Service de Autenticación y Autorización (Argentina)
+  WSFEv1   Web Service de Factura Electrónica v1 (Argentina)
+  WSFEX    Web Service de Factura de Exportación (Argentina)
+  WSCT     Web Service de Comprobantes de Turismo (Argentina)
+  WSCDC    Web Service de Constatación de Comprobantes (Argentina)
+  REP      Recepción de Pagos (complemento CFDI México)
+  SICORE   Sistema de Control de Retenciones (Argentina)
+  COT      Código de Operación de Transporte (Argentina, provincial)
+  IIBB     Impuesto sobre Ingresos Brutos (Argentina, provincial)
+  IEPS     Impuesto Especial sobre Producción y Servicios (México)
+  ISR      Impuesto Sobre la Renta (México)
+  F29      Formulario 29 — declaración mensual de IVA (Chile)
+  RMF      Resolución Miscelánea Fiscal (México)
+  SAF-T    Standard Audit File for Tax (estándar OECD)
+  PDF417   Simbología de código de barras 2D (timbre electrónico Chile)
+  RESICO   Régimen Simplificado de Confianza (México)
+  IVA Simple  Esquema simplificado de declaración IVA (Argentina, 2026)
+  3-way match  Conciliación OC ↔ Remito ↔ Factura
+  Motor de reglas  Software que aplica reglas fiscales configurables
+
+
+ANEXO C — BIBLIOGRAFÍA Y REFERENCIAS NORMATIVAS
+──────────────────────────────────────────────────
+
+  CHILE:
+  [CL-01] SII. Resolución Exenta N°154, 05/11/2025.
+  [CL-02] SII. Anexo Técnico v2.5, publicado 20/02/2026. Obligatorio 01/05/2026.
+  [CL-03] SII. Instructivo Técnico Emisión DTE. https://www.sii.cl/factura_electronica/
+  [CL-04] SII. Resolución Exenta N°53/2025. Entrega boleta electrónica.
+  [CL-05] SII. Resolución Exenta N°99/2025. Plataformas digitales.
+
+  ARGENTINA:
+  [AR-01] ARCA. RG 5824/2026, 13/02/2026. Liquidación electrónica mensual.
+  [AR-02] ARCA. RG 5782/2025. CAEA excepcional, prioridad CAE.
+  [AR-03] ARCA. RG 5762/2025. Simplificación régimen facturación.
+  [AR-04] ARCA. RG 5616/2024. Tipo de cambio y condición IVA comprador.
+  [AR-05] ARCA. Documentación webservices: https://www.afip.gob.ar/ws/
+  [AR-06] ARCA. RG 2854 (retenciones IVA), RG 830 (retenciones Ganancias).
+
+  MÉXICO:
+  [MX-01] SAT. RMF 2026, publicada 28/12/2025 en DOF.
+  [MX-02] SAT. Anexo 20 RMF. Catálogos actualizados 13/02/2026.
+  [MX-03] SAT. Carta Porte 3.1. Catálogos actualizados 13/01/2026.
+  [MX-04] SAT. Guía de llenado CFDI 4.0, actualizada 29/12/2025.
+  [MX-05] SAT. Regla 2.7.1.34 RMF 2026. Cancelación de CFDI.
+
+  GENERALES:
+  [GEN-01] OECD. Tax Administration 2023.
+  [GEN-02] EDICOM Group. Electronic Invoicing in Chile, 2026.
+  [GEN-03] LLB Solutions. Anexo Técnico 2.5 SII, febrero 2026.
+  [GEN-04] VATabout. Argentina ARCA invoicing rules, febrero 2026.
+  [GEN-05] ISO/IEC 19845:2015. UBL 2.1.
+
+
+================================================================================
+  FIN DEL DOCUMENTO
+  Versión: 1.0 — Marzo 2026
+  Formato: TXT extendido con ciclos operativos completos
+  Alcance: Multi-LATAM (Chile, Argentina, México)
+================================================================================

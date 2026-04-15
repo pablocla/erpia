@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
+import { invalidateContextCache } from "@/lib/ai"
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    invalidateContextCache(ctx.auth.empresaId)
     return NextResponse.json(producto, { status: 201 })
   } catch (error) {
     console.error("Error al crear producto:", error)

@@ -11,6 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ScanLine, Plus, Search, CheckCircle2, Clock, AlertCircle, ListChecks } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface LineaPicking {
   id: number
@@ -98,6 +103,8 @@ export default function PickingPage() {
   }, [])
 
   useEffect(() => { fetchListas(); fetchProductos() }, [fetchListas, fetchProductos])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: fetchListas, onNew: () => { setForm(initialForm); setError(""); setDialogOpen(true) } }))
 
   const agregarLinea = () => setLineas([...lineas, { descripcion: "", cantidadPedida: "1", ubicacion: "", productoId: "" }])
   const actualizarLinea = (idx: number, campo: keyof NuevaLinea, valor: string) => {
@@ -201,10 +208,6 @@ export default function PickingPage() {
 
       {/* Filtros */}
       <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por número u operario..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-        </div>
         <Select value={filtroEstado} onValueChange={setFiltroEstado}>
           <SelectTrigger className="w-44"><SelectValue placeholder="Estado" /></SelectTrigger>
           <SelectContent>
@@ -219,70 +222,29 @@ export default function PickingPage() {
 
       {/* Tabla */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Zona</TableHead>
-                <TableHead>Operario</TableHead>
-                <TableHead>Prioridad</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Progreso</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
-              ) : listas.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay listas de picking</TableCell></TableRow>
-              ) : listas.map((lista) => {
-                const totalItems = lista.lineas.length
-                const completos = lista.lineas.filter((l) => l.cantidadPicada >= l.cantidadPedida).length
-                const progreso = totalItems > 0 ? Math.round((completos / totalItems) * 100) : 0
-                return (
-                  <TableRow key={lista.id}>
-                    <TableCell className="font-mono font-medium">{lista.numero}</TableCell>
-                    <TableCell>{lista.zonaAlmacen || "—"}</TableCell>
-                    <TableCell>{lista.operario || "—"}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${PRIORIDAD_COLORS[lista.prioridad] || ""}`}>
-                        {lista.prioridad}
-                      </span>
-                    </TableCell>
-                    <TableCell>{totalItems}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${progreso}%` }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{completos}/{totalItems}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${ESTADO_COLORS[lista.estado] || "bg-gray-100 text-gray-700"}`}>
-                        {lista.estado}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setListaSeleccionada(lista); setDetalleDialogOpen(true) }}>
-                          <ListChecks className="h-3 w-3" /> Picar
-                        </Button>
-                        {lista.estado === "pendiente" && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Iniciar" onClick={() => cambiarEstado(lista.id, "en_proceso")}>
-                            <Clock className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<ListaPicking>
+            data={listas}
+            columns={[
+              { key: "numero", header: "Número", sortable: true, cell: (l) => <span className="font-mono font-medium">{l.numero}</span> },
+              { key: "zonaAlmacen", header: "Zona", cell: (l) => l.zonaAlmacen || "—" },
+              { key: "operario", header: "Operario", cell: (l) => l.operario || "—" },
+              { key: "prioridad", header: "Prioridad", cell: (l) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${PRIORIDAD_COLORS[l.prioridad] || ""}`}>{l.prioridad}</span> },
+              { key: "lineas" as any, header: "Items", cell: (l) => l.lineas.length, exportFn: (l) => String(l.lineas.length) },
+              { key: "progreso" as any, header: "Progreso", cell: (l) => { const total = l.lineas.length; const completos = l.lineas.filter((ln) => ln.cantidadPicada >= ln.cantidadPedida).length; const pct = total > 0 ? Math.round((completos / total) * 100) : 0; return <div className="flex items-center gap-2"><div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} /></div><span className="text-xs text-muted-foreground">{completos}/{total}</span></div> } },
+              { key: "estado", header: "Estado", cell: (l) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${ESTADO_COLORS[l.estado] || "bg-gray-100 text-gray-700"}`}>{l.estado}</span> },
+              { key: "acciones" as any, header: "", cell: (l) => <div className="flex gap-1" onClick={e => e.stopPropagation()}><Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setListaSeleccionada(l); setDetalleDialogOpen(true) }}><ListChecks className="h-3 w-3" /> Picar</Button>{l.estado === "pendiente" && <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Iniciar" onClick={() => cambiarEstado(l.id, "en_proceso")}><Clock className="h-3.5 w-3.5" /></Button>}</div> },
+            ] as DataTableColumn<ListaPicking>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar lista..."
+            searchKeys={["numero", "operario", "zonaAlmacen"]}
+            exportFilename="listas-picking"
+            loading={loading}
+            emptyMessage="No hay listas de picking"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin listas" description="Creá una lista de picking." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

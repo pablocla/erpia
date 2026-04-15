@@ -1,0 +1,601 @@
+══════════════════════════════════════════════════════════════════════════════
+KOBOX — PROMPT MAESTRO PARA v0 / CURSOR / COPILOT
+Versión: 2.0 — Plataforma Completa (ERP + IA + Marketing + Community)
+Última actualización: Abril 2026
+══════════════════════════════════════════════════════════════════════════════
+
+== POSICIONAMIENTO ESTRATÉGICO ==
+
+KoBox NO es una agencia de automatización. KoBox es una PLATAFORMA TECNOLÓGICA
+que vende 4 líneas de negocio monetizables desde el día 1:
+
+  1. NegocioOS — ERP SaaS multi-rubro (40+ módulos, facturación AFIP real)
+  2. Agentes IA — Automatización inteligente con IA local + cloud
+  3. Marketing Automation — Campañas, WhatsApp Business, email, social
+  4. Community Manager IA — Gestión de redes, contenido, respuestas automáticas
+
+Diferenciador letal: TODO corre sobre la misma base de datos del ERP.
+El community manager sabe cuánto vendió el cliente. El agente de marketing
+sabe qué producto tiene más stock. La IA de cobranzas sabe el aging real.
+Nadie en Argentina tiene esto integrado.
+
+== WHAT WE ACTUALLY HAVE (REAL, NOT VAPORWARE) ==
+
+Software propio construido: ~35.000 líneas, 121 modelos DB, 122 APIs, 50 dashboards.
+Valuación si se contratara externamente: USD $530K–620K.
+Stack: Next.js 15 + TypeScript + Prisma + PostgreSQL + Tailwind + shadcn/ui.
+
+Módulos ERP operativos:
+  ✅ Facturación AFIP real (CAE/CAEA, tipos A/B/C, QR fiscal, notas de crédito/débito)
+  ✅ POS completo con multi-medio de pago y caja por turno
+  ✅ Inventario multi-depósito con lotes, vencimientos, reservas
+  ✅ Compras con 3-way matching (OC → Recepción → Factura)
+  ✅ Contabilidad completa (plan de cuentas, asientos, libro mayor, balance)
+  ✅ Impuestos: IVA 0/10.5/21/27%, IIBB por provincia, SICORE, percepciones
+  ✅ Tax Engine multi-país (Argentina/Chile/México — arquitectura lista)
+  ✅ CRM: clientes + proveedores + segmentación + cuenta corriente
+  ✅ Cheques: cartera propia/terceros, estados, alertas vencimiento
+  ✅ Cuentas a cobrar / pagar con aging
+  ✅ Órdenes de pago y recibos
+  ✅ Presupuestos con conversión a pedido
+  ✅ Listas de precio con vigencia y escalones
+  ✅ Remitos electrónicos
+  ✅ Activos fijos con depreciación
+  ✅ Centros de costo
+  ✅ Períodos fiscales
+
+Verticales industria:
+  ✅ Gastronomía: mesas, comandas, KDS cocina, recetas BOM, merma
+  ✅ Veterinaria: pacientes/mascotas, consultas, HC, plan sanitario
+  ✅ Salud: historia clínica humana, turnos, diagnóstico
+  ✅ Membresías/Gym: planes, check-in, estados de socio
+  ✅ Distribución: hojas de ruta, POD con firma GPS, transportistas
+  ✅ Logística: envíos, transportistas, geo-tracking
+  ✅ Picking: modo tablet full-screen, escaneo parcial
+  ✅ Industria: BOM, órdenes de producción, consumo predicho
+  ✅ IoT Industrial: dispositivos, telemetría, alertas (25+ campos)
+  ✅ Portal B2B: login CUIT, catálogo, pedidos, cuenta cliente
+  ✅ App Vendedor en Ruta: mobile-first, offline-capable
+  ✅ E-commerce / tienda pública
+  ✅ Agenda de turnos (salud, belleza, servicios)
+
+Infra empresarial:
+  ✅ Multi-empresa / multi-sucursal con aislamiento total (RLS)
+  ✅ 9 roles RBAC granulares
+  ✅ Auditoría inmutable de acciones
+  ✅ Impresión fiscal (Epson/Hasar) + PDF + email (Resend)
+  ✅ Onboarding por rubro (wizard + IA)
+  ✅ Soporte / tickets interno
+  ✅ Exportación CSV/Excel
+
+== 13 RUBROS LISTOS PARA VENDER ==
+
+  1. Kiosco/Almacén — POS directo, stock visible, alertas diarias
+  2. Ferretería — Multi-depósito, mayorista/minorista, stock por familia
+  3. Distribuidora de Bebidas — Envases/retornables, ruteo, POD
+  4. Gastronomía/Restaurante — Mesas, KDS, costeo de recetas, merma
+  5. Peluquería/Belleza — Agenda, servicios, comisiones por profesional
+  6. Veterinaria — Paciente/mascota, consultas, HC por mascota
+  7. Clínica/Salud — HC humana, turnos, diagnóstico
+  8. Gym/Membresías — Planes, auto-cobro, check-in
+  9. Taller Mecánico — Vehículo master, órdenes reparación, flujo presupuesto→aprobado→reparación
+  10. Óptica — Prescripción, stock anteojos/lentes, obras sociales
+  11. Farmacia — Vencimientos, PAMI/obras sociales (pendiente), alertas stock
+  12. Agro/Consultora — Ticket balanza, contratos de granos (pendiente)
+  13. Carnicería/Verdulería — SKU pesables, margen por producto, rotación rápida
+
+
+══════════════════════════════════════════════════════════════════════════════
+LÍNEA 1 — NegocioOS: ERP SaaS (Recurrente mensual)
+══════════════════════════════════════════════════════════════════════════════
+
+Modelo de pricing:
+
+  Plan Básico     — $35K–50K ARS/mes  — POS + Facturación AFIP + Stock básico
+  Plan Profesional — $80K–120K ARS/mes — + Inventario multi-depósito + CRM + CC/CP
+  Plan Distribuidor — $150K–250K ARS/mes — + Envases, Hojas de Ruta, POD, App Vendedor
+  Plan Salud Pro  — $120K–180K ARS/mes — + HC completa + Agenda + Plan Sanitario
+  Plan Restaurante — $100K–150K ARS/mes — + KDS + Mesas + Recetas + Merma
+  Plan Enterprise — $350K–500K ARS/mes — Multi-sucursal + Contabilidad completa + BI
+
+  Add-ons (stackeables sobre cualquier plan):
+    IA Alertas Inteligentes    +$30K/mes
+    WhatsApp Business API      +$15K/mes
+    Integración Mercado Libre  +$20K/mes
+    Portal B2B con cobro online +$25K/mes
+    IoT Industrial             +$40K/mes
+
+Break-even: ~30–40 clientes activos a $80K promedio.
+Margen bruto: 75–85% (SaaS puro).
+Infra: ~$120 USD/mes (Vercel + Supabase + monitoring).
+
+
+══════════════════════════════════════════════════════════════════════════════
+LÍNEA 2 — Agentes IA (Servicio + Producto)
+══════════════════════════════════════════════════════════════════════════════
+
+Motor: Ollama local (qwen2.5:14b) + Anthropic Claude API fallback.
+Diferenciador: los agentes LEEN los datos reales del ERP. No son chatbots genéricos.
+
+Agentes vendibles:
+
+  🤖 Agente de Ventas / Leads (WhatsApp)
+     → Responde consultas 24/7 en español rioplatense
+     → Califica leads automáticamente (presupuesto, urgencia, rubro)
+     → Agenda reuniones, envía catálogo, deriva a vendedor humano
+     → Precio: setup $200K ARS + $45K/mes
+
+  🤖 Agente de Soporte / Mesa de Ayuda
+     → Resuelve tickets nivel 1 automáticamente
+     → Escala a humano con contexto completo
+     → Aprende de resoluciones anteriores
+     → Precio: setup $150K ARS + $35K/mes
+
+  🤖 Agente de Cobranzas Inteligente
+     → Analiza aging de CC real del ERP
+     → Genera mensajes personalizados por WhatsApp/email
+     → Prioriza por probabilidad de cobro (no solo monto)
+     → Predice incobrabilidad
+     → Precio: setup $180K ARS + $40K/mes
+
+  🤖 Agente Clasificador de Productos
+     → Texto libre → categoría + IVA + precio sugerido
+     → Detecta duplicados, sugiere código de barras
+     → Precio: incluido en Plan Profesional+
+
+  🤖 Agente de Compras Predictivo
+     → Analiza ventas históricas + estacionalidad + lead time
+     → Sugiere órdenes de compra automáticas
+     → "Cemento Portland se acaba en 4 días, ¿genero OC a Distribuidora Rosario?"
+     → Precio: setup $120K ARS + $30K/mes
+
+  🤖 Agente de Reportes en Lenguaje Natural
+     → "¿Cómo me fue este mes vs octubre del año pasado?"
+     → Respuesta narrativa con datos reales, comparativos, alertas
+     → Lo que SAP cobra USD $50K/año, nosotros lo damos por $30K/mes
+     → Precio: incluido en Plan Enterprise
+
+  🤖 Agente de Anomalías Operativas
+     → Venta a precio inusual → alerta
+     → Caja abierta fuera de horario → alerta
+     → Proveedor con precio 30% mayor al histórico → alerta
+     → Precio: setup $100K ARS + $25K/mes
+
+  🤖 Agente de Onboarding por Rubro
+     → Conversa con el dueño: "Tengo una ferretería con 3 empleados"
+     → Configura ERP automáticamente: módulos, IVA, categorías, roles
+     → Tiempo de primera venta: < 10 minutos
+     → Precio: incluido en todos los planes
+
+
+══════════════════════════════════════════════════════════════════════════════
+LÍNEA 3 — Marketing Automation (Recurrente mensual)
+══════════════════════════════════════════════════════════════════════════════
+
+Diferenciador mortal: las campañas se alimentan de datos REALES del ERP.
+No es Mailchimp genérico — sabe qué compró cada cliente, cuándo, cuánto.
+
+Servicios vendibles:
+
+  📧 Email Marketing Transaccional + Campañas
+     → Infraestructura: Resend API (ya integrada)
+     → Templates por rubro (bienvenida, factura, recordatorio, promo)
+     → Segmentación por historial de compras real
+     → Precio: $25K/mes (hasta 5.000 emails) / $45K/mes (hasta 20.000)
+
+  📱 WhatsApp Business API
+     → Notificaciones: factura emitida, turno confirmado, pedido listo
+     → Campañas: promos segmentadas por cliente/rubro
+     → Templates pre-aprobados por Meta
+     → Precio: $15K/mes + costo por mensaje (Twilio/360dialog)
+
+  🛒 Integración Mercado Libre
+     → Sincronización de catálogo ERP → ML
+     → Stock en tiempo real (venta en ML descuenta del ERP)
+     → Preguntas respondidas por Agente IA
+     → Precio: setup $250K ARS + $20K/mes
+
+  🛍️ Tienda Online / E-commerce
+     → Storefront público conectado al ERP
+     → Carrito → checkout → factura AFIP automática
+     → SEO básico, Google Merchant sync
+     → Precio: setup $300K ARS + $35K/mes
+
+  📊 Campañas de Retención (datos del ERP)
+     → "Clientes que no compran hace 30 días" → email/WhatsApp automático
+     → "Producto X se vendió bien la semana pasada" → push a clientes similares
+     → "Cumpleaños del cliente" → descuento personalizado
+     → Precio: $20K/mes (incluido en paquete Marketing)
+
+  🔗 Landing Pages + Formularios
+     → Captura de leads que caen directo al CRM del ERP
+     → A/B testing básico
+     → Integración con Google Ads / Meta Ads
+     → Precio: setup $80K ARS por landing
+
+
+══════════════════════════════════════════════════════════════════════════════
+LÍNEA 4 — Community Manager IA (Recurrente mensual)
+══════════════════════════════════════════════════════════════════════════════
+
+El CM que sabe de tu negocio porque LEE tu ERP.
+
+  📸 Generación de Contenido Automatizado
+     → "Producto nuevo en stock" → post automático con foto + precio + copy
+     → "Plato del día" (gastro) → story de Instagram con diseño branded
+     → "Oferta de la semana" → carrusel con los 5 productos más vendidos
+     → IA genera copy en tono de la marca (configurable por cliente)
+
+  💬 Respuestas Automáticas en Redes
+     → Instagram DM / Facebook Messenger → Agente IA responde
+     → Consulta de precio → busca en ERP, responde con precio real + stock
+     → "¿Tienen X?" → responde SI/NO con stock real y alternativas
+     → Escala a humano cuando detecta intención de compra compleja
+
+  📅 Calendario Editorial Inteligente
+     → IA genera calendario semanal basado en:
+       - Productos con más stock (hay que mover)
+       - Productos con mejor margen (hay que empujar)
+       - Fechas comerciales argentinas (Día del Padre, Black Friday, etc.)
+       - Historial de qué posts performearon mejor
+
+  📈 Reportes de Performance Social
+     → Engagement vs ventas reales (cruce con ERP)
+     → "El post del martes generó 12 consultas y 4 ventas por $380K"
+     → ROI real de cada publicación
+
+Pricing Community Manager IA:
+  Plan Básico CM   — $40K/mes — 12 posts/mes + respuestas auto en 1 red
+  Plan Pro CM      — $75K/mes — 20 posts/mes + respuestas en 2 redes + calendario
+  Plan Full CM     — $120K/mes — 30 posts/mes + 3 redes + stories + reportes + ads basic
+
+
+══════════════════════════════════════════════════════════════════════════════
+PAQUETES COMBO (DONDE ESTÁ LA PLATA DE VERDAD)
+══════════════════════════════════════════════════════════════════════════════
+
+  🥉 PYME Starter — $120K ARS/mes
+     ERP Básico + Agente WhatsApp + 12 posts CM
+     Para: kioscos, almacenes, peluquerías
+
+  🥈 PYME Pro — $250K ARS/mes
+     ERP Profesional + Agente Ventas + Agente Cobranzas + CM Pro + Email Marketing
+     Para: ferreterías, veterinarias, talleres
+
+  🥇 PYME Full — $450K ARS/mes
+     ERP Enterprise + Todos los agentes + CM Full + ML Integration + WhatsApp API
+     Para: distribuidoras, restaurantes cadena, clínicas
+
+  💎 Enterprise Custom — desde $600K ARS/mes
+     Multi-sucursal + IoT + Portal B2B + BI + IA Predictiva + CM + Ads Manager
+     Para: grupos empresarios, franquicias, industrias
+
+Revenue proyectado:
+  30 clientes Starter  = $3.6M/mes
+  15 clientes Pro      = $3.75M/mes
+  5 clientes Full      = $2.25M/mes
+  2 clientes Enterprise = $1.2M/mes
+  TOTAL: $10.8M ARS/mes = ~$9K USD/mes recurrente con 52 clientes
+
+
+══════════════════════════════════════════════════════════════════════════════
+SERVICIOS ONE-TIME (CASH FLOW INMEDIATO)
+══════════════════════════════════════════════════════════════════════════════
+
+  Auditoría de procesos gratuita (30 min)           → $0 (lead magnet)
+  Implementación y migración de datos                → $200K–500K ARS
+  Capacitación equipo (presencial/remoto)            → $80K–150K ARS
+  Desarrollo de agente IA custom                     → $150K–400K ARS
+  Integración con sistema legacy                     → $200K–600K ARS
+  Landing page + configuración ads                   → $80K–200K ARS
+  Consultoría fiscal AFIP (configuración certificados) → $50K–100K ARS
+  Diseño de marca + branding digital                 → $150K–300K ARS
+  Setup WhatsApp Business API + templates            → $60K–120K ARS
+
+
+══════════════════════════════════════════════════════════════════════════════
+PITCH DE VENTA EN 30 SEGUNDOS (por rubro)
+══════════════════════════════════════════════════════════════════════════════
+
+FERRETERÍA:
+"Tenés un sistema que factura con AFIP, te avisa cuándo reponer mercadería,
+les cobra automáticamente a los que te deben, y encima te maneja Instagram
+con los productos que más margen te dejan. Todo por menos de lo que pagás
+de monotributo."
+
+RESTAURANTE:
+"Las comandas van directo a la cocina en una pantalla, el mozo cobra desde
+el celular, y vos desde tu casa ves cuánto vendiste, qué plato rinde más,
+y cuánta merma tuviste. Y el Instagram del local se publica solo."
+
+VETERINARIA:
+"Historia clínica de cada mascota, recordatorios automáticos de vacunas por
+WhatsApp, turnos online, y el dueño recibe un mensaje a los 30 días si no
+volvió. El agente de IA responde consultas de precio a las 3am."
+
+DISTRIBUIDORA:
+"Tus vendedores cargan pedidos desde el celular en la calle, el sistema
+arma la hoja de ruta óptima, el chofer firma la entrega con GPS, y la
+factura se emite sola. Los que te deben reciben un WhatsApp personalizado."
+
+GYM:
+"Los socios se dan de alta solos, pagan por Mercado Pago automático,
+les llega recordatorio si no vienen hace 7 días, y vos tenés un dashboard
+con la tasa de retención real — no la que te imaginás."
+
+
+══════════════════════════════════════════════════════════════════════════════
+DIFERENCIADORES VS COMPETENCIA
+══════════════════════════════════════════════════════════════════════════════
+
+vs. Bind/Colppy/Xubio (contables puros):
+  → Nosotros: ERP completo + vertical + IA + Marketing. Ellos solo facturan.
+
+vs. Tienda Nube/WooCommerce (e-commerce):
+  → Nosotros: e-commerce + stock real + factura AFIP + cobranzas. Ellos no tocan impuestos.
+
+vs. Odoo (ERP genérico):
+  → Nosotros: configurado para Argentina, AFIP real, IVA/IIBB/SICORE, español rioplatense.
+  → Odoo necesita un implementador de USD $20K–50K para lo mismo.
+
+vs. Agencias de marketing genéricas:
+  → Nosotros: el CM tiene acceso a datos reales de ventas. El post que hace
+  sabe qué producto empujar porque ve el stock y el margen.
+
+vs. SAP/Oracle (enterprise):
+  → Nosotros: lo mismo conceptualmente (IoT, BI, multi-empresa, tax engine multi-país)
+  pero a precio PyME argentina. SAP cobra USD $50K/año, nosotros $450K ARS/mes.
+
+
+══════════════════════════════════════════════════════════════════════════════
+VISIÓN 2026–2027
+══════════════════════════════════════════════════════════════════════════════
+
+Q2 2026: Lanzamiento Argentina (Rosario + CABA) — 1 rubro piloto (distribuidora)
+Q3 2026: Multi-rubro (gastronomía + veterinaria + ferretería) — 30–50 clientes
+Q4 2026: Chile (SII integrado) + métricas de retención + Serie Pre-Seed
+Q1 2027: México (SAT/CFDI integrado) + App mobile nativa + 200 clientes
+Q2 2027: Marketplace de agentes IA (terceros publican agentes, Kobox cobra comisión)
+Q4 2027: Serie Seed — USD $500K–1M target a valuación USD $5M–8M
+
+
+══════════════════════════════════════════════════════════════════════════════
+PROMPT v0 — WEBSITE COMPLETA (actualizado con 4 líneas de negocio)
+══════════════════════════════════════════════════════════════════════════════
+
+Build the complete website for Kobox — a cyberpunk-style technology platform from Rosario, Argentina.
+Kobox sells 4 product lines: ERP SaaS (NegocioOS), AI Agents, Marketing Automation, and AI Community Management.
+
+== BRAND IDENTITY ==
+Name: Kobox (lowercase in wordmark, Kobox in body text. Never KOBOX or Ko-Box)
+Concept: Ko (core/nucleus in Japanese) + Box (the intelligent container). The platform that runs your entire business.
+Tagline ES: "Tu negocio en automático. ERP + IA + Marketing."
+Tagline EN: "Your business, automated. ERP + AI + Marketing."
+Personality: Precise. Dark. No bullshit. Talks like a dev, thinks like a CEO. Sells like a closer.
+
+== COLOR SYSTEM ==
+CSS variables to define globally:
+  --void:     #080810   /* main background */
+  --surface:  #0D0D1A   /* card backgrounds */
+  --elevated: #1A1A2E   /* hover, elevated */
+  --border:   #2A2A45   /* all borders */
+  --cyan:     #00FFD1   /* PRIMARY: CTA, logo border, active AI, links */
+  --purple:   #A78BFA   /* ACCENT: code, badges, secondary highlights */
+  --red:      #FF4C6A   /* ERROR ONLY: alerts, danger states */
+  --white:    #F0F0FF   /* primary text */
+  --muted:    #6B6B8A   /* secondary text, comments */
+
+COLOR RULES (strict):
+  - 70% void/surface darks · 20% cyan · 10% purple+red accents
+  - Cyan is the ONLY color for primary buttons and active states
+  - Red is ONLY for errors/alerts — never decorative
+  - NO white backgrounds as default — dark is always first
+  - NO gradients, NO glow/bloom effects, NO glassmorphism
+  - Borders are always 1px solid var(--border) — thin and precise
+
+== TYPOGRAPHY ==
+Font stack: Geist Sans (UI + headings) + Geist Mono (code, terminal, outputs)
+Import via: https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500&display=swap
+
+Scale:
+  Display: Geist 700, font-size 48-64px, letter-spacing -0.04em, color var(--white)
+  H1:      Geist 700, 36-48px, -0.03em, var(--white)
+  H2:      Geist 600, 24px, -0.02em, var(--white)
+  H3:      Geist 600, 18px, -0.01em, var(--white)
+  Body:    Geist 400, 15px, normal, var(--muted), line-height 1.65
+  Code:    Geist Mono 400, 13px, var(--purple) for keywords, var(--cyan) for output, var(--muted) for comments
+
+== LOGO SPEC ==
+Wordmark: "ko" in var(--white) + "box" in var(--cyan), font-weight 700, letter-spacing -0.03em
+Icon mark: 36x36 square, bg var(--surface), border 1.5px solid var(--cyan), border-radius 8px, letter "K" centered in var(--cyan), font-weight 700, font-size 18px
+
+== PAGES TO BUILD ==
+
+--- PAGE 1: Landing (/) ---
+
+NAV: logo left · links center (Productos, Soluciones, Precios, Casos, Contacto) · CTA right "Agendar demo gratis" (cyan btn, dark text) · sticky · bg var(--void) 95% opacity
+
+HERO (full viewport height):
+  - Background: var(--void) solid
+  - Subtle grid pattern overlay: 1px lines at 40px intervals, color #1A1A2E at 40% opacity
+  - H1: "Tu negocio entero. En automático." — split: first part white, "En automático." in var(--cyan)
+  - Sub (16px, var(--muted)): "ERP con facturación AFIP + Agentes IA + Marketing + Community Manager. Todo conectado. Todo inteligente."
+  - Two buttons: "Agendar demo gratis" (bg var(--cyan), text #080810, font-weight 600) + "Ver planes" (transparent, border var(--border), text var(--white))
+  - Hero right side: animated terminal block (see Terminal Component below)
+
+TERMINAL COMPONENT (reusable, dark card):
+  bg: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 12px
+  header bar: 3 dots (red #FF4C6A, yellow #F59E0B, green #00FFD1) + title "kobox · NegocioOS" in var(--muted)
+  code content:
+    [muted]   // kobox platform · production · distribuidora-acme
+    [purple]  $ kobox erp --ventas --hoy
+    [cyan]    → 47 facturas emitidas · $2.8M facturado · AFIP CAE ✓
+    [purple]  $ kobox agente --cobranzas --run
+    [cyan]    → 12 WhatsApp enviados · 4 cobrados · $380K recuperados
+    [purple]  $ kobox marketing --instagram --post
+    [cyan]    → "Oferta semana" publicado · reach: 2.4K · 8 consultas DM
+    [purple]  $ kobox status --all
+    [muted]   ▸ erp_facturacion  [cyan]ACTIVE[/cyan]  · AFIP sync OK
+    [muted]   ▸ agente_ventas    [cyan]ACTIVE[/cyan]  · 24/7 WhatsApp
+    [muted]   ▸ agente_cobranzas [cyan]ACTIVE[/cyan]  · aging $1.2M
+    [muted]   ▸ cm_instagram     [cyan]ACTIVE[/cyan]  · 20 posts/mes
+    [muted]   ▸ email_marketing  [cyan]ACTIVE[/cyan]  · 3.2K subs
+  blinking cursor in var(--cyan)
+
+4 PRODUCT LINES SECTION (4 cards in grid, dark bg):
+  Title: "Una plataforma. Todo tu negocio." (H2, white)
+  Subtitle: "No vendemos herramientas sueltas. Vendemos la operación completa." (var(--muted))
+  Cards (bg var(--surface), border var(--border), hover border-color var(--cyan), transition 150ms):
+    1. icon: building-2 (lucide) — "NegocioOS · ERP" — badge: "40+ módulos"
+       "Facturación AFIP real, stock, contabilidad, impuestos, CRM. Multi-empresa, multi-sucursal.
+       Adaptado a 13 rubros argentinos."
+       "Desde $35K/mes →" link in var(--cyan)
+    2. icon: bot (lucide) — "Agentes IA" — badge: "8 agentes"
+       "Ventas por WhatsApp 24/7, cobranzas inteligentes, compras predictivas, onboarding automático.
+       La IA lee tus datos reales — no es un chatbot genérico."
+       "Ver agentes →" link in var(--cyan)
+    3. icon: megaphone (lucide) — "Marketing Automation" — badge: "data-driven"
+       "Email, WhatsApp Business, Mercado Libre, e-commerce. Campañas que saben qué vendés,
+       qué tenés en stock y qué margen te deja. Marketing con datos reales."
+       "Ver marketing →" link in var(--cyan)
+    4. icon: users (lucide) — "Community Manager IA" — badge: "contenido + respuestas"
+       "Posts automáticos con productos reales, respuestas en DM con precios del ERP,
+       calendario editorial basado en stock y margen. El CM que sabe de tu negocio."
+       "Ver CM →" link in var(--cyan)
+
+RUBROS SECTION (scrollable horizontal cards):
+  Title: "Listo para tu rubro" (H2, white)
+  13 cards minimalistas con icon + nombre de rubro + 1 línea de feature killer:
+    Ferretería · Distribuidora · Restaurante · Veterinaria · Gym · Kiosco
+    Peluquería · Clínica · Taller · Óptica · Farmacia · Carnicería · Agro
+
+THE STACK SECTION (what's inside, exploded view):
+  Title: "¿Qué incluye NegocioOS?" (H2, white)
+  3 columns:
+    Col 1 "Gestión": Facturación AFIP · POS · Stock · Compras · CRM · Caja · Banco · Cheques
+    Col 2 "Contable": Plan de Cuentas · Asientos auto · IVA/IIBB/SICORE · Períodos Fiscales · CC/CP · Activos Fijos
+    Col 3 "Vertical": Mesas/KDS · HC Veterinaria · Membresías · Logística · IoT · Portal B2B · App Vendedor
+  Each item: check icon in var(--cyan) + text in var(--muted)
+
+HOW IT WORKS (4 steps, numbered, dark):
+  Step numbers: large (80px), var(--border) color — decorative, not bold
+  1. "Demo gratis" — 30 min para mostrarte el sistema funcionando con tu rubro
+  2. "Setup en 48hs" — migramos datos, configuramos AFIP, activamos módulos
+  3. "Capacitación" — tu equipo vende desde el día 1
+  4. "Crecimiento" — activamos agentes IA + marketing cuando estés listo
+
+METRICS BAR (dark surface, full width):
+  bg: var(--surface)
+  6 stats in scrollable row:
+    "40+ módulos ERP" · "13 rubros configurados" · "8 agentes IA" · "121 tablas en DB"
+    "99.97% uptime" · "Facturación AFIP real con CAE"
+  Numbers in var(--cyan), labels in var(--muted)
+
+PRICING SECTION:
+  Title: "Precios claros. Sin letra chica." (H2, white)
+  4 pricing cards side by side:
+    🥉 Starter $120K/mes — ERP Básico + Agente WhatsApp + 12 posts CM
+    🥈 Pro $250K/mes — ERP Pro + Agentes Ventas/Cobranzas + CM Pro + Email
+    🥇 Full $450K/mes — Enterprise + Todos los agentes + CM Full + ML + WhatsApp API
+    💎 Enterprise — Custom pricing — Multi-sucursal + IoT + B2B + BI + todo
+  Each card: feature list with check icons, CTA button, "Más popular" badge on Pro
+
+SOCIAL PROOF / COMPARISON (dark):
+  Title: "vs. la competencia" (H2, white)
+  Comparison table: Kobox vs Bind vs Odoo vs SAP
+  Rows: Factura AFIP real · Stock multi-depósito · IA integrada · Marketing con datos · Community Manager
+        Multi-país · Precio PyME
+  Kobox gets cyan checks everywhere, others get partial/red X
+
+CTA SECTION (bottom):
+  bg: var(--surface), border-top 1px var(--border)
+  Title: "¿Listo para poner tu negocio en automático?"
+  Subtitle: "Demo gratis. Setup en 48hs. Sin compromiso."
+  Two buttons: "Agendar demo por WhatsApp" (cyan, WhatsApp icon) + "Ver pricing completo" (ghost)
+
+FOOTER: logo + nav links + "Rosario, Argentina · kobox.io" + social icons + "Construido con ❤️ y Next.js"
+
+--- PAGE 2: /productos/erp ---
+Hero: "NegocioOS — El ERP que tu negocio necesitaba" + screenshot/mockup
+Full module list organized by category (Gestión, Contable, Vertical, Infra)
+Feature deep-dive for each module
+AFIP integration showcase (CAE, CAEA, QR fiscal)
+13 rubros with detailed features per vertical
+
+--- PAGE 3: /productos/agentes-ia ---
+Hero: "Agentes que trabajan con tus datos reales"
+8 agent cards with: problem → what the agent does → pricing → terminal demo
+Comparison: "generic chatbot" vs "Kobox agent connected to your ERP"
+Live demo: simulated WhatsApp conversation with the sales agent
+
+--- PAGE 4: /productos/marketing ---
+Hero: "Marketing que sabe lo que vendés"
+Features: Email · WhatsApp · Mercado Libre · E-commerce · Retención · Landing pages
+Key differentiator visual: "Mailchimp sends blind emails. Kobox knows your top-margin product is low on stock."
+
+--- PAGE 5: /productos/community-manager ---
+Hero: "El CM que entiende tu negocio"
+Features: Auto-posts · DM responses with real prices · Editorial calendar from stock data
+Plans: Básico / Pro / Full with feature comparison
+Example posts generated from ERP data
+
+--- PAGE 6: /soluciones (by rubro) ---
+13 rubro-specific pages: /soluciones/ferreteria, /soluciones/restaurante, etc.
+Each: hero with rubro-specific pain points → how Kobox solves each → specific modules activated → pricing recommendation → testimonial placeholder
+
+--- PAGE 7: /precios ---
+Full pricing page with all 4 combo plans + individual product pricing
+Add-ons list with toggle to see total
+ROI calculator: "¿Cuántas horas ahorrás?" + "¿Cuánto recuperás en cobranzas?"
+FAQ section
+
+--- PAGE 8: /contacto ---
+Dark form: nombre · empresa · rubro (select from 13) · cantidad de empleados · qué necesitás (multiselect: ERP, Agentes IA, Marketing, CM) · WhatsApp · email
+Submit button: var(--cyan) bg, #080810 text
+Note: "Respondemos en menos de 24hs. Demo gratis sin compromiso." in var(--muted)
+Side panel: WhatsApp direct link + email + Rosario office address
+
+--- PAGE 3: /contacto ---
+Dark form: nombre · empresa · rubro (select) · descripción del problema · WhatsApp
+Submit button: var(--cyan) bg, #080810 text
+Note: "Respondemos en menos de 24hs" in var(--muted)
+
+== COMPONENT SPECS ==
+
+Buttons:
+  Primary: bg var(--cyan), color #080810, border-radius 8px, font-weight 600, padding 10px 20px
+  Ghost:   bg transparent, border 1px var(--border), color var(--white), hover bg var(--elevated)
+  Danger:  border 1px var(--red), color var(--red), transparent bg
+
+Cards:
+  bg: var(--surface)
+  border: 1px solid var(--border)
+  border-radius: 12px
+  padding: 24px
+  hover: border-color var(--cyan), transition 150ms ease
+
+Badges:
+  Active/success: bg #001A14, color var(--cyan), border 1px var(--cyan), border-radius 20px, font-size 11px
+  Tech/category:  bg var(--elevated), color var(--purple), border 1px var(--border)
+  Error:          bg #1A0010, color var(--red), border 1px var(--red)
+  Popular:        bg var(--purple) 20%, color var(--purple), border 1px var(--purple)
+  Price:          bg var(--cyan) 10%, color var(--cyan), border 1px var(--cyan), font-weight 600
+
+Pricing Cards:
+  bg: var(--surface)
+  border: 1px solid var(--border)
+  Popular card: border-color var(--cyan), subtle glow shadow 0 0 20px rgba(0,255,209,0.1)
+  Header: plan name + price in large var(--cyan) + "/mes" in var(--muted)
+  Feature list: check icon in cyan + feature text in muted
+  CTA: full-width button (primary for popular, ghost for others)
+
+== TECH STACK ==
+Next.js 14 (app router) + Tailwind CSS + shadcn/ui (dark theme only)
+lucide-react for all icons
+Framer Motion: subtle fade-up on scroll (stagger 0.1s, y: 20px → 0, opacity 0→1)
+NO stock images — geometric SVG illustrations only, terminal mockups, dashboard mockups
+Fully responsive, mobile-first
+Dark mode is the ONLY mode (no toggle needed)
+Spanish (es-AR) for all copy — rioplatense tone, professional but direct

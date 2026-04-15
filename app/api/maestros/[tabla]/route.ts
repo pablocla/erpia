@@ -48,6 +48,16 @@ const TABLA_MAP: Record<string, string> = {
   "listas-precio": "listaPrecio",
   transportistas: "transportista",
   depositos: "deposito",
+  marcas: "marca",
+  categorias: "categoria",
+  "tipos-asiento": "tipoAsiento",
+  "rubros-contables": "rubroContable",
+  "regimenes-percepcion": "regimenPercepcion",
+  "clasificaciones-fiscales": "clasificacionFiscal",
+  "tipos-comprobante": "tipoComprobanteMaestro",
+  "tipos-retencion": "tipoRetencion",
+  "regimenes-retencion": "regimenRetencion",
+  "tipos-movimiento-bancario": "tipoMovimientoBancario",
 }
 
 function getDelegate(tabla: string): any {

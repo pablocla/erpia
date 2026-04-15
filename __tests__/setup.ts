@@ -37,6 +37,34 @@ const prismaModels = [
   "zonaGeografica", "taxConcepto", "taxTasa", "cOT", "feriado",
   "itemRecibo", "itemOrdenPago", "transferenciaDeposito", "lineaTransferencia",
   "lote", "motivo", "inscripcionIIBB", "configFiscalEmpresa",
+  // Sprint maestros contables/financieros models
+  "rubroContable", "tipoAsiento", "plantillaAsiento", "lineaPlantillaAsiento",
+  "tipoComprobanteMaestro", "tipoRetencion", "regimenRetencion",
+  "tipoMovimientoBancario", "conceptoCobroPago", "planCuotas",
+  "entidadFinanciera", "sucursal", "cobrador", "tipoOperacionComercial",
+  "cajaTipo", "campoPersonalizado", "valorCampoPersonalizado",
+  "tablaAuxiliar", "valorAuxiliar", "configuracionCampo",
+  // Sprint impuestos — tax engineering models
+  "tributoFactura", "tributoCompra", "regimenPercepcion",
+  "padronRegimenProveedor", "retencionRecibo", "declaracionJurada",
+  "clasificacionFiscal", "actividadEconomica", "configFiscalEmpresa",
+  // Sprint mejoras — schema enrichment models
+  "marca", "notaDebito", "lineaNotaCredito", "lineaNotaDebito", "feriado",
+  "listaPrecio", "itemListaPrecio",
+  // Sprint agentes IA
+  "agenteLog",
+  // Sprint competitive gap — SAP/Tango/Colppy parity
+  "cadenaAprobacion", "nivelAprobacion", "solicitudAprobacion", "pasoAprobacion",
+  "presupuestoGasto", "lineaPresupuestoGasto", "proyeccionFlujoCaja",
+  "lead", "oportunidad", "actividadCRM",
+  "correridaMRP", "sugerenciaMRP",
+  "plantillaInspeccion", "criterioInspeccion", "inspeccionCalidad", "resultadoInspeccion",
+  "kPIDefinicion", "kPISnapshot",
+  "gastoRecurrente", "ajusteInflacion", "coeficienteInflacion",
+  // Sprint competitive gap #2 — MercadoPago, CITI, RRHH, Mantenimiento, Alertas, etc.
+  "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion",
+  "reglaAlerta", "empleado", "generacionCITI", "cotizacionAutomatica",
+  "planMantenimiento", "ordenTrabajo",
 ]
 
 for (const model of prismaModels) {
@@ -45,6 +73,7 @@ for (const model of prismaModels) {
     findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
     upsert: vi.fn(),
@@ -53,6 +82,7 @@ for (const model of prismaModels) {
     count: vi.fn(),
     aggregate: vi.fn(),
     groupBy: vi.fn(),
+    fields: {},
   }
 }
 

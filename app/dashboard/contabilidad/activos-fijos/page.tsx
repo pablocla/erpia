@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,11 @@ import {
   Plus, Building2, Car, Monitor, Wrench, Home, Lightbulb,
   TrendingDown, Calendar, Ban, BarChart3,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { type DateRange } from "react-day-picker"
 
 interface ActivoFijo {
   id: number
@@ -60,6 +65,7 @@ export default function ActivosFijosPage() {
   const [success, setSuccess] = useState("")
   const [filtroCategoria, setFiltroCategoria] = useState("todas")
   const [filtroEstado, setFiltroEstado] = useState("todos")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   // Create dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -83,6 +89,10 @@ export default function ActivosFijosPage() {
   const [bajaMotivo, setBajaMotivo] = useState("")
 
   useEffect(() => { cargar() }, [filtroCategoria, filtroEstado])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   async function cargar() {
     setLoading(true)
@@ -168,11 +178,21 @@ export default function ActivosFijosPage() {
     } catch (e: any) { setError(e.message) }
   }
 
+  const activosFiltrados = useMemo(() => {
+    if (!dateRange?.from) return activos
+    return activos.filter((a) => {
+      const d = new Date(a.fechaCompra)
+      if (dateRange.from && d < dateRange.from) return false
+      if (dateRange.to && d > dateRange.to) return false
+      return true
+    })
+  }, [activos, dateRange])
+
   // Summary
-  const totalValorCompra = activos.reduce((s, a) => s + Number(a.valorCompra), 0)
-  const totalValorLibros = activos.reduce((s, a) => s + Number(a.valorLibros), 0)
-  const totalAmortAcum = activos.reduce((s, a) => s + (Number(a.amortizacionAcumulada) || 0), 0)
-  const activosActivos = activos.filter(a => a.estado === "activo").length
+  const totalValorCompra = activosFiltrados.reduce((s, a) => s + Number(a.valorCompra), 0)
+  const totalValorLibros = activosFiltrados.reduce((s, a) => s + Number(a.valorLibros), 0)
+  const totalAmortAcum = activosFiltrados.reduce((s, a) => s + (Number(a.amortizacionAcumulada) || 0), 0)
+  const activosActivos = activosFiltrados.filter(a => a.estado === "activo").length
 
   const fmt = (n: number) => n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -184,6 +204,7 @@ export default function ActivosFijosPage() {
           <p className="text-muted-foreground">Bienes de uso, depreciación y amortización</p>
         </div>
         <div className="flex gap-2">
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Button variant="outline" onClick={() => setDepDialogOpen(true)}>
             <TrendingDown className="mr-2 h-4 w-4" /> Correr Depreciación
           </Button>
@@ -246,88 +267,28 @@ export default function ActivosFijosPage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>F. Compra</TableHead>
-                <TableHead className="text-right">V. Original</TableHead>
-                <TableHead className="text-right">V. Libros</TableHead>
-                <TableHead>% Amort.</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell></TableRow>
-              ) : activos.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Sin activos fijos registrados</TableCell></TableRow>
-              ) : activos.map(a => {
-                const pctAmort = Number(a.valorCompra) > 0
-                  ? ((Number(a.amortizacionAcumulada) || 0) / (Number(a.valorCompra) - Number(a.valorResidual))) * 100
-                  : 0
-                const catInfo = CATEGORIAS.find(c => c.value === a.categoria)
-                const CatIcon = catInfo?.icon ?? Building2
-
-                return (
-                  <TableRow key={a.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <CatIcon className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{a.descripcion}</div>
-                          {a.identificador && <div className="text-xs text-muted-foreground">{a.identificador}</div>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="capitalize">{catInfo?.label ?? a.categoria}</TableCell>
-                    <TableCell>{new Date(a.fechaCompra).toLocaleDateString("es-AR")}</TableCell>
-                    <TableCell className="text-right">${fmt(Number(a.valorCompra))}</TableCell>
-                    <TableCell className="text-right font-medium">${fmt(Number(a.valorLibros))}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={Math.min(100, pctAmort)} className="h-2 w-16" />
-                        <span className="text-xs">{Math.round(pctAmort)}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell><Badge className={ESTADO_COLOR[a.estado]}>{a.estado.replace("_", " ")}</Badge></TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => verCuadro(a.id)} title="Cuadro de amortización">
-                          <BarChart3 className="h-3 w-3" />
-                        </Button>
-                        {a.estado === "activo" && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="ghost" className="text-red-600" title="Dar de baja">
-                                <Ban className="h-3 w-3" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Dar de baja: {a.descripcion}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Valor en libros actual: ${fmt(Number(a.valorLibros))}. Esta acción no se puede deshacer.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <Textarea placeholder="Motivo de baja (opcional)" value={bajaMotivo} onChange={e => setBajaMotivo(e.target.value)} />
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => darDeBaja(a.id)}>Dar de Baja</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<ActivoFijo>
+            data={activosFiltrados}
+            columns={[
+              { key: "descripcion", header: "Descripción", sortable: true, cell: (a) => { const catInfo = CATEGORIAS.find(c => c.value === a.categoria); const CatIcon = catInfo?.icon ?? Building2; return <div className="flex items-center gap-2"><CatIcon className="h-4 w-4 text-muted-foreground" /><div><div className="font-medium">{a.descripcion}</div>{a.identificador && <div className="text-xs text-muted-foreground">{a.identificador}</div>}</div></div> } },
+              { key: "categoria", header: "Categoría", sortable: true, cell: (a) => <span className="capitalize">{CATEGORIAS.find(c => c.value === a.categoria)?.label ?? a.categoria}</span> },
+              { key: "fechaCompra", header: "F. Compra", sortable: true, cell: (a) => new Date(a.fechaCompra).toLocaleDateString("es-AR") },
+              { key: "valorCompra", header: "V. Original", sortable: true, cell: (a) => <span className="text-right block">${fmt(Number(a.valorCompra))}</span> },
+              { key: "valorLibros", header: "V. Libros", sortable: true, cell: (a) => <span className="text-right block font-medium">${fmt(Number(a.valorLibros))}</span> },
+              { key: "amortizacionAcumulada" as any, header: "% Amort.", cell: (a) => { const pctAmort = Number(a.valorCompra) > 0 ? ((Number(a.amortizacionAcumulada) || 0) / (Number(a.valorCompra) - Number(a.valorResidual))) * 100 : 0; return <div className="flex items-center gap-2"><Progress value={Math.min(100, pctAmort)} className="h-2 w-16" /><span className="text-xs">{Math.round(pctAmort)}%</span></div> } },
+              { key: "estado", header: "Estado", sortable: true, cell: (a) => <Badge className={ESTADO_COLOR[a.estado]}>{a.estado.replace("_", " ")}</Badge> },
+              { key: "acciones" as any, header: "Acciones", cell: (a) => <div className="flex gap-1"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); verCuadro(a.id) }} title="Cuadro de amortización"><BarChart3 className="h-3 w-3" /></Button>{a.estado === "activo" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-red-600" title="Dar de baja"><Ban className="h-3 w-3" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Dar de baja: {a.descripcion}</AlertDialogTitle><AlertDialogDescription>Valor en libros actual: ${fmt(Number(a.valorLibros))}. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><Textarea placeholder="Motivo de baja (opcional)" value={bajaMotivo} onChange={e => setBajaMotivo(e.target.value)} /><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => darDeBaja(a.id)}>Dar de Baja</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div> },
+            ] as DataTableColumn<ActivoFijo>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar activo fijo..."
+            searchKeys={["descripcion", "categoria", "estado"]}
+            exportFilename="activos-fijos"
+            loading={loading}
+            emptyMessage="Sin activos fijos registrados"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin activos fijos" description="Registrá tu primer activo fijo." />}
+            compact
+          />
         </CardContent>
       </Card>
 
@@ -463,28 +424,19 @@ export default function ActivosFijosPage() {
                 <div><span className="text-muted-foreground">Valor residual:</span> ${fmt(Number(cuadroData.activo.valorResidual))}</div>
                 <div><span className="text-muted-foreground">Vida útil:</span> {cuadroData.activo.vidaUtilMeses} meses</div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mes</TableHead>
-                    <TableHead>Período</TableHead>
-                    <TableHead className="text-right">Depreciación</TableHead>
-                    <TableHead className="text-right">Acumulada</TableHead>
-                    <TableHead className="text-right">Valor Libros</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {cuadroData.cuadro.slice(0, 120).map((r: any) => (
-                    <TableRow key={r.mes}>
-                      <TableCell>{r.mes}</TableCell>
-                      <TableCell className="font-mono text-xs">{r.fecha}</TableCell>
-                      <TableCell className="text-right">${fmt(r.depreciacion)}</TableCell>
-                      <TableCell className="text-right">${fmt(r.acumulada)}</TableCell>
-                      <TableCell className="text-right font-medium">${fmt(r.valorLibros)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable<any>
+                data={cuadroData.cuadro.slice(0, 120)}
+                columns={[
+                  { key: "mes", header: "Mes", sortable: true },
+                  { key: "fecha", header: "Período", cell: (r: any) => <span className="font-mono text-xs">{r.fecha}</span> },
+                  { key: "depreciacion", header: "Depreciación", cell: (r: any) => <span className="text-right block">${fmt(r.depreciacion)}</span> },
+                  { key: "acumulada", header: "Acumulada", cell: (r: any) => <span className="text-right block">${fmt(r.acumulada)}</span> },
+                  { key: "valorLibros", header: "Valor Libros", cell: (r: any) => <span className="text-right block font-medium">${fmt(r.valorLibros)}</span> },
+                ] as DataTableColumn<any>[]}
+                rowKey="mes"
+                exportFilename="cuadro-amortizacion"
+                compact
+              />
             </div>
           )}
         </DialogContent>

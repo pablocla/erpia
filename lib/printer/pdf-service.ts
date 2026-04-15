@@ -350,6 +350,637 @@ export class PDFService {
   }
 
   /**
+   * Genera PDF para Nota de Débito.
+   */
+  async generarNDPDF(ndId: number): Promise<PDFComprobante> {
+    const nd = await prisma.notaDebito.findUnique({
+      where: { id: ndId },
+      include: {
+        factura: { include: { empresa: true } },
+        cliente: true,
+        lineas: true,
+      },
+    })
+
+    if (!nd) throw new Error("Nota de Débito no encontrada")
+
+    const empresa = nd.factura?.empresa
+    const cliente = nd.cliente
+    const tipo = nd.tipo ?? "ND B"
+    const pvStr = String(nd.puntoVenta).padStart(5, "0")
+    const numStr = String(nd.numero).padStart(8, "0")
+    const numeroCompleto = `${pvStr}-${numStr}`
+    const fecha = new Date(nd.createdAt).toLocaleDateString("es-AR")
+
+    const lineasHTML = (nd.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.precioUnitario).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${Number(l.porcentajeIva)}%</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("")
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nota de Débito ${tipo} ${numeroCompleto}</title>
+  <style>
+    @media print { body { margin: 0; padding: 0; } .no-print { display: none !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; }
+    .header { display: flex; justify-content: space-between; border: 2px solid #b45309; margin-bottom: 16px; }
+    .header-left, .header-right { flex: 1; padding: 12px 16px; }
+    .header-center { width: 80px; text-align: center; border-left: 2px solid #b45309; border-right: 2px solid #b45309; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fefce8; }
+    .letra-tipo { font-size: 32px; font-weight: bold; color: #b45309; }
+    .empresa-nombre { font-size: 18px; font-weight: bold; }
+    .numero-cbte { font-size: 14px; font-weight: bold; color: #b45309; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .seccion { border: 1px solid #ccc; padding: 10px 14px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #fefce8; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #b45309; border-bottom: 2px solid #fbbf24; }
+    .totales { text-align: right; padding-top: 8px; }
+    .totales-row { display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0; }
+    .totales-row.total { font-size: 16px; font-weight: bold; border-top: 2px solid #b45309; padding-top: 8px; color: #b45309; }
+    .leyenda { font-size: 9px; color: #888; text-align: center; margin-top: 16px; border-top: 1px solid #eee; padding-top: 8px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #b45309; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+  <div class="header">
+    <div class="header-left">
+      <div class="empresa-nombre">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+      <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
+      <div class="dato">Cond. IVA: ${empresa?.condicionIva ?? "Responsable Inscripto"}</div>
+    </div>
+    <div class="header-center">
+      <div class="letra-tipo">${tipo.includes("A") ? "A" : tipo.includes("C") ? "C" : "B"}</div>
+      <div style="font-size: 10px; color: #b45309;">NOTA DE DÉBITO</div>
+    </div>
+    <div class="header-right" style="text-align: right;">
+      <div class="numero-cbte">NOTA DE DÉBITO</div>
+      <div class="numero-cbte">Nº ${numeroCompleto}</div>
+      <div class="dato">Fecha: ${fecha}</div>
+      <div class="dato">Factura Orig.: ${nd.factura ? `${String(nd.factura.puntoVenta).padStart(5, "0")}-${String(nd.factura.numero).padStart(8, "0")}` : "—"}</div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div style="font-size: 11px; font-weight: bold; color: #555; margin-bottom: 6px;">DATOS DEL RECEPTOR</div>
+    <div class="dato"><strong>${cliente?.nombre ?? "—"}</strong> — CUIT: ${cliente?.cuit ?? "—"} — ${cliente?.condicionIva ?? "—"}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th style="text-align: right;">Cant.</th>
+        <th style="text-align: right;">P. Unit.</th>
+        <th style="text-align: center;">IVA</th>
+        <th style="text-align: right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  <div class="totales">
+    <div class="totales-row"><span>Subtotal:</span> <span>$${Number(nd.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row"><span>IVA:</span> <span>$${Number(nd.iva).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    ${Number(nd.totalPercepciones) > 0 ? `<div class="totales-row"><span>Percepciones:</span> <span>$${Number(nd.totalPercepciones).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>` : ""}
+    <div class="totales-row total"><span>TOTAL ND:</span> <span>$${Number(nd.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+  </div>
+
+  <div style="margin-top: 16px; text-align: right;">
+    <div class="dato">CAE: <strong>${nd.cae ?? "—"}</strong></div>
+    <div class="dato">Vto CAE: ${nd.vencimientoCAE ? new Date(nd.vencimientoCAE).toLocaleDateString("es-AR") : "—"}</div>
+  </div>
+
+  <div class="leyenda">Nota de Débito electrónica autorizada por AFIP — RG Nº 1415/2003. ${nd.motivo ? `Motivo: ${nd.motivo}` : ""}</div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `nd_${tipo.replace(/\s/g, "_")}_${numeroCompleto.replace("-", "_")}.html`,
+      metadata: {
+        tipo: `Nota de Débito ${tipo}`,
+        numero: numeroCompleto,
+        fecha,
+        total: Number(nd.total),
+        cae: nd.cae ?? "",
+      },
+    }
+  }
+
+  /**
+   * Genera PDF para Presupuesto.
+   */
+  async generarPresupuestoPDF(presupuestoId: number): Promise<PDFComprobante> {
+    const presupuesto = await prisma.presupuesto.findUnique({
+      where: { id: presupuestoId },
+      include: {
+        lineas: { include: { producto: { select: { codigo: true, nombre: true } } }, orderBy: { orden: "asc" } },
+        cliente: true,
+        empresa: true,
+        vendedor: true,
+        condicionPago: true,
+      },
+    })
+
+    if (!presupuesto) throw new Error("Presupuesto no encontrado")
+
+    const empresa = presupuesto.empresa
+    const cliente = presupuesto.cliente
+    const fecha = new Date(presupuesto.fechaEmision).toLocaleDateString("es-AR")
+    const vto = presupuesto.fechaVencimiento ? new Date(presupuesto.fechaVencimiento).toLocaleDateString("es-AR") : "—"
+
+    const lineasHTML = (presupuesto.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.producto?.codigo ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion ?? l.producto?.nombre ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.precioUnitario).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+        ${Number(l.descuentoPct) > 0 ? `<td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">${Number(l.descuentoPct)}%</td>` : '<td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: center;">—</td>'}
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("")
+
+    const estadoBadge = {
+      borrador: "📝 BORRADOR",
+      enviado: "📤 ENVIADO",
+      aceptado: "✅ ACEPTADO",
+      rechazado: "❌ RECHAZADO",
+      vencido: "⏰ VENCIDO",
+      facturado: "🧾 FACTURADO",
+    }[presupuesto.estado] ?? presupuesto.estado.toUpperCase()
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Presupuesto ${presupuesto.numero}</title>
+  <style>
+    @media print { body { margin: 0; } .no-print { display: none !important; } .watermark { display: ${presupuesto.estado === "borrador" ? "block" : "none"} !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; position: relative; }
+    .watermark { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80px; font-weight: bold; color: rgba(0,0,0,0.06); z-index: 0; pointer-events: none; }
+    .header { border: 2px solid #2563eb; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    .empresa-nombre { font-size: 18px; font-weight: bold; }
+    .titulo { font-size: 20px; font-weight: bold; color: #2563eb; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #dbeafe; color: #2563eb; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .seccion { border: 1px solid #ccc; padding: 10px 14px; margin-bottom: 12px; }
+    .seccion-titulo { font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #eff6ff; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #2563eb; border-bottom: 2px solid #93c5fd; }
+    .totales { text-align: right; padding-top: 8px; }
+    .totales-row { display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0; }
+    .totales-row.total { font-size: 16px; font-weight: bold; border-top: 2px solid #2563eb; padding-top: 8px; color: #2563eb; }
+    .condiciones { margin-top: 16px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; }
+    .firma { margin-top: 60px; display: flex; justify-content: space-between; }
+    .firma-linea { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 4px; font-size: 10px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  ${presupuesto.estado === "borrador" ? '<div class="watermark">BORRADOR</div>' : ""}
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+
+  <div class="header">
+    <div>
+      <div class="empresa-nombre">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+      <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
+      <div class="dato">Cond. IVA: ${empresa?.condicionIva ?? "—"}</div>
+      <div class="dato">${empresa?.direccion ?? ""}</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="titulo">PRESUPUESTO</div>
+      <div style="font-size: 16px; font-weight: bold;">Nº ${presupuesto.numero}</div>
+      <div class="dato">Fecha: ${fecha}</div>
+      <div class="dato">Válido hasta: ${vto}</div>
+      <div class="badge">${estadoBadge}</div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div class="seccion-titulo">Datos del cliente</div>
+    <div class="dato"><strong>${cliente?.nombre ?? "—"}</strong></div>
+    <div class="dato">CUIT: ${cliente?.cuit ?? "—"} — ${cliente?.condicionIva ?? ""}</div>
+    <div class="dato">${cliente?.direccion ?? ""} ${cliente?.email ? `— ${cliente.email}` : ""}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 60px;">Cód.</th>
+        <th>Descripción</th>
+        <th style="text-align: right; width: 80px;">Cant.</th>
+        <th style="text-align: right; width: 100px;">P. Unit.</th>
+        <th style="text-align: center; width: 60px;">Desc.</th>
+        <th style="text-align: right; width: 110px;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  <div class="totales">
+    <div class="totales-row"><span>Subtotal:</span> <span>$${Number(presupuesto.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    ${Number(presupuesto.descuentoPct) > 0 ? `<div class="totales-row"><span>Descuento ${Number(presupuesto.descuentoPct)}%:</span> <span>-$${(Number(presupuesto.subtotal) * Number(presupuesto.descuentoPct) / 100).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>` : ""}
+    <div class="totales-row"><span>Impuestos:</span> <span>$${Number(presupuesto.impuestos).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row total"><span>TOTAL:</span> <span>$${Number(presupuesto.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+  </div>
+
+  <div class="condiciones">
+    <div class="seccion-titulo">Condiciones</div>
+    <div class="dato">${presupuesto.condicionPago ? `Pago: ${presupuesto.condicionPago.nombre}` : ""}</div>
+    <div class="dato">${presupuesto.vendedor ? `Vendedor: ${presupuesto.vendedor.nombre}` : ""}</div>
+    ${presupuesto.observaciones ? `<div class="dato" style="margin-top: 4px;">Obs.: ${presupuesto.observaciones}</div>` : ""}
+  </div>
+
+  <div class="firma">
+    <div class="firma-linea">Firma vendedor</div>
+    <div class="firma-linea">Firma / conformidad cliente</div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `presupuesto_${presupuesto.numero}.html`,
+      metadata: {
+        tipo: "Presupuesto",
+        numero: presupuesto.numero,
+        fecha,
+        total: Number(presupuesto.total),
+        cae: "",
+      },
+    }
+  }
+
+  /**
+   * Genera PDF para Orden de Compra.
+   */
+  async generarOCPDF(ocId: number): Promise<PDFComprobante> {
+    const oc = await prisma.ordenCompra.findUnique({
+      where: { id: ocId },
+      include: {
+        lineas: { include: { producto: { select: { codigo: true, nombre: true } } }, orderBy: { orden: "asc" } },
+        proveedor: true,
+        empresa: true,
+        condicionPago: true,
+      },
+    })
+
+    if (!oc) throw new Error("Orden de Compra no encontrada")
+
+    const empresa = oc.empresa
+    const proveedor = oc.proveedor
+    const fecha = new Date(oc.fechaEmision).toLocaleDateString("es-AR")
+    const fechaEntrega = oc.fechaEntregaEst ? new Date(oc.fechaEntregaEst).toLocaleDateString("es-AR") : "—"
+
+    const lineasHTML = (oc.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.producto?.codigo ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion ?? l.producto?.nombre ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidadRecibida).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.precioUnitario).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("")
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Orden de Compra ${oc.numero}</title>
+  <style>
+    @media print { body { margin: 0; } .no-print { display: none !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; }
+    .header { border: 2px solid #7c3aed; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    .empresa-nombre { font-size: 18px; font-weight: bold; }
+    .titulo { font-size: 20px; font-weight: bold; color: #7c3aed; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #ede9fe; color: #7c3aed; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .seccion { border: 1px solid #ccc; padding: 10px 14px; margin-bottom: 12px; }
+    .seccion-titulo { font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f5f3ff; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #7c3aed; border-bottom: 2px solid #c4b5fd; }
+    .totales { text-align: right; padding-top: 8px; }
+    .totales-row { display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0; }
+    .totales-row.total { font-size: 16px; font-weight: bold; border-top: 2px solid #7c3aed; padding-top: 8px; color: #7c3aed; }
+    .firma { margin-top: 60px; display: flex; justify-content: space-between; }
+    .firma-linea { border-top: 1px solid #333; width: 180px; text-align: center; padding-top: 4px; font-size: 10px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #7c3aed; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+
+  <div class="header">
+    <div>
+      <div class="empresa-nombre">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+      <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
+      <div class="dato">${empresa?.direccion ?? ""}</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="titulo">ORDEN DE COMPRA</div>
+      <div style="font-size: 16px; font-weight: bold;">Nº ${oc.numero}</div>
+      <div class="dato">Fecha: ${fecha}</div>
+      <div class="dato">Entrega est.: ${fechaEntrega}</div>
+      <div class="badge">${oc.estado.toUpperCase()}</div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div class="seccion-titulo">Proveedor</div>
+    <div class="dato"><strong>${proveedor?.nombre ?? "—"}</strong></div>
+    <div class="dato">CUIT: ${proveedor?.cuit ?? "—"} — ${proveedor?.condicionIva ?? ""}</div>
+    <div class="dato">${proveedor?.direccion ?? ""} ${proveedor?.email ? `— ${proveedor.email}` : ""}</div>
+    <div class="dato">${proveedor?.telefono ? `Tel: ${proveedor.telefono}` : ""}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 60px;">Cód.</th>
+        <th>Descripción</th>
+        <th style="text-align: right; width: 80px;">Cant.</th>
+        <th style="text-align: right; width: 80px;">Recibido</th>
+        <th style="text-align: right; width: 100px;">P. Unit.</th>
+        <th style="text-align: right; width: 110px;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  <div class="totales">
+    <div class="totales-row"><span>Subtotal:</span> <span>$${Number(oc.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row"><span>Impuestos:</span> <span>$${Number(oc.impuestos).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row total"><span>TOTAL:</span> <span>$${Number(oc.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
+    <div class="seccion-titulo">Condiciones</div>
+    ${oc.condicionPago ? `<div class="dato">Pago: ${oc.condicionPago.nombre}</div>` : ""}
+    ${oc.observaciones ? `<div class="dato">Obs.: ${oc.observaciones}</div>` : ""}
+  </div>
+
+  <div class="firma">
+    <div class="firma-linea">Solicitado por</div>
+    <div class="firma-linea">Aprobado por</div>
+    <div class="firma-linea">Recibido conf. proveedor</div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `oc_${oc.numero}.html`,
+      metadata: {
+        tipo: "Orden de Compra",
+        numero: oc.numero,
+        fecha,
+        total: Number(oc.total),
+        cae: "",
+      },
+    }
+  }
+
+  /**
+   * Genera PDF para Remito de Transferencia entre depósitos.
+   */
+  async generarRemitoTransferenciaPDF(transferenciaId: number): Promise<PDFComprobante> {
+    const transferencia = await prisma.transferenciaDeposito.findUnique({
+      where: { id: transferenciaId },
+      include: {
+        lineas: { include: { producto: { select: { codigo: true, nombre: true } } } },
+        origen: true,
+        destino: true,
+      },
+    })
+
+    if (!transferencia) throw new Error("Transferencia no encontrada")
+
+    const fecha = new Date(transferencia.fecha).toLocaleDateString("es-AR")
+
+    const lineasHTML = (transferencia.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.producto?.codigo ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion ?? l.producto?.nombre ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad)}</td>
+      </tr>
+    `).join("")
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Remito de Transferencia ${transferencia.numero}</title>
+  <style>
+    @media print { body { margin: 0; } .no-print { display: none !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; }
+    .header { border: 2px solid #0891b2; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    .titulo { font-size: 20px; font-weight: bold; color: #0891b2; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #cffafe; color: #0891b2; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .deposito-box { border: 1px solid #ccc; padding: 10px 14px; flex: 1; }
+    .deposito-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; font-size: 24px; color: #0891b2; }
+    .depositos { display: flex; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #ecfeff; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #0891b2; border-bottom: 2px solid #67e8f9; }
+    .firma { margin-top: 60px; display: flex; justify-content: space-between; }
+    .firma-linea { border-top: 1px solid #333; width: 180px; text-align: center; padding-top: 4px; font-size: 10px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #0891b2; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+
+  <div class="header">
+    <div>
+      <div class="titulo">REMITO DE TRANSFERENCIA</div>
+      <div style="font-size: 16px; font-weight: bold;">Nº ${transferencia.numero}</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="dato">Fecha: ${fecha}</div>
+      <div class="badge">${transferencia.estado.toUpperCase()}</div>
+    </div>
+  </div>
+
+  <div class="depositos">
+    <div class="deposito-box">
+      <div style="font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; margin-bottom: 4px;">Depósito origen</div>
+      <div class="dato"><strong>${transferencia.origen.nombre}</strong></div>
+      <div class="dato">${transferencia.origen.direccion ?? ""}</div>
+    </div>
+    <div class="deposito-arrow">→</div>
+    <div class="deposito-box">
+      <div style="font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; margin-bottom: 4px;">Depósito destino</div>
+      <div class="dato"><strong>${transferencia.destino.nombre}</strong></div>
+      <div class="dato">${transferencia.destino.direccion ?? ""}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 80px;">Cód.</th>
+        <th>Producto / Descripción</th>
+        <th style="text-align: right; width: 100px;">Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  ${transferencia.observaciones ? `<div class="dato" style="margin-top: 12px;">Observaciones: ${transferencia.observaciones}</div>` : ""}
+
+  <div class="firma">
+    <div class="firma-linea">Despachado por (Origen)</div>
+    <div class="firma-linea">Transportista</div>
+    <div class="firma-linea">Recibido por (Destino)</div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `remito_transferencia_${transferencia.numero}.html`,
+      metadata: {
+        tipo: "Remito de Transferencia",
+        numero: transferencia.numero,
+        fecha,
+        total: 0,
+        cae: "",
+      },
+    }
+  }
+
+  /**
+   * Genera PDF para Remito de Entrada (recepción de compra).
+   */
+  async generarRemitoEntradaPDF(recepcionId: number): Promise<PDFComprobante> {
+    const recepcion = await prisma.recepcionCompra.findUnique({
+      where: { id: recepcionId },
+      include: {
+        ordenCompra: {
+          include: {
+            proveedor: true,
+            empresa: true,
+            lineas: { include: { producto: { select: { codigo: true, nombre: true } } } },
+          },
+        },
+      },
+    })
+
+    if (!recepcion) throw new Error("Recepción de compra no encontrada")
+
+    const oc = recepcion.ordenCompra
+    const empresa = oc.empresa
+    const proveedor = oc.proveedor
+    const fecha = new Date(recepcion.fecha).toLocaleDateString("es-AR")
+
+    const lineasHTML = (oc.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.producto?.codigo ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion ?? l.producto?.nombre ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidadRecibida).toFixed(2)}</td>
+      </tr>
+    `).join("")
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Remito de Entrada — OC ${oc.numero}</title>
+  <style>
+    @media print { body { margin: 0; } .no-print { display: none !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; }
+    .header { border: 2px solid #16a34a; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    .titulo { font-size: 20px; font-weight: bold; color: #16a34a; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #dcfce7; color: #16a34a; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .seccion { border: 1px solid #ccc; padding: 10px 14px; margin-bottom: 12px; }
+    .seccion-titulo { font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f0fdf4; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #16a34a; border-bottom: 2px solid #86efac; }
+    .firma { margin-top: 60px; display: flex; justify-content: space-between; }
+    .firma-linea { border-top: 1px solid #333; width: 180px; text-align: center; padding-top: 4px; font-size: 10px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+
+  <div class="header">
+    <div>
+      <div class="titulo">REMITO DE ENTRADA</div>
+      <div style="font-size: 14px; font-weight: bold;">Recepción de OC Nº ${oc.numero}</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="dato">Fecha recepción: ${fecha}</div>
+      <div class="badge">${recepcion.estado?.toUpperCase() ?? "RECIBIDO"}</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+    <div class="seccion" style="flex: 1;">
+      <div class="seccion-titulo">Empresa receptora</div>
+      <div class="dato"><strong>${empresa?.razonSocial ?? empresa?.nombre ?? "—"}</strong></div>
+      <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
+    </div>
+    <div class="seccion" style="flex: 1;">
+      <div class="seccion-titulo">Proveedor</div>
+      <div class="dato"><strong>${proveedor?.nombre ?? "—"}</strong></div>
+      <div class="dato">CUIT: ${proveedor?.cuit ?? "—"}</div>
+      <div class="dato">${proveedor?.telefono ? `Tel: ${proveedor.telefono}` : ""}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 80px;">Cód.</th>
+        <th>Producto / Descripción</th>
+        <th style="text-align: right; width: 100px;">Pedido</th>
+        <th style="text-align: right; width: 100px;">Recibido</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  ${recepcion.observaciones ? `<div class="dato" style="margin-top: 12px;">Observaciones: ${recepcion.observaciones}</div>` : ""}
+
+  <div class="firma">
+    <div class="firma-linea">Entregado por (Proveedor)</div>
+    <div class="firma-linea">Recibido por (Depósito)</div>
+    <div class="firma-linea">Control Calidad</div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `remito_entrada_oc_${oc.numero}.html`,
+      metadata: {
+        tipo: "Remito de Entrada",
+        numero: oc.numero,
+        fecha,
+        total: 0,
+        cae: "",
+      },
+    }
+  }
+
+  /**
    * Genera un remito como HTML imprimible.
    */
   async generarRemitoPDF(remitoId: number): Promise<PDFComprobante> {

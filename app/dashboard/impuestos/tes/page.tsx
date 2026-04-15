@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Tags, Search, ChevronRight, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
 import type { TES } from "@/lib/tes/tes-config"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 const TIPO_COLORES: Record<string, string> = {
   venta: "bg-green-100 text-green-800",
@@ -38,6 +40,10 @@ export default function TESPage() {
         setLoading(false)
       })
   }, [])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: () => {},
+  }))
 
   const simular = async (tes: TES) => {
     setTesSeleccionado(tes)
@@ -111,64 +117,27 @@ export default function TESPage() {
               <CardTitle>{filtrados.length} TES configurados</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Cargando...</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Oper.</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>CAE</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtrados.map((tes) => (
-                      <TableRow
-                        key={tes.codigo}
-                        className={`cursor-pointer ${tesSeleccionado?.codigo === tes.codigo ? "bg-primary/5" : ""}`}
-                        onClick={() => simular(tes)}
-                      >
-                        <TableCell className="font-mono font-bold text-sm">{tes.codigo}</TableCell>
-                        <TableCell className="font-medium">{tes.nombre}</TableCell>
-                        <TableCell>
-                          <Badge className={TIPO_COLORES[tes.tipo] ?? ""}>
-                            {tes.tipo.replace("_", " ")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {tes.operacion === "E" ? (
-                            <ArrowUpCircle className="h-4 w-4 text-green-600" title="Entrada" />
-                          ) : (
-                            <ArrowDownCircle className="h-4 w-4 text-red-600" title="Salida" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {tes.afectaStock ? (
-                            <Badge className="bg-blue-100 text-blue-800">Sí</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">No</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {tes.requiereCAE ? (
-                            <Badge className="bg-red-100 text-red-800">AFIP</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <DataTable<TES>
+                data={filtrados}
+                columns={[
+                  { key: "codigo", header: "Código", sortable: true, cell: (t) => <span className="font-mono font-bold text-sm">{t.codigo}</span> },
+                  { key: "nombre", header: "Nombre", cell: (t) => <span className="font-medium">{t.nombre}</span> },
+                  { key: "tipo", header: "Tipo", cell: (t) => <Badge className={TIPO_COLORES[t.tipo] ?? ""}>{t.tipo.replace("_", " ")}</Badge> },
+                  { key: "operacion", header: "Oper.", cell: (t) => t.operacion === "E" ? <ArrowUpCircle className="h-4 w-4 text-green-600" title="Entrada" /> : <ArrowDownCircle className="h-4 w-4 text-red-600" title="Salida" /> },
+                  { key: "afectaStock", header: "Stock", cell: (t) => t.afectaStock ? <Badge className="bg-blue-100 text-blue-800">Sí</Badge> : <span className="text-muted-foreground text-sm">No</span> },
+                  { key: "requiereCAE", header: "CAE", cell: (t) => t.requiereCAE ? <Badge className="bg-red-100 text-red-800">AFIP</Badge> : <span className="text-muted-foreground text-sm">—</span> },
+                  { key: "detalle" as any, header: "", cell: () => <ChevronRight className="h-4 w-4 text-muted-foreground" /> },
+                ] as DataTableColumn<TES>[]}
+                rowKey="codigo"
+                searchPlaceholder="Buscar TES..."
+                searchKeys={["codigo", "nombre"]}
+                exportFilename="tes-config"
+                loading={loading}
+                emptyMessage="No hay TES configurados"
+                onRowClick={(t) => simular(t)}
+                defaultPageSize={25}
+                compact
+              />
             </CardContent>
           </Card>
         </div>

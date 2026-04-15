@@ -16,6 +16,7 @@ import {
   Weight, ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Consulta {
   id: number
@@ -72,6 +73,10 @@ export default function HistoriaClinicaPage() {
   }, [busqueda])
 
   useEffect(() => { cargarDatos() }, [cargarDatos])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarDatos,
+  }))
 
   const guardarPaciente = async () => {
     if (!formPaciente.nombre) return

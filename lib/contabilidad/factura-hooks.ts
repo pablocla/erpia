@@ -1,9 +1,9 @@
 import { AsientoService } from "./asiento-service"
 
-export async function onFacturaEmitida(facturaId: number): Promise<void> {
+export async function onFacturaEmitida(facturaId: number, empresaId?: number): Promise<void> {
   try {
     const asientoService = new AsientoService()
-    await asientoService.generarAsientoVenta(facturaId)
+    await asientoService.generarAsientoVenta(facturaId, empresaId)
   } catch (error) {
     console.error("Error en hook onFacturaEmitida:", error)
     // No lanzar el error para no interrumpir el flujo de facturación

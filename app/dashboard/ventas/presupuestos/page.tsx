@@ -17,6 +17,7 @@ import {
   Plus, Send, CheckCircle2, XCircle, Copy, FileText,
   ArrowRightCircle, Trash2, Filter,
 } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Cliente { id: number; nombre: string; cuit?: string }
 interface Linea {
@@ -75,6 +76,10 @@ export default function PresupuestosPage() {
     cargar()
     fetch("/api/clientes").then(r => r.json()).then(d => setClientes(d.data ?? d)).catch(() => {})
   }, [filtroEstado])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   async function cargar() {
     setLoading(true)
@@ -222,84 +227,36 @@ export default function PresupuestosPage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Vencimiento</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">Cargando...</TableCell></TableRow>
-              ) : presupuestos.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Sin presupuestos</TableCell></TableRow>
-              ) : presupuestos.map(p => (
-                <TableRow key={p.id} className="cursor-pointer" onClick={() => setDetalle(p)}>
-                  <TableCell className="font-mono">{p.numero}</TableCell>
-                  <TableCell>{p.cliente?.nombre ?? "—"}</TableCell>
-                  <TableCell>{new Date(p.fechaEmision).toLocaleDateString("es-AR")}</TableCell>
-                  <TableCell>{p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString("es-AR") : "—"}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${Number(p.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell><Badge className={ESTADOS_COLOR[p.estado]}>{p.estado}</Badge></TableCell>
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      {p.estado === "borrador" && (
-                        <Button size="sm" variant="outline" onClick={() => ejecutarAccion("enviar", p.id)}>
-                          <Send className="h-3 w-3 mr-1" /> Enviar
-                        </Button>
-                      )}
-                      {(p.estado === "enviado" || p.estado === "borrador") && (
-                        <>
-                          <Button size="sm" variant="outline" className="text-green-600" onClick={() => ejecutarAccion("aceptar", p.id)}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-red-600" onClick={() => ejecutarAccion("rechazar", p.id)}>
-                            <XCircle className="h-3 w-3 mr-1" /> Rechazar
-                          </Button>
-                        </>
-                      )}
-                      {p.estado === "aceptado" && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="default">
-                              <ArrowRightCircle className="h-3 w-3 mr-1" /> Convertir a Pedido
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Convertir presupuesto {p.numero}</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Se creará un Pedido de Venta con las mismas líneas y condiciones.
-                                El presupuesto pasará a estado &quot;facturado&quot;.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => ejecutarAccion("convertir", p.id)}>
-                                Convertir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => ejecutarAccion("duplicar", p.id)}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<Presupuesto>
+            data={presupuestos}
+            columns={[
+              { key: "numero", header: "Número", sortable: true, cell: (p) => <span className="font-mono">{p.numero}</span> },
+              { key: "cliente" as any, header: "Cliente", cell: (p) => p.cliente?.nombre ?? "—", exportFn: (p) => p.cliente?.nombre ?? "" },
+              { key: "fechaEmision", header: "Fecha", sortable: true, cell: (p) => new Date(p.fechaEmision).toLocaleDateString("es-AR") },
+              { key: "fechaVencimiento" as any, header: "Vencimiento", cell: (p) => p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString("es-AR") : "—" },
+              { key: "total", header: "Total", align: "right", sortable: true, cell: (p) => <span className="font-medium">${Number(p.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span> },
+              { key: "estado", header: "Estado", cell: (p) => <Badge className={ESTADOS_COLOR[p.estado]}>{p.estado}</Badge> },
+              { key: "acciones" as any, header: "Acciones", cell: (p) => (
+                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                  {p.estado === "borrador" && <Button size="sm" variant="outline" onClick={() => ejecutarAccion("enviar", p.id)}><Send className="h-3 w-3 mr-1" /> Enviar</Button>}
+                  {(p.estado === "enviado" || p.estado === "borrador") && <><Button size="sm" variant="outline" className="text-green-600" onClick={() => ejecutarAccion("aceptar", p.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar</Button><Button size="sm" variant="outline" className="text-red-600" onClick={() => ejecutarAccion("rechazar", p.id)}><XCircle className="h-3 w-3 mr-1" /> Rechazar</Button></>}
+                  {p.estado === "aceptado" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="default"><ArrowRightCircle className="h-3 w-3 mr-1" /> Convertir a Pedido</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Convertir presupuesto {p.numero}</AlertDialogTitle><AlertDialogDescription>Se creará un Pedido de Venta con las mismas líneas y condiciones. El presupuesto pasará a estado &quot;facturado&quot;.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => ejecutarAccion("convertir", p.id)}>Convertir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
+                  <Button size="sm" variant="ghost" onClick={() => ejecutarAccion("duplicar", p.id)}><Copy className="h-3 w-3" /></Button>
+                </div>
+              ) },
+            ] as DataTableColumn<Presupuesto>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar presupuesto..."
+            searchKeys={["numero", "estado"]}
+            exportFilename="presupuestos"
+            loading={loading}
+            emptyMessage="Sin presupuestos"
+            emptyIcon={<EmptyStateIllustration type="ventas" compact title="Sin presupuestos" description="Creá tu primer presupuesto." />}
+            onRowClick={(p) => setDetalle(p)}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

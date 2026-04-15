@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type ListaPrecio = {
   id: number
@@ -266,6 +267,10 @@ export default function ListasPrecioPage() {
       c.nombre.toLowerCase().includes(buscadorCliente.toLowerCase()) ||
       (c.cuit || "").includes(buscadorCliente),
   )
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   useEffect(() => {
     void cargar()

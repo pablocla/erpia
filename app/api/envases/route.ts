@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { getAuthContext } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 // ─── TIPOS DE ENVASE ──────────────────────────────────────────────────────────
@@ -28,17 +28,17 @@ export async function GET(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const tipos = await db.tipoEnvase.findMany({
-      where: { empresaId: ctx.empresaId, activo: true },
+      where: { empresaId: ctx.auth.empresaId, activo: true },
       orderBy: { nombre: "asc" },
     })
 
     // Calcular stock actual (entregados - retornados) por tipo
     const movimientos = await db.movimientoEnvase.groupBy({
       by: ["tipoEnvaseId", "tipo"],
-      where: { empresaId: ctx.empresaId },
+      where: { empresaId: ctx.auth.empresaId },
       _sum: { cantidad: true },
     })
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const parsed = tipoSchema.safeParse(body)
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const tipo = await db.tipoEnvase.create({
       data: {
         ...parsed.data,
-        empresaId: ctx.empresaId,
+        empresaId: ctx.auth.empresaId,
       },
     })
 
@@ -95,7 +95,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const parsed = tipoUpdateSchema.safeParse(body)
@@ -106,7 +106,7 @@ export async function PATCH(request: NextRequest) {
     const { id, ...data } = parsed.data
 
     // Verificar que pertenece a la empresa
-    const existing = await db.tipoEnvase.findFirst({ where: { id, empresaId: ctx.empresaId } })
+    const existing = await db.tipoEnvase.findFirst({ where: { id, empresaId: ctx.auth.empresaId } })
     if (!existing) return NextResponse.json({ error: "Tipo de envase no encontrado" }, { status: 404 })
 
     const updated = await db.tipoEnvase.update({ where: { id }, data })
@@ -122,13 +122,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
     const id = Number(searchParams.get("id"))
     if (!id || Number.isNaN(id)) return NextResponse.json({ error: "id es obligatorio" }, { status: 400 })
 
-    const existing = await db.tipoEnvase.findFirst({ where: { id, empresaId: ctx.empresaId } })
+    const existing = await db.tipoEnvase.findFirst({ where: { id, empresaId: ctx.auth.empresaId } })
     if (!existing) return NextResponse.json({ error: "Tipo de envase no encontrado" }, { status: 404 })
 
     // Soft delete: desactivar en lugar de borrar

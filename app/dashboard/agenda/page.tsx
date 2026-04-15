@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import {
   Calendar, Clock, Plus, ChevronLeft, ChevronRight,
   User, CheckCircle2, XCircle, Phone, MessageCircle,
@@ -86,6 +87,10 @@ export default function AgendaPage() {
   }, [fechaSeleccionada])
 
   useEffect(() => { cargarDatos() }, [cargarDatos])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarDatos,
+  }))
 
   const profsVisibles = profesionales.filter(p => profesionalFiltro === "todos" || String(p.id) === profesionalFiltro)
   const COLORES_DEFAULT = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500"]

@@ -193,6 +193,8 @@ export class StockService {
   /**
    * Core: adjust stock for a product, optionally in a specific warehouse.
    * Always creates a MovimientoStock record.
+   * Wrapped in prisma.$transaction for atomicity (C-001).
+   * Guards against negative stock on 'salida' operations (A-003).
    * Emits STOCK_ACTUALIZADO for downstream handlers (alerts, etc.)
    */
   private async ajustarStock(
@@ -204,40 +206,47 @@ export class StockService {
   ): Promise<void> {
     const producto = await prisma.producto.findUnique({
       where: { id: productoId },
-      select: { id: true, stock: true, stockMinimo: true, nombre: true },
+      select: { id: true, stock: true, stockMinimo: true, nombre: true, empresaId: true },
     })
     if (!producto) return
 
     const cantidadAnterior = producto.stock
     const cantidadNueva = cantidadAnterior + cantidad
 
-    // Update global product stock
-    await prisma.producto.update({
-      where: { id: productoId },
-      data: { stock: cantidadNueva },
-    })
-
-    // Update per-warehouse stock if depositoId provided
-    if (depositoId) {
-      await prisma.stockDeposito.upsert({
-        where: { productoId_depositoId: { productoId, depositoId } },
-        update: { cantidad: { increment: cantidad } },
-        create: { productoId, depositoId, cantidad: Math.max(0, cantidad) },
-      })
+    // Guard: no permitir stock negativo en salidas (A-003)
+    if (cantidadNueva < 0 && (tipo === "salida" || cantidad < 0)) {
+      throw new Error(
+        `Stock insuficiente para "${producto.nombre}": disponible ${cantidadAnterior}, solicitado ${Math.abs(cantidad)}`,
+      )
     }
 
-    // Create movement record
-    await prisma.movimientoStock.create({
-      data: {
-        productoId,
-        tipo,
-        cantidad: Math.abs(cantidad),
-        motivo,
-        depositoId,
-      },
+    // Atomic transaction: producto + depósito + movimiento (C-001)
+    await prisma.$transaction(async (tx) => {
+      await tx.producto.update({
+        where: { id: productoId },
+        data: { stock: cantidadNueva },
+      })
+
+      if (depositoId) {
+        await tx.stockDeposito.upsert({
+          where: { productoId_depositoId: { productoId, depositoId } },
+          update: { cantidad: { increment: cantidad } },
+          create: { productoId, depositoId, cantidad: Math.max(0, cantidad) },
+        })
+      }
+
+      await tx.movimientoStock.create({
+        data: {
+          productoId,
+          tipo,
+          cantidad: Math.abs(cantidad),
+          motivo,
+          depositoId,
+          empresaId: producto.empresaId,
+        },
+      })
     })
 
-    // Emit event for downstream handlers (alerts, etc.)
     await eventBus.emit<StockActualizadoPayload>({
       type: "STOCK_ACTUALIZADO",
       payload: {

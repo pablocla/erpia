@@ -22,6 +22,26 @@ CONTEXTO DEL NEGOCIO HOY (${new Date().toLocaleDateString("es-AR")}):
 - Caja: ${contexto.snapshot.cajaAbierta ? `ABIERTA con $${fmt(contexto.snapshot.saldoCaja)}` : "CERRADA"}
 - Turnos hoy: ${contexto.snapshot.turnosPendientesHoy} | Mañana: ${contexto.snapshot.turnosPendientesManana}
 
+═══════════════════════════════════════════════════════════════
+MAESTRO DE PRODUCTOS (${contexto.maestros.totalProductos} en total${contexto.maestros.totalProductos > 200 ? ", mostrando primeros 200" : ""}):
+${contexto.maestros.productos.map(p =>
+  `- [${p.sku}] ${p.nombre}${p.descripcion ? ` — ${p.descripcion}` : ""} | Precio: $${fmt(p.precio)} | Costo: $${fmt(p.precioCompra)} | Stock: ${p.stock} ${p.unidad}${p.stockMinimo > 0 ? ` (mín: ${p.stockMinimo})` : ""} | Cat: ${p.categoria}${!p.activo ? " [INACTIVO]" : ""}${p.esPlato ? " [PLATO]" : ""}${p.esInsumo ? " [INSUMO]" : ""}`
+).join("\n") || "- No hay productos cargados"}
+
+CATEGORÍAS DE PRODUCTOS:
+${contexto.maestros.categorias.map(c => `- ${c.nombre} (${c.cantidadProductos} productos)`).join("\n") || "- Sin categorías"}
+
+MAESTRO DE CLIENTES (${contexto.maestros.totalClientes} en total${contexto.maestros.totalClientes > 100 ? ", mostrando primeros 100" : ""}):
+${contexto.maestros.clientes.map(c =>
+  `- ${c.nombre}${c.cuit ? ` (${c.cuit})` : ""} | ${c.condicionIva}${c.saldo !== 0 ? ` | Saldo CC: $${fmt(c.saldo)}` : ""}${c.limiteCredito > 0 ? ` | Límite: $${fmt(c.limiteCredito)}` : ""}${!c.activo ? " [INACTIVO]" : ""}`
+).join("\n") || "- No hay clientes cargados"}
+
+MAESTRO DE PROVEEDORES (${contexto.maestros.totalProveedores} en total):
+${contexto.maestros.proveedores.map(p =>
+  `- ${p.nombre}${p.cuit ? ` (${p.cuit})` : ""}${!p.activo ? " [INACTIVO]" : ""}`
+).join("\n") || "- No hay proveedores cargados"}
+═══════════════════════════════════════════════════════════════
+
 STOCK CRÍTICO (${contexto.snapshot.stockCritico.length} productos bajo mínimo):
 ${contexto.snapshot.stockCritico.slice(0, 10).map(p => `- ${p.nombre}: ${p.stock} ${p.unidad} (mínimo: ${p.stockMinimo})`).join("\n") || "- Sin alertas de stock"}
 
@@ -48,7 +68,12 @@ REGLAS DE COMPORTAMIENTO:
 5. Cuando propongas una acción (enviar WhatsApp, crear orden, etc.) SIEMPRE preguntá confirmación
 6. Sé conciso. Máximo 3-4 líneas por respuesta salvo que pidan un reporte
 7. Cuando detectes algo urgente, empezá con 🔴. Importante con 🟡. Info con 🟢
-8. NUNCA menciones que sos una IA, un modelo de lenguaje o que usás Ollama. Sos el asistente del negocio.`
+8. NUNCA menciones que sos una IA, un modelo de lenguaje o que usás Ollama. Sos el asistente del negocio.
+9. Tenés acceso COMPLETO a los maestros de productos, clientes y proveedores listados arriba. Si te preguntan por un SKU, producto o cliente, BUSCÁ en esos datos antes de decir "no tengo ese dato".
+10. Si el dato NO está en los listados, decí "no lo encuentro en los datos que tengo cargados".
+
+TABLAS DISPONIBLES EN EL SISTEMA (para que entiendas qué datos existen):
+Empresa, Cliente, Proveedor, Factura, LineaFactura, Compra, LineaCompra, AsientoContable, MovimientoContable, Usuario, Categoria, Producto, MovimientoStock, Caja, MovimientoCaja, NotaCredito, Remito, Transportista, Envio, Vehiculo, Chofer, HojaRuta, ListaMateriales, OrdenProduccion, ListaPicking, DispositivoIoT, Deposito, StockDeposito, TransferenciaDeposito, Ticket, PuntoVentaConfig, Serie, Moneda, Cotizacion, Banco, CuentaBancaria, Cheque, MovimientoBancario, CondicionPago, ListaPrecio, Vendedor, CentroCosto, Presupuesto, OrdenCompra, PedidoVenta, ActivoFijo, CuentaCobrar, Recibo, CuentaPagar, OrdenPago, AlertaIA, ReporteIA, ChatIAHistorial, Profesional, Turno, Paciente, PlanMembresia, Membresia, Salon, Mesa, Comanda, CuentaContable, PeriodoFiscal, TipoEnvase, MovimientoEnvase.`
 }
 
 function fmt(n: number): string {

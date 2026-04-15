@@ -14,6 +14,9 @@ import {
   TrendingUp, CreditCard, Filter,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Plan {
   id: number
@@ -67,6 +70,11 @@ export default function MembresiasPage() {
   }, [])
 
   useEffect(() => { cargarDatos() }, [cargarDatos])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarDatos,
+    onNew: () => setModalNuevo(true),
+  }))
 
   const guardarPlan = async () => {
     if (!formPlan.nombre || !formPlan.precio) return
@@ -140,56 +148,36 @@ export default function MembresiasPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Socios</CardTitle>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar socio..." className="pl-9 h-9 w-56 text-sm" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-              </div>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="h-9 w-36"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="activa">Activos</SelectItem>
-                  <SelectItem value="vencida">Vencidos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="h-9 w-36"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="activa">Activos</SelectItem>
+                <SelectItem value="vencida">Vencidos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="border-t">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-3 font-medium">Socio</th>
-                  <th className="text-left p-3 font-medium">Plan</th>
-                  <th className="text-left p-3 font-medium">Inicio</th>
-                  <th className="text-left p-3 font-medium">Vencimiento</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {membresiasFiltradas.map(m => {
-                  const cfg = ESTADO_CONFIG[m.estado] ?? ESTADO_CONFIG.activa
-                  return (
-                    <tr key={m.id} className="border-t hover:bg-muted/30">
-                      <td className="p-3">
-                        <p className="font-medium">{m.cliente.nombre}</p>
-                        {m.cliente.email && <p className="text-xs text-muted-foreground">{m.cliente.email}</p>}
-                      </td>
-                      <td className="p-3">{m.plan.nombre}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(m.fechaInicio).toLocaleDateString("es-AR")}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(m.fechaFin).toLocaleDateString("es-AR")}</td>
-                      <td className="p-3"><Badge variant={cfg.variant}>{cfg.label}</Badge></td>
-                    </tr>
-                  )
-                })}
-                {membresiasFiltradas.length === 0 && (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground text-sm">No se encontraron membresias</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<Membresia>
+            data={membresiasFiltradas}
+            columns={[
+              { key: "cliente" as any, header: "Socio", cell: (m) => (<div><p className="font-medium">{m.cliente.nombre}</p>{m.cliente.email && <p className="text-xs text-muted-foreground">{m.cliente.email}</p>}</div>), exportFn: (m) => m.cliente.nombre },
+              { key: "plan" as any, header: "Plan", cell: (m) => m.plan.nombre, exportFn: (m) => m.plan.nombre },
+              { key: "fechaInicio", header: "Inicio", sortable: true, cell: (m) => <span className="text-muted-foreground">{new Date(m.fechaInicio).toLocaleDateString("es-AR")}</span> },
+              { key: "fechaFin", header: "Vencimiento", sortable: true, cell: (m) => <span className="text-muted-foreground">{new Date(m.fechaFin).toLocaleDateString("es-AR")}</span> },
+              { key: "estado", header: "Estado", cell: (m) => { const cfg = ESTADO_CONFIG[m.estado] ?? ESTADO_CONFIG.activa; return <Badge variant={cfg.variant}>{cfg.label}</Badge> } },
+            ] as DataTableColumn<Membresia>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar socio..."
+            searchKeys={["estado"]}
+            exportFilename="membresias"
+            loading={loading}
+            emptyMessage="No se encontraron membresias"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin socios" description="Agregá un plan y registrá socios." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

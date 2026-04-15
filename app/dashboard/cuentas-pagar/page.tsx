@@ -30,6 +30,9 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type CP = {
   id: number
@@ -121,6 +124,10 @@ export default function CuentasPagarPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   useEffect(() => {
     fetch("/api/proveedores", { headers: authHeaders() })
@@ -262,13 +269,7 @@ export default function CuentasPagarPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Comprobantes de proveedores</CardTitle>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9 h-9 w-48 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
-              <Select value={proveedorFiltro} onValueChange={setProveedorFiltro}>
+            <CaSelect value={proveedorFiltro} onValueChange={setProveedorFiltro}>
                 <SelectTrigger className="h-9 w-52"><SelectValue placeholder="Proveedor" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos los proveedores</SelectItem>
@@ -290,57 +291,30 @@ export default function CuentasPagarPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Proveedor</th>
-                  <th className="text-left p-3 font-medium">Comprobante</th>
-                  <th className="text-left p-3 font-medium">Emisión</th>
-                  <th className="text-left p-3 font-medium">Vencimiento</th>
-                  <th className="text-right p-3 font-medium">Total</th>
-                  <th className="text-right p-3 font-medium">Saldo</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cuentasFiltradas.map((c) => {
-                  const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente
-                  return (
-                    <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
-                      <td className="p-3">
-                        <p className="font-medium">{c.proveedor?.nombre ?? "—"}</p>
-                        {c.proveedor?.cuit && <p className="text-xs text-muted-foreground">{c.proveedor.cuit}</p>}
-                      </td>
-                      <td className="p-3 font-mono text-xs">
-                        {c.compra ? `FAC ${c.compra.tipo} ${formatPV(c.compra.puntoVenta, c.compra.numero)}` : `CP #${c.id}`}
-                      </td>
-                      <td className="p-3 text-muted-foreground">{new Date(c.fechaEmision).toLocaleDateString("es-AR")}</td>
-                      <td className="p-3">
-                        <div className={cn("text-xs font-medium px-1.5 py-0.5 rounded inline-block", conf.bg, conf.color)}>
-                          {new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}
-                          {c.diasVencido > 0 && ` (${c.diasVencido}d)`}
-                        </div>
-                      </td>
-                      <td className="p-3 text-right font-medium">{formatCurrency(c.montoOriginal)}</td>
-                      <td className="p-3 text-right font-bold text-primary">{formatCurrency(c.saldo)}</td>
-                      <td className="p-3"><span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span></td>
-                      <td className="p-3">
-                        {c.estado !== "pagada" && c.saldo > 0 && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => abrirPago(c)}>Registrar pago</Button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-                {cuentasFiltradas.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay cuentas para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<CP>
+            data={cuentasFiltradas}
+            columns={[
+              { key: "proveedor" as any, header: "Proveedor", cell: (c) => (<div><p className="font-medium">{c.proveedor?.nombre ?? "—"}</p>{c.proveedor?.cuit && <p className="text-xs text-muted-foreground">{c.proveedor.cuit}</p>}</div>), exportFn: (c) => c.proveedor?.nombre ?? "" },
+              { key: "compra" as any, header: "Comprobante", cell: (c) => <span className="font-mono text-xs">{c.compra ? `FAC ${c.compra.tipo} ${formatPV(c.compra.puntoVenta, c.compra.numero)}` : `CP #${c.id}`}</span> },
+              { key: "fechaEmision", header: "Emisión", sortable: true, cell: (c) => <span className="text-muted-foreground">{new Date(c.fechaEmision).toLocaleDateString("es-AR")}</span> },
+              { key: "fechaVencimiento", header: "Vencimiento", sortable: true, cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <div className={cn("text-xs font-medium px-1.5 py-0.5 rounded inline-block", conf.bg, conf.color)}>{new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}{c.diasVencido > 0 && ` (${c.diasVencido}d)`}</div> } },
+              { key: "montoOriginal", header: "Total", align: "right", sortable: true, cell: (c) => <span className="font-medium">{formatCurrency(c.montoOriginal)}</span> },
+              { key: "saldo", header: "Saldo", align: "right", sortable: true, cell: (c) => <span className="font-bold text-primary">{formatCurrency(c.saldo)}</span> },
+              { key: "estado", header: "Estado", cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span> } },
+              { key: "acciones" as any, header: "", cell: (c) => c.estado !== "pagada" && c.saldo > 0 ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); abrirPago(c) }}>Registrar pago</Button> : null },
+            ] as DataTableColumn<CP>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar cuenta..."
+            searchKeys={["id"]}
+            selectable
+            exportFilename="cuentas-pagar"
+            loading={loading}
+            emptyMessage="No hay cuentas para mostrar"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin cuentas a pagar" description="Las cuentas se generan al registrar facturas de proveedores." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 
@@ -348,84 +322,27 @@ export default function CuentasPagarPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Órdenes de pago recientes</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Orden</th>
-                  <th className="text-left p-3 font-medium">Proveedor</th>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-right p-3 font-medium">Total</th>
-                  <th className="text-right p-3 font-medium">Retenciones</th>
-                  <th className="text-right p-3 font-medium">Neto</th>
-                  <th className="text-left p-3 font-medium">Medio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordenesPago.map((op) => (
-                  <tr key={op.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-xs">{op.numero}</td>
-                    <td className="p-3">
-                      <p className="font-medium">{op.proveedor?.nombre ?? "—"}</p>
-                      {op.proveedor?.cuit && <p className="text-xs text-muted-foreground">{op.proveedor.cuit}</p>}
-                    </td>
-                    <td className="p-3 text-muted-foreground">{new Date(op.fecha).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3 text-right font-medium">{formatCurrency(op.montoTotal)}</td>
-                    <td className="p-3 text-right text-amber-700">{formatCurrency(op.totalRetenciones)}</td>
-                    <td className="p-3 text-right font-bold text-primary">{formatCurrency(op.netoPagado)}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{op.medioPago}</td>
-                  </tr>
-                ))}
-                {ordenesPago.length === 0 && (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{loadingOrdenes ? "Cargando..." : "No hay órdenes de pago para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal pago */}
-      <Dialog open={!!modalPago} onOpenChange={() => setModalPago(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Registrar Pago (Orden de Pago)</DialogTitle></DialogHeader>
-          {modalPago && (
-            <div className="space-y-3 py-2">
-              {errorPago && <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">{errorPago}</div>}
-              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                <p className="font-semibold">{modalPago.proveedor?.nombre}</p>
-                <p className="text-muted-foreground">
-                  {modalPago.compra ? `FAC ${modalPago.compra.tipo} ${formatPV(modalPago.compra.puntoVenta, modalPago.compra.numero)}` : `CP #${modalPago.id}`}
-                </p>
-                <p>Saldo: <span className="font-bold text-primary">{formatCurrency(modalPago.saldo)}</span></p>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Importe a pagar</Label>
-                <Input type="number" step="0.01" value={montoPago} onChange={(e) => setMontoPago(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Forma de pago</Label>
-                <Select value={medioPago} onValueChange={setMedioPago}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Referencia / Observaciones</Label>
-                <Input placeholder="N° transferencia, cheque..." value={obsPago} onChange={(e) => setObsPago(e.target.value)} />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalPago(null)}>Cancelar</Button>
-            <Button onClick={registrarPago} disabled={pagando}>{pagando ? "Procesando..." : "Confirmar Pago"}</Button>
-          </DialogFooter>
+        <CardContent className="pt-0">
+          <DataTable<OrdenPago>
+            data={ordenesPago}
+            columns={[
+              { key: "numero", header: "Orden", sortable: true, cell: (op) => <span className="font-mono text-xs">{op.numero}</span> },
+              { key: "proveedor" as any, header: "Proveedor", cell: (op) => (<div><p className="font-medium">{op.proveedor?.nombre ?? "—"}</p>{op.proveedor?.cuit && <p className="text-xs text-muted-foreground">{op.proveedor.cuit}</p>}</div>), exportFn: (op) => op.proveedor?.nombre ?? "" },
+              { key: "fecha", header: "Fecha", sortable: true, cell: (op) => <span className="text-muted-foreground">{new Date(op.fecha).toLocaleDateString("es-AR")}</span> },
+              { key: "montoTotal", header: "Total", align: "right", sortable: true, cell: (op) => <span className="font-medium">{formatCurrency(op.montoTotal)}</span> },
+              { key: "totalRetenciones", header: "Retenciones", align: "right", cell: (op) => <span className="text-amber-700">{formatCurrency(op.totalRetenciones)}</span> },
+              { key: "netoPagado", header: "Neto", align: "right", cell: (op) => <span className="font-bold text-primary">{formatCurrency(op.netoPagado)}</span> },
+              { key: "medioPago", header: "Medio", cell: (op) => <span className="text-xs text-muted-foreground">{op.medioPago}</span> },
+            ] as DataTableColumn<OrdenPago>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar orden..."
+            searchKeys={["numero"]}
+            exportFilename="ordenes-pago"
+            loading={loadingOrdenes}
+            emptyMessage="No hay órdenes de pago"
+            defaultPageSize={10}
+            compact
+          /logFooter>
         </DialogContent>
       </Dialog>
     </div>

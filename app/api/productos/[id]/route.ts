@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
+import { invalidateContextCache } from "@/lib/ai"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -87,6 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       include: { categoria: true },
     })
 
+    invalidateContextCache(ctx.auth.empresaId)
     return NextResponse.json(producto)
   } catch (error) {
     console.error("Error al actualizar producto:", error)
@@ -134,6 +136,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }),
     ])
 
+    invalidateContextCache(ctx.auth.empresaId)
     return NextResponse.json(productoActualizado)
   } catch (error) {
     console.error("Error al ajustar stock:", error)
@@ -157,6 +160,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       where: { id: productoId },
       data: { activo: false },
     })
+    invalidateContextCache(ctx.auth.empresaId)
     return NextResponse.json(producto)
   } catch (error) {
     console.error("Error al eliminar producto:", error)

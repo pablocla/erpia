@@ -10,7 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Pencil, Hash, CheckCircle, XCircle } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import type { TipoComprobanteAfip } from "@/lib/afip/tipos-comprobante"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface PuntoVenta {
   id: number
@@ -78,6 +81,11 @@ export default function SeriesPage() {
   useEffect(() => { cargar() }, [cargar])
 
   const seriesFiltradas = filtroPV === "todos" ? series : series.filter((s) => String(s.puntoVentaId) === filtroPV)
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+    onNew: () => { setEditando(null); setForm({ codigo: "", descripcion: "", tipoCbteAfip: "", puntoVentaId: String(puntosVenta[0]?.id ?? "") }); setDialogOpen(true) },
+  }))
 
   function abrirNuevo() {
     setEditando(null)
@@ -200,69 +208,26 @@ export default function SeriesPage() {
 
       {/* Tabla */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-28">Código</TableHead>
-                <TableHead>Tipo Comprobante</TableHead>
-                <TableHead>Punto de Venta</TableHead>
-                <TableHead className="text-right w-32">Último Nº</TableHead>
-                <TableHead className="w-20 text-center">Estado</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Cargando…</TableCell></TableRow>
-              ) : seriesFiltradas.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay series configuradas</TableCell></TableRow>
-              ) : (
-                seriesFiltradas.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="font-mono font-semibold">{s.codigo}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge className={LETRA_COLORS[s.letraComprobante] ?? LETRA_COLORS[""]}>
-                          {s.letraComprobante || "—"}
-                        </Badge>
-                        <div>
-                          <p className="font-medium text-sm">{s.nombreComprobante}</p>
-                          <p className="text-xs text-muted-foreground">tipoCbte: {s.tipoCbteAfip}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {s.puntoVenta && (
-                        <span className="text-sm">
-                          PV {String(s.puntoVenta.numero).padStart(4, "0")} — {s.puntoVenta.nombre}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {s.ultimoNumero.toLocaleString("es-AR")}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {s.activo
-                        ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
-                        : <XCircle className="h-4 w-4 text-red-400 mx-auto" />
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => abrirEditar(s)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<Serie>
+            data={seriesFiltradas}
+            columns={[
+              { key: "codigo", header: "Código", sortable: true, cell: (s) => <div className="flex items-center gap-2"><Hash className="h-3.5 w-3.5 text-muted-foreground" /><span className="font-mono font-semibold">{s.codigo}</span></div> },
+              { key: "nombreComprobante", header: "Tipo Comprobante", cell: (s) => <div className="flex items-center gap-2"><Badge className={LETRA_COLORS[s.letraComprobante] ?? LETRA_COLORS[""]}>{s.letraComprobante || "—"}</Badge><div><p className="font-medium text-sm">{s.nombreComprobante}</p><p className="text-xs text-muted-foreground">tipoCbte: {s.tipoCbteAfip}</p></div></div> },
+              { key: "puntoVenta" as any, header: "Punto de Venta", cell: (s) => s.puntoVenta ? <span className="text-sm">PV {String(s.puntoVenta.numero).padStart(4, "0")} — {s.puntoVenta.nombre}</span> : null, exportFn: (s) => s.puntoVenta ? `PV ${s.puntoVenta.numero}` : "" },
+              { key: "ultimoNumero", header: "Último Nº", sortable: true, cell: (s) => <span className="font-mono">{s.ultimoNumero.toLocaleString("es-AR")}</span> },
+              { key: "activo", header: "Estado", cell: (s) => s.activo ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <XCircle className="h-4 w-4 text-red-400 mx-auto" /> },
+              { key: "acciones" as any, header: "", cell: (s) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(s) }}><Pencil className="h-3.5 w-3.5" /></Button> },
+            ] as DataTableColumn<Serie>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar serie..."
+            searchKeys={["codigo", "nombreComprobante"]}
+            exportFilename="series-comprobantes"
+            loading={loading}
+            emptyMessage="No hay series configuradas"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin series" description="Creá tu primera serie de comprobantes." />}
+            compact
+          />
         </CardContent>
       </Card>
 

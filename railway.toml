@@ -7,3 +7,10 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+
+# ─── Cron Jobs ─────────────────────────────────────────────────────────────────
+# Executes all scheduled AI agents every hour.
+# Set CRON_SECRET env var in Railway for auth.
+[[deploy.crons]]
+schedule = "0 * * * *"
+endpoint = "/api/cron/agentes"

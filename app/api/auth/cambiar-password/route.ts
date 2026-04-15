@@ -10,7 +10,7 @@ const cambiarPasswordSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = verificarAutenticacion(request)
+    const auth = await verificarAutenticacion(request)
 
     if (!auth.autenticado) {
       return crearRespuestaNoAutorizado(auth.error)

@@ -4,7 +4,7 @@ import { AuthService } from "@/lib/auth/auth-service"
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = verificarAutenticacion(request)
+    const auth = await verificarAutenticacion(request)
 
     if (!auth.autenticado) {
       return crearRespuestaNoAutorizado(auth.error)

@@ -97,6 +97,8 @@ export interface TaxInput {
   fechaOperacion?: Date
   /** Override auto-detected TES */
   tesCodigo?: string
+  /** Alícuota IIBB del padrón del contribuyente (override de tasa genérica) */
+  alicuotaPadronIIBB?: number
 }
 
 // ─── OUTPUT MODEL ─────────────────────────────────────────────────────────────

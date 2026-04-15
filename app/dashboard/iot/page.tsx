@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Cpu, Plus, Wifi, WifiOff, AlertTriangle, Activity, Thermometer, Droplets, CheckCircle2, Settings2, Gauge, Shield, Wrench } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface LecturaIoT {
   id: number
@@ -202,6 +204,10 @@ export default function IoTPage() {
     const interval = setInterval(() => { fetchLecturas(); fetchAlertas() }, 30_000)
     return () => clearInterval(interval)
   }, [fetchDispositivos, fetchLecturas, fetchAlertas])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: () => { fetchDispositivos(); fetchLecturas(); fetchAlertas() },
+  }))
 
   const guardarDispositivo = async () => {
     if (!form.codigo || !form.nombre || !form.tipo) { setError("Código, nombre y tipo son obligatorios"); return }
@@ -473,42 +479,23 @@ export default function IoTPage() {
         {/* Tab Lecturas */}
         <TabsContent value="lecturas">
           <Card className="mt-4">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Dispositivo</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Calidad</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lecturas.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No hay lecturas registradas</TableCell></TableRow>
-                  ) : lecturas.map((l) => (
-                    <TableRow key={l.id}>
-                      <TableCell className="font-mono text-sm">{new Date(l.timestamp).toLocaleString("es-AR")}</TableCell>
-                      <TableCell>
-                        <p className="font-medium text-sm">{l.dispositivo.nombre}</p>
-                        <p className="text-xs text-muted-foreground">{l.dispositivo.codigo}</p>
-                      </TableCell>
-                      <TableCell className="capitalize text-sm">{l.dispositivo.tipo}</TableCell>
-                      <TableCell className="font-bold">
-                        {l.valor} <span className="font-normal text-sm text-muted-foreground">{l.unidad}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          l.calidad === "ok" ? "bg-green-100 text-green-700" :
-                          l.calidad === "alerta" ? "bg-yellow-100 text-yellow-700" :
-                          "bg-red-100 text-red-700"
-                        }`}>{l.calidad}</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<LecturaIoT>
+                data={lecturas}
+                columns={[
+                  { key: "timestamp", header: "Timestamp", sortable: true, cell: (l) => <span className="font-mono text-sm">{new Date(l.timestamp).toLocaleString("es-AR")}</span> },
+                  { key: "dispositivo" as any, header: "Dispositivo", cell: (l) => <div><p className="font-medium text-sm">{l.dispositivo.nombre}</p><p className="text-xs text-muted-foreground">{l.dispositivo.codigo}</p></div>, exportFn: (l) => l.dispositivo.nombre },
+                  { key: "tipo" as any, header: "Tipo", cell: (l) => <span className="capitalize text-sm">{l.dispositivo.tipo}</span> },
+                  { key: "valor", header: "Valor", sortable: true, cell: (l) => <span className="font-bold">{l.valor} <span className="font-normal text-sm text-muted-foreground">{l.unidad}</span></span> },
+                  { key: "calidad", header: "Calidad", cell: (l) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${l.calidad === "ok" ? "bg-green-100 text-green-700" : l.calidad === "alerta" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{l.calidad}</span> },
+                ] as DataTableColumn<LecturaIoT>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar lectura..."
+                searchKeys={["calidad"]}
+                exportFilename="iot-lecturas"
+                emptyMessage="No hay lecturas registradas"
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -516,48 +503,24 @@ export default function IoTPage() {
         {/* Tab Alertas */}
         <TabsContent value="alertas">
           <Card className="mt-4">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Dispositivo</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Mensaje</TableHead>
-                    <TableHead>Nivel</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {alertas.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay alertas activas</TableCell></TableRow>
-                  ) : alertas.map((a) => (
-                    <TableRow key={a.id} className={!a.resuelta && a.nivel === "critical" ? "bg-red-50 dark:bg-red-900/10" : ""}>
-                      <TableCell className="font-mono text-sm">{new Date(a.createdAt).toLocaleString("es-AR")}</TableCell>
-                      <TableCell>
-                        <p className="font-medium text-sm">{a.dispositivo.nombre}</p>
-                        <p className="text-xs text-muted-foreground">{a.dispositivo.codigo}</p>
-                      </TableCell>
-                      <TableCell className="capitalize text-sm">{a.tipo}</TableCell>
-                      <TableCell className="text-sm">{a.mensaje}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${NIVEL_BADGE[a.nivel] || "bg-gray-100 text-gray-700"}`}>
-                          {a.nivel}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {!a.resuelta ? (
-                          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => resolverAlerta(a.id)}>
-                            <CheckCircle2 className="h-3 w-3" /> Resolver
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Resuelta</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<AlertaIoT>
+                data={alertas}
+                columns={[
+                  { key: "createdAt", header: "Fecha", sortable: true, cell: (a) => <span className="font-mono text-sm">{new Date(a.createdAt).toLocaleString("es-AR")}</span> },
+                  { key: "dispositivo" as any, header: "Dispositivo", cell: (a) => <div><p className="font-medium text-sm">{a.dispositivo.nombre}</p><p className="text-xs text-muted-foreground">{a.dispositivo.codigo}</p></div>, exportFn: (a) => a.dispositivo.nombre },
+                  { key: "tipo", header: "Tipo", cell: (a) => <span className="capitalize text-sm">{a.tipo}</span> },
+                  { key: "mensaje", header: "Mensaje", cell: (a) => <span className="text-sm">{a.mensaje}</span> },
+                  { key: "nivel", header: "Nivel", sortable: true, cell: (a) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${NIVEL_BADGE[a.nivel] || "bg-gray-100 text-gray-700"}`}>{a.nivel}</span> },
+                  { key: "acciones" as any, header: "Acciones", cell: (a) => !a.resuelta ? <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={(e) => { e.stopPropagation(); resolverAlerta(a.id) }}><CheckCircle2 className="h-3 w-3" /> Resolver</Button> : <span className="text-xs text-muted-foreground">Resuelta</span> },
+                ] as DataTableColumn<AlertaIoT>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar alerta..."
+                searchKeys={["tipo", "mensaje", "nivel"]}
+                exportFilename="iot-alertas"
+                emptyMessage="No hay alertas activas"
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>

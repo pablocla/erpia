@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const params = request.nextUrl.searchParams
     const productoId = params.get("productoId")
@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, Number(params.get("page") ?? 1))
     const limit = Math.min(100, Math.max(1, Number(params.get("limit") ?? 50)))
 
-    const where: Record<string, unknown> = {}
+    const where: Record<string, unknown> = {
+      producto: { empresaId: ctx.auth.empresaId },
+    }
     if (productoId) where.productoId = Number(productoId)
     if (tipo) where.tipo = tipo
 
@@ -34,13 +36,14 @@ export async function GET(request: NextRequest) {
     // Resumen
     const agg = await prisma.movimientoStock.groupBy({
       by: ["tipo"],
+      where: { producto: { empresaId: ctx.auth.empresaId } },
       _count: { id: true },
       _sum: { cantidad: true },
     })
 
     const resumen = {
       total,
-      porTipo: Object.fromEntries(agg.map(a => [a.tipo, { cantidad: a._count.id, unidades: a._sum.cantidad ?? 0 }])),
+      porTipo: Object.fromEntries(agg.map(a => [a.tipo, { cantidad: typeof a._count === "object" ? (a._count?.id ?? 0) : 0, unidades: a._sum?.cantidad ?? 0 }])),
     }
 
     return NextResponse.json({ success: true, movimientos, resumen, page, limit, total })

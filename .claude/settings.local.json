@@ -5,7 +5,15 @@
       "Bash(npm run:*)",
       "Read(//c/Users/**)",
       "Bash(xargs wc:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(sed 's/^model //')",
+      "Bash(npx tsc:*)",
+      "Bash(python -c ':*)",
+      "Bash(find \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api\" -type f -name \"*.ts\" -exec grep -l \"reporte\\\\|report\\\\|cierre\\\\|fiscal\\\\|x\\\\|z\" {} \\\\;)",
+      "Bash(awk '/^model Factura \\\\{/,/^}/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
+      "Bash(awk '/^model Factura \\\\{/,/^model [A-Z]/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
+      "Bash(awk '/^model Factura/,/^}/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

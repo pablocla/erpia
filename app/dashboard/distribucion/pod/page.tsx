@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface ParadaRuta {
   id: number
@@ -165,6 +166,10 @@ export default function PODPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: buscarHoja,
+  }))
 
   const buscarHoja = async () => {
     if (!numeroHoja.trim()) return

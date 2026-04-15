@@ -124,11 +124,11 @@ export default function IAPage() {
       </div>
 
       <Tabs defaultValue="chat" className="flex-1">
-        <TabsList className="grid w-full grid-cols-4 max-w-xl">
-          <TabsTrigger value="chat"><MessageSquare className="h-4 w-4 mr-1" />Chat</TabsTrigger>
-          <TabsTrigger value="alertas"><AlertTriangle className="h-4 w-4 mr-1" />Alertas</TabsTrigger>
-          <TabsTrigger value="whatsapp"><PhoneForwarded className="h-4 w-4 mr-1" />WhatsApp</TabsTrigger>
-          <TabsTrigger value="proyeccion"><TrendingUp className="h-4 w-4 mr-1" />Proyección</TabsTrigger>
+        <TabsList className="flex flex-wrap w-fit bg-transparent gap-2 p-0 h-auto">
+          <TabsTrigger value="chat" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><MessageSquare className="h-4 w-4 mr-2" />Chat</TabsTrigger>
+          <TabsTrigger value="alertas" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><AlertTriangle className="h-4 w-4 mr-2" />Alertas</TabsTrigger>
+          <TabsTrigger value="whatsapp" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><PhoneForwarded className="h-4 w-4 mr-2" />WhatsApp</TabsTrigger>
+          <TabsTrigger value="proyeccion" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><TrendingUp className="h-4 w-4 mr-2" />Proyección</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat" className="mt-4">
@@ -154,7 +154,7 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch("/api/ai/chat?limit=30", { headers: authHeaders() })
@@ -164,9 +164,7 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
   }, [authHeaders])
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    scrollEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
   const sendMessage = useCallback(async (text: string) => {
@@ -206,7 +204,7 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
       <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
         <div className="flex flex-wrap gap-2">
           {QUICK_ACTIONS.map(action => (
-            <Button key={action.label} variant="outline" size="sm"
+            <Button key={action.label} variant="outline" size="sm" className="rounded-full"
               onClick={() => sendMessage(action.label)} disabled={loading}>
               <action.icon className="h-3 w-3 mr-1" />
               {action.label}
@@ -214,7 +212,7 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
           ))}
         </div>
 
-        <ScrollArea ref={scrollRef} className="flex-1 pr-2">
+        <ScrollArea className="flex-1 min-h-0 pr-2">
           <div className="flex flex-col gap-3">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-12">
@@ -225,8 +223,8 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap ${
-                  msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap shadow-sm ${
+                  msg.role === "user" ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900" : "bg-background border border-border"
                 }`}>
                   {msg.content}
                 </div>
@@ -240,6 +238,7 @@ function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
                 </div>
               </div>
             )}
+            <div ref={scrollEndRef} />
           </div>
         </ScrollArea>
 

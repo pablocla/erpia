@@ -1,7 +1,49 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { comprasService } from "@/lib/compras/compras-service"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+
+// ─── GET — List recepciones ──────────────────────────────────────────────────
+
+export async function GET(request: NextRequest) {
+  try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+
+    const params = request.nextUrl.searchParams
+    const ordenCompraId = params.get("ordenCompraId")
+    const page = Math.max(1, Number(params.get("page") || 1))
+    const limit = Math.min(100, Math.max(1, Number(params.get("limit") || 50)))
+    const skip = (page - 1) * limit
+
+    const where: Record<string, unknown> = whereEmpresa(ctx.auth.empresaId)
+    if (ordenCompraId) where.ordenCompraId = Number(ordenCompraId)
+
+    const [recepciones, total] = await Promise.all([
+      prisma.recepcionCompra.findMany({
+        where,
+        include: {
+          ordenCompra: { select: { id: true, numero: true } },
+          lineas: true,
+        },
+        orderBy: { fecha: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.recepcionCompra.count({ where }),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      recepciones,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    })
+  } catch (error) {
+    console.error("Error en GET recepciones:", error)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+  }
+}
 
 const lineaRecepcionSchema = z.object({
   lineaOcId: z.number().int().positive(),
@@ -23,8 +65,8 @@ const recepcionSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const validacion = recepcionSchema.safeParse(body)

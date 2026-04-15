@@ -2,7 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { jwtVerify } from "jose"
 
 // ─── Public routes that skip auth ─────────────────────────────────────────────
-const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/refresh", "/api/ecommerce"]
+const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/refresh", "/api/ecommerce", "/api/ai/status", "/api/health"]
+
+// ─── Static asset extensions ──────────────────────────────────────────────────
+const STATIC_EXT = /\.(ico|png|jpg|jpeg|svg|webp|avif|woff2?|ttf|css|js|map)$/i
 
 // Encode the secret once at module level
 function getSecret() {
@@ -10,17 +13,22 @@ function getSecret() {
   if (!raw && process.env.NODE_ENV === "production") {
     throw new Error("JWT_SECRET no configurado en producción")
   }
-  // In dev with random per-process secret from auth-service, middleware can't validate.
-  // We accept the token if JWT_SECRET is not set in dev (auth-service uses its own, validated later).
   return raw ? new TextEncoder().encode(raw) : null
 }
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  // ─── Static assets: aggressive cache, skip auth ───────────────────────────
+  if (STATIC_EXT.test(pathname) || pathname.startsWith("/_next/")) {
+    const response = NextResponse.next()
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable")
+    return response
+  }
+
   // ─── Public routes ────────────────────────────────────────────────────────
   if (RUTAS_PUBLICAS.some((ruta) => pathname.startsWith(ruta))) {
-    return NextResponse.next()
+    return addRequestId(NextResponse.next(), request)
   }
 
   // ─── Protected API routes ─────────────────────────────────────────────────
@@ -50,10 +58,10 @@ export async function middleware(request: NextRequest) {
       if (payload.rol) headers.set("x-user-rol", String(payload.rol))
       if (payload.empresaId) headers.set("x-empresa-id", String(payload.empresaId))
 
-      return addRequestId(
-        NextResponse.next({ request: { headers } }),
-        request,
-      )
+      const response = NextResponse.next({ request: { headers } })
+      // API responses: no-store by default (private, real-time data)
+      response.headers.set("Cache-Control", "no-store, max-age=0")
+      return addRequestId(response, request)
     } catch (error: any) {
       if (error?.code === "ERR_JWT_EXPIRED") {
         return NextResponse.json(
@@ -79,5 +87,8 @@ function addRequestId(response: NextResponse, request: NextRequest): NextRespons
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: [
+    // Match all paths except _next/static, _next/image, favicon.ico
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
 }

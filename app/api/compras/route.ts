@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import prisma from "@/lib/prisma"
 import { registrarAsientoCompra } from "@/lib/contabilidad/factura-hooks"
 import { eventBus } from "@/lib/events/event-bus"
@@ -8,6 +8,56 @@ import { comprasService } from "@/lib/compras/compras-service"
 import "@/lib/stock/stock-service"
 import "@/lib/cc-cp/cuentas-service"
 import { z } from "zod"
+
+// ─── GET — List compras (facturas de compra) ──────────────────────────────────
+
+export async function GET(request: NextRequest) {
+  try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+
+    const params = request.nextUrl.searchParams
+    const proveedorId = params.get("proveedorId")
+    const tipo = params.get("tipo")
+    const desde = params.get("desde")
+    const hasta = params.get("hasta")
+    const page = Math.max(1, Number(params.get("page") || 1))
+    const limit = Math.min(100, Math.max(1, Number(params.get("limit") || 50)))
+    const skip = (page - 1) * limit
+
+    const where: Record<string, unknown> = whereEmpresa(ctx.auth.empresaId)
+    if (proveedorId) where.proveedorId = Number(proveedorId)
+    if (tipo) where.tipo = tipo
+    if (desde || hasta) {
+      where.fecha = {}
+      if (desde) (where.fecha as Record<string, unknown>).gte = new Date(desde)
+      if (hasta) (where.fecha as Record<string, unknown>).lte = new Date(hasta)
+    }
+
+    const [compras, total] = await Promise.all([
+      prisma.compra.findMany({
+        where,
+        include: {
+          proveedor: { select: { id: true, nombre: true, cuit: true } },
+          lineas: true,
+        },
+        orderBy: { fecha: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.compra.count({ where }),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      compras,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    })
+  } catch (error) {
+    console.error("Error en GET compras:", error)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+  }
+}
 
 const itemCompraSchema = z.object({
   descripcion: z.string().min(1),

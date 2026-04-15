@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     const caja = await prisma.caja.create({
-      data: { saldoInicial, empresaId, observaciones, turno: body.turno, abiertoPor: (usuario as any).id },
+      data: { saldoInicial, empresaId, observaciones, turno: body.turno, abiertoPor: ctx.auth.userId },
       include: { movimientos: true },
     })
 
@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const validacion = cerrarCajaSchema.safeParse(body)
@@ -174,7 +174,7 @@ export async function PATCH(request: NextRequest) {
         arqueoQR,
         diferencia,
         diferenciaJustif,
-        cerradoPor: (usuario as any).id,
+        cerradoPor: ctx.auth.userId,
       },
       include: { movimientos: true },
     })

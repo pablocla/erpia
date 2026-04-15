@@ -18,6 +18,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
+import { getCuentaLabel } from "@/lib/config/parametro-service"
 import type { OrdenPagoEmitidaPayload } from "@/lib/events/types"
 
 export interface PagoInput {
@@ -147,7 +148,9 @@ export class PagosService {
       })
 
       // 2. Create SICORE retention records for each applicable tax
+      // Link to RegimenRetencion maestro when available
       if (retencionIVA > 0) {
+        const regimen = await tx.regimenRetencion.findFirst({ where: { empresaId, codigoSicore: "767", activo: true } })
         await tx.retencionSICORE.create({
           data: {
             tipo: "IVA",
@@ -158,10 +161,12 @@ export class PagosService {
             fechaRetencion: fechaPago,
             proveedorId,
             ordenPagoId: op.id,
+            regimenRetencionId: regimen?.id,
           },
         })
       }
       if (retencionGanancias > 0) {
+        const regimen = await tx.regimenRetencion.findFirst({ where: { empresaId, codigoSicore: "217", activo: true } })
         await tx.retencionSICORE.create({
           data: {
             tipo: "ganancias",
@@ -172,6 +177,7 @@ export class PagosService {
             fechaRetencion: fechaPago,
             proveedorId,
             ordenPagoId: op.id,
+            regimenRetencionId: regimen?.id,
           },
         })
       }
@@ -198,24 +204,34 @@ export class PagosService {
 
       const movimientos: { cuenta: string; debe: number; haber: number }[] = []
 
+      // Resolve account labels from DB config (professional plan de cuentas)
+      const [ctaProveedores, ctaCaja, ctaBanco, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
+        getCuentaLabel(empresaId, "pago", "proveedores", "2.1.1", "Proveedores"),
+        getCuentaLabel(empresaId, "pago", "caja", "1.1.1", "Caja Moneda Nacional"),
+        getCuentaLabel(empresaId, "pago", "banco", "1.1.3", "Banco Cuenta Corriente"),
+        getCuentaLabel(empresaId, "pago", "ret_iva_depositar", "2.4.1", "Retenciones IVA a Depositar"),
+        getCuentaLabel(empresaId, "pago", "ret_gan_depositar", "2.4.2", "Retenciones Ganancias a Depositar"),
+        getCuentaLabel(empresaId, "pago", "ret_iibb_depositar", "2.4.3", "Retenciones IIBB a Depositar"),
+      ])
+
       // DEBE: extinguish accounts payable
-      movimientos.push({ cuenta: "2.1 Proveedores", debe: montoTotal, haber: 0 })
+      movimientos.push({ cuenta: ctaProveedores, debe: montoTotal, haber: 0 })
 
       // HABER: cash/bank outflow
-      const cuentaBanco = medioPago === "efectivo" ? "1.1 Caja" : "1.2 Banco"
+      const cuentaBanco = medioPago === "efectivo" ? ctaCaja : ctaBanco
       if (netoPagado > 0) {
         movimientos.push({ cuenta: cuentaBanco, debe: 0, haber: netoPagado })
       }
 
       // HABER: retenciones a depositar (pasivo — debemos ingresarlas a AFIP)
       if (retencionIVA > 0) {
-        movimientos.push({ cuenta: "2.4.1 Ret. IVA a depositar", debe: 0, haber: retencionIVA })
+        movimientos.push({ cuenta: ctaRetIVADep, debe: 0, haber: retencionIVA })
       }
       if (retencionGanancias > 0) {
-        movimientos.push({ cuenta: "2.4.2 Ret. Ganancias a depositar", debe: 0, haber: retencionGanancias })
+        movimientos.push({ cuenta: ctaRetGanDep, debe: 0, haber: retencionGanancias })
       }
       if (retencionIIBB > 0) {
-        movimientos.push({ cuenta: "2.4.3 Ret. IIBB a depositar", debe: 0, haber: retencionIIBB })
+        movimientos.push({ cuenta: ctaRetIIBBDep, debe: 0, haber: retencionIIBB })
       }
 
       await tx.asientoContable.create({
@@ -224,6 +240,7 @@ export class PagosService {
           numero: numeroAsiento,
           descripcion: `Pago OP ${numero} - Proveedor: ${proveedor?.nombre ?? proveedorId}`,
           tipo: "pago",
+          tipoAsientoId: (await tx.tipoAsiento.findFirst({ where: { empresaId, codigo: "PAGO", activo: true } }))?.id,
           empresaId,
           movimientos: { create: movimientos },
         },

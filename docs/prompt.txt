@@ -1,0 +1,200 @@
+# NegocioOS — Prompts para Claude Code (3 Fases)
+
+> **Estrategia:** Corré cada fase por separado. No las mezcles.  
+> Después de cada fase, revisá el output, commiteá, y recién ahí pasá a la siguiente.
+
+---
+
+## FASE 1: Escaneo de bugs + estabilización
+
+```
+Necesito que hagas un escaneo completo de calidad y bugs en este proyecto ERP (NegocioOS).
+
+CONTEXTO:
+- Stack: Next.js + Prisma + PostgreSQL + TypeScript
+- Es un ERP multirubro para comercios argentinos (retail)
+- Tiene ~121 modelos Prisma y ~122 rutas API
+- Integración con AFIP (facturación electrónica CAE/CAEA/FCE)
+- Arquitectura multi-empresa y multi-sucursal
+- 9 roles RBAC
+
+TAREAS (en este orden):
+
+1. ANÁLISIS ESTÁTICO:
+   - Revisá todo el schema.prisma: relaciones rotas, campos sin índice que deberían tenerlo, enums inconsistentes, modelos huérfanos sin relaciones
+   - Buscá en las rutas API: endpoints sin validación de input (zod o similar), queries N+1, falta de manejo de errores, rutas sin autenticación/autorización
+   - Detectá código muerto, imports sin usar, funciones duplicadas
+
+2. ANÁLISIS FUNCIONAL DE INTEGRIDAD:
+   - Verificá que todo CRUD de maestros (clientes, proveedores, artículos, categorías) tenga: create, read, update, soft-delete, listado con paginación y filtros
+   - Verificá que las transacciones de negocio (ventas, compras, movimientos de stock) usen transacciones de base de datos (prisma.$transaction)
+   - Verificá que la facturación AFIP maneje errores de red, reintentos, y guarde logs de cada request/response al webservice
+   - Verificá que el stock se actualice atómicamente con cada venta/compra
+
+3. TESTING:
+   - Generá tests unitarios para toda la lógica de negocio crítica: cálculo de precios con IVA, lógica de descuentos, cálculo de retenciones si aplica
+   - Generá tests de integración para los flujos principales: crear cliente → crear venta → facturar → actualizar stock → registrar en caja
+   - Generá tests para los edge cases de AFIP: timeout del webservice, CAE rechazado, CUIT inválido, error de homologación
+
+4. OUTPUT:
+   - Generá un archivo BUGS_REPORT.md con severidad (crítico/alto/medio/bajo), ubicación exacta del archivo y línea, y fix sugerido
+   - Corregí automáticamente todos los bugs críticos y altos
+   - Los medios y bajos dejálos documentados con el fix propuesto
+
+Empezá por leer el schema.prisma y la estructura de carpetas del proyecto para entender la arquitectura antes de tocar nada.
+```
+
+---
+
+## FASE 2: Ingeniería funcional de maestros multirubro
+
+```
+Necesito que refuerces la ingeniería funcional de los maestros (master data) de este ERP para que soporte múltiples rubros comerciales sin necesidad de código custom por vertical.
+
+CONTEXTO DEL NEGOCIO:
+Este ERP se va a vender a comercios de Argentina de distintos rubros:
+- Distribuidoras (mayoristas)
+- Veterinarias (productos + servicios)
+- Verdulerías / almacenes
+- Supermercados chinos (minimarkets)
+- Gimnasios y salones de pilates (membresías + servicios)
+- Salones de motos (productos + servicios técnicos)
+- Cualquier comercio minorista/mayorista
+
+PRINCIPIO DE DISEÑO:
+NO crear un módulo por rubro. En su lugar, el sistema debe ser configurable por empresa/sucursal usando campos flexibles, categorías jerárquicas, y tipos de entidad.
+
+TAREAS:
+
+1. MAESTRO DE ARTÍCULOS (Productos/Servicios):
+   - Debe soportar: productos físicos (con stock), servicios (sin stock), membresías/suscripciones (con vencimiento), combos/kits
+   - Campo "tipo": PRODUCTO | SERVICIO | MEMBRESIA | COMBO
+   - Categorías jerárquicas de 3 niveles (ej: Alimentos > Lácteos > Quesos)
+   - Unidades de medida flexibles (kg, unidad, litro, hora, sesión, mes)
+   - Campos de atributos dinámicos por categoría (JSON o tabla de atributos): ej. para veterinaria "especie_destino", para motos "cilindrada_compatible"
+   - Soporte de códigos de barras múltiples por artículo (EAN13, interno, proveedor)
+   - Precio de costo, precio de venta, margen, y soporte para listas de precios múltiples (mayorista, minorista, especial)
+   - Control de vencimiento opcional (para alimentos, medicamentos veterinarios)
+   - Foto de artículo (URL)
+
+2. MAESTRO DE CLIENTES:
+   - Persona física o jurídica
+   - CUIT/CUIL/DNI con validación de dígito verificador
+   - Condición ante IVA: Responsable Inscripto, Monotributista, Consumidor Final, Exento
+   - Categoría comercial configurable (ej: "socio" para gimnasio, "cliente mayorista" para distribuidora)
+   - Límite de crédito (cuenta corriente)
+   - Datos de contacto múltiples (teléfono, email, dirección)
+   - Campo de observaciones/notas
+   - Estado: activo/inactivo/suspendido
+
+3. MAESTRO DE PROVEEDORES:
+   - Similar a clientes pero con: condiciones de pago por defecto, datos bancarios para pagos, categoría de retención (si es agente de retención), lead time de entrega estimado
+   - Relación con artículos que provee (artículo-proveedor con precio de compra y código del proveedor)
+
+4. MAESTRO DE SUCURSALES/PUNTOS DE VENTA:
+   - Cada empresa puede tener N sucursales
+   - Cada sucursal tiene: dirección, punto de venta AFIP (numérico), depósito/almacén asociado, cajas registradoras asignadas, horario de operación
+   - Configuración fiscal por sucursal (necesaria para AFIP: el punto de venta es por sucursal)
+
+5. CONFIGURACIÓN POR EMPRESA (para multirubro):
+   - Crear un modelo de "perfil de empresa" o "configuración de vertical" que defina:
+     * Rubros habilitados (puede ser más de uno)
+     * Módulos activos (ej: gimnasio no necesita módulo de compras mayoristas)
+     * Campos custom activos por maestro
+     * Unidades de medida habilitadas
+     * Categorías de artículos pre-cargadas según rubro
+   - Esto permite que al dar de alta una empresa, se le pregunte "¿qué tipo de negocio tenés?" y se pre-configure todo
+
+6. SEED DATA:
+   - Generá seeds realistas para al menos 3 rubros distintos (distribuidora, veterinaria, gimnasio)
+   - Cada seed debe incluir: categorías de artículos típicas del rubro, 20-30 artículos de ejemplo, 10 clientes de ejemplo, 5 proveedores, configuración fiscal argentina correcta
+   - Los seeds deben ser idempotentes (poder correrse múltiples veces sin duplicar)
+
+7. MIGRACIONES:
+   - Generá las migraciones Prisma necesarias para todos los cambios
+   - Asegurate de que sean backward-compatible (no romper datos existentes)
+
+Antes de empezar, leé el schema.prisma actual y mostrámelo para que validemos juntos qué ya existe y qué falta.
+```
+
+---
+
+## FASE 3: Blindaje para producción + durabilidad
+
+```
+Necesito que prepares este ERP para ir a producción con clientes reales. El objetivo es que el sistema sea robusto, auditable, y fácil de mantener a largo plazo.
+
+TAREAS:
+
+1. AUDITORÍA Y TRAZABILIDAD:
+   - Implementá un sistema de audit log: quién hizo qué, cuándo, desde dónde (IP), sobre qué registro, con el valor anterior y el nuevo
+   - Mínimo para: maestros (artículos, clientes, proveedores), transacciones (ventas, compras), cambios de precios, anulaciones de comprobantes
+   - Tabla de audit_logs con: userId, action (CREATE/UPDATE/DELETE), entity, entityId, oldValue (JSON), newValue (JSON), timestamp, ipAddress
+   - Middleware de Prisma que capture automáticamente los cambios
+
+2. SOFT DELETE UNIVERSAL:
+   - Verificá que TODOS los maestros y transacciones usen soft delete (campo deletedAt)
+   - Que los queries por defecto filtren deletedAt = null
+   - Que exista forma de ver registros eliminados (para auditoría)
+
+3. VALIDACIONES DE NEGOCIO ROBUSTAS:
+   - No permitir vender un artículo con stock 0 (si es tipo PRODUCTO)
+   - No permitir facturar sin datos fiscales completos del cliente (según tipo de comprobante)
+   - No permitir eliminar un cliente/proveedor/artículo que tenga transacciones asociadas (soft delete OK, hard delete NO)
+   - No permitir modificar una factura ya emitida ante AFIP (solo anular con nota de crédito)
+   - Validar que los totales de factura cuadren (subtotal + IVA = total, sin diferencias de redondeo)
+
+4. MANEJO DE ERRORES CENTRALIZADO:
+   - Error handler global para la API que devuelva respuestas consistentes: { success: false, error: { code, message, details } }
+   - Logging estructurado (JSON) con niveles (error, warn, info, debug)
+   - Los errores de AFIP deben tener su propio código de error mapeado
+   - Nunca exponer stack traces al cliente en producción
+
+5. SEGURIDAD:
+   - Verificá que todas las rutas API tengan middleware de autenticación
+   - Verificá que las rutas respeten los roles RBAC (un cajero no puede ver reportes financieros, un vendedor no puede cambiar precios)
+   - Rate limiting en endpoints públicos (login, registro)
+   - Sanitización de inputs contra SQL injection y XSS
+   - Headers de seguridad (CORS configurado, helmet o equivalente)
+
+6. PERFORMANCE PARA ESCALA:
+   - Índices en Prisma para los campos más consultados: artículos por código de barras, clientes por CUIT, comprobantes por fecha y punto de venta
+   - Paginación obligatoria en todos los listados (nunca devolver todos los registros)
+   - Lazy loading de relaciones pesadas
+   - Caché básico para datos que cambian poco (configuración de empresa, listas de precios)
+
+7. DOCUMENTACIÓN TÉCNICA:
+   - Generá un archivo ARCHITECTURE.md que explique: estructura de carpetas, flujo de una venta completa (de principio a fin), cómo agregar un nuevo rubro/vertical, cómo funciona la integración con AFIP, modelo de permisos RBAC
+   - Generá un archivo DEPLOYMENT.md con instrucciones de deploy (Docker preferentemente)
+   - Generá un archivo API_REFERENCE.md con todos los endpoints documentados
+
+8. HEALTHCHECK Y MONITOREO:
+   - Endpoint /api/health que verifique: conexión a DB, conexión a AFIP (ping al WSAA), espacio en disco, memoria disponible
+   - Endpoint /api/health solo accesible con API key o desde localhost
+
+Empezá por hacer un inventario de qué ya existe de todo esto y qué falta. Mostrámelo antes de implementar.
+```
+
+---
+
+## Consejos de ejecución
+
+### Orden obligatorio
+1. **Fase 1 primero** — No tiene sentido agregar features sobre código roto
+2. **Fase 2 segundo** — Los maestros son la columna vertebral del ERP
+3. **Fase 3 último** — El blindaje se hace sobre funcionalidad estable
+
+### Tips para Claude Code
+- Antes de cada fase, hacé `git commit` de tu estado actual
+- Si Claude Code se traba o pierde contexto, cortá y volvé a pegar el prompt de la fase
+- Si un prompt es muy largo para el contexto, dividí las tareas numeradas en sub-prompts
+- Pedile que lea primero y te muestre qué encontró ANTES de que empiece a editar
+
+### Después de las 3 fases
+- Corré los tests generados
+- Hacé un deploy de prueba en local con Docker
+- Cargá los seeds de los 3 rubros y probá manualmente los flujos críticos
+- Recién ahí salí a vender
+
+### Para la venta en la calle
+El pitch más fuerte que tenés es: **"Es el mismo sistema para cualquier rubro. Se configura en 10 minutos para tu negocio."** Eso te diferencia de los ERPs verticales que solo sirven para un tipo de comerc

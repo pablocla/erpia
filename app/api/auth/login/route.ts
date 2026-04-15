@@ -29,9 +29,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: resultado.error }, { status: 401 })
     }
 
-    // Reset counter on successful login
-    loginAttempts.delete(ip)
-
     return NextResponse.json({
       success: true,
       token: resultado.token,

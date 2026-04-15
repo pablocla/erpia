@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,8 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal } from "lucide-react"
+import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useConfirm } from "@/hooks/use-confirm"
+import { useToast } from "@/hooks/use-toast"
+import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
 interface Categoria {
   id: number
@@ -65,8 +70,10 @@ export default function ProductosPage() {
   const [ajuste, setAjuste] = useState({ cantidad: "", tipo: "entrada", motivo: "" })
   const [error, setError] = useState("")
   const [guardando, setGuardando] = useState(false)
+  const [filters, setFilters] = useState<FilterValues>({})
+  const { toast } = useToast()
 
-  const authHeaders = useCallback(() => {
+  const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
@@ -90,6 +97,8 @@ export default function ProductosPage() {
   useEffect(() => {
     cargarProductos()
   }, [cargarProductos])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarProductos, onNew: () => { setProductoSeleccionado(null); setForm(initialForm); setError(""); setDialogOpen(true) } }))
 
   useEffect(() => {
     fetch("/api/categorias", { headers: authHeaders() })
@@ -146,12 +155,15 @@ export default function ProductosPage() {
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || "Error al guardar")
+        toast({ title: "Error al guardar producto", description: data.error || "Ocurrió un error", variant: "destructive" })
         return
       }
       setDialogOpen(false)
       cargarProductos()
+      toast({ title: productoSeleccionado ? "Producto actualizado" : "Producto creado", description: "Los datos se guardaron correctamente" })
     } catch {
       setError("Error de conexión")
+      toast({ title: "Error de conexión", description: "No se pudo conectar con el servidor", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -181,13 +193,42 @@ export default function ProductosPage() {
     }
   }
 
+  const { confirm, ConfirmDialog } = useConfirm()
+
   const desactivarProducto = async (id: number) => {
-    if (!confirm("¿Desactivar este producto?")) return
+    const ok = await confirm({
+      title: "Desactivar producto",
+      description: "¿Desactivar este producto? No aparecerá en ventas ni compras.",
+      confirmLabel: "Desactivar",
+      variant: "destructive",
+    })
+    if (!ok) return
     await fetch(`/api/productos/${id}`, { method: "DELETE", headers: authHeaders() })
     cargarProductos()
+    toast({ title: "Producto desactivado", description: "El producto ya no aparecerá en ventas ni compras" })
   }
 
   const stockBajoCount = productos.filter((p) => p.stock <= p.stockMinimo).length
+
+  const filterFields: FilterField[] = [
+    { key: "stockBajo", label: "Stock bajo", type: "boolean" },
+    { key: "activo", label: "Activo", type: "boolean" },
+    { key: "porcentajeIva", label: "IVA", type: "select", options: [
+      { value: "21", label: "21%" },
+      { value: "10.5", label: "10.5%" },
+      { value: "27", label: "27%" },
+      { value: "0", label: "0% Exento" },
+    ]},
+  ]
+
+  const productosConFiltros = useMemo(() => {
+    return productosFiltrados.filter((p) => {
+      if (filters.stockBajo === true && p.stock > p.stockMinimo) return false
+      if (filters.activo !== undefined && p.activo !== filters.activo) return false
+      if (filters.porcentajeIva && String(p.porcentajeIva) !== String(filters.porcentajeIva)) return false
+      return true
+    })
+  }, [productosFiltrados, filters])
 
   return (
     <div className="space-y-6">
@@ -264,105 +305,152 @@ export default function ProductosPage() {
         </CardContent>
       </Card>
 
-      {/* Tabla */}
+      <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
+
+      {/* Tabla con DataTable Enterprise */}
       <Card>
-        <CardHeader>
-          <CardTitle>{productosFiltrados.length} producto(s)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Cargando...</div>
-          ) : productosFiltrados.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <PackageX className="h-12 w-12 mx-auto mb-2 opacity-30" />
-              No hay productos
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead className="text-right">P. Compra</TableHead>
-                  <TableHead className="text-right">P. Venta</TableHead>
-                  <TableHead>IVA</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {productosFiltrados.map((p) => {
+        <CardContent className="pt-4">
+          <DataTable<Producto>
+            data={productosConFiltros}
+            columns={[
+              {
+                key: "codigo",
+                header: "Código",
+                sortable: true,
+                cell: (p) => <span className="font-mono text-sm">{p.codigo}</span>,
+              },
+              {
+                key: "nombre",
+                header: "Nombre",
+                sortable: true,
+                cell: (p) => (
+                  <div>
+                    <p className="font-medium">{p.nombre}</p>
+                    {p.descripcion && (
+                      <p className="text-xs text-muted-foreground truncate max-w-48">{p.descripcion}</p>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: "categoria",
+                header: "Categoría",
+                cell: (p) => p.categoria ? (
+                  <Badge variant="secondary">{p.categoria.nombre}</Badge>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                ),
+                exportFn: (p) => p.categoria?.nombre ?? "",
+              },
+              {
+                key: "precioCompra",
+                header: "P. Compra",
+                align: "right",
+                sortable: true,
+                cell: (p) => `$${p.precioCompra.toFixed(2)}`,
+              },
+              {
+                key: "precioVenta",
+                header: "P. Venta",
+                align: "right",
+                sortable: true,
+                cell: (p) => <span className="font-medium">${p.precioVenta.toFixed(2)}</span>,
+              },
+              {
+                key: "porcentajeIva",
+                header: "IVA",
+                cell: (p) => `${p.porcentajeIva}%`,
+              },
+              {
+                key: "stock",
+                header: "Stock",
+                align: "right",
+                sortable: true,
+                cell: (p) => {
                   const stockBajo = p.stock <= p.stockMinimo
                   return (
-                    <TableRow key={p.id} className={!p.activo ? "opacity-50" : ""}>
-                      <TableCell className="font-mono text-sm">{p.codigo}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{p.nombre}</p>
-                          {p.descripcion && (
-                            <p className="text-xs text-muted-foreground truncate max-w-48">{p.descripcion}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {p.categoria ? (
-                          <Badge variant="secondary">{p.categoria.nombre}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">${p.precioCompra.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">${p.precioVenta.toFixed(2)}</TableCell>
-                      <TableCell>{p.porcentajeIva}%</TableCell>
-                      <TableCell className="text-right">
-                        <span className={stockBajo ? "text-red-600 font-bold" : ""}>
-                          {p.stock} {p.unidad}
-                        </span>
-                        {stockBajo && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
-                      </TableCell>
-                      <TableCell>
-                        {p.activo ? (
-                          <Badge className="bg-green-100 text-green-800">Activo</Badge>
-                        ) : (
-                          <Badge variant="secondary">Inactivo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Ajustar stock"
-                            onClick={() => {
-                              setProductoSeleccionado(p)
-                              setAjusteDialogOpen(true)
-                            }}
-                          >
-                            <TrendingUp className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Editar" onClick={() => abrirEditar(p)}>
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          {p.activo && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Desactivar"
-                              onClick={() => desactivarProducto(p.id)}
-                            >
-                              <TrendingDown className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <span className={stockBajo ? "text-red-600 font-bold" : ""}>
+                      {p.stock} {p.unidad}
+                      {stockBajo && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
+                    </span>
                   )
-                })}
-              </TableBody>
-            </Table>
-          )}
+                },
+              },
+              {
+                key: "activo",
+                header: "Estado",
+                cell: (p) => p.activo ? (
+                  <Badge className="bg-green-100 text-green-800">Activo</Badge>
+                ) : (
+                  <Badge variant="secondary">Inactivo</Badge>
+                ),
+                exportFn: (p) => p.activo ? "Activo" : "Inactivo",
+              },
+              {
+                key: "acciones" as keyof Producto,
+                header: "Acciones",
+                align: "right",
+                hidden: false,
+                cell: (p) => (
+                  <div className="flex gap-1 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Ajustar stock"
+                      onClick={(e) => { e.stopPropagation(); setProductoSeleccionado(p); setAjusteDialogOpen(true) }}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" title="Editar" onClick={(e) => { e.stopPropagation(); abrirEditar(p) }}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    {p.activo && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Desactivar"
+                        onClick={(e) => { e.stopPropagation(); desactivarProducto(p.id) }}
+                      >
+                        <TrendingDown className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
+            ] as DataTableColumn<Producto>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar productos..."
+            searchKeys={["codigo", "nombre"]}
+            selectable
+            bulkActions={(selected, clear) => (
+              <>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const h = "codigo,nombre,precioVenta,precioCompra,stock,unidad,activo"
+                  const rows = selected.map((p) => [p.codigo, p.nombre, p.precioVenta, p.precioCompra, p.stock, p.unidad, p.activo ? "Activo" : "Inactivo"].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+                  const blob = new Blob(["\uFEFF" + [h, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" })
+                  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "productos-seleccionados.csv"; a.click()
+                  clear()
+                }}>
+                  <Download className="h-4 w-4 mr-1" /> Exportar ({selected.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={async () => {
+                  const activos = selected.filter((p) => p.activo)
+                  if (!activos.length) return
+                  await Promise.all(activos.map((p) => fetch(`/api/productos/${p.id}`, { method: "DELETE", headers: authHeaders() })))
+                  cargarProductos(); clear()
+                }}>
+                  <ToggleRight className="h-4 w-4 mr-1" /> Desactivar ({selected.filter((p) => p.activo).length})
+                </Button>
+              </>
+            )}
+            exportFilename="productos"
+            loading={loading}
+            emptyMessage="No hay productos"
+            emptyIcon={<EmptyStateIllustration type="productos" compact actionLabel="Nuevo Producto" onAction={abrirNuevo} />}
+            defaultPageSize={25}
+            compact
+            onRowClick={abrirEditar}
+          />
         </CardContent>
       </Card>
 
@@ -594,6 +682,7 @@ export default function ProductosPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div>
   )
 }

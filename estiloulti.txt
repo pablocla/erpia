@@ -1,0 +1,234 @@
+Created 3 todos
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/package.json#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/tsconfig.json)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/layout.tsx)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/globals.css#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/next.config.mjs#1-1), lines 1 to 40
+
+Explore project architecture deeply
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/vitest.config.ts)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/middleware.ts)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/gorkstyle.txt)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/components.json)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/postcss.config.mjs)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/theme-config.tsx#1-1), lines 1 to 150
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/components/topbar.tsx#1-1), lines 1 to 150
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/page.tsx)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/components/theme-provider.tsx)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/prisma.ts)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/supabase.ts)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/globals.css#80-80), lines 80 to 200
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/dashboard)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/components/ui)
+
+Searched for regex `i18n|locale|intl|translation|messaging`, 20 results
+
+Searched for regex `zustand|jotai|redux|recoil|store|atom|action`, 20 results
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/package.json#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/components/topbar.tsx#150-150), lines 150 to 250
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/dashboard/layout.tsx#1-1), lines 1 to 100
+
+Searched for regex `export type|interface.*{|enum` (`**/lib/types.ts`), 5 results
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/AppData/Roaming/Code/User/workspaceStorage/4a57f8554e8338af215b10989d629625/GitHub.copilot-chat/chat-session-resources/73a7f7c3-4945-4357-ae87-5fba6fd8b0ea/toolu_bdrk_019WxHAv8899TnwgMTC8Bqar__vscode-1775606283179/content.txt#1-1), lines 1 to 350
+
+Starting: *Research modern Next.js 2025-2026 patterns* (2/3)
+
+Now let me research the latest Next.js and frontend ecosystem trends: 
+
+
+
+Fetched 3 resources
+
+Starting: *Contrast and produce gap analysis* (3/3)
+
+Now let me read the gorkstyle.txt which is the current open file and seems relevant: 
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/gorkstyle.txt)
+
+Completed: *Contrast and produce gap analysis* (3/3)
+
+---
+
+# AUDITORÍA TECNOLÓGICA 2026: Estado del Arte vs Tu Producto
+
+## TU STACK ACTUAL
+
+| Componente | Tu Versión | Estado |
+|---|---|---|
+| Next.js | **15.5.4** | 1 major detrás |
+| React | **19.2.0** | Actual |
+| Tailwind CSS | **4.1.14** | Actual |
+| shadcn/ui | **New York style** | 1 estilo detrás |
+| Bundler | **Webpack (implícito)** | Obsoleto |
+| State Mgmt | **SWR + Context + localStorage** | Básico |
+| Testing | **Vitest (node only)** | Parcial |
+| i18n | **Hardcoded es-AR** | Sin sistema |
+| Caching | **Ninguno declarativo** | Sin implementar |
+| React Compiler | **No** | No integrado |
+
+---
+
+## ESTADO DEL ARTE — Next.js Ecosystem Abril 2026
+
+### 1. Next.js 16.2 (Marzo 2026) — LO ÚLTIMO
+
+| Feature | Qué es | Tu producto lo tiene? |
+|---|---|---|
+| **Turbopack (stable, default)** | Bundler nativo ~400% más rápido en dev startup, ~50% más rápido en render | **NO** — Seguís con webpack implícito |
+| **Cache Components (`use cache`)** | Modelo de caching declarativo con PPR (Partial Pre-Rendering) | **NO** — Sin ningún `use cache` |
+| **React Compiler (stable)** | Memoización automática, elimina `useMemo`/`useCallback` manuales | **NO** |
+| **View Transitions API** | Transiciones nativas de página estilo app mobile | **NO** — Usás Framer Motion manual |
+| **`<Activity/>` component** | Mantener estado de componentes ocultos (como tabs) sin re-render | **NO** |
+| **`useEffectEvent()`** | Eventos estables sin deps en effects | **NO** |
+| **Server Fast Refresh** | HMR server-side granular | **NO** |
+| **Adapter API (stable)** | Deploy portable a cualquier plataforma | **NO** |
+| **`next.config.ts`** | Config en TypeScript nativo | **NO** — Usás `.mjs` |
+| **Agent DevTools** | Debug con AI agents | **NO** |
+| **Subresource Integrity** | Security headers para JS bundles automático | **NO** — Lo hacés manual en headers |
+
+### 2. Tailwind CSS v4.2 (actual)
+
+| Feature | Tu estado |
+|---|---|
+| Text shadows (`text-shadow-*`) | **NO usás** |
+| Masks (`mask-*`) | **NO usás** |
+| Native CSS nesting | Usás pero parcial |
+| OKLCH color space | **SÍ** — Muy bien implementado |
+| `@custom-variant` | **SÍ** |
+| `tw-animate-css` | **SÍ** |
+
+### 3. shadcn/ui — Últimos cambios
+
+| Feature | Tu estado |
+|---|---|
+| **Luma style** (Marzo 2026) — nuevo estilo visual macOS Tahoe | **NO** — Seguís con New York |
+| **Component Composition docs** (Abril 2026) | **NO** — Sin AGENTS.md ni skills para LLMs |
+| **shadcn/cli v4** (Marzo 2026) | Probablemente no actualizado |
+| **RTL Support** (Enero 2026) | **NO** |
+| **Base UI support** (alternativa a Radix) | **NO** — Solo Radix |
+| **Blocks for Radix and Base UI** (Feb 2026) | **NO** |
+| **Unified Radix UI package** `@radix-ui/react` | **NO** — Seguís con 27+ paquetes individuales |
+
+---
+
+## GAPS CRÍTICOS ORDENADOS POR IMPACTO
+
+### TIER 1 — Upgrade urgente (competitividad técnica)
+
+| # | Gap | Impacto | Acción |
+|---|---|---|---|
+| 1 | **Next.js 15 → 16.2** | Dev speed +400%, rendering +50%, cache components, React Compiler | `pnpm add next@latest react@latest react-dom@latest` |
+| 2 | **Turbopack como default** | Builds y dev instantáneos | Viene con Next 16, solo activar |
+| 3 | **React Compiler** | Elimina problemas de re-render, performance automática | Activar en `next.config.ts` |
+| 4 | **`use cache` directive** | PPR + caching declarativo = navegación instantánea | Refactor progresivo de rutas |
+| 5 | **`next.config.ts`** | Type safety en config, DX moderna | Renombrar `.mjs` → `.ts` |
+
+### TIER 2 — Diferenciador visual (producto "premium")
+
+| # | Gap | Impacto | Acción |
+|---|---|---|---|
+| 6 | **View Transitions API** | Transiciones de página nativas, sensación de app móvil sin Framer Motion overhead | Activar en Next 16 |
+| 7 | **Luma style (shadcn)** | Look macOS Tahoe — superficies suaves, espaciado abierto, ritmo visual calmo | Migrar desde New York → Luma |
+| 8 | **Unified `@radix-ui/react`** | Elimina 27 dependencias → 1 sola | Refactor imports |
+| 9 | **Component Composition + Skills** | LLMs generan UI correcta automáticamente | Agregar `AGENTS.md` y composition docs |
+| 10 | **Text shadows + Masks** (TW 4.1+) | Efectos visuales premium (cards con glow, text con depth) | Aplicar donde corresponda |
+
+### TIER 3 — Profesionalización (enterprise-grade)
+
+| # | Gap | Impacto | Acción |
+|---|---|---|---|
+| 11 | **i18n formal** | Expandible a PT-BR, ES-MX sin rewrite | Integrar `next-intl` o `next-i18n-router` |
+| 12 | **State management upgrade** | Zustand o Jotai para estado complejo (caja, carrito POS, permisos) | Reemplazar localStorage patterns |
+| 13 | **Testing integral** | Component tests (React Testing Library), E2E (Playwright) | Ampliar desde solo unit tests |
+| 14 | **RTL support** | Accesibilidad + mercados árabes futuros | Adoptar inline logical properties |
+| 15 | **`<Activity/>`** | Tabs del dashboard mantienen estado al cambiar módulo | Implementar en layout principal |
+| 16 | **`ignoreBuildErrors: true`** | DEUDA TÉCNICA — oculta errores reales en producción | Resolver errores y quitar flag |
+
+---
+
+## COMPARATIVA VISUAL: Tu producto vs ERP moderno 2026
+
+```
+                           TU ERP HOY        ERP MODERNO 2026
+─────────────────────────────────────────────────────────────
+Bundler                    Webpack            Turbopack
+Dev startup                ~8-15s             ~2-3s
+Page transitions           Framer (manual)    View Transitions (nativas)
+Caching                    Ninguno            use cache + PPR
+Memoización                Manual             React Compiler (auto)
+Style                      New York           Luma (macOS Tahoe)
+Color system               OKLCH ✓            OKLCH ✓
+Radix packages             27 individuales    1 unificado
+Config type safety         .mjs (JS)          .ts (TypeScript)
+i18n                       Hardcoded          next-intl / dynamic
+State                      localStorage       Zustand + server state
+Tests                      Unit only          Unit + Component + E2E
+Build errors               IGNORADOS          Resueltos
+Component docs             Manual             Composition + Skills
+Agent support              Ninguno            AGENTS.md + DevTools
+```
+
+---
+
+## RECOMENDACIÓN DE EJECUCIÓN
+
+**Sprint inmediato (1 semana):**
+1. Upgrade Next.js 15 → 16.2 + Turbopack
+2. Activar React Compiler
+3. Migrar `next.config.mjs` → `next.config.ts`
+4. Quitar `ignoreBuildErrors: true` y resolver errores
+
+**Sprint 2 (1 semana):**
+5. Implementar `use cache` en las rutas principales del dashboard
+6. Activar View Transitions para navegación entre módulos
+7. Unificar Radix a paquete único
+
+**Sprint 3 (1 semana):**
+8. Evaluar migración New York → Luma style
+9. Implementar Zustand para estado de caja/POS
+10. Agregar `AGENTS.md` + composition docs
+
+El producto tiene una base excelente (OKLCH, Tailwind v4, React 19, 40+ componentes shadcn, Framer Motion, Prisma). Pero está **1 major version atrás en Next.js** y le faltan las features más impactantes de 2026: Turbopack, React Compiler, Cache Components, y View Transitions. Con 3 sprints se pone al día completamente.---
+
+## RECOMENDACIÓN DE EJECUCIÓN
+
+**Sprint inmediato (1 semana):**
+1. Upgrade Next.js 15 → 16.2 + Turbopack
+2. Activar React Compiler
+3. Migrar `next.config.mjs` → `next.config.ts`
+4. Quitar `ignoreBuildErrors: true` y resolver errores
+
+**Sprint 2 (1 semana):**
+5. Implementar `use cache` en las rutas principales del dashboard
+6. Activar View Transitions para navegación entre módulos
+7. Unificar Radix a paquete único
+
+**Sprint 3 (1 semana):**
+8. Evaluar migración New York → Luma style
+9. Implementar Zustand para estado de caja/POS
+10. Agregar `AGENTS.md` + composition docs
+
+El producto tiene una base excelente (OKLCH, Tailwind v4, React 19, 40+ componentes shadcn, Framer Motion, Prisma). Pero está **1 major version atrás en Next.js** y le faltan las features más impactantes de 2026: Turbopack, React Compiler, Cache Components, y View Transitions. Con 3 sprints se pone al día completamente.

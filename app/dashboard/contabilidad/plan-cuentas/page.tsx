@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ClipboardList, Search, Loader2, Plus } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Cuenta {
   id?: number
@@ -80,6 +81,10 @@ export default function PlanCuentasPage() {
   }, [])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   const guardarCuenta = async () => {
     setGuardando(true)

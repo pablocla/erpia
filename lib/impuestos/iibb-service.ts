@@ -43,7 +43,7 @@ export class IIBBService {
    * @param breakdown - result from calcularImpuestos()
    * @param esDevolucion - true for NC (reverses the accrual)
    */
-  async acumularPorFactura(breakdown: TaxBreakdown, esDevolucion = false): Promise<void> {
+  async acumularPorFactura(breakdown: TaxBreakdown, esDevolucion = false, empresaId?: number): Promise<void> {
     const iibbItems = breakdown.iibb
     if (!iibbItems.length) return
 
@@ -71,6 +71,7 @@ export class IIBBService {
             baseImponible:  nuevoBase,
             montoDevengado: nuevoDeveng,
             saldo:          nuevoSaldo,
+            empresaId:      empresaId ?? existing.empresaId,
             updatedAt:      new Date(),
           },
         })
@@ -86,6 +87,7 @@ export class IIBBService {
             montoDevengado: montoItem,
             montoPercibido: 0,
             saldo:          montoItem,
+            empresaId:     empresaId ?? undefined,
           },
         })
       }
@@ -96,7 +98,7 @@ export class IIBBService {
    * Adds a perception received from a supplier to the period
    * (reduces the saldo a pagar for IIBB Compras).
    */
-  async acumularPercepcionRecibida(monto: number, jurisdiccion: string, mes?: number, anio?: number): Promise<void> {
+  async acumularPercepcionRecibida(monto: number, jurisdiccion: string, mes?: number, anio?: number, empresaId?: number): Promise<void> {
     const ahora  = new Date()
     const m = mes  ?? ahora.getMonth() + 1
     const a = anio ?? ahora.getFullYear()
@@ -135,9 +137,10 @@ export class IIBBService {
    * Returns the IIBB liquidation for a given period.
    * If jurisdiccion is provided, returns only that jurisdiction.
    */
-  async getLiquidacion(mes: number, anio: number, jurisdiccion?: string) {
+  async getLiquidacion(mes: number, anio: number, jurisdiccion?: string, empresaId?: number) {
     const where: any = { mes, anio }
     if (jurisdiccion) where.jurisdiccion = jurisdiccion
+    if (empresaId) where.empresaId = empresaId
 
     const periodos = await prisma.periodoIIBB.findMany({
       where,
@@ -158,9 +161,10 @@ export class IIBBService {
   /**
    * Returns IIBB evolution across 12 months for a given year and jurisdiction.
    */
-  async getEvolucionAnual(anio: number, jurisdiccion?: string) {
+  async getEvolucionAnual(anio: number, jurisdiccion?: string, empresaId?: number) {
     const where: any = { anio }
     if (jurisdiccion) where.jurisdiccion = jurisdiccion
+    if (empresaId) where.empresaId = empresaId
 
     return prisma.periodoIIBB.findMany({
       where,
@@ -235,5 +239,114 @@ export class IIBBService {
     lines.push("  • Vencimiento: último día hábil del mes siguiente al período.")
 
     return lines.join("\n")
+  }
+
+  /**
+   * Generates ARBA (Buenos Aires Province) formatted DDJJ.
+   * Fixed-width text format per Resolución Normativa 8/2019.
+   * Each line: 107 chars wide.
+   * Format: CUIT(11) + PERIODO(6) + NRO_SUCURSAL(4) + TIPO(1) + NRO_COMPROBANTE(12)
+   *   + FECHA(8) + MONTO(15) + ALICUOTA(5) + IMPUESTO(15) + TIPO_OPER(1)
+   *   + NRO_CERTIFICADO(14) + REGIMEN(3) + JURISDICCION(3)
+   */
+  async generarDDJJArba(
+    mes: number,
+    anio: number,
+    cuit: string,
+    facturas: { fecha: Date; tipo: string; puntoVenta: number; numero: number; total: number }[],
+    alicuota = 3.5,
+  ): Promise<string> {
+    const periodo = `${anio}${String(mes).padStart(2, "0")}`
+    const cuitLimpio = cuit.replace(/[-\s]/g, "")
+
+    const lines: string[] = []
+
+    for (const f of facturas) {
+      const fecha = f.fecha instanceof Date ? f.fecha : new Date(f.fecha)
+      const fechaStr = `${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, "0")}${String(fecha.getDate()).padStart(2, "0")}`
+      const tipoMap: Record<string, string> = { A: "1", B: "6", C: "B" }
+      const tipoChar = tipoMap[f.tipo] ?? "1"
+      const sucursal = String(f.puntoVenta).padStart(4, "0")
+      const nroComp = String(f.numero).padStart(12, "0")
+      const monto = Math.abs(f.total * 100).toFixed(0).padStart(15, "0")
+      const alic = (alicuota * 100).toFixed(0).padStart(5, "0")
+      const impuesto = Math.abs(f.total * alicuota / 100 * 100).toFixed(0).padStart(15, "0")
+      const tipoOper = "1" // 1=venta, 2=compra
+      const nroCert = "".padStart(14, "0")
+      const regimen = "000"
+      const jurisdiccion = "902" // PBA code
+
+      lines.push(
+        `${cuitLimpio}${periodo}${sucursal}${tipoChar}${nroComp}${fechaStr}${monto}${alic}${impuesto}${tipoOper}${nroCert}${regimen}${jurisdiccion}`,
+      )
+    }
+
+    return lines.join("\r\n")
+  }
+
+  /**
+   * Generates AGIP (CABA) formatted DDJJ.
+   * CSV semicolon format per AGIP regulations.
+   * Columns: TipoComprobante;FechaComprobante;PuntoVenta;NroComprobante;
+   *          CuitContribuyente;MontoSujetoRetencion;Alicuota;MontoRetenido;TipoRegimen
+   */
+  async generarDDJJAgip(
+    mes: number,
+    anio: number,
+    cuit: string,
+    facturas: { fecha: Date; tipo: string; puntoVenta: number; numero: number; total: number; cuitCliente?: string }[],
+    alicuota = 3.0,
+  ): Promise<string> {
+    const header = "TipoComprobante;FechaComprobante;PuntoVenta;NroComprobante;CuitContribuyente;MontoSujeto;Alicuota;MontoPercibido;TipoRegimen"
+    const lines: string[] = [header]
+
+    const tipoMap: Record<string, string> = { A: "01", B: "06", C: "11" }
+
+    for (const f of facturas) {
+      const fecha = f.fecha instanceof Date ? f.fecha : new Date(f.fecha)
+      const fechaStr = `${String(fecha.getDate()).padStart(2, "0")}/${String(fecha.getMonth() + 1).padStart(2, "0")}/${fecha.getFullYear()}`
+      const tipoComp = tipoMap[f.tipo] ?? "01"
+      const pv = String(f.puntoVenta).padStart(5, "0")
+      const nro = String(f.numero).padStart(8, "0")
+      const cuitCliente = (f.cuitCliente ?? "00000000000").replace(/[-\s]/g, "")
+      const montoSujeto = f.total.toFixed(2)
+      const alic = alicuota.toFixed(2)
+      const percepcion = (f.total * alicuota / 100).toFixed(2)
+
+      lines.push(`${tipoComp};${fechaStr};${pv};${nro};${cuitCliente};${montoSujeto};${alic};${percepcion};7`)
+    }
+
+    return lines.join("\r\n")
+  }
+
+  /**
+   * Generic provincial DGR format (Santa Fe, Córdoba, Mendoza).
+   * Standard CSV pipe-separated.
+   */
+  async generarDDJJProvincial(
+    mes: number,
+    anio: number,
+    jurisdiccion: string,
+    cuit: string,
+    facturas: { fecha: Date; tipo: string; puntoVenta: number; numero: number; total: number; cuitCliente?: string }[],
+    alicuota = 3.5,
+  ): Promise<string> {
+    const header = "CUIT|PERIODO|JURISDICCION|TIPO_COMP|PTO_VTA|NRO_COMP|FECHA|BASE_IMP|ALICUOTA|MONTO_PERCIBIDO|CUIT_CONTRIB"
+    const lines: string[] = [header]
+    const cuitLimpio = cuit.replace(/[-\s]/g, "")
+    const periodo = `${anio}${String(mes).padStart(2, "0")}`
+
+    for (const f of facturas) {
+      const fecha = f.fecha instanceof Date ? f.fecha : new Date(f.fecha)
+      const fechaStr = `${String(fecha.getDate()).padStart(2, "0")}/${String(fecha.getMonth() + 1).padStart(2, "0")}/${fecha.getFullYear()}`
+      const cuitCliente = (f.cuitCliente ?? "00000000000").replace(/[-\s]/g, "")
+      const percepcion = (f.total * alicuota / 100).toFixed(2)
+
+      lines.push(
+        `${cuitLimpio}|${periodo}|${jurisdiccion}|${f.tipo}|${String(f.puntoVenta).padStart(4, "0")}|${String(f.numero).padStart(8, "0")}|${fechaStr}|${f.total.toFixed(2)}|${alicuota.toFixed(2)}|${percepcion}|${cuitCliente}`,
+      )
+    }
+
+    return lines.join("\r\n")
   }
 }

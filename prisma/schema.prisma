@@ -22,9 +22,27 @@ model Empresa {
   certificadoKEY   String?   // Base64 encoded
   puntoVenta       Int       @default(1)
   entorno          String    @default("homologacion") // "homologacion" o "produccion"
+  /// Alias para compatibilidad con código que usa entornoAfip
+  entornoAfip      String    @default("homologacion")
+  // ── CAEA (RG 5782/2025 — contingencia offline) ──────────────────────────
+  /// CAEA vigente para emitir comprobantes offline
+  caeaVigente      String?
+  /// Período del CAEA (YYYYMM)
+  caeaPeriodo      String?
+  /// Quincena: 1 = días 1-15, 2 = días 16 al último
+  caeaQuincena     Int?
+  /// Fecha inicio de vigencia del CAEA
+  caeaVigDesde     DateTime?
+  /// Fecha fin de vigencia del CAEA
+  caeaVigHasta     DateTime?
+  /// Tope para informar comprobantes emitidos con CAEA
+  caeaTopeInformar DateTime?
   /// Rubro de la empresa: define plan de cuentas base y módulos sugeridos
   /// "comercio" | "industria" | "servicios" | "gastronomia" | "salud" | "hoteleria" | "agro" | "construccion" | "transporte" | "educacion" | "otro"
   rubro            String    @default("comercio")
+  /// FK al maestro Rubro (coexiste con rubro string para migración gradual)
+  rubroId          Int?
+  rubroRef         Rubro?    @relation("EmpresaRubro", fields: [rubroId], references: [id])
   /// "AR" | "CL" | "MX" — país fiscal principal
   paisFiscal       String    @default("AR")
   /// Condición IVA de la empresa: "Responsable Inscripto" | "Monotributista" | "Exento"
@@ -78,6 +96,59 @@ model Empresa {
   reportesIA        ReporteIA[]
   mensajesWhatsApp  MensajePendienteWhatsApp[]
   chatIAHistorial   ChatIAHistorial[]
+  agenteLogs        AgenteLog[]
+  // Maestros contables y financieros (Sprint Maestros)
+  rubrosContables   RubroContable[]
+  tiposAsiento      TipoAsiento[]
+  plantillasAsiento PlantillaAsiento[]
+  tiposComprobante  TipoComprobanteMaestro[]
+  tiposRetencion    TipoRetencion[]
+  regimenesRetencion RegimenRetencion[]
+  tiposMovBancario  TipoMovimientoBancario[]
+  conceptosCobroPago ConceptoCobroPago[]
+  planesCuotas      PlanCuotas[]
+  entidadesFinancieras EntidadFinanciera[]
+  sucursales        Sucursal[]
+  cobradores        Cobrador[]
+  tiposOpComercial  TipoOperacionComercial[]
+  cajasTipo         CajaTipo[]
+  camposPersonalizados CampoPersonalizado[]
+  tablasAuxiliares  TablaAuxiliar[]
+  configuracionesCampo ConfiguracionCampo[]
+  // Sprint Impuestos — tax engineering models
+  periodosIIBB      PeriodoIIBB[]
+  retencionesSICORE RetencionSICORE[]
+  configFiscal      ConfigFiscalEmpresa?
+  tributosFactura   TributoFactura[]
+  tributosCompra    TributoCompra[]
+  padronRegimenesProveedor PadronRegimenProveedor[]
+  regimenesPercepcion      RegimenPercepcion[]
+  retencionesRecibo        RetencionRecibo[]
+  declaracionesJuradas     DeclaracionJurada[]
+  // Sprint mejoras — schema enrichment
+  marcas            Marca[]
+  notasDebito       NotaDebito[]
+  listasPrecio      ListaPrecio[]
+  // Sprint Rubro Config — dynamic feature activation
+  configuracionesRubro ConfiguracionRubro[]
+  featuresEmpresa      FeatureEmpresa[]
+  instanciasWorkflow   WorkflowInstancia[]
+  // Sprint Competitivo — SAP/Tango/Colppy gap closers
+  documentosAdjuntos   DocumentoAdjunto[]
+  facturasRecurrentes  FacturaRecurrente[]
+  mercadoPagoConfig    MercadoPagoConfig?
+  transaccionesMp      MercadoPagoTransaccion[]
+  reglasAlerta         ReglaAlerta[]
+  empleados            Empleado[]
+  generacionesCITI     GeneracionCITI[]
+  planesMantenimiento  PlanMantenimiento[]
+  ordenesTrabajo       OrdenTrabajo[]
+  tareasPendientes     TareaPendiente[]
+  centrosCosto         CentroCosto[]
+  configuracionesImpresora ConfiguracionImpresora[]
+  afipLogs             AfipWebserviceLog[]
+  transferenciasDeposito TransferenciaDeposito[]
+  jornadasFiscales       JornadaFiscal[]         @relation("JornadaFiscalEmpresa")
 
   @@map("empresas")
 }
@@ -187,6 +258,7 @@ model Cliente {
 
   facturas         Factura[]
   notasCredito     NotaCredito[]
+  notasDebito      NotaDebito[]
   remitos          Remito[]
   cuentasBancarias CuentaBancaria[]
   cheques          Cheque[]
@@ -215,6 +287,42 @@ model Proveedor {
   telefono     String?
   email        String?
   condicionIva String    @default("Responsable Inscripto")
+  /// Código interno del proveedor
+  codigo          String?
+  nombreFantasia  String?
+  /// "persona_fisica" | "persona_juridica"
+  tipoPersona     String    @default("persona_juridica")
+  telefonoAlternativo String?
+  emailFacturacion    String?
+  web                 String?
+  activo              Boolean   @default(true)
+  /// Límite de crédito otorgado al proveedor
+  limiteCredito       Decimal   @default(0)  @db.Decimal(18, 2)
+  /// Saldo deudor en cuenta corriente
+  saldoCuentaCorriente Decimal  @default(0)  @db.Decimal(18, 2)
+  /// Código de cuenta contable vinculada
+  cuentaContableCodigo String?
+
+  // ─── Campos fiscales / impositivos ────────────────────────────────
+  /// Número de inscripción en Ingresos Brutos
+  nroIIBB              String?
+  /// "local" | "convenio_multilateral" | "exento" | "no_inscripto"
+  situacionIIBB        String    @default("local")
+  /// El proveedor es agente de retención IVA (nos retiene a nosotros)
+  esAgenteRetencionIVA       Boolean @default(false)
+  /// El proveedor es agente de retención de Ganancias
+  esAgenteRetencionGanancias Boolean @default(false)
+  /// El proveedor es agente de percepción de IVA (nos percibe en facturas de compra)
+  esAgentePercepcionIVA      Boolean @default(false)
+  /// El proveedor es agente de percepción de IIBB
+  esAgentePercepcionIIBB     Boolean @default(false)
+  /// Número de certificado de exclusión de retención/percepción
+  nroCertificadoExclusion        String?
+  /// Vigencia del certificado de exclusión
+  vigenciaCertificadoExclusion   DateTime?
+  /// Alícuota especial de retención IIBB para este proveedor (si difiere del régimen)
+  alicuotaEspecialIIBB           Decimal?  @db.Decimal(5, 2)
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
@@ -233,6 +341,9 @@ model Proveedor {
   localidad        Localidad?       @relation(fields: [localidadId], references: [id])
   rubroId          Int?
   rubro            Rubro?           @relation(fields: [rubroId], references: [id])
+  /// Actividad económica principal (determina alícuota IIBB)
+  actividadEconomicaId Int?
+  actividadEconomica   ActividadEconomica? @relation(fields: [actividadEconomicaId], references: [id])
 
   compras          Compra[]
   retenciones      RetencionSICORE[]
@@ -241,6 +352,8 @@ model Proveedor {
   ordenesCompra    OrdenCompra[]
   cuentasPagar     CuentaPagar[]
   ordenesPago      OrdenPago[]
+  padronRegimenes  PadronRegimenProveedor[]
+  notasDebito      NotaDebito[]
   @@map("proveedores")
 }
 
@@ -254,13 +367,13 @@ model Factura {
   fechaCAE        DateTime?
   vencimientoCAE  DateTime?
   qrBase64        String?   @db.Text
-  subtotal        Float
-  iva             Float
-  total           Float
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
   observaciones   String?   @db.Text
-estado             String    @default("pendiente") // "pendiente", "emitida", "anulada"
-  totalPercepciones  Float     @default(0)
-  totalRetenciones   Float     @default(0)
+  estado          String    @default("pendiente") // "pendiente", "emitida", "anulada"
+  totalPercepciones  Decimal   @default(0) @db.Decimal(15,2)
+  totalRetenciones   Decimal   @default(0) @db.Decimal(15,2)
   /// RG 5616/2024: moneda de origen ("PES" = ARS, "DOL" = USD, "060" = EUR)
   monedaOrigen       String    @default("PES")
   /// RG 5616/2024: tipo de cambio vendedor BNA al momento de emisión
@@ -276,12 +389,12 @@ estado             String    @default("pendiente") // "pendiente", "emitida", "a
   deletedAt          DateTime?
   createdBy          Int?
   updatedBy          Int?
-  
+
   empresaId       Int
   empresa         Empresa   @relation(fields: [empresaId], references: [id])
   clienteId       Int
   cliente         Cliente   @relation(fields: [clienteId], references: [id])
-  
+
   lineas          LineaFactura[]
   asientos        AsientoContable[]
   notasCredito    NotaCredito[]
@@ -293,7 +406,34 @@ estado             String    @default("pendiente") // "pendiente", "emitida", "a
   vendedor        Vendedor?        @relation(fields: [vendedorId], references: [id])
   serieId         Int?
   serie           Serie?           @relation(fields: [serieId], references: [id])
+  /// Tipo de comprobante parametrizado (catálogo AFIP). Complementa tipoCbte Int.
+  tipoComprobanteId Int?
+  tipoComprobante   TipoComprobanteMaestro? @relation(fields: [tipoComprobanteId], references: [id])
+  /// AFIP Concepto: 1=Productos, 2=Servicios, 3=Productos y Servicios
+  concepto           Int       @default(1)
+  /// Fecha inicio servicio (obligatorio si concepto=2 o 3)
+  fechaServicioDesde DateTime?
+  /// Fecha fin servicio (obligatorio si concepto=2 o 3)
+  fechaServicioHasta DateTime?
+  /// Fecha vencimiento de pago (obligatorio si concepto=2 o 3)
+  fechaVtoPago       DateTime?
+  /// WSFE ImpTotConc: neto no gravado (conceptos no gravados)
+  netoNoGravado      Decimal   @default(0) @db.Decimal(15,2)
+  /// WSFE ImpOpEx: operaciones exentas
+  netoExento         Decimal   @default(0) @db.Decimal(15,2)
+  /// Impuestos internos (tabaco, alcohol, electrónicos)
+  impInternosTotal   Decimal   @default(0) @db.Decimal(15,2)
+  /// Snapshot de condición IVA del receptor al momento de emisión
+  condicionIvaReceptor String?
+  comandas        Comanda[]
+  /// Tributos detallados (percepciones IIBB, IVA, imp. internos) — mapea a WSFE Tributos[]
+  tributos        TributoFactura[]
+  notasDebito     NotaDebito[]
 
+  /// FIX A-001: índices críticos para listados y reportes de facturación
+  @@index([empresaId, estado, createdAt])
+  @@index([empresaId, clienteId])
+  @@index([empresaId, tipoCbte, puntoVenta])
   @@map("facturas")
 }
 
@@ -301,11 +441,13 @@ model LineaFactura {
   id              Int       @id @default(autoincrement())
   descripcion     String
   cantidad        Float
-  precioUnitario  Float
+  precioUnitario  Decimal   @db.Decimal(15,2)
   porcentajeIva   Float     // 21, 10.5, 27, 0
-  subtotal        Float
-  iva             Float
-  total           Float
+  /// Código AFIP IVA: 3=0%, 4=10.5%, 5=21%, 6=27%, 8=5%, 9=2.5%
+  codigoAfipIva    String?
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
   descuento       Float     @default(0)
 
   facturaId       Int
@@ -314,6 +456,9 @@ model LineaFactura {
   producto        Producto? @relation(fields: [productoId], references: [id])
   loteId          Int?
   lote            Lote?     @relation(fields: [loteId], references: [id])
+  /// FIX A-002: índice en FK para evitar seq scan en include
+  @@index([facturaId])
+  @@index([productoId])
   @@map("lineas_factura")
 }
 
@@ -323,12 +468,12 @@ model Compra {
   numero          String
   puntoVenta      String
   fecha           DateTime
-  subtotal        Float
-  iva             Float
-  total           Float
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
   observaciones      String?   @db.Text
-  totalPercepciones  Float     @default(0)
-  totalRetenciones   Float     @default(0)
+  totalPercepciones  Decimal   @default(0) @db.Decimal(15,2)
+  totalRetenciones   Decimal   @default(0) @db.Decimal(15,2)
   /// RG 5616/2024: moneda de origen
   monedaOrigen       String    @default("PES")
   /// RG 5616/2024: tipo de cambio vendedor BNA
@@ -359,7 +504,18 @@ model Compra {
   asientos        AsientoContable[]
   retenciones     RetencionSICORE[]
   cuentasPagar    CuentaPagar[]
+  /// Tributos detallados de la compra (percepciones sufridas IIBB, IVA, etc.)
+  tributos        TributoCompra[]
+  /// AFIP Concepto: 1=Productos, 2=Servicios, 3=Productos y Servicios
+  concepto        Int       @default(1)
+  /// Neto no gravado (conceptos no gravados)
+  netoNoGravado   Decimal   @default(0) @db.Decimal(15,2)
+  /// Operaciones exentas
+  netoExento      Decimal   @default(0) @db.Decimal(15,2)
 
+  /// FIX A-001: índices de filtrado frecuente en compras
+  @@index([empresaId, createdAt])
+  @@index([empresaId, proveedorId])
   @@map("compras")
 }
 
@@ -367,11 +523,13 @@ model LineaCompra {
   id              Int       @id @default(autoincrement())
   descripcion     String
   cantidad        Float
-  precioUnitario  Float
+  precioUnitario  Decimal   @db.Decimal(15,2)
   porcentajeIva   Float
-  subtotal        Float
-  iva             Float
-  total           Float
+  /// Código AFIP IVA: 3=0%, 4=10.5%, 5=21%, 6=27%, 8=5%, 9=2.5%
+  codigoAfipIva    String?
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
   descuento       Float     @default(0)
 
   compraId        Int
@@ -380,6 +538,9 @@ model LineaCompra {
   producto        Producto? @relation(fields: [productoId], references: [id])
   loteId          Int?
   lote            Lote?     @relation(fields: [loteId], references: [id])
+  /// FIX A-002: índice en FK para evitar seq scan en include
+  @@index([compraId])
+  @@index([productoId])
   @@map("lineas_compra")
 }
 
@@ -388,6 +549,7 @@ model AsientoContable {
   fecha       DateTime  @default(now())
   numero      Int
   descripcion String
+  /// DEPRECATED: usar tipoAsientoId. Mantenido por backward compatibility.
   tipo        String    // "venta", "compra", "manual"
   createdAt   DateTime  @default(now())
   deletedAt   DateTime?
@@ -400,6 +562,12 @@ model AsientoContable {
   compraId    Int?
   compra      Compra?   @relation(fields: [compraId], references: [id])
   
+  /// Tipo de asiento parametrizado (reemplaza campo 'tipo' string)
+  tipoAsientoId Int?
+  tipoAsiento   TipoAsiento? @relation(fields: [tipoAsientoId], references: [id])
+  /// Plantilla origen si fue generado desde template
+  plantillaOrigenId Int?
+  
   movimientos MovimientoContable[]
   
   @@map("asientos_contables")
@@ -408,8 +576,8 @@ model AsientoContable {
 model MovimientoContable {
   id          Int       @id @default(autoincrement())
   cuenta      String    // "1.1 Caja", "4.1 Ventas", etc.
-  debe        Float     @default(0)
-  haber       Float     @default(0)
+  debe        Decimal   @default(0) @db.Decimal(15,2)
+  haber       Decimal   @default(0) @db.Decimal(15,2)
   
   asientoId     Int
   asiento       AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
@@ -434,6 +602,7 @@ model Usuario {
   empresa   Empresa   @relation(fields: [empresaId], references: [id])
   vendedor  Vendedor?
   logs      LogActividad[]
+  tareas    TareaPendiente[]
 
   @@map("usuarios")
 }
@@ -451,6 +620,12 @@ model ConfiguracionImpresora {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  /// FIX C-002: Multi-tenant isolation — cada empresa tiene sus propias impresoras
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, nombre])
+  @@index([empresaId])
   @@map("configuracion_impresoras")
 }
 
@@ -458,6 +633,13 @@ model Categoria {
   id          Int        @id @default(autoincrement())
   nombre      String
   descripcion String?
+  /// Jerarquía: alimentación > lácteos > quesos
+  parentId    Int?
+  parent      Categoria?  @relation("CategoriaJerarquia", fields: [parentId], references: [id])
+  hijos       Categoria[] @relation("CategoriaJerarquia")
+  /// Orden de visualización
+  orden       Int        @default(0)
+  activo      Boolean    @default(true)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   empresaId   Int
@@ -468,17 +650,63 @@ model Categoria {
   @@map("categorias")
 }
 
+/// Maestro de marcas para productos
+model Marca {
+  id          Int       @id @default(autoincrement())
+  codigo      String
+  nombre      String
+  descripcion String?
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+
+  productos   Producto[]
+
+  @@unique([empresaId, codigo])
+  @@map("marcas")
+}
+
 model Producto {
   id              Int       @id @default(autoincrement())
-  codigo          String    @unique
+  /// FIX C-004: unicidad por empresa, no global (@@unique abajo)
+  codigo          String
   nombre          String
   descripcion     String?
-  precioVenta     Float
-  precioCompra    Float     @default(0)
+  precioVenta     Decimal   @db.Decimal(15,2)
+  precioCompra    Decimal   @default(0) @db.Decimal(15,2)
   porcentajeIva   Float     @default(21)  // 0, 10.5, 21, 27
   stock           Float     @default(0)
   stockMinimo     Float     @default(0)
   unidad          String    @default("unidad") // "unidad", "kg", "litro", etc.
+  /// Código EAN-13 / UPC para lectura de scanner POS
+  codigoBarras    String?
+  /// Peso bruto en kg (0 = no aplica)
+  peso            Float     @default(0)
+  /// Unidad de peso: "kg", "g", "tn"
+  pesoUnidad      String    @default("kg")
+  /// Volumen en m³ (0 = no aplica) — para logística
+  volumen         Float     @default(0)
+  /// Dimensiones: largo en cm
+  largo           Float     @default(0)
+  /// Dimensiones: ancho en cm
+  ancho           Float     @default(0)
+  /// Dimensiones: alto en cm
+  alto            Float     @default(0)
+  /// "bien" | "servicio" | "bien_de_uso" — determina AFIP concepto (1/2/3)
+  tipoProducto    String    @default("bien")
+  /// Stock máximo permitido (0 = sin límite) — alerta sobre-stock
+  stockMaximo     Float     @default(0)
+  /// Ubicación en depósito: pasillo/estante/bin (ej: "A-03-12")
+  ubicacionDeposito String?
+  /// URL imagen principal del producto
+  imagenUrl       String?
+  /// "nacional" | "importado"
+  origen          String    @default("nacional")
+  /// NCM (Nomenclador Común Mercosur) — requerido exportación
+  codigoNCM       String?
+  /// Margen de ganancia deseado (%)
+  margenGanancia  Float     @default(0)
   /// Marca platos/recetas para hospitalidad
   esPlato         Boolean   @default(false)
   /// Marca insumos para recetas/produccion
@@ -494,6 +722,11 @@ model Producto {
 
   categoriaId     Int?
   categoria       Categoria? @relation(fields: [categoriaId], references: [id])
+  marcaId         Int?
+  marca           Marca?     @relation(fields: [marcaId], references: [id])
+  /// Depósito por defecto para recepción de mercadería
+  depositoDefaultId Int?
+  depositoDefault   Deposito? @relation("ProductoDepositoDefault", fields: [depositoDefaultId], references: [id])
 
   movimientosStock  MovimientoStock[]
   lineasFactura     LineaFactura[]
@@ -511,9 +744,20 @@ model Producto {
   lineasComanda       LineaComanda[]
   lineasPedidoVenta   LineaPedidoVenta[]
   lineasRemito        LineaRemito[]
+  lineasNotaCredito   LineaNotaCredito[]
+  lineasNotaDebito    LineaNotaDebito[]
   unidadMedidaId      Int?
   unidadMedida        UnidadMedida?    @relation(fields: [unidadMedidaId], references: [id])
+  /// Clasificación fiscal: determina IVA, exención, código NCM
+  clasificacionFiscalId Int?
+  clasificacionFiscal   ClasificacionFiscal? @relation(fields: [clasificacionFiscalId], references: [id])
 
+  /// FIX C-004: código único por empresa
+  @@unique([empresaId, codigo])
+  /// FIX A-001: índices de filtrado frecuente
+  @@index([empresaId, activo])
+  @@index([empresaId, categoriaId])
+  @@index([codigoBarras])
   @@map("productos")
 }
 
@@ -528,7 +772,12 @@ model MovimientoStock {
   producto    Producto  @relation(fields: [productoId], references: [id])
   depositoId  Int?
   deposito    Deposito? @relation(fields: [depositoId], references: [id])
+  /// FIX A-012: multi-tenant — necesario para reportes de movimientos por empresa
+  empresaId   Int?
 
+  /// FIX A-001/A-012: índices para reportes de stock
+  @@index([empresaId, productoId, createdAt])
+  @@index([productoId, createdAt])
   @@map("movimientos_stock")
 }
 
@@ -536,19 +785,19 @@ model Caja {
   id            Int       @id @default(autoincrement())
   fecha         DateTime  @default(now())
   estado        String    @default("abierta") // "abierta", "cerrada"
-  saldoInicial  Float     @default(0)
-  saldoFinal    Float?
+  saldoInicial  Decimal   @default(0) @db.Decimal(15,2)
+  saldoFinal    Decimal?  @db.Decimal(15,2)
   observaciones String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Arqueo (reconciliation)
-  arqueoEfectivo      Float?    // Cash declared by cashier
-  arqueoTarjeta       Float?    // Card vouchers total
-  arqueoTransferencia Float?    // Transfer receipts total
-  arqueoCheque        Float?    // Cheques total
-  arqueoQR            Float?    // QR receipts total
-  diferencia          Float?    // Declared total - system total
+  arqueoEfectivo      Decimal?  @db.Decimal(15,2)  // Cash declared by cashier
+  arqueoTarjeta       Decimal?  @db.Decimal(15,2)  // Card vouchers total
+  arqueoTransferencia Decimal?  @db.Decimal(15,2)  // Transfer receipts total
+  arqueoCheque        Decimal?  @db.Decimal(15,2)  // Cheques total
+  arqueoQR            Decimal?  @db.Decimal(15,2)  // QR receipts total
+  diferencia          Decimal?  @db.Decimal(15,2)  // Declared total - system total
   diferenciaJustif    String?   @db.Text // Explanation for variance
 
   // Tracking
@@ -560,6 +809,13 @@ model Caja {
   empresa       Empresa        @relation(fields: [empresaId], references: [id])
   movimientos   MovimientoCaja[]
 
+  /// Sucursal donde está la caja
+  sucursalId    Int?
+  sucursal      Sucursal?      @relation("CajaSucursal", fields: [sucursalId], references: [id])
+  /// Tipo de caja (principal, chica, fondo fijo)
+  cajaTipoId    Int?
+  cajaTipo      CajaTipo?      @relation("CajaCajaTipo", fields: [cajaTipoId], references: [id])
+
   @@map("cajas")
 }
 
@@ -567,7 +823,7 @@ model MovimientoCaja {
   id          Int       @id @default(autoincrement())
   tipo        String    // "ingreso", "egreso"
   concepto    String
-  monto       Float
+  monto       Decimal   @db.Decimal(15,2)
   medioPago   String    @default("efectivo") // "efectivo", "tarjeta_debito", "tarjeta_credito", "transferencia", "cheque"
   referencia  String?   // número de factura, etc.
   createdAt   DateTime  @default(now())
@@ -577,6 +833,88 @@ model MovimientoCaja {
 
   @@map("movimientos_caja")
 }
+
+// ─── JORNADA FISCAL ─────────────────────────────────────────────────────────
+// Una jornada fiscal = un día de operación comercial.
+// Puede haber múltiples Cajas (turnos) dentro de una misma jornada.
+// El Cierre Z cierra la jornada de forma irreversible.
+
+model JornadaFiscal {
+  id               Int       @id @default(autoincrement())
+  fecha            DateTime  // Fecha del día fiscal (solo fecha, sin hora)
+  numeroZ          Int       // Contador Z secuencial por empresa (1, 2, 3...)
+  estado           String    @default("abierta") // "abierta" | "cerrada_z"
+
+  // Totales consolidados (poblados en Cierre Z)
+  totalVentas        Decimal   @default(0) @db.Decimal(15,2)
+  totalNeto          Decimal   @default(0) @db.Decimal(15,2)  // Base imponible total
+  totalIva21         Decimal   @default(0) @db.Decimal(15,2)
+  totalIva105        Decimal   @default(0) @db.Decimal(15,2)
+  totalIva27         Decimal   @default(0) @db.Decimal(15,2)
+  totalIvaExento     Decimal   @default(0) @db.Decimal(15,2)
+  totalIvaNoGravado  Decimal   @default(0) @db.Decimal(15,2)
+  totalEfectivo      Decimal   @default(0) @db.Decimal(15,2)
+  totalTarjeta       Decimal   @default(0) @db.Decimal(15,2)
+  totalTransferencia Decimal   @default(0) @db.Decimal(15,2)
+  totalQR            Decimal   @default(0) @db.Decimal(15,2)
+  totalCheque        Decimal   @default(0) @db.Decimal(15,2)
+  totalCtaCte        Decimal   @default(0) @db.Decimal(15,2)
+  cantidadFacturas Int       @default(0)
+  cantidadTickets  Int       @default(0)
+  primerNumFactura Int?      // Número de la primera factura del día
+  ultimoNumFactura Int?      // Número de la última factura del día
+
+  fechaCierre      DateTime?
+  cerradoPor       Int?
+  observaciones    String?   @db.Text
+
+  empresaId        Int
+  empresa          Empresa        @relation("JornadaFiscalEmpresa", fields: [empresaId], references: [id])
+  cierresX         CierreX[]
+
+  @@unique([empresaId, fecha])
+  @@index([empresaId, fecha])
+  @@map("jornadas_fiscales")
+}
+
+// ─── CIERRE X ───────────────────────────────────────────────────────────────
+// Informe parcial de la jornada, no resetea contadores.
+// Se puede generar múltiples veces en el día.
+
+model CierreX {
+  id               Int       @id @default(autoincrement())
+  timestamp        DateTime  @default(now())
+  numeroCierreX    Int       @default(1)  // Secuencial dentro de la jornada
+
+  // Snapshot de totales al momento del cierre X
+  totalVentas        Decimal   @default(0) @db.Decimal(15,2)
+  totalNeto          Decimal   @default(0) @db.Decimal(15,2)
+  totalIva21         Decimal   @default(0) @db.Decimal(15,2)
+  totalIva105        Decimal   @default(0) @db.Decimal(15,2)
+  totalIva27         Decimal   @default(0) @db.Decimal(15,2)
+  totalIvaExento     Decimal   @default(0) @db.Decimal(15,2)
+  totalEfectivo      Decimal   @default(0) @db.Decimal(15,2)
+  totalTarjeta       Decimal   @default(0) @db.Decimal(15,2)
+  totalTransferencia Decimal   @default(0) @db.Decimal(15,2)
+  totalQR            Decimal   @default(0) @db.Decimal(15,2)
+  totalCheque        Decimal   @default(0) @db.Decimal(15,2)
+  cantidadFacturas Int       @default(0)
+
+  // Datos analíticos (JSON)
+  topProductos     Json?     // [{ nombre, cantidad, total }]
+  ventasPorHora    Json?     // [{ hora: 9, total: 5000 }]
+  ventasPorTipo    Json?     // [{ tipo: "B", cantidad: 12, total: 48000 }]
+
+  jornadaId        Int?
+  jornada          JornadaFiscal? @relation(fields: [jornadaId], references: [id])
+  cajaId           Int
+  empresaId        Int
+  generadoPor      Int?
+
+  @@index([empresaId, timestamp])
+  @@map("cierres_x")
+}
+
 
 model NotaCredito {
   id              Int       @id @default(autoincrement())
@@ -588,10 +926,18 @@ model NotaCredito {
   fechaCAE        DateTime?
   vencimientoCAE  DateTime?
   motivo          String
-  subtotal        Float
-  iva             Float
-  total           Float
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
   estado          String    @default("pendiente")
+  /// Percepciones revertidas (de la factura original)
+  totalPercepciones  Decimal @default(0) @db.Decimal(15,2)
+  /// Retenciones revertidas
+  totalRetenciones   Decimal @default(0) @db.Decimal(15,2)
+  /// RG 5616: moneda de origen
+  monedaOrigen       String  @default("PES")
+  /// RG 5616: tipo de cambio
+  tipoCambio         Float   @default(1)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -604,15 +950,101 @@ model NotaCredito {
   clienteId       Int
   cliente         Cliente   @relation(fields: [clienteId], references: [id])
 
+  lineas          LineaNotaCredito[]
+
   @@map("notas_credito")
+}
+
+/// Líneas de detalle de nota de crédito — trackea qué productos se devolvieron/acreditaron
+model LineaNotaCredito {
+  id              Int       @id @default(autoincrement())
+  descripcion     String
+  cantidad        Float
+  precioUnitario  Decimal   @db.Decimal(15,2)
+  porcentajeIva   Float
+  codigoAfipIva   String?
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
+  descuento       Float     @default(0)
+
+  notaCreditoId   Int
+  notaCredito     NotaCredito @relation(fields: [notaCreditoId], references: [id], onDelete: Cascade)
+  productoId      Int?
+  producto        Producto?   @relation(fields: [productoId], references: [id])
+
+  @@map("lineas_nota_credito")
+}
+
+/// Nota de Débito A/B/C — AFIP tipoCbte 2=ND-A, 7=ND-B, 12=ND-C
+model NotaDebito {
+  id              Int       @id @default(autoincrement())
+  tipo            String    // "A", "B", "C"
+  tipoCbte        Int       // AFIP: 2=ND-A, 7=ND-B, 12=ND-C
+  numero          Int
+  puntoVenta      Int
+  cae             String?
+  fechaCAE        DateTime?
+  vencimientoCAE  DateTime?
+  /// Motivo: intereses, ajuste precio, recargo, etc.
+  motivo          String
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
+  totalPercepciones Decimal @default(0) @db.Decimal(15,2)
+  totalRetenciones  Decimal @default(0) @db.Decimal(15,2)
+  monedaOrigen    String    @default("PES")
+  tipoCambio      Float     @default(1)
+  estado          String    @default("pendiente")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  createdBy       Int?
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  /// Puede estar asociada a factura original o a proveedor
+  facturaId       Int?
+  factura         Factura?  @relation(fields: [facturaId], references: [id])
+  clienteId       Int?
+  cliente         Cliente?  @relation(fields: [clienteId], references: [id])
+  proveedorId     Int?
+  proveedor       Proveedor? @relation(fields: [proveedorId], references: [id])
+
+  lineas          LineaNotaDebito[]
+
+  @@map("notas_debito")
+}
+
+model LineaNotaDebito {
+  id              Int       @id @default(autoincrement())
+  descripcion     String
+  cantidad        Float
+  precioUnitario  Decimal   @db.Decimal(15,2)
+  porcentajeIva   Float
+  codigoAfipIva   String?
+  subtotal        Decimal   @db.Decimal(15,2)
+  iva             Decimal   @db.Decimal(15,2)
+  total           Decimal   @db.Decimal(15,2)
+
+  notaDebitoId    Int
+  notaDebito      NotaDebito @relation(fields: [notaDebitoId], references: [id], onDelete: Cascade)
+  productoId      Int?
+  producto        Producto?  @relation(fields: [productoId], references: [id])
+
+  @@map("lineas_nota_debito")
 }
 
 model Remito {
   id          Int       @id @default(autoincrement())
   numero      Int
+  /// "venta" | "transferencia" | "entrada" | "devolucion"
+  tipo        String    @default("venta")
   fecha       DateTime  @default(now())
   estado      String    @default("pendiente") // "pendiente", "entregado", "anulado"
   observaciones String? @db.Text
+  /// Firma del receptor (base64 data URL)
+  firmaReceptor String? @db.Text
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -679,6 +1111,12 @@ model RetencionSICORE {
   proveedor      Proveedor?  @relation(fields: [proveedorId], references: [id])
   ordenPagoId    Int?
   ordenPago      OrdenPago?  @relation(fields: [ordenPagoId], references: [id])
+  /// Régimen de retención parametrizado (reemplaza strings hardcoded)
+  regimenRetencionId Int?
+  regimenRetencion   RegimenRetencion? @relation(fields: [regimenRetencionId], references: [id])
+  /// Multi-tenant
+  empresaId      Int?
+  empresa        Empresa?   @relation(fields: [empresaId], references: [id])
 
   @@map("retenciones_sicore")
 }
@@ -703,6 +1141,10 @@ model PeriodoIIBB {
   estado         String   @default("abierto")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  /// Multi-tenant: empresa a la que pertenece el período
+  empresaId      Int?
+  empresa        Empresa?  @relation(fields: [empresaId], references: [id])
 
   @@unique([mes, anio, jurisdiccion])
   @@map("periodos_iibb")
@@ -1140,8 +1582,13 @@ model Deposito {
   direccion    String?
   localidad    String?
   provincia    String?
-  /// "principal" | "secundario" | "transito" | "consignacion"
+  /// "principal" | "secundario" | "transito" | "consignacion" | "devoluciones" | "cuarentena" | "merma"
   tipo         String   @default("principal")
+  /// Responsable del depósito
+  responsableId Int?
+  /// Sucursal a la que pertenece
+  sucursalId   Int?
+  sucursal     Sucursal? @relation(fields: [sucursalId], references: [id])
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -1153,6 +1600,7 @@ model Deposito {
   transferenciasOrigen   TransferenciaDeposito[] @relation("TransferenciaOrigen")
   transferenciasDestino  TransferenciaDeposito[] @relation("TransferenciaDestino")
   lotes             Lote[]
+  productosDefault  Producto[] @relation("ProductoDepositoDefault")
 
   @@map("depositos")
 }
@@ -1177,12 +1625,16 @@ model StockDeposito {
 model TransferenciaDeposito {
   id           Int      @id @default(autoincrement())
   numero       String   @unique
-  /// "pendiente" | "aprobada" | "rechazada"
+  /// "pendiente" | "en_transito" | "aprobada" | "rechazada"
   estado       String   @default("pendiente")
   fecha        DateTime @default(now())
   observaciones String? @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  createdBy    Int?
+
+  empresaId    Int
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
 
   origenId     Int
   origen       Deposito @relation("TransferenciaOrigen", fields: [origenId], references: [id])
@@ -1191,6 +1643,7 @@ model TransferenciaDeposito {
 
   lineas       LineaTransferencia[]
 
+  @@index([empresaId])
   @@map("transferencias_deposito")
 }
 
@@ -1528,6 +1981,8 @@ model Cheque {
   proveedorId     Int?
   proveedor       Proveedor? @relation(fields: [proveedorId], references: [id])
 
+  /// FIX A-001: índices para cartera de cheques
+  @@index([estado, fechaVencimiento])
   @@map("cheques")
 }
 
@@ -1549,6 +2004,9 @@ model MovimientoBancario {
 
   cuentaBancariaId Int
   cuentaBancaria   CuentaBancaria @relation(fields: [cuentaBancariaId], references: [id])
+  /// Tipo de movimiento parametrizado (depósito, extracción, comisión, etc.)
+  tipoMovimientoBancarioId Int?
+  tipoMovimientoBancario   TipoMovimientoBancario? @relation(fields: [tipoMovimientoBancarioId], references: [id])
 
   @@map("movimientos_bancarios")
 }
@@ -1616,7 +2074,7 @@ model CondicionPago {
 
 model ListaPrecio {
   id              Int             @id @default(autoincrement())
-  nombre          String          @unique
+  nombre          String
   descripcion     String?
   /// Factor multiplicador sobre el costo (1.3 = 30% sobre costo). Null = precios manuales.
   factorMarkup    Decimal?        @db.Decimal(8, 4)
@@ -1629,6 +2087,8 @@ model ListaPrecio {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  empresaId       Int
+  empresa         Empresa         @relation(fields: [empresaId], references: [id])
   monedaId        Int?
   moneda          Moneda?         @relation(fields: [monedaId], references: [id])
 
@@ -1636,6 +2096,7 @@ model ListaPrecio {
   clientes        Cliente[]
   presupuestos    Presupuesto[]
 
+  @@unique([empresaId, nombre])
   @@map("listas_precio")
 }
 
@@ -1693,7 +2154,7 @@ model Vendedor {
 
 model CentroCosto {
   id          Int           @id @default(autoincrement())
-  codigo      String        @unique
+  codigo      String
   nombre      String
   descripcion String?
   activo      Boolean       @default(true)
@@ -1706,6 +2167,12 @@ model CentroCosto {
 
   movimientos MovimientoContable[]
 
+  /// FIX C-003: Multi-tenant isolation — cada empresa tiene sus propios centros de costo
+  empresaId   Int
+  empresa     Empresa       @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activo])
   @@map("centros_costo")
 }
 
@@ -1936,6 +2403,9 @@ model PedidoVenta {
   listasPicking   ListaPicking[]
   remitos         Remito[]
 
+  /// FIX A-001: índices para gestión de pedidos
+  @@index([empresaId, estado, createdAt])
+  @@index([empresaId, clienteId])
   @@map("pedidos_venta")
 }
 
@@ -2134,6 +2604,8 @@ model ActividadEconomica {
   activo          Boolean   @default(true)
   createdAt       DateTime  @default(now())
 
+  proveedores     Proveedor[]
+
   @@map("actividades_economicas")
 }
 
@@ -2210,6 +2682,7 @@ model FormaPago {
   createdAt       DateTime  @default(now())
 
   clientes        Cliente[]
+  planesCuotas    PlanCuotas[]
 
   @@map("formas_pago")
 }
@@ -2293,11 +2766,22 @@ model Rubro {
   codigo      String    @unique
   nombre      String
   descripcion String?
+  /// Ícono de la UI (ej: "utensils", "stethoscope", "factory", "shopping-cart")
+  icono       String?
+  /// Color HEX o OKLCH para la UI
+  color       String?
+  /// Orden de presentación en UI
+  orden       Int       @default(0)
   activo      Boolean   @default(true)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   clientes    Cliente[]
   proveedores Proveedor[]
+  empresas    Empresa[]  @relation("EmpresaRubro")
+  configuraciones ConfiguracionRubro[]
+  workflows       WorkflowRubro[]
+  featuresRubro   FeatureRubro[]
 
   @@map("rubros")
 }
@@ -2449,6 +2933,9 @@ model CuentaCobrar {
 
   itemsRecibo     ItemRecibo[]
 
+  /// FIX A-001: índices para aging y gestión de CC
+  @@index([estado, fechaVencimiento])
+  @@index([clienteId])
   @@map("cuentas_cobrar")
 }
 
@@ -2475,8 +2962,13 @@ model Recibo {
 
   clienteId       Int
   cliente         Cliente   @relation(fields: [clienteId], references: [id])
+  /// Cobrador que realizó la gestión
+  cobradorId      Int?
+  cobrador        Cobrador? @relation(fields: [cobradorId], references: [id])
 
   items           ItemRecibo[]
+  /// Detalle de retenciones sufridas (con régimen, certificado, base)
+  retencionesDetalle RetencionRecibo[]
 
   @@map("recibos")
 }
@@ -2571,6 +3063,7 @@ model ItemOrdenPago {
 model ConfigFiscalEmpresa {
   id                        Int      @id @default(autoincrement())
   empresaId                 Int      @unique
+  empresa                   Empresa  @relation(fields: [empresaId], references: [id])
   esAgentePercepcionIVA     Boolean  @default(false)
   esAgenteRetencionIVA      Boolean  @default(false)
   esAgentePercepcionIIBB    Boolean  @default(false)
@@ -2661,6 +3154,8 @@ model ClasificacionFiscal {
   activo          Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  productos       Producto[]
 
   @@map("clasificaciones_fiscales")
 }
@@ -2759,6 +3254,38 @@ model ChatIAHistorial {
 
   @@index([empresaId, usuarioId, createdAt])
   @@map("chat_ia_historial")
+}
+
+// ─── LOGS DE EJECUCIÓN DE AGENTES IA ──────────────────────────────────────────
+// Auditoría de cada ejecución de agente autónomo.
+
+model AgenteLog {
+  id                  Int       @id @default(autoincrement())
+  /// ID del agente: "alertas-stock" | "cobranzas" | "ventas-leads" | etc.
+  agenteId            String
+  /// "schedule" | "event" | "manual" | "api"
+  triggeredBy         String
+  /// "success" | "error" | "skipped"
+  status              String
+  /// Resumen legible de lo que hizo el agente
+  resumen             String    @db.Text
+  /// Cantidad de acciones ejecutadas
+  accionesEjecutadas  Int       @default(0)
+  /// Tiempo de ejecución en ms
+  durationMs          Int       @default(0)
+  /// Error message if failed
+  error               String?   @db.Text
+  /// Detalle de acciones (JSON array)
+  detalles            Json?
+  createdAt           DateTime  @default(now())
+
+  empresaId           Int
+  empresa             Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, agenteId, createdAt])
+  @@index([agenteId, status])
+  @@index([empresaId, createdAt])
+  @@map("agente_logs")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2995,6 +3522,8 @@ model CuentaContable {
   tipo       String
   /// Subcategoría: "Disponibilidades", "Bienes de Cambio", "Deudas Fiscales", etc.
   categoria  String
+  /// Naturaleza del saldo: "deudora" | "acreedora" — define si sube por debe o haber
+  naturaleza String    @default("deudora")
   /// Nivel jerárquico (1=rubro, 2=subrubro, 3=cuenta, 4=subcuenta)
   nivel      Int       @default(3)
   /// Si true, permite imputar movimientos; si false, es cuenta de resumen
@@ -3003,6 +3532,15 @@ model CuentaContable {
   parentId   Int?
   parent     CuentaContable?  @relation("CuentaJerarquia", fields: [parentId], references: [id])
   hijos      CuentaContable[] @relation("CuentaJerarquia")
+  /// Código AFIP para mapeo fiscal (ej: libro IVA digital, SIRE)
+  codigoAfip String?
+  /// Si true, esta cuenta se ajusta por inflación (RT 6 / NIC 29)
+  ajustaInflacion Boolean @default(false)
+  /// Override moneda funcional (null = ARS). Para cuentas en moneda extranjera.
+  monedaFuncional String?
+  /// Rubro contable para agrupación en estados financieros (Balance / EERR)
+  rubroContableId Int?
+  rubroContable   RubroContable? @relation(fields: [rubroContableId], references: [id])
   activo     Boolean   @default(true)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -3227,4 +3765,2072 @@ model MovimientoEnvase {
   @@index([clienteId])
   @@index([tipoEnvaseId])
   @@map("movimientos_envase")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══ FASE 1: MAESTROS CONTABLES PROFESIONALES ═══════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── RUBRO CONTABLE (agrupación para estados financieros) ────────────────────
+// Permite agrupar cuentas para presentación de Balance General (RT 8/9)
+// y Estado de Resultados. Ejemplos: Disponibilidades, Créditos por Ventas,
+// Bienes de Cambio, Bienes de Uso, Deudas Comerciales, Deudas Fiscales, etc.
+
+model RubroContable {
+  id          Int       @id @default(autoincrement())
+  /// Código jerárquico: "1.1", "2.3", etc.
+  codigo      String
+  nombre      String
+  /// "balance_general" | "estado_resultados" | "flujo_efectivo"
+  tipoEstadoFinanciero String @default("balance_general")
+  /// Orden de presentación en el estado financiero
+  orden       Int       @default(0)
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+
+  cuentas     CuentaContable[]
+
+  @@unique([empresaId, codigo])
+  @@map("rubros_contables")
+}
+
+// ─── TIPO DE ASIENTO ─────────────────────────────────────────────────────────
+// Catálogo de tipos de asiento contable. Reemplaza el campo String 'tipo'
+// en AsientoContable con un maestro parametrizable.
+
+model TipoAsiento {
+  id                  Int       @id @default(autoincrement())
+  /// Código: "APERTURA", "DIARIO", "CIERRE", "AJUSTE", "RECLASIFICACION", etc.
+  codigo              String
+  nombre              String
+  /// Si true, requiere aprobación de supervisor/contador
+  requiereAprobacion  Boolean   @default(false)
+  /// Si true, afecta cuentas de resultado (EERR)
+  afectaResultado     Boolean   @default(true)
+  /// Si true, es generado automáticamente por el sistema (no manual)
+  esAutomatico        Boolean   @default(false)
+  activo              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  empresaId           Int
+  empresa             Empresa   @relation(fields: [empresaId], references: [id])
+
+  asientos            AsientoContable[]
+  plantillas          PlantillaAsiento[]
+
+  @@unique([empresaId, codigo])
+  @@map("tipos_asiento")
+}
+
+// ─── PLANTILLA DE ASIENTO ────────────────────────────────────────────────────
+// Templates para asientos recurrentes: sueldos, amortizaciones, provisiones,
+// ajuste por inflación. Permite generar asientos con un click.
+
+model PlantillaAsiento {
+  id              Int       @id @default(autoincrement())
+  /// Código interno: "SUELDOS_MENSUAL", "AMORT_BU", "PROV_VACACIONES", etc.
+  codigo          String
+  nombre          String
+  descripcion     String?
+  /// "mensual" | "bimestral" | "trimestral" | "semestral" | "anual" | null (manual)
+  periodicidad    String?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+  tipoAsientoId   Int?
+  tipoAsiento     TipoAsiento? @relation(fields: [tipoAsientoId], references: [id])
+
+  lineas          LineaPlantillaAsiento[]
+
+  @@unique([empresaId, codigo])
+  @@map("plantillas_asiento")
+}
+
+model LineaPlantillaAsiento {
+  id              Int              @id @default(autoincrement())
+  /// Código de cuenta contable (referencia al plan de la empresa)
+  cuentaCodigo    String
+  /// Nombre cache de la cuenta
+  cuentaNombre    String?
+  /// Fórmula o monto fijo para el debe. null = 0. Puede ser "PARAM_MONTO" para variable.
+  debeFormula     String?
+  /// Fórmula o monto fijo para el haber. null = 0.
+  haberFormula    String?
+  /// Orden de presentación
+  orden           Int              @default(0)
+
+  plantillaId     Int
+  plantilla       PlantillaAsiento @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+
+  @@map("lineas_plantilla_asiento")
+}
+
+// ─── TIPO DE COMPROBANTE (Catálogo AFIP) ─────────────────────────────────────
+// Catálogo completo de tipos de comprobante según tabla AFIP WSFE.
+// Permite parametrizar en vez de hardcodear códigos numéricos.
+
+model TipoComprobanteMaestro {
+  id              Int       @id @default(autoincrement())
+  /// Código AFIP: 1, 2, 3, 6, 7, 8, 11, 12, 13, 19, 20, 21, 51, 201, 206, etc.
+  codigoAfip      Int
+  /// Letra: "A", "B", "C", "E", "M", "T"
+  letra           String
+  /// Nombre completo: "Factura A", "Nota de Crédito B", "Factura de Crédito Electrónica MiPyME A"
+  nombre          String
+  /// Abreviatura: "FA", "FB", "FC", "NCA", "NCB", "NCC", "NDA", "NDB"
+  abreviatura     String
+  /// Flags de tipo
+  esFactura       Boolean   @default(false)
+  esNotaCredito   Boolean   @default(false)
+  esNotaDebito    Boolean   @default(false)
+  esRecibo        Boolean   @default(false)
+  esRemito        Boolean   @default(false)
+  /// Si aplica para MiPyME (FCE)
+  esFCE           Boolean   @default(false)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+  facturas        Factura[]
+
+  @@unique([empresaId, codigoAfip])
+  @@map("tipos_comprobante_maestro")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══ FASE 2: MAESTROS FINANCIEROS COMPLETOS ═════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── TIPO DE RETENCIÓN ───────────────────────────────────────────────────────
+// Catálogo de impuestos retenibles con norma legal de referencia.
+
+model TipoRetencion {
+  id          Int       @id @default(autoincrement())
+  /// "IVA", "GANANCIAS", "IIBB", "SUSS"
+  codigo      String
+  nombre      String
+  /// Norma legal: "RG 2854", "RG 830", "RG 3164", etc.
+  normaLegal  String?
+  /// "iva" | "ganancias" | "iibb" | "suss"
+  impuesto    String
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+
+  regimenes   RegimenRetencion[]
+
+  @@unique([empresaId, codigo])
+  @@map("tipos_retencion")
+}
+
+// ─── RÉGIMEN DE RETENCIÓN ────────────────────────────────────────────────────
+// Detalle por régimen SICORE con alícuotas, mínimos y bases de cálculo.
+// Reemplaza strings hardcoded en RetencionSICORE.
+
+model RegimenRetencion {
+  id                   Int       @id @default(autoincrement())
+  /// Código SICORE: "217", "219", "305", "767", "779", etc.
+  codigoSicore         String
+  /// Concepto: "Operaciones venta de cosas muebles", "Locaciones de obra", etc.
+  concepto             String
+  descripcion          String?
+  /// Alícuota para sujetos inscriptos (%)
+  alicuotaInscripto    Decimal   @db.Decimal(5, 2)
+  /// Alícuota para sujetos no inscriptos (%)
+  alicuotaNoInscripto  Decimal   @default(0) @db.Decimal(5, 2)
+  /// Monto mínimo no sujeto a retención
+  minimoNoSujeto       Decimal   @default(0) @db.Decimal(18, 2)
+  /// "neto" | "bruto" — base sobre la cual se calcula la retención
+  baseCalculo          String    @default("neto")
+  vigenciaDesde        DateTime  @db.Date
+  vigenciaHasta        DateTime? @db.Date
+  activo               Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tipoRetencionId      Int
+  tipoRetencion        TipoRetencion @relation(fields: [tipoRetencionId], references: [id])
+  empresaId            Int
+  empresa              Empresa       @relation(fields: [empresaId], references: [id])
+
+  retenciones          RetencionSICORE[]
+
+  @@unique([empresaId, codigoSicore])
+  @@map("regimenes_retencion")
+}
+
+// ─── TIPO DE MOVIMIENTO BANCARIO ─────────────────────────────────────────────
+// Catálogo de tipos de movimiento con signo y flags operativos.
+
+model TipoMovimientoBancario {
+  id                  Int       @id @default(autoincrement())
+  /// "DEPOSITO", "EXTRACCION", "TRANSF_EMITIDA", "TRANSF_RECIBIDA", etc.
+  codigo              String
+  nombre              String
+  /// +1 para créditos (ingresos), -1 para débitos (egresos)
+  signo               Int       @default(1)
+  /// Si afecta el saldo de la cuenta bancaria
+  afectaSaldo         Boolean   @default(true)
+  /// Si requiere conciliación con extracto
+  requiereConciliacion Boolean  @default(true)
+  activo              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  empresaId           Int
+  empresa             Empresa   @relation(fields: [empresaId], references: [id])
+
+  movimientos         MovimientoBancario[]
+
+  @@unique([empresaId, codigo])
+  @@map("tipos_movimiento_bancario")
+}
+
+// ─── CONCEPTO DE COBRO/PAGO ──────────────────────────────────────────────────
+// Parametriza los conceptos que componen un recibo o una orden de pago.
+
+model ConceptoCobroPago {
+  id                      Int       @id @default(autoincrement())
+  /// "SALDO_FACTURA", "ANTICIPO", "SENA", "RET_IVA", "RET_GAN", etc.
+  codigo                  String
+  nombre                  String
+  /// "cobro" | "pago" | "ambos"
+  tipo                    String    @default("ambos")
+  /// Si afecta el saldo de cuenta corriente del cliente/proveedor
+  afectaCuentaCorriente   Boolean   @default(true)
+  /// Si es un anticipo (pago antes de factura)
+  esAnticipo              Boolean   @default(false)
+  /// Si requiere factura asociada para su imputación
+  requiereFactura         Boolean   @default(true)
+  /// Código de cuenta contable asociada (para asiento automático)
+  cuentaContableCodigo    String?
+  activo                  Boolean   @default(true)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  empresaId               Int
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, codigo])
+  @@map("conceptos_cobro_pago")
+}
+
+// ─── PLAN DE CUOTAS ──────────────────────────────────────────────────────────
+// Planes de financiación por forma de pago (ej: 3 cuotas sin interés con Visa).
+
+model PlanCuotas {
+  id                      Int       @id @default(autoincrement())
+  nombre                  String
+  /// Cantidad de cuotas (1, 3, 6, 12, 18, 24)
+  cantidadCuotas          Int
+  /// Tasa de interés mensual (0 = sin interés)
+  tasaInteres             Decimal   @default(0) @db.Decimal(8, 4)
+  /// Coeficiente multiplicador sobre el precio contado (1.0 = sin recargo)
+  coeficienteMultiplicador Decimal  @default(1) @db.Decimal(8, 4)
+  vigenciaDesde           DateTime? @db.Date
+  vigenciaHasta           DateTime? @db.Date
+  activo                  Boolean   @default(true)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  formaPagoId             Int
+  formaPago               FormaPago @relation(fields: [formaPagoId], references: [id])
+  empresaId               Int
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@map("planes_cuotas")
+}
+
+// ─── ENTIDAD FINANCIERA ──────────────────────────────────────────────────────
+// Extiende el concepto de Banco para incluir fintech, billeteras y cobradores.
+// Coexiste con el modelo Banco existente (paralelo, no reemplazo).
+
+model EntidadFinanciera {
+  id          Int       @id @default(autoincrement())
+  /// Código identificador: "MP" (MercadoPago), "UALA", "NX" (Naranja X), etc.
+  codigo      String
+  nombre      String
+  /// "banco" | "fintech" | "billetera_virtual" | "cobrador_externo" | "procesador_tarjeta"
+  tipo        String    @default("banco")
+  /// Prefijo CBU/CVU para identificación automática
+  cbuPrefijo  String?
+  /// CUIT de la entidad (para retenciones)
+  cuit        String?
+  /// Comisión por defecto (%)
+  comisionPct Decimal   @default(0) @db.Decimal(5, 2)
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  empresaId   Int
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, codigo])
+  @@map("entidades_financieras")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══ FASE 3: MAESTROS OPERACIONALES ═════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── SUCURSAL ────────────────────────────────────────────────────────────────
+// Entidad branch real. Diferente de PuntoVentaConfig (que es AFIP/fiscal).
+
+model Sucursal {
+  id              Int       @id @default(autoincrement())
+  /// Código corto: "CASA_CENTRAL", "SUC_NORTE", "SUC_SUR"
+  codigo          String
+  nombre          String
+  direccion       String?
+  telefono        String?
+  email           String?
+  /// Si es la sucursal principal / casa central
+  esMatriz        Boolean   @default(false)
+  /// Responsable de la sucursal (Usuario)
+  responsableId   Int?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  localidadId     Int?
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  depositos       Deposito[]
+  cajasTipo       CajaTipo[]
+  cajas           Caja[]    @relation("CajaSucursal")
+
+  @@unique([empresaId, codigo])
+  @@map("sucursales")
+}
+
+// ─── COBRADOR ────────────────────────────────────────────────────────────────
+// Agente de cobranza separado de Vendedor. Gestiona recibos y cobranzas.
+
+model Cobrador {
+  id              Int       @id @default(autoincrement())
+  /// Código: "COB01", "COB02"
+  codigo          String
+  nombre          String
+  email           String?
+  telefono        String?
+  /// Porcentaje de comisión sobre montos cobrados
+  comisionPct     Decimal   @default(0) @db.Decimal(5, 2)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  /// Usuario del sistema asociado (opcional)
+  usuarioId       Int?
+  /// Zona geográfica asignada
+  zonaGeograficaId Int?
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  recibos         Recibo[]
+
+  @@unique([empresaId, codigo])
+  @@map("cobradores")
+}
+
+// ─── TIPO DE OPERACIÓN COMERCIAL ─────────────────────────────────────────────
+// Parametriza operaciones: venta mostrador, mayorista, devolución, consignación.
+
+model TipoOperacionComercial {
+  id                      Int       @id @default(autoincrement())
+  /// "VENTA_MOSTRADOR", "VENTA_MAYORISTA", "DEVOLUCION", "BONIFICACION", etc.
+  codigo                  String
+  nombre                  String
+  /// "venta" | "compra" | "devolucion" | "bonificacion" | "consignacion" | "muestra"
+  tipo                    String    @default("venta")
+  /// Si la operación afecta stock (movimiento entrada/salida)
+  afectaStock             Boolean   @default(true)
+  /// Si la operación genera/cancela cuenta corriente
+  afectaCuentaCorriente   Boolean   @default(true)
+  /// Si requiere aprobación de supervisor
+  requiereAprobacion      Boolean   @default(false)
+  /// Tipo de comprobante AFIP por defecto para esta operación
+  tipoComprobanteDefaultId Int?
+  activo                  Boolean   @default(true)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  empresaId               Int
+  empresa                 Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, codigo])
+  @@map("tipos_operacion_comercial")
+}
+
+// ─── TIPO DE CAJA ────────────────────────────────────────────────────────────
+// Principal, secundaria, fondo fijo, caja chica. Define reglas de arqueo.
+
+model CajaTipo {
+  id              Int       @id @default(autoincrement())
+  /// "PRINCIPAL", "SECUNDARIA", "FONDO_FIJO", "CHICA"
+  codigo          String
+  nombre          String
+  /// "principal" | "secundaria" | "fondo_fijo" | "chica"
+  tipo            String    @default("principal")
+  /// Monto máximo permitido (0 = sin límite)
+  montoMaximo     Decimal   @default(0) @db.Decimal(18, 2)
+  /// Si requiere arqueo al cierre
+  requiereArqueo  Boolean   @default(true)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sucursalId      Int?
+  sucursal        Sucursal? @relation(fields: [sucursalId], references: [id])
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  cajas           Caja[]    @relation("CajaCajaTipo")
+
+  @@unique([empresaId, codigo])
+  @@map("cajas_tipo")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══ FASE 4: INFRAESTRUCTURA DE ESCALABILIDAD ═══════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CAMPO PERSONALIZADO (EAV Pattern) ───────────────────────────────────────
+// Permite agregar campos dinámicos a CUALQUIER entidad sin migración de schema.
+// El usuario final puede crear campos tipo texto, número, fecha, select, etc.
+
+model CampoPersonalizado {
+  id              Int       @id @default(autoincrement())
+  /// Entidad destino: "cliente", "producto", "proveedor", "factura", "compra", etc.
+  entidad         String
+  /// Nombre interno del campo (camelCase, sin espacios)
+  nombreCampo     String
+  /// Etiqueta visible en formularios
+  etiqueta        String
+  /// "texto" | "numero" | "fecha" | "booleano" | "select" | "multiselect" | "textarea" | "email" | "url"
+  tipoDato        String    @default("texto")
+  /// JSON: opciones para select/multiselect. Ej: ["Zona Norte", "Zona Sur", "Zona Oeste"]
+  opciones        Json?
+  /// Si el campo es obligatorio
+  obligatorio     Boolean   @default(false)
+  /// Orden de presentación en el formulario
+  orden           Int       @default(0)
+  /// Si se muestra en listados/tablas
+  visibleEnLista  Boolean   @default(false)
+  /// Si se muestra en el formulario de edición
+  visibleEnFormulario Boolean @default(true)
+  /// Valor por defecto (string serializado)
+  valorDefault    String?
+  /// Placeholder del campo
+  placeholder     String?
+  /// Texto de ayuda
+  ayuda           String?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  valores         ValorCampoPersonalizado[]
+
+  @@unique([empresaId, entidad, nombreCampo])
+  @@index([empresaId, entidad])
+  @@map("campos_personalizados")
+}
+
+// ─── VALOR DE CAMPO PERSONALIZADO ────────────────────────────────────────────
+// Almacena el valor tipado del campo para cada entidad específica.
+// Usa columnas separadas por tipo (EAV pattern con tipado) para mejor performance.
+
+model ValorCampoPersonalizado {
+  id              Int       @id @default(autoincrement())
+  /// ID de la entidad (UUID o Int serializado como String)
+  entidadId       String
+  /// Valores tipados (usar el que corresponda al tipoDato del campo)
+  valorTexto      String?
+  valorNumero     Decimal?  @db.Decimal(18, 4)
+  valorFecha      DateTime?
+  valorBooleano   Boolean?
+  /// Para select múltiple u objetos complejos
+  valorJson       Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campoId         Int
+  campo           CampoPersonalizado @relation(fields: [campoId], references: [id], onDelete: Cascade)
+
+  @@unique([campoId, entidadId])
+  @@index([entidadId])
+  @@map("valores_campo_personalizado")
+}
+
+// ─── TABLA AUXILIAR (Catálogos genéricos) ────────────────────────────────────
+// Permite al usuario crear catálogos sin tocar código: "Origen del Lead",
+// "Tipo de Envío", "Categoría de Gasto", etc.
+
+model TablaAuxiliar {
+  id              Int       @id @default(autoincrement())
+  /// Código único: "ORIGEN_LEAD", "TIPO_ENVIO", "CAT_GASTO"
+  codigo          String
+  nombre          String
+  descripcion     String?
+  /// Si true, es un catálogo del sistema (protegido contra eliminación)
+  esDelSistema    Boolean   @default(false)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  valores         ValorAuxiliar[]
+
+  @@unique([empresaId, codigo])
+  @@map("tablas_auxiliares")
+}
+
+model ValorAuxiliar {
+  id              Int            @id @default(autoincrement())
+  /// Código del valor: "WEB", "TELEFONO", "REFERIDO"
+  codigo          String
+  nombre          String
+  descripcion     String?
+  /// Orden de presentación
+  orden           Int            @default(0)
+  /// Datos adicionales (JSON libre para extensibilidad)
+  metadata        Json?
+  activo          Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  tablaAuxiliarId Int
+  tablaAuxiliar   TablaAuxiliar  @relation(fields: [tablaAuxiliarId], references: [id], onDelete: Cascade)
+
+  @@unique([tablaAuxiliarId, codigo])
+  @@map("valores_auxiliar")
+}
+
+// ─── CONFIGURACIÓN DE CAMPO POR EMPRESA ──────────────────────────────────────
+// Permite por empresa definir qué campos nativos son visibles, obligatorios
+// o de solo lectura en cada formulario. Personalización sin código.
+
+model ConfiguracionCampo {
+  id              Int       @id @default(autoincrement())
+  /// Entidad: "cliente", "producto", "proveedor", "factura"
+  entidad         String
+  /// Nombre del campo nativo: "cuit", "direccion", "limiteCredito"
+  campo           String
+  /// Si el campo es visible en el formulario
+  visible         Boolean   @default(true)
+  /// Si el campo es obligatorio
+  obligatorio     Boolean   @default(false)
+  /// Si el campo es de solo lectura
+  soloLectura     Boolean   @default(false)
+  /// Valor por defecto
+  valorDefault    String?
+  /// Orden de presentación (override del orden natural)
+  orden           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, entidad, campo])
+  @@map("configuraciones_campo")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══ SPRINT IMPUESTOS — TAX ENGINEERING ══════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// Modelos que cierran las brechas fiscales críticas para AFIP compliance:
+// TributoFactura/TributoCompra (WSFE Tributos[]), PadronRegimenProveedor,
+// RegimenPercepcion, RetencionRecibo, DeclaracionJurada.
+
+// ─── TRIBUTO FACTURA ────────────────────────────────────────────────────────
+// Cada factura de venta puede incluir múltiples tributos adicionales
+// (percepciones IIBB, percepción IVA, impuestos internos, municipales).
+// Mapea 1:1 al array Tributos[] del WSFE FECAESolicitar.
+
+model TributoFactura {
+  id              Int       @id @default(autoincrement())
+  /// Código AFIP tributo: 1=Imp.Nacional, 2=Imp.Provincial, 3=Imp.Municipal, 4=Imp.Interno, 99=Otro
+  codigoAfip      Int
+  /// Descripción legible: "Percepción IIBB ARBA", "Percepción IVA RG 2408", etc.
+  descripcion     String
+  /// Base imponible sobre la cual se calcula el tributo
+  baseImponible   Decimal   @db.Decimal(15,2)
+  /// Alícuota aplicada (porcentaje, ej: 3.5)
+  alicuota        Float
+  /// Importe resultante del tributo
+  importe         Decimal   @db.Decimal(15,2)
+  /// Jurisdicción (para IIBB): "PBA", "CABA", "SF", etc.
+  jurisdiccion    String?
+  /// Referencia al organismo: "ARBA", "AGIP", "AFIP", etc.
+  organismo       String?
+
+  facturaId       Int
+  factura         Factura   @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+  /// Régimen de percepción que originó este tributo (opcional)
+  regimenPercepcionId Int?
+  regimenPercepcion   RegimenPercepcion? @relation("tributosFacturaPercepcion", fields: [regimenPercepcionId], references: [id])
+
+  @@map("tributos_factura")
+}
+
+// ─── TRIBUTO COMPRA ─────────────────────────────────────────────────────────
+// Tributos adicionales incluidos en facturas de proveedor (percepciones sufridas).
+// Se usan para computar crédito fiscal de percepciones IIBB e IVA.
+
+model TributoCompra {
+  id              Int       @id @default(autoincrement())
+  /// Código AFIP tributo: 1=Nacional, 2=Provincial, 3=Municipal, 4=Interno, 99=Otro
+  codigoAfip      Int
+  descripcion     String
+  baseImponible   Decimal   @db.Decimal(15,2)
+  alicuota        Float
+  importe         Decimal   @db.Decimal(15,2)
+  jurisdiccion    String?
+  organismo       String?
+
+  compraId        Int
+  compra          Compra    @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+  /// Régimen de percepción sufrida
+  regimenPercepcionId Int?
+  regimenPercepcion   RegimenPercepcion? @relation("tributosCompraPercepcion", fields: [regimenPercepcionId], references: [id])
+
+  @@map("tributos_compra")
+}
+
+// ─── RÉGIMEN DE PERCEPCIÓN ──────────────────────────────────────────────────
+// Maestro de regímenes de percepción (IVA RG 2408, IIBB ARBA, IIBB AGIP, etc.)
+// Define alícuotas base, mínimos no sujetos y vigencia.
+
+model RegimenPercepcion {
+  id                   Int       @id @default(autoincrement())
+  /// Código único: "PERC_IVA_2408", "PERC_IIBB_ARBA", "PERC_IIBB_AGIP", etc.
+  codigo               String
+  nombre               String
+  /// "percepcion_iva" | "percepcion_iibb" | "percepcion_municipal"
+  tipo                 String
+  /// Impuesto: "IVA" | "IIBB" | "MUNICIPAL"
+  impuesto             String
+  /// Organismo: "AFIP" | "ARBA" | "AGIP" | "DGR_SF" | "DGR_CBA"
+  organismo            String
+  /// Jurisdicción (para IIBB): "PBA", "CABA", "SF", "CBA", etc.
+  jurisdiccion         String?
+  /// Alícuota general para inscriptos (%)
+  alicuotaInscripto    Decimal   @db.Decimal(5, 2)
+  /// Alícuota para no inscriptos (%)
+  alicuotaNoInscripto  Decimal   @default(0) @db.Decimal(5, 2)
+  /// Monto mínimo no sujeto a percepción
+  minimoNoSujeto       Decimal   @default(0) @db.Decimal(18, 2)
+  /// Norma legal: "RG 2408", "DN B 1/2004", etc.
+  normaLegal           String?
+  /// "neto" | "total" — base sobre la cual se calcula la percepción
+  baseCalculo          String    @default("neto")
+  vigenciaDesde        DateTime  @db.Date
+  vigenciaHasta        DateTime? @db.Date
+  activo               Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  empresaId            Int
+  empresa              Empresa   @relation(fields: [empresaId], references: [id])
+
+  tributosFactura      TributoFactura[]  @relation("tributosFacturaPercepcion")
+  tributosCompra       TributoCompra[]   @relation("tributosCompraPercepcion")
+
+  @@unique([empresaId, codigo])
+  @@map("regimenes_percepcion")
+}
+
+// ─── PADRÓN RÉGIMEN PROVEEDOR ───────────────────────────────────────────────
+// Espejo de PadronRegimenCliente pero para proveedores.
+// Cuando la empresa es agente de retención IIBB, necesita consultar la alícuota
+// del proveedor según padrón provincial (ARBA, AGIP, DGR).
+
+model PadronRegimenProveedor {
+  id              Int       @id @default(autoincrement())
+  /// "retencion_iibb" | "retencion_iva" | "retencion_ganancias"
+  tipoRegimen     String
+  /// Organismo: "ARBA", "AGIP", "DGR_SF", etc.
+  organismo       String
+  jurisdiccion    String
+  /// Alícuota asignada al proveedor según padrón (0 = excluido)
+  alicuota        Decimal   @db.Decimal(5, 2)
+  vigenciaDesde   DateTime  @db.Date
+  vigenciaHasta   DateTime? @db.Date
+  /// CUIT del proveedor (para lookup rápido sin JOIN)
+  cuitSujeto      String
+  /// Marca tipo: "AG" = agente, "EX" = excluido, "NI" = no inscripto
+  marcaSujeto     String?
+  createdAt       DateTime  @default(now())
+
+  proveedorId     Int
+  proveedor       Proveedor @relation(fields: [proveedorId], references: [id])
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@index([cuitSujeto, organismo])
+  @@map("padron_regimen_proveedor")
+}
+
+// ─── RETENCIÓN RECIBO (detalle) ─────────────────────────────────────────────
+// Detalle de retenciones sufridas en cobros (cuando el cliente es agente de retención).
+// Complementa los campos flat de Recibo (retencionIVA, retencionGanancias, retencionIIBB)
+// con la información necesaria para SIRE RG 5577.
+
+model RetencionRecibo {
+  id              Int       @id @default(autoincrement())
+  /// "IVA" | "GANANCIAS" | "IIBB" | "SUSS"
+  tipo            String
+  /// Código SICORE/régimen del retenedor
+  codigoRegimen   String?
+  /// Base imponible de la retención
+  base            Decimal   @db.Decimal(18, 2)
+  /// Alícuota aplicada
+  alicuota        Decimal   @db.Decimal(5, 2)
+  /// Monto retenido
+  monto           Decimal   @db.Decimal(18, 2)
+  /// Número de constancia/certificado emitido por el agente
+  numeroCertificado String?
+  /// Fecha de la retención
+  fechaRetencion  DateTime  @default(now())
+  /// Jurisdicción (para IIBB)
+  jurisdiccion    String?
+  /// CUIT del agente de retención (el cliente)
+  cuitAgente      String?
+
+  reciboId        Int
+  recibo          Recibo    @relation(fields: [reciboId], references: [id], onDelete: Cascade)
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@map("retenciones_recibo")
+}
+
+// ─── DECLARACIÓN JURADA ─────────────────────────────────────────────────────
+// Tracking de presentaciones de DDJJ fiscales: IVA mensual, IIBB por jurisdicción,
+// SICORE, CM03/CM05. Estado de cada presentación y número de VEP.
+
+model DeclaracionJurada {
+  id              Int       @id @default(autoincrement())
+  /// "IVA" | "IIBB" | "SICORE" | "CONVENIO_MULTILATERAL" | "SIRE"
+  tipo            String
+  /// Período: YYYYMM (ej: "202604")
+  periodo         String
+  /// Jurisdicción (para IIBB): "PBA", "CABA", etc. Null para nacionales.
+  jurisdiccion    String?
+  /// "borrador" | "generada" | "presentada" | "rectificativa" | "anulada"
+  estado          String    @default("borrador")
+  /// Número de VEP (Volante Electrónico de Pago)
+  vepNumero       String?
+  /// Monto total determinado
+  montoTotal      Decimal   @default(0) @db.Decimal(18, 2)
+  /// Monto de saldo a favor del período anterior
+  saldoFavorAnterior Decimal @default(0) @db.Decimal(18, 2)
+  /// Monto a pagar resultante
+  montoAPagar     Decimal   @default(0) @db.Decimal(18, 2)
+  /// Fecha de presentación
+  fechaPresentacion DateTime?
+  /// Fecha de vencimiento
+  fechaVencimiento  DateTime?
+  /// Número de rectificativa (0 = original, 1 = 1ra rectif, etc.)
+  nroRectificativa  Int     @default(0)
+  /// JSON con hash del contenido para auditoría
+  hashContenido     String?
+  observaciones     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  empresaId         Int
+  empresa           Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, tipo, periodo, jurisdiccion, nroRectificativa])
+  @@map("declaraciones_juradas")
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ═══ CONFIGURACIÓN DINÁMICA POR RUBRO — RAILROAD SWITCH ENGINE ══════════════
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── CONFIGURACIÓN DE RUBRO (template por sector) ────────────────────────────
+// Define qué features se activan por defecto para cada rubro.
+// Cuando una empresa se da de alta, se copian estos registros a FeatureEmpresa.
+
+model ConfiguracionRubro {
+  id              Int       @id @default(autoincrement())
+  /// Feature key normalizada: "pos", "stock", "kds", "facturacion_afip",
+  ///   "agentes_ia", "bom_produccion", "historia_clinica", "membresias",
+  ///   "picking_warehouse", "iot_sensores", "conciliacion_bancaria", etc.
+  featureKey      String
+  /// ¿Activada por defecto al crear empresa de este rubro?
+  activado        Boolean   @default(true)
+  /// ¿Modo simplificado? (ej: contabilidad simplificada para kiosco)
+  modoSimplificado Boolean  @default(false)
+  /// Orden de presentación en UI
+  orden           Int       @default(0)
+  /// Label legible para UI
+  label           String?
+  /// Descripción de qué hace esta feature
+  descripcion     String?
+  /// Icono para la UI
+  icono           String?
+  /// Grupo funcional: "core", "fiscal", "vertical", "integracion", "ia"
+  grupo           String    @default("core")
+  /// Parámetros por defecto del rubro como JSON
+  /// Ej: {"umbralAlerta": 10, "diasCobranza": 30, "requiereBOM": true}
+  parametros      Json?
+  /// Condiciones de activación como JSON
+  /// Ej: {"condicionIva": "Responsable Inscripto"} → solo si es RI
+  condiciones     Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  rubroId         Int
+  rubro           Rubro     @relation(fields: [rubroId], references: [id])
+
+  @@unique([rubroId, featureKey])
+  @@index([rubroId, grupo])
+  @@map("configuracion_rubro")
+}
+
+// ─── FEATURE POR RUBRO (catálogo global de features) ─────────────────────────
+// Catálogo maestro de todas las features disponibles del ERP.
+// Cada rubro selecciona cuáles activar por defecto.
+
+model FeatureRubro {
+  id                Int       @id @default(autoincrement())
+  /// Key normalizada (misma que ConfiguracionRubro.featureKey)
+  featureKey        String
+  /// Grupo funcional: "core", "fiscal", "vertical", "integracion", "ia"
+  grupo             String    @default("core")
+  /// Orden de presentación
+  orden             Int       @default(0)
+  /// Label legible
+  label             String
+  descripcion       String?
+  icono             String?
+  /// ¿Se activa por defecto para este rubro?
+  activadoPorDefecto Boolean  @default(false)
+  /// ¿Permite modo simplificado?
+  permiteModoSimplificado Boolean @default(false)
+  /// JSON schema de los parámetros configurables de esta feature
+  /// Ej: {"type":"object","properties":{"diasCobranza":{"type":"number","default":30}}}
+  schemaParametros  Json?
+
+  rubroId           Int
+  rubro             Rubro     @relation(fields: [rubroId], references: [id])
+
+  @@unique([rubroId, featureKey])
+  @@map("features_rubro")
+}
+
+// ─── FEATURE POR EMPRESA (override de empresa sobre rubro) ───────────────────
+// La empresa puede activar/desactivar/personalizar features de su rubro.
+// Si no existe registro para una featureKey, se hereda de ConfiguracionRubro.
+
+model FeatureEmpresa {
+  id              Int       @id @default(autoincrement())
+  featureKey      String
+  /// Override de activación (null = heredar del rubro)
+  activado        Boolean   @default(true)
+  /// Override de modo simplificado
+  modoSimplificado Boolean  @default(false)
+  /// Parámetros personalizados de la empresa (merge con defaults del rubro)
+  parametros      Json?
+  /// Notas internas
+  notas           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, featureKey])
+  @@index([empresaId])
+  @@map("features_empresa")
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ═══ WORKFLOW ENGINE — MOTOR DE FLUJOS DINÁMICOS (RAILROAD SWITCH) ═══════════
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ─── WORKFLOW POR RUBRO (template de flujos) ─────────────────────────────────
+// Define los flujos completos por proceso de negocio y rubro.
+// Ej: "venta_gastronomia" tiene pasos: comanda→kds→cuenta→factura→cobro
+//     "venta_distribucion" tiene: pedido→picking→remito→factura→cc→cobro
+
+model WorkflowRubro {
+  id          Int       @id @default(autoincrement())
+  /// Clave del proceso: "venta", "compra", "cobro", "produccion", "turno_medico"
+  proceso     String
+  /// Nombre legible: "Flujo de Venta Gastronomía"
+  nombre      String
+  descripcion String?
+  /// Versión del workflow (para evolucionar sin romper instancias en vuelo)
+  version     Int       @default(1)
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  rubroId     Int
+  rubro       Rubro     @relation(fields: [rubroId], references: [id])
+
+  pasos       WorkflowStep[]
+
+  @@unique([rubroId, proceso, version])
+  @@index([rubroId, proceso])
+  @@map("workflow_rubro")
+}
+
+// ─── PASO DEL WORKFLOW ───────────────────────────────────────────────────────
+// Cada step es un nodo en el grafo del flujo.
+
+model WorkflowStep {
+  id              Int       @id @default(autoincrement())
+  /// Key interna: "crear_comanda", "emitir_factura", "generar_asiento", "enviar_whatsapp"
+  stepKey         String
+  /// Nombre legible: "Emitir Factura AFIP"
+  nombre          String
+  /// Tipo de acción:
+  /// "service_call" → invoca un servicio TypeScript
+  /// "event_emit"   → emite un evento al event bus
+  /// "condition"    → bifurcación condicional (railroad switch)
+  /// "approval"     → requiere aprobación de usuario
+  /// "timer"        → espera N minutos/horas
+  /// "webhook"      → llama endpoint externo
+  tipo            String    @default("service_call")
+  /// Referencia al servicio/handler a ejecutar
+  /// Ej: "facturaService.emitirFactura", "asientoService.generarAsientoVenta"
+  accion          String?
+  /// Orden secuencial dentro del workflow
+  orden           Int       @default(0)
+  /// ¿Se puede desactivar por empresa?
+  desactivable    Boolean   @default(true)
+  /// ¿Es obligatorio (no se puede saltar)?
+  obligatorio     Boolean   @default(true)
+  /// Parámetros del paso como JSON
+  /// Ej: {"tipoCbte": 1, "puntoVenta": 1} para facturación
+  parametros      Json?
+  /// Condición de ejecución como JSON (evaluada en runtime)
+  /// Ej: {"campo": "total", "operador": ">", "valor": 50000}
+  condicion       Json?
+  /// Feature requerida (si la feature no está activa, se salta el paso)
+  requiereFeature String?
+  /// Timeout en segundos (0 = sin timeout)
+  timeoutSeg      Int       @default(0)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workflowId      Int
+  workflow        WorkflowRubro @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  transicionesSalida  WorkflowTransition[] @relation("TransicionOrigen")
+  transicionesEntrada WorkflowTransition[] @relation("TransicionDestino")
+
+  @@unique([workflowId, stepKey])
+  @@index([workflowId, orden])
+  @@map("workflow_steps")
+}
+
+// ─── TRANSICIÓN ENTRE PASOS ──────────────────────────────────────────────────
+// Define las "vías del tren" — las posibles rutas entre pasos.
+// Permite bifurcaciones (railroad switch) con condiciones.
+
+model WorkflowTransition {
+  id              Int       @id @default(autoincrement())
+  /// Label de la transición: "siguiente", "aprobado", "rechazado", "error", "timeout"
+  label           String    @default("siguiente")
+  /// Condición JSON para tomar esta vía
+  /// Ej: {"campo": "rubro", "operador": "==", "valor": "gastronomia"}
+  /// Si null, es la transición por defecto (siempre se toma)
+  condicion       Json?
+  /// Prioridad de evaluación (menor = primero). Si 2 condiciones matchean, gana la de menor prioridad.
+  prioridad       Int       @default(0)
+  activo          Boolean   @default(true)
+
+  origenId        Int
+  origen          WorkflowStep @relation("TransicionOrigen", fields: [origenId], references: [id], onDelete: Cascade)
+  destinoId       Int
+  destino         WorkflowStep @relation("TransicionDestino", fields: [destinoId], references: [id], onDelete: Cascade)
+
+  @@index([origenId, prioridad])
+  @@map("workflow_transitions")
+}
+
+// ─── INSTANCIA DE WORKFLOW (ejecución en vuelo) ──────────────────────────────
+// Cada vez que se ejecuta un flujo (ej: una venta), se crea una instancia
+// que trackea el estado actual y el historial de pasos ejecutados.
+
+model WorkflowInstancia {
+  id              Int       @id @default(autoincrement())
+  /// Proceso: "venta", "compra", etc.
+  proceso         String
+  /// Versión del workflow template usado
+  version         Int       @default(1)
+  /// "en_curso" | "completado" | "error" | "cancelado" | "pausado"
+  estado          String    @default("en_curso")
+  /// Step key en el que se encuentra actualmente
+  stepActual      String?
+  /// Referencia a la entidad que disparó el workflow
+  /// Ej: facturaId, pedidoId, compraId
+  entidadTipo     String?
+  entidadId       Int?
+  /// Contexto acumulado del workflow como JSON
+  /// Se enriquece en cada paso: {total: 50000, clienteId: 1, cae: "xxx"}
+  contexto        Json?
+  /// Error si estado == "error"
+  error           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+
+  pasoLog         WorkflowPasoLog[]
+
+  @@index([empresaId, proceso, estado])
+  @@index([entidadTipo, entidadId])
+  @@map("workflow_instancias")
+}
+
+// ─── LOG DE EJECUCIÓN DE PASO ────────────────────────────────────────────────
+// Audit trail de cada paso ejecutado dentro de una instancia.
+
+model WorkflowPasoLog {
+  id              Int       @id @default(autoincrement())
+  stepKey         String
+  /// "ejecutado" | "saltado" | "error" | "timeout" | "rollback"
+  resultado       String
+  /// Duración en ms
+  duracionMs      Int?
+  /// Input que recibió el paso
+  input           Json?
+  /// Output que devolvió el paso
+  output          Json?
+  /// Error si resultado == "error"
+  error           String?   @db.Text
+  createdAt       DateTime  @default(now())
+
+  instanciaId     Int
+  instancia       WorkflowInstancia @relation(fields: [instanciaId], references: [id], onDelete: Cascade)
+
+  @@index([instanciaId, createdAt])
+  @@map("workflow_paso_log")
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAP CLOSURE — Modelos faltantes para completitud operativa
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── TOMA DE INVENTARIO ─────────────────────────────────────────────────────
+// Conteo físico de stock con conciliación contra sistema
+
+model TomaInventario {
+  id              Int       @id @default(autoincrement())
+  numero          String
+  fecha           DateTime  @default(now())
+  estado          String    @default("borrador") // borrador | en_conteo | procesada | anulada
+  observaciones   String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  depositoId      Int
+  empresaId       Int
+
+  lineas          LineaTomaInventario[]
+
+  @@index([empresaId, estado])
+  @@map("tomas_inventario")
+}
+
+model LineaTomaInventario {
+  id                Int       @id @default(autoincrement())
+  stockSistema      Float     // Cantidad que indica el sistema
+  stockContado      Float?    // Cantidad contada físicamente
+  diferencia        Float?    // contado - sistema (calculado al procesar)
+  observaciones     String?
+
+  productoId        Int
+  tomaInventarioId  Int
+  tomaInventario    TomaInventario @relation(fields: [tomaInventarioId], references: [id], onDelete: Cascade)
+
+  @@map("lineas_toma_inventario")
+}
+
+// ─── ARQUEO DE CAJA ─────────────────────────────────────────────────────────
+// Registro formal de reconciliación al cierre de caja
+
+model ArqueoCaja {
+  id                    Int       @id @default(autoincrement())
+  fecha                 DateTime  @default(now())
+  /// Montos declarados por el cajero
+  efectivoDeclarado     Float     @default(0)
+  tarjetaDeclarado      Float     @default(0)
+  transferenciaDeclarado Float    @default(0)
+  chequeDeclarado       Float     @default(0)
+  qrDeclarado           Float     @default(0)
+  /// Montos según sistema
+  efectivoSistema       Float     @default(0)
+  tarjetaSistema        Float     @default(0)
+  transferenciaSistema  Float     @default(0)
+  chequeSistema         Float     @default(0)
+  qrSistema             Float     @default(0)
+  /// Diferencia total
+  diferencia            Float     @default(0)
+  justificacion         String?   @db.Text
+  estado                String    @default("pendiente") // pendiente | aprobado | con_diferencia
+  aprobadoPor           Int?
+  createdAt             DateTime  @default(now())
+
+  cajaId                Int
+  empresaId             Int
+
+  @@index([empresaId, fecha])
+  @@map("arqueos_caja")
+}
+
+// ─── CONCILIACIÓN BANCARIA ──────────────────────────────────────────────────
+// Persistencia de resultados de conciliación auto-match
+
+model ConciliacionBancaria {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime  @default(now())
+  periodo         String    // "2025-06" (mes conciliado)
+  estado          String    @default("borrador") // borrador | confirmada
+  totalConciliado Float     @default(0)
+  totalPendiente  Float     @default(0)
+  itemsConciliados Int      @default(0)
+  itemsPendientes  Int      @default(0)
+  observaciones   String?   @db.Text
+  createdAt       DateTime  @default(now())
+
+  cuentaBancariaId Int
+  empresaId        Int
+  lineas           LineaConciliacion[]
+
+  @@index([empresaId, cuentaBancariaId])
+  @@map("conciliaciones_bancarias")
+}
+
+model LineaConciliacion {
+  id                    Int       @id @default(autoincrement())
+  /// Referencia al movimiento del extracto bancario
+  extractoRef           String?
+  extractoFecha         DateTime?
+  extractoMonto         Float?
+  extractoDescripcion   String?
+  /// Referencia al movimiento del sistema
+  movimientoBancarioId  Int?
+  /// Confianza del match (0-1)
+  confianza             Float?
+  /// Estado: conciliado | pendiente_sistema | pendiente_extracto
+  estado                String
+
+  conciliacionId        Int
+  conciliacion          ConciliacionBancaria @relation(fields: [conciliacionId], references: [id], onDelete: Cascade)
+
+  @@map("lineas_conciliacion")
+}
+
+// ─── ENDOSO DE CHEQUE ───────────────────────────────────────────────────────
+// Cadena de custodia de cheques de terceros
+
+model EndosoCheque {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime  @default(now())
+  /// A quién se endosa (proveedor / tercero)
+  endosadoA       String
+  cuitEndosatario String?
+  motivo          String?
+  createdAt       DateTime  @default(now())
+
+  chequeId        Int
+  empresaId       Int
+
+  @@index([chequeId])
+  @@map("endosos_cheque")
+}
+
+// ─── EJERCICIO CONTABLE ─────────────────────────────────────────────────────
+// Cierre de ejercicio con asiento de refundición
+
+model EjercicioContable {
+  id              Int       @id @default(autoincrement())
+  nombre          String    // "Ejercicio 2025"
+  fechaInicio     DateTime  @db.Date
+  fechaFin        DateTime  @db.Date
+  estado          String    @default("abierto") // abierto | en_cierre | cerrado
+  asientoCierreId Int?      // Asiento de refundición generado
+  observaciones   String?   @db.Text
+  cerradoPor      Int?
+  fechaCierre     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+
+  @@index([empresaId, estado])
+  @@map("ejercicios_contables")
+}
+
+// ─── AJUSTE POR INFLACIÓN (RT 6) ───────────────────────────────────────────
+// Obligatorio en Argentina para EECC en moneda homogénea
+
+model AjusteInflacion {
+  id              Int       @id @default(autoincrement())
+  periodo         String    // "2025-06"
+  indice          String    @default("IPC") // IPC | IPIM
+  coeficiente     Float     // Coeficiente de ajuste del período
+  totalAjuste     Float     // Resultado neto del ajuste
+  estado          String    @default("borrador") // borrador | aplicado
+  asientoId       Int?      // Asiento generado por el ajuste
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+
+  @@index([empresaId, periodo])
+  @@map("ajustes_inflacion")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ██  MÓDULOS DIFERENCIADORES vs SAP/TANGO/COLPPY  ██
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── APROBACIONES MULTI-NIVEL ─────────────────────────────────────────────────
+// Cadena de aprobaciones configurable (compras, pagos, gastos, NC)
+// Diferenciador SAP Business One + Tango Premium
+
+model CadenaAprobacion {
+  id              Int       @id @default(autoincrement())
+  nombre          String    // "Aprobación OC > 50k"
+  entidad         String    // "orden_compra" | "orden_pago" | "nota_credito" | "gasto" | "ajuste_stock"
+  montoMinimo     Float     @default(0)
+  montoMaximo     Float?    // null = sin límite
+  activa          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  niveles         NivelAprobacion[]
+
+  @@index([empresaId, entidad])
+  @@map("cadenas_aprobacion")
+}
+
+model NivelAprobacion {
+  id              Int       @id @default(autoincrement())
+  cadenaId        Int
+  cadena          CadenaAprobacion @relation(fields: [cadenaId], references: [id], onDelete: Cascade)
+  orden           Int       // 1, 2, 3...
+  rol             String    // "supervisor" | "gerente" | "director" | "cfo"
+  usuarioId       Int?      // Si es usuario fijo (null = cualquier usuario con ese rol)
+  plazoHoras      Int       @default(48) // Plazo máximo para aprobar
+  accionVencido   String    @default("escalar") // "escalar" | "rechazar" | "auto_aprobar"
+
+  @@index([cadenaId, orden])
+  @@map("niveles_aprobacion")
+}
+
+model SolicitudAprobacion {
+  id              Int       @id @default(autoincrement())
+  cadenaId        Int
+  entidad         String    // "orden_compra"
+  entidadId       Int       // ID del registro
+  estado          String    @default("pendiente") // pendiente | aprobado | rechazado | vencido
+  nivelActual     Int       @default(1)
+  solicitanteId   Int       // Usuario que creó la solicitud
+  monto           Float
+  descripcion     String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completadoAt    DateTime?
+
+  empresaId       Int
+  pasos           PasoAprobacion[]
+
+  @@index([empresaId, estado])
+  @@index([empresaId, entidad, entidadId])
+  @@map("solicitudes_aprobacion")
+}
+
+model PasoAprobacion {
+  id              Int       @id @default(autoincrement())
+  solicitudId     Int
+  solicitud       SolicitudAprobacion @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  nivel           Int
+  aprobadorId     Int?      // Usuario que aprobó/rechazó
+  accion          String    // "aprobado" | "rechazado" | "escalado" | "auto_aprobado"
+  comentario      String?   @db.Text
+  fechaAccion     DateTime  @default(now())
+
+  @@index([solicitudId])
+  @@map("pasos_aprobacion")
+}
+
+// ─── CONTROL PRESUPUESTARIO ──────────────────────────────────────────────────
+// Presupuesto por centro de costo / cuenta contable con alerta de desvío
+// Diferenciador SAP FI-CO + Tango Presupuestos
+
+model PresupuestoGasto {
+  id              Int       @id @default(autoincrement())
+  nombre          String    // "Presupuesto Operativo 2026"
+  ejercicio       Int       // 2026
+  tipo            String    @default("anual") // anual | mensual | trimestral
+  estado          String    @default("borrador") // borrador | aprobado | vigente | cerrado
+  montoTotal      Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  lineas          LineaPresupuestoGasto[]
+
+  @@index([empresaId, ejercicio])
+  @@map("presupuestos_gasto")
+}
+
+model LineaPresupuestoGasto {
+  id              Int       @id @default(autoincrement())
+  presupuestoId   Int
+  presupuesto     PresupuestoGasto @relation(fields: [presupuestoId], references: [id], onDelete: Cascade)
+  cuentaContableId Int?     // Cuenta de gasto
+  centroCostoId   Int?      // Centro de costo
+  mes             Int       // 1-12
+  montoPresupuestado Float
+  montoEjecutado  Float     @default(0) // Se actualiza automáticamente
+  montoComprometido Float   @default(0) // OC aprobadas no facturadas
+  observaciones   String?
+
+  @@index([presupuestoId, mes])
+  @@index([cuentaContableId])
+  @@map("lineas_presupuesto_gasto")
+}
+
+// ─── FLUJO DE FONDOS PROYECTADO ──────────────────────────────────────────────
+// Proyección de cash flow basado en CxC, CxP, cheques diferidos, cuotas
+// Diferenciador Tango Tablero Financiero + SAP Cash Management
+
+model ProyeccionFlujoCaja {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime  @db.Date
+  tipo            String    // "cobro_previsto" | "pago_previsto" | "cheque_diferido_cobrar" | "cheque_diferido_pagar" | "cuota_cobrar" | "cuota_pagar" | "gasto_fijo" | "ingreso_fijo"
+  origenEntidad   String?   // "cuenta_cobrar" | "cuenta_pagar" | "cheque" | "gasto_recurrente"
+  origenId        Int?
+  concepto        String
+  monto           Float
+  moneda          String    @default("ARS")
+  probabilidad    Float     @default(1.0) // 0-1, para estimaciones
+  realizado       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+
+  @@index([empresaId, fecha])
+  @@index([empresaId, tipo])
+  @@map("proyecciones_flujo_caja")
+}
+
+// ─── CRM / PIPELINE DE OPORTUNIDADES ────────────────────────────────────────
+// Gestión de leads y oportunidades comerciales
+// Diferenciador SAP CRM + Salesforce-like pipeline
+
+model Lead {
+  id              Int       @id @default(autoincrement())
+  nombre          String
+  empresa         String?
+  email           String?
+  telefono        String?
+  origen          String    @default("manual") // manual | web | referido | mercadolibre | tiendanube | whatsapp | feria
+  estado          String    @default("nuevo") // nuevo | contactado | calificado | descartado | convertido
+  vendedorId      Int?
+  notas           String?   @db.Text
+  valorEstimado   Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  convertidoAt    DateTime?
+  clienteId       Int?      // Se llena al convertir
+
+  empresaId       Int
+  oportunidades   Oportunidad[]
+  actividades     ActividadCRM[]
+
+  @@index([empresaId, estado])
+  @@index([empresaId, vendedorId])
+  @@map("leads")
+}
+
+model Oportunidad {
+  id              Int       @id @default(autoincrement())
+  nombre          String    // "Venta servidor X para Empresa Y"
+  leadId          Int?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  clienteId       Int?
+  vendedorId      Int?
+  etapa           String    @default("prospecto") // prospecto | propuesta | negociacion | cierre | ganada | perdida
+  probabilidad    Float     @default(10) // % probabilidad de cierre
+  montoEstimado   Float
+  montoReal       Float?
+  fechaCierreEstimada DateTime? @db.Date
+  motivoPerdida   String?
+  presupuestoId   Int?      // Link a Presupuesto cuando se genera
+  pedidoVentaId   Int?      // Link a PedidoVenta cuando se convierte
+  notas           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  cerradaAt       DateTime?
+
+  empresaId       Int
+  actividades     ActividadCRM[]
+
+  @@index([empresaId, etapa])
+  @@index([empresaId, vendedorId])
+  @@map("oportunidades")
+}
+
+model ActividadCRM {
+  id              Int       @id @default(autoincrement())
+  tipo            String    // "llamada" | "email" | "reunion" | "whatsapp" | "visita" | "nota"
+  descripcion     String    @db.Text
+  fecha           DateTime  @default(now())
+  completada      Boolean   @default(false)
+  leadId          Int?
+  lead            Lead?     @relation(fields: [leadId], references: [id])
+  oportunidadId   Int?
+  oportunidad     Oportunidad? @relation(fields: [oportunidadId], references: [id])
+  usuarioId       Int
+
+  empresaId       Int
+
+  @@index([empresaId, fecha])
+  @@map("actividades_crm")
+}
+
+// ─── MRP — PLANIFICACIÓN DE NECESIDADES ─────────────────────────────────────
+// Material Requirements Planning basado en BOM + demanda
+// Diferenciador SAP PP-MRP
+
+model CorreridaMRP {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime  @default(now())
+  horizonte       Int       @default(30) // días de planificación
+  estado          String    @default("ejecutando") // ejecutando | completado | error
+  totalSugerencias Int      @default(0)
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+  sugerencias     SugerenciaMRP[]
+
+  @@index([empresaId])
+  @@map("corridas_mrp")
+}
+
+model SugerenciaMRP {
+  id              Int       @id @default(autoincrement())
+  corridaId       Int
+  corrida         CorreridaMRP @relation(fields: [corridaId], references: [id], onDelete: Cascade)
+  productoId      Int
+  tipo            String    // "comprar" | "producir" | "transferir"
+  cantidad        Float
+  fechaNecesidad  DateTime  @db.Date
+  prioridad       String    @default("normal") // critica | alta | normal | baja
+  estado          String    @default("pendiente") // pendiente | aceptada | rechazada | convertida
+  ordenCompraId   Int?      // Se llena al convertir en OC
+  ordenProduccionId Int?    // Se llena al convertir en OP
+  razon           String?   @db.Text // "Stock bajo mínimo" | "Pedido #123 requiere"
+
+  @@index([corridaId])
+  @@map("sugerencias_mrp")
+}
+
+// ─── GESTIÓN DE CALIDAD ─────────────────────────────────────────────────────
+// Inspecciones en recepción y producción
+// Diferenciador SAP QM + Bejerman Calidad
+
+model PlantillaInspeccion {
+  id              Int       @id @default(autoincrement())
+  nombre          String    // "Inspección materia prima alimenticia"
+  entidad         String    // "recepcion_compra" | "orden_produccion" | "despacho"
+  activa          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+  criterios       CriterioInspeccion[]
+
+  @@index([empresaId, entidad])
+  @@map("plantillas_inspeccion")
+}
+
+model CriterioInspeccion {
+  id              Int       @id @default(autoincrement())
+  plantillaId     Int
+  plantilla       PlantillaInspeccion @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  nombre          String    // "Temperatura" | "Color" | "Certificado sanitario"
+  tipo            String    // "si_no" | "rango_numerico" | "texto" | "foto"
+  valorMinimo     Float?
+  valorMaximo     Float?
+  obligatorio     Boolean   @default(true)
+  orden           Int       @default(0)
+
+  @@map("criterios_inspeccion")
+}
+
+model InspeccionCalidad {
+  id              Int       @id @default(autoincrement())
+  plantillaId     Int
+  entidad         String
+  entidadId       Int
+  estado          String    @default("en_curso") // en_curso | aprobada | rechazada | aprobada_con_desvio
+  inspectorId     Int
+  observaciones   String?   @db.Text
+  createdAt       DateTime  @default(now())
+  completadaAt    DateTime?
+
+  empresaId       Int
+  resultados      ResultadoInspeccion[]
+
+  @@index([empresaId, entidad, entidadId])
+  @@map("inspecciones_calidad")
+}
+
+model ResultadoInspeccion {
+  id              Int       @id @default(autoincrement())
+  inspeccionId    Int
+  inspeccion      InspeccionCalidad @relation(fields: [inspeccionId], references: [id], onDelete: Cascade)
+  criterioId      Int
+  valorTexto      String?
+  valorNumerico   Float?
+  valorBooleano   Boolean?
+  conforme        Boolean   @default(true)
+  observacion     String?
+
+  @@map("resultados_inspeccion")
+}
+
+// ─── KPI DASHBOARD EJECUTIVO ─────────────────────────────────────────────────
+// Tablero de control con métricas en tiempo real
+// Diferenciador Tango Tablero + SAP Analytics Cloud
+
+model KPIDefinicion {
+  id              Int       @id @default(autoincrement())
+  codigo          String    // "VENTA_DIA" | "MARGEN_BRUTO" | "DSO" | "DPO" | "ROTACION_STOCK"
+  nombre          String    // "Ventas del día"
+  categoria       String    // "ventas" | "finanzas" | "stock" | "compras" | "rrhh"
+  unidad          String    @default("ARS") // "ARS" | "%" | "dias" | "unidades"
+  formula         String?   @db.Text // SQL o descripción del cálculo
+  metaValor       Float?    // Objetivo target
+  alertaAmarilla  Float?    // Umbral warning
+  alertaRoja      Float?    // Umbral critical
+  activo          Boolean   @default(true)
+  orden           Int       @default(0)
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+  snapshots       KPISnapshot[]
+
+  @@unique([empresaId, codigo])
+  @@map("kpi_definiciones")
+}
+
+model KPISnapshot {
+  id              Int       @id @default(autoincrement())
+  kpiId           Int
+  kpi             KPIDefinicion @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  valor           Float
+  fecha           DateTime  @db.Date
+  createdAt       DateTime  @default(now())
+
+  @@index([kpiId, fecha])
+  @@map("kpi_snapshots")
+}
+
+// ─── GASTOS RECURRENTES ─────────────────────────────────────────────────────
+// Alquileres, servicios, seguros — se proyectan al flujo de caja
+// Diferenciador Xubio + Colppy
+
+model GastoRecurrente {
+  id              Int       @id @default(autoincrement())
+  concepto        String    // "Alquiler oficina" | "Servicio internet"
+  monto           Float
+  moneda          String    @default("ARS")
+  frecuencia      String    @default("mensual") // mensual | bimestral | trimestral | anual
+  diaVencimiento  Int       @default(10) // Día del mes
+  cuentaContableId Int?
+  centroCostoId   Int?
+  proveedorId     Int?
+  activo          Boolean   @default(true)
+  fechaInicio     DateTime  @db.Date
+  fechaFin        DateTime? @db.Date
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+
+  @@index([empresaId, activo])
+  @@map("gastos_recurrentes")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── DOCUMENTOS ADJUNTOS / GED ──────────────────────────────────────────────
+// Sistema polimórfico de documentos adjuntos. Permite adjuntar archivos a
+// cualquier entidad del sistema (facturas, compras, clientes, OC, etc.)
+// ══════════════════════════════════════════════════════════════════════════════
+
+model DocumentoAdjunto {
+  id              Int       @id @default(autoincrement())
+  /// Entidad a la que se adjunta: "factura" | "compra" | "cliente" | "proveedor" | "orden_compra" | "pedido_venta" | "remito" | "asiento" | "activo_fijo" | "inspeccion" | "legajo"
+  entidadTipo     String
+  /// ID de la entidad
+  entidadId       Int
+  /// Nombre original del archivo
+  nombreArchivo   String
+  /// MIME type: "application/pdf", "image/jpeg", etc.
+  mimeType        String
+  /// Tamaño en bytes
+  tamanio         Int
+  /// URL del archivo en storage (Supabase Storage / S3)
+  url             String
+  /// Storage key para operaciones de borrado
+  storageKey      String
+  /// Categoría: "constancia_afip" | "contrato" | "remito_firmado" | "cert_exclusion" | "presupuesto" | "otro"
+  categoria       String    @default("otro")
+  /// Descripción libre
+  descripcion     String?
+  /// ID del usuario que subió el archivo
+  subidoPor       Int?
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+
+  @@index([empresaId, entidadTipo, entidadId])
+  @@map("documentos_adjuntos")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── FACTURACIÓN RECURRENTE ─────────────────────────────────────────────────
+// Genera facturas automáticas periódicamente para suscripciones, membresías,
+// alquileres, servicios recurrentes. Mirror de GastoRecurrente pero para ventas.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model FacturaRecurrente {
+  id              Int       @id @default(autoincrement())
+  /// Concepto: "Suscripción mensual", "Alquiler oficina", etc.
+  concepto        String
+  /// Monto neto (sin IVA)
+  montoNeto       Decimal   @db.Decimal(15,2)
+  /// Alícuota IVA: 21, 10.5, 27, 0
+  alicuotaIva     Float     @default(21)
+  /// "mensual" | "bimestral" | "trimestral" | "semestral" | "anual"
+  frecuencia      String    @default("mensual")
+  /// Día del mes para emitir (1-28)
+  diaEmision      Int       @default(1)
+  /// Próxima fecha de emisión
+  proximaEmision  DateTime  @db.Date
+  /// Fecha hasta la cual se emiten (null = indefinida)
+  fechaFin        DateTime? @db.Date
+  /// Tipo de comprobante AFIP: 1=Factura A, 6=Factura B, 11=Factura C
+  tipoCbte        Int       @default(6)
+  /// AFIP Concepto: 2=Servicios
+  concepto_afip   Int       @default(2)
+  /// Si está activa para emisión automática
+  activo          Boolean   @default(true)
+  /// Cantidad de facturas ya emitidas
+  facturasEmitidas Int      @default(0)
+  /// Última fecha en que se emitió
+  ultimaEmision   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  clienteId       Int
+  empresaId       Int
+
+  @@index([empresaId, activo, proximaEmision])
+  @@map("facturas_recurrentes")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── MERCADOPAGO INTEGRACIÓN ────────────────────────────────────────────────
+// Pagos vía QR, checkout pro, transferencia. Webhook de confirmación y
+// conciliación automática con CxC.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model MercadoPagoConfig {
+  id              Int       @id @default(autoincrement())
+  /// Access token (encrypted at rest)
+  accessToken     String
+  /// Public key para frontend
+  publicKey       String
+  /// User ID de MP para identificar cuenta
+  mpUserId        String?
+  /// Nombre de la cuenta (para UI)
+  nombreCuenta    String?
+  /// Webhook secret para verificar notificaciones
+  webhookSecret   String?
+  /// Si recibe pagos QR en punto de venta
+  qrHabilitado    Boolean   @default(true)
+  /// Si usa Checkout Pro para portal/tienda
+  checkoutHabilitado Boolean @default(true)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int       @unique
+  transacciones   MercadoPagoTransaccion[]
+
+  @@map("mercadopago_config")
+}
+
+model MercadoPagoTransaccion {
+  id              Int       @id @default(autoincrement())
+  /// ID de pago en MercadoPago
+  mpPaymentId     String    @unique
+  /// "approved" | "pending" | "rejected" | "refunded" | "cancelled"
+  estado          String
+  /// Monto cobrado
+  monto           Decimal   @db.Decimal(15,2)
+  /// Monto neto (descontada comisión MP)
+  montoNeto       Decimal?  @db.Decimal(15,2)
+  /// Comisión de MP
+  comisionMp      Decimal?  @db.Decimal(15,2)
+  /// "credit_card" | "debit_card" | "account_money" | "qr" | "transfer"
+  medioPago       String
+  /// Descripción del pago
+  descripcion     String?
+  /// Email del pagador
+  emailPagador    String?
+  /// CUIT/DNI del pagador
+  docPagador      String?
+  /// FK a factura si se concilió
+  facturaId       Int?
+  /// FK a CxC si se concilió
+  cuentaCobrarId  Int?
+  /// Si ya se concilió automáticamente
+  conciliado      Boolean   @default(false)
+  /// Fecha del pago en MP
+  fechaPago       DateTime?
+  /// Datos raw del webhook (JSON)
+  rawData         String?   @db.Text
+  createdAt       DateTime  @default(now())
+
+  configId        Int
+  config          MercadoPagoConfig @relation(fields: [configId], references: [id])
+  empresaId       Int
+
+  @@index([empresaId, estado])
+  @@index([mpPaymentId])
+  @@map("mercadopago_transacciones")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── ALERTAS CONFIGURABLES POR USUARIO ──────────────────────────────────────
+// Motor de alertas parametrizables: condición → acción → destinatario.
+// Complementa las AlertaIA hardcoded con reglas definidas por el usuario.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model ReglaAlerta {
+  id              Int       @id @default(autoincrement())
+  /// Nombre descriptivo: "Stock bajo de insumos", "CxC vencida > 60 días"
+  nombre          String
+  /// "stock_bajo" | "cxc_vencida" | "cxp_vencida" | "diferencia_caja" | "venta_baja" | "presupuesto_excedido" | "custom"
+  tipoRegla       String
+  /// Configuración JSON de la condición: { campo, operador, valor, entidad }
+  condicion       String    @db.Text
+  /// "email" | "notificacion" | "whatsapp" | "webhook"
+  accion          String    @default("notificacion")
+  /// ID de usuario destinatario (null = admin)
+  destinatarioId  Int?
+  /// Email destino (si accion = "email")
+  emailDestino    String?
+  /// Cada cuántas horas re-evaluar (0 = sólo manual)
+  frecuenciaHoras Int       @default(24)
+  /// Último chequeo
+  ultimoChequeo   DateTime?
+  /// Si se activó la última vez
+  ultimoResultado Boolean?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+
+  @@index([empresaId, activo])
+  @@map("reglas_alertas")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── LEGAJO DE EMPLEADOS / RRHH BÁSICO ──────────────────────────────────────
+// Datos del empleado: legales, laborales, ART, obra social, sindicato.
+// No incluye liquidación de sueldos (demasiado complejo), pero sí ABM.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model Empleado {
+  id              Int       @id @default(autoincrement())
+  /// Nombre completo
+  nombre          String
+  /// CUIL: XX-XXXXXXXX-X
+  cuil            String
+  /// DNI
+  dni             String?
+  /// Fecha de nacimiento
+  fechaNacimiento DateTime? @db.Date
+  /// Domicilio completo
+  domicilio       String?
+  /// Localidad
+  localidad       String?
+  /// Provincia
+  provincia       String?
+  /// Código postal
+  codigoPostal    String?
+  /// Teléfono
+  telefono        String?
+  /// Email personal
+  email           String?
+  /// Fecha de ingreso
+  fechaIngreso    DateTime  @db.Date
+  /// Fecha de egreso (null = activo)
+  fechaEgreso     DateTime? @db.Date
+  /// "activo" | "licencia" | "baja"
+  estado          String    @default("activo")
+  /// Puesto / cargo
+  cargo           String?
+  /// Departamento / área
+  departamento    String?
+  /// Categoría de convenio colectivo
+  categoriaConvenio String?
+  /// Convenio colectivo de trabajo (ej: "Comercio 130/75")
+  convenioCCT     String?
+  /// Modalidad: "relacion_dependencia" | "monotributo" | "pasantia" | "contrato"
+  modalidad       String    @default("relacion_dependencia")
+  /// Tipo de jornada: "completa" | "parcial" | "reducida"
+  tipoJornada     String    @default("completa")
+  /// Sueldo bruto básico mensual
+  sueldoBruto     Decimal?  @db.Decimal(15,2)
+  /// CBU para depósito de haberes
+  cbu             String?
+  /// ART contratada
+  art             String?
+  /// Nro de siniestro ART (si aplica)
+  nroSiniestroArt String?
+  /// Obra social
+  obraSocial      String?
+  /// Nro de afiliado obra social
+  nroAfiliadoOS   String?
+  /// Sindicato
+  sindicato       String?
+  /// Nro de afiliado sindicato
+  nroAfiliadoSind String?
+  /// Observaciones
+  observaciones   String?   @db.Text
+  /// FK al Usuario del sistema (si tiene acceso)
+  usuarioId       Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+
+  @@index([empresaId, estado])
+  @@index([cuil])
+  @@map("empleados")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── CITI VENTAS / COMPRAS (RG 3685) ────────────────────────────────────────
+// Control de generación de archivos CITI para AFIP.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model GeneracionCITI {
+  id              Int       @id @default(autoincrement())
+  /// "ventas" | "compras"
+  tipo            String
+  /// Período: "2026-01", "2026-02", etc.
+  periodo         String
+  /// Cantidad de registros incluidos
+  cantidadRegistros Int
+  /// Nombre del archivo generado
+  nombreArchivo   String
+  /// URL de descarga (storage)
+  url             String?
+  /// Hash SHA256 del contenido para verificación
+  hashContenido   String?
+  /// "generado" | "presentado" | "error"
+  estado          String    @default("generado")
+  createdAt       DateTime  @default(now())
+
+  empresaId       Int
+
+  @@unique([empresaId, tipo, periodo])
+  @@map("generaciones_citi")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── COTIZACIÓN AUTOMÁTICA BNA/BCRA ─────────────────────────────────────────
+// Registro de cotizaciones obtenidas automáticamente.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model CotizacionAutomatica {
+  id              Int       @id @default(autoincrement())
+  /// "USD_OFICIAL" | "USD_MEP" | "USD_CCL" | "EUR" | "BRL"
+  monedaPar       String
+  /// Valor compra
+  compra          Decimal   @db.Decimal(15,4)
+  /// Valor venta
+  venta           Decimal   @db.Decimal(15,4)
+  /// Fuente: "BNA" | "BCRA" | "DOLARAPI" | "MANUAL"
+  fuente          String
+  /// Fecha de la cotización
+  fecha           DateTime  @db.Date
+
+  @@unique([monedaPar, fecha, fuente])
+  @@index([fecha])
+  @@map("cotizaciones_automaticas")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ─── MANTENIMIENTO PREVENTIVO ───────────────────────────────────────────────
+// Órdenes de mantenimiento, calendario preventivo, tracking de activos.
+// ══════════════════════════════════════════════════════════════════════════════
+
+model PlanMantenimiento {
+  id              Int       @id @default(autoincrement())
+  /// Nombre: "Servicio anual compresor", "Cambio aceite flota"
+  nombre          String
+  /// Descripción de tareas
+  descripcion     String?   @db.Text
+  /// "diario" | "semanal" | "mensual" | "trimestral" | "semestral" | "anual" | "por_horas"
+  frecuencia      String
+  /// Próxima fecha programada
+  proximaEjecucion DateTime @db.Date
+  /// FK al activo fijo (si aplica)
+  activoFijoId    Int?
+  /// Nombre del equipo/máquina (si no es activo fijo registrado)
+  equipo          String?
+  /// Responsable asignado
+  responsable     String?
+  /// Costo estimado por ejecución
+  costoEstimado   Decimal?  @db.Decimal(15,2)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  empresaId       Int
+  ordenesTrabajo  OrdenTrabajo[]
+
+  @@index([empresaId, activo])
+  @@map("planes_mantenimiento")
+}
+
+model OrdenTrabajo {
+  id              Int       @id @default(autoincrement())
+  /// Número correlativo
+  numero          String
+  /// "preventivo" | "correctivo" | "predictivo"
+  tipo            String    @default("preventivo")
+  /// Descripción del trabajo
+  descripcion     String    @db.Text
+  /// "pendiente" | "en_proceso" | "completada" | "cancelada"
+  estado          String    @default("pendiente")
+  /// Prioridad: "baja" | "media" | "alta" | "urgente"
+  prioridad       String    @default("media")
+  /// Fecha programada
+  fechaProgramada DateTime  @db.Date
+  /// Fecha de inicio real
+  fechaInicio     DateTime?
+  /// Fecha de finalización
+  fechaFin        DateTime?
+  /// Técnico asignado
+  tecnicoAsignado String?
+  /// Observaciones / resultado
+  observaciones   String?   @db.Text
+  /// Costo real de mano de obra
+  costoManoObra   Decimal?  @db.Decimal(15,2)
+  /// Costo real de repuestos
+  costoRepuestos  Decimal?  @db.Decimal(15,2)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  planId          Int?
+  plan            PlanMantenimiento? @relation(fields: [planId], references: [id])
+  empresaId       Int
+
+  @@index([empresaId, estado])
+  @@map("ordenes_trabajo")
+}
+
+/// FIX C-006: Log de cada request/response al webservice AFIP.
+/// Permite auditar, reproducir errores y detectar CAEs duplicados.
+model AfipWebserviceLog {
+  id            Int       @id @default(autoincrement())
+  /// Webservice: "WSAA" | "WSFE" | "WSCDC" | "PADRON_A5" | "CAEA"
+  webservice    String
+  /// Operación: "FECAESolicitar" | "FECompUltimoAutorizado" | "login" | etc.
+  operacion     String
+  /// XML o JSON del request enviado (puede ser largo)
+  requestBody   String?   @db.Text
+  /// XML o JSON de la response recibida
+  responseBody  String?   @db.Text
+  /// HTTP status o código interno (200, 500, TIMEOUT, etc.)
+  statusCode    String?
+  /// CAE obtenido si la operación fue exitosa
+  cae           String?
+  /// Número de factura asociada
+  facturaId     Int?
+  /// Tiempo de respuesta en milisegundos
+  duracionMs    Int?
+  /// Error legible si falló
+  errorMsg      String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  empresaId     Int
+  empresa       Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, webservice, createdAt])
+  @@index([empresaId, cae])
+  @@index([facturaId])
+  @@map("afip_webservice_logs")
+}
+
+/// Tareas personales del usuario para organizar su jornada.
+/// Cada tarea puede ser privada o visible al jefe/administrador.
+model TareaPendiente {
+  id               Int       @id @default(autoincrement())
+  titulo           String
+  descripcion      String?   @db.Text
+  completada       Boolean   @default(false)
+  /// "baja" | "media" | "alta" | "urgente"
+  prioridad        String    @default("media")
+  fechaVencimiento DateTime? @db.Date
+  /// false = solo el usuario la ve; true = visible para administradores/jefes
+  visibleJefe      Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  usuarioId        Int
+  usuario          Usuario   @relation(fields: [usuarioId], references: [id])
+  empresaId        Int
+  empresa          Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@index([usuarioId, completada])
+  @@map("tareas_pendientes")
 }

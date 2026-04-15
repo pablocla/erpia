@@ -35,6 +35,15 @@ export interface EmpresaContexto {
     cajaAbierta: boolean
     saldoCaja: number
   }
+  maestros: {
+    productos: Array<{ sku: string; nombre: string; descripcion: string | null; precio: number; precioCompra: number; stock: number; stockMinimo: number; unidad: string; categoria: string; activo: boolean; esPlato: boolean; esInsumo: boolean }>
+    clientes: Array<{ nombre: string; cuit: string | null; condicionIva: string; saldo: number; limiteCredito: number; activo: boolean }>
+    proveedores: Array<{ nombre: string; cuit: string | null; activo: boolean }>
+    categorias: Array<{ nombre: string; cantidadProductos: number }>
+    totalProductos: number
+    totalClientes: number
+    totalProveedores: number
+  }
   historico: {
     ventasUltimos30Dias: Array<{ fecha: string; total: number; cantidad: number }>
     productosEstancados: Array<{ nombre: string; diasSinVenta: number }>
@@ -210,6 +219,49 @@ export async function buildEmpresaContexto(empresaId: number): Promise<EmpresaCo
       where: { empresaId },
       select: { id: true, nombre: true },
     }),
+    // 14: MAESTRO COMPLETO de productos (hasta 200 para el LLM)
+    prisma.producto.findMany({
+      where: { empresaId, deletedAt: null },
+      select: {
+        codigo: true, nombre: true, descripcion: true,
+        precioVenta: true, precioCompra: true,
+        stock: true, stockMinimo: true, unidad: true,
+        activo: true, esPlato: true, esInsumo: true,
+        categoria: { select: { nombre: true } },
+      },
+      orderBy: { nombre: "asc" },
+      take: 200,
+    }),
+    // 15: total productos
+    prisma.producto.count({ where: { empresaId, deletedAt: null } }),
+    // 16: MAESTRO COMPLETO de clientes (hasta 100)
+    prisma.cliente.findMany({
+      where: { empresaId, deletedAt: null },
+      select: {
+        nombre: true, nombreFantasia: true, cuit: true,
+        condicionIva: true, saldoCuentaCorriente: true,
+        limiteCredito: true, activo: true,
+      },
+      orderBy: { nombre: "asc" },
+      take: 100,
+    }),
+    // 17: total clientes
+    prisma.cliente.count({ where: { empresaId, deletedAt: null } }),
+    // 18: MAESTRO de proveedores (hasta 50)
+    prisma.proveedor.findMany({
+      where: { empresaId, deletedAt: null },
+      select: { nombre: true, cuit: true, activo: true },
+      orderBy: { nombre: "asc" },
+      take: 50,
+    }),
+    // 19: total proveedores
+    prisma.proveedor.count({ where: { empresaId, deletedAt: null } }),
+    // 20: categorías con conteo
+    prisma.categoria.findMany({
+      where: { empresaId },
+      select: { nombre: true, _count: { select: { productos: true } } },
+      orderBy: { nombre: "asc" },
+    }),
   ])
 
   // Extract with safe fallbacks
@@ -227,6 +279,26 @@ export async function buildEmpresaContexto(empresaId: number): Promise<EmpresaCo
   const productosEstancadosRaw = settled(results[11] as PromiseSettledResult<Array<{ nombre: string; updatedAt: Date }>>, [])
   const clientesInactivosRaw = settled(results[12] as PromiseSettledResult<Array<{ nombre: string; nombreFantasia: string | null; facturas: Array<{ total: number; createdAt: Date }> }>>, [])
   const productosMap = settled(results[13] as PromiseSettledResult<Array<{ id: number; nombre: string }>>, [])
+  const productosMaestro = settled(results[14] as PromiseSettledResult<Array<{
+    codigo: string; nombre: string; descripcion: string | null;
+    precioVenta: number; precioCompra: number;
+    stock: number; stockMinimo: number; unidad: string;
+    activo: boolean; esPlato: boolean; esInsumo: boolean;
+    categoria: { nombre: string } | null;
+  }>>, [])
+  const totalProductos = settled(results[15] as PromiseSettledResult<number>, 0)
+  const clientesMaestro = settled(results[16] as PromiseSettledResult<Array<{
+    nombre: string; nombreFantasia: string | null; cuit: string | null;
+    condicionIva: string; saldoCuentaCorriente: any; limiteCredito: any; activo: boolean;
+  }>>, [])
+  const totalClientes = settled(results[17] as PromiseSettledResult<number>, 0)
+  const proveedoresMaestro = settled(results[18] as PromiseSettledResult<Array<{
+    nombre: string; cuit: string | null; activo: boolean;
+  }>>, [])
+  const totalProveedores = settled(results[19] as PromiseSettledResult<number>, 0)
+  const categoriasMaestro = settled(results[20] as PromiseSettledResult<Array<{
+    nombre: string; _count: { productos: number };
+  }>>, [])
 
   // Build product ID → name map
   const prodNames = new Map(productosMap.map(p => [p.id, p.nombre]))
@@ -297,6 +369,42 @@ export async function buildEmpresaContexto(empresaId: number): Promise<EmpresaCo
             0
           )
         : 0,
+    },
+    maestros: {
+      productos: productosMaestro.map(p => ({
+        sku: p.codigo,
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        precio: Number(p.precioVenta),
+        precioCompra: Number(p.precioCompra),
+        stock: Number(p.stock),
+        stockMinimo: Number(p.stockMinimo),
+        unidad: p.unidad ?? "u",
+        categoria: p.categoria?.nombre ?? "Sin categoría",
+        activo: p.activo,
+        esPlato: p.esPlato,
+        esInsumo: p.esInsumo,
+      })),
+      clientes: clientesMaestro.map(c => ({
+        nombre: c.nombreFantasia ?? c.nombre,
+        cuit: c.cuit,
+        condicionIva: c.condicionIva,
+        saldo: Number(c.saldoCuentaCorriente ?? 0),
+        limiteCredito: Number(c.limiteCredito ?? 0),
+        activo: c.activo,
+      })),
+      proveedores: proveedoresMaestro.map(p => ({
+        nombre: p.nombre,
+        cuit: p.cuit,
+        activo: p.activo,
+      })),
+      categorias: categoriasMaestro.map(c => ({
+        nombre: c.nombre,
+        cantidadProductos: c._count.productos,
+      })),
+      totalProductos,
+      totalClientes,
+      totalProveedores,
     },
     historico: {
       ventasUltimos30Dias: Array.from(ventasPorDia.entries())

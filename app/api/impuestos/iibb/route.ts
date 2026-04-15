@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { IIBBService } from "@/lib/impuestos/iibb-service"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { z } from "zod"
 
 const cerrarPeriodoSchema = z.object({
@@ -12,8 +12,9 @@ const cerrarPeriodoSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    const empresaId = ctx.auth.empresaId
 
     const params = request.nextUrl.searchParams
     const mes = params.get("mes")
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Annual evolution series
     if (!mes && anio) {
-      const evolucion = await service.getEvolucionAnual(Number(anio), jurisdiccion)
+      const evolucion = await service.getEvolucionAnual(Number(anio), jurisdiccion, empresaId)
       return NextResponse.json({ success: true, evolucion })
     }
 
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "mes y anio son requeridos" }, { status: 400 })
     }
 
-    const liquidacion = await service.getLiquidacion(Number(mes), Number(anio), jurisdiccion)
+    const liquidacion = await service.getLiquidacion(Number(mes), Number(anio), jurisdiccion, empresaId)
     return NextResponse.json({ success: true, liquidacion })
   } catch (error) {
     console.error("Error en GET /api/impuestos/iibb:", error)
@@ -58,10 +59,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
-    if (!["administrador", "contador"].includes(usuario.rol)) {
+    if (!ctx.auth.rol || !["administrador", "contador"].includes(ctx.auth.rol)) {
       return NextResponse.json({ error: "Sin permisos para cerrar períodos IIBB" }, { status: 403 })
     }
 

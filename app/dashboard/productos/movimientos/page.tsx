@@ -1,10 +1,14 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RefreshCw, Search, TrendingUp, TrendingDown, Loader2, Package } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { type DateRange } from "react-day-picker"
 
 interface Movimiento {
   id: number
@@ -35,6 +39,7 @@ export default function MovimientosStockPage() {
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState("")
   const [filtroTipo, setFiltroTipo] = useState("todos")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -52,17 +57,35 @@ export default function MovimientosStockPage() {
 
   useEffect(() => { cargar() }, [cargar])
 
-  const filtrados = movimientos.filter(m =>
-    m.producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    m.producto.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (m.motivo ?? "").toLowerCase().includes(busqueda.toLowerCase())
-  )
+  const filtrados = useMemo(() => {
+    let result = movimientos.filter(m =>
+      m.producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      m.producto.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
+      (m.motivo ?? "").toLowerCase().includes(busqueda.toLowerCase())
+    )
+    if (dateRange?.from) {
+      result = result.filter((m) => {
+        const d = new Date(m.createdAt)
+        if (dateRange.from && d < dateRange.from) return false
+        if (dateRange.to) {
+          const end = new Date(dateRange.to)
+          end.setHours(23, 59, 59, 999)
+          if (d > end) return false
+        }
+        return true
+      })
+    }
+    return result
+  }, [movimientos, busqueda, dateRange])
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <RefreshCw className="h-6 w-6 text-blue-500" />
-        <div><h1 className="text-2xl font-bold">Movimientos de Stock</h1><p className="text-sm text-muted-foreground">Historial de entradas, salidas y ajustes de inventario</p></div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <RefreshCw className="h-6 w-6 text-blue-500" />
+          <div><h1 className="text-2xl font-bold">Movimientos de Stock</h1><p className="text-sm text-muted-foreground">Historial de entradas, salidas y ajustes de inventario</p></div>
+        </div>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* KPIs */}
@@ -86,50 +109,38 @@ export default function MovimientosStockPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Movimientos</CardTitle>
-            <div className="flex items-center gap-2">
-              <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                <SelectTrigger className="h-9 w-36 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="entrada">Entrada</SelectItem>
-                  <SelectItem value="salida">Salida</SelectItem>
-                  <SelectItem value="ajuste">Ajuste</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar producto..." className="pl-9 h-9 w-48 text-sm" value={busqueda} onChange={e => setBusqueda(e.target.value)} /></div>
-            </div>
+            <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+              <SelectTrigger className="h-9 w-36 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="entrada">Entrada</SelectItem>
+                <SelectItem value="salida">Salida</SelectItem>
+                <SelectItem value="ajuste">Ajuste</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t"><tr>
-                <th className="text-left p-3 font-medium">Fecha</th>
-                <th className="text-left p-3 font-medium">Producto</th>
-                <th className="text-left p-3 font-medium">Tipo</th>
-                <th className="text-left p-3 font-medium">Motivo</th>
-                <th className="text-right p-3 font-medium">Cantidad</th>
-                <th className="text-right p-3 font-medium">Stock actual</th>
-              </tr></thead>
-              <tbody>{filtrados.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Sin movimientos registrados</td></tr>
-              ) : filtrados.map(m => {
-                const conf = TIPO_CONFIG[m.tipo] ?? { color: "", badge: "secondary" as const }
-                return (
-                  <tr key={m.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 text-muted-foreground text-xs">{new Date(m.createdAt).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3"><span className="font-medium">{m.producto.nombre}</span><span className="text-xs text-muted-foreground ml-2">{m.producto.codigo}</span></td>
-                    <td className="p-3"><Badge variant={conf.badge} className="text-xs capitalize">{m.tipo.replace("_", " ")}</Badge></td>
-                    <td className="p-3 text-xs text-muted-foreground">{m.motivo ?? "—"}</td>
-                    <td className={`p-3 text-right font-bold tabular-nums ${conf.color}`}>{m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}</td>
-                    <td className="p-3 text-right font-bold tabular-nums">{m.producto.stock}</td>
-                  </tr>
-                )
-              })}</tbody>
-            </table>
-          )}
+        <CardContent className="pt-0">
+          <DataTable<Movimiento>
+            data={filtrados}
+            columns={[
+              { key: "createdAt", header: "Fecha", sortable: true, cell: (m) => <span className="text-muted-foreground text-xs">{new Date(m.createdAt).toLocaleDateString("es-AR")}</span> },
+              { key: "producto" as any, header: "Producto", cell: (m) => <><span className="font-medium">{m.producto.nombre}</span><span className="text-xs text-muted-foreground ml-2">{m.producto.codigo}</span></>, exportFn: (m) => m.producto.nombre },
+              { key: "tipo", header: "Tipo", cell: (m) => { const conf = TIPO_CONFIG[m.tipo] ?? { color: "", badge: "secondary" as const }; return <Badge variant={conf.badge} className="text-xs capitalize">{m.tipo.replace("_", " ")}</Badge> } },
+              { key: "motivo", header: "Motivo", cell: (m) => <span className="text-xs text-muted-foreground">{m.motivo ?? "—"}</span> },
+              { key: "cantidad", header: "Cantidad", align: "right", sortable: true, cell: (m) => { const conf = TIPO_CONFIG[m.tipo] ?? { color: "" }; return <span className={`font-bold tabular-nums ${conf.color}`}>{m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}</span> } },
+              { key: "producto" as any, header: "Stock actual", align: "right", cell: (m) => <span className="font-bold tabular-nums">{m.producto.stock}</span>, exportFn: (m) => String(m.producto.stock) },
+            ] as DataTableColumn<Movimiento>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar producto..."
+            searchKeys={["motivo"]}
+            exportFilename="movimientos-stock"
+            loading={loading}
+            emptyMessage="Sin movimientos registrados"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin movimientos" description="Los movimientos se registran al operar con stock." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
     </div>

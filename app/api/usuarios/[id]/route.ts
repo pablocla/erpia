@@ -7,9 +7,9 @@ import {
 } from "@/lib/auth/middleware"
 import { prisma } from "@/lib/prisma"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = verificarAutenticacion(request)
+    const auth = await verificarAutenticacion(request)
 
     if (!auth.autenticado) {
       return crearRespuestaNoAutorizado(auth.error)
@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return crearRespuestaForbidden("Solo administradores pueden modificar usuarios")
     }
 
-    const userId = Number.parseInt(params.id)
+    const userId = Number.parseInt((await params).id)
     const body = await request.json()
 
     const usuario = await prisma.usuario.update({
@@ -48,9 +48,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = verificarAutenticacion(request)
+    const auth = await verificarAutenticacion(request)
 
     if (!auth.autenticado) {
       return crearRespuestaNoAutorizado(auth.error)
@@ -61,7 +61,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return crearRespuestaForbidden("Solo administradores pueden eliminar usuarios")
     }
 
-    const userId = Number.parseInt(params.id)
+    const userId = Number.parseInt((await params).id)
 
     // No permitir que el usuario se elimine a sí mismo
     if (userId === auth.usuario.userId) {

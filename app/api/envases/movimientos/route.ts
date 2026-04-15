@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { getAuthContext } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 // ─── MOVIMIENTOS DE ENVASES ───────────────────────────────────────────────────
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
     const tipoEnvaseId = searchParams.get("tipoEnvaseId") ? Number(searchParams.get("tipoEnvaseId")) : undefined
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const tipo = searchParams.get("tipo") as string | null
     const take = Math.min(Number(searchParams.get("take") ?? "100"), 500)
 
-    const where: any = { empresaId: ctx.empresaId }
+    const where: any = { empresaId: ctx.auth.empresaId }
     if (tipoEnvaseId) where.tipoEnvaseId = tipoEnvaseId
     if (clienteId) where.clienteId = clienteId
     if (tipo && ["entrega", "retorno", "ajuste"].includes(tipo)) where.tipo = tipo
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const parsed = createSchema.safeParse(body)
@@ -71,14 +71,14 @@ export async function POST(request: NextRequest) {
 
     // Verificar que el tipoEnvase pertenece a la empresa
     const tipo = await db.tipoEnvase.findFirst({
-      where: { id: rest.tipoEnvaseId, empresaId: ctx.empresaId },
+      where: { id: rest.tipoEnvaseId, empresaId: ctx.auth.empresaId },
     })
     if (!tipo) return NextResponse.json({ error: "Tipo de envase no encontrado" }, { status: 404 })
 
     // Verificar que el cliente pertenece a la empresa (si se especificó)
     if (rest.clienteId) {
       const cliente = await db.cliente.findFirst({
-        where: { id: rest.clienteId, empresaId: ctx.empresaId },
+        where: { id: rest.clienteId, empresaId: ctx.auth.empresaId },
       })
       if (!cliente) return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 })
     }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...rest,
         fechaMovimiento: fechaMovimiento ? new Date(fechaMovimiento) : new Date(),
-        empresaId: ctx.empresaId,
+        empresaId: ctx.auth.empresaId,
       },
       include: {
         tipoEnvase: { select: { id: true, nombre: true, unidadMedida: true } },

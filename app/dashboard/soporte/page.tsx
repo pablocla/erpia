@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type Ticket = {
   id: number
@@ -163,6 +164,8 @@ export default function SoportePage() {
   useEffect(() => {
     void cargar()
   }, [])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargar }))
 
   const resumen = useMemo(() => {
     const abiertos = tickets.filter((t) => t.estado === "abierto" || t.estado === "en_progreso").length

@@ -40,6 +40,8 @@ import {
   TrendingUp,
   MapPin,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface PeriodoIIBB {
   id: number
@@ -94,6 +96,10 @@ export default function IIBBPage() {
   }, [mes, anio, toast])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   const ejecutarAccion = async (jurisdiccion: string, accion: "cerrar" | "presentado") => {
     setActionLoading(true)
@@ -219,88 +225,33 @@ export default function IIBBPage() {
           </Button>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          {periodos.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              Sin movimientos de IIBB en el período seleccionado.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Jurisdicción</TableHead>
-                  <TableHead>Organismo</TableHead>
-                  <TableHead className="text-right">Base Imponible</TableHead>
-                  <TableHead className="text-right">Alícuota</TableHead>
-                  <TableHead className="text-right">Devengado</TableHead>
-                  <TableHead className="text-right">Percepciones</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {periodos.map((p) => {
-                  const badge = ESTADO_BADGE[p.estado]
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.jurisdiccion}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{p.organismo}</TableCell>
-                      <TableCell className="text-right">{fmt(p.baseImponible)}</TableCell>
-                      <TableCell className="text-right">{p.alicuota}%</TableCell>
-                      <TableCell className="text-right">{fmt(p.montoDevengado)}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{fmt(p.montoPercibido)}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        <span className={p.saldo > 0 ? "text-red-600" : "text-emerald-600"}>
-                          {fmt(p.saldo)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={badge.variant}>{badge.label}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-1 justify-end">
-                          {p.estado === "abierto" && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={actionLoading}>
-                                  <Lock className="h-3 w-3" /> Cerrar
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Cerrar IIBB {p.jurisdiccion}?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    No se podrán acumular más ventas en este período para {p.jurisdiccion}.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => ejecutarAccion(p.jurisdiccion, "cerrar")}>
-                                    Cerrar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                          {p.estado === "cerrado" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 gap-1 text-xs"
-                              disabled={actionLoading}
-                              onClick={() => ejecutarAccion(p.jurisdiccion, "presentado")}
-                            >
-                              <ShieldCheck className="h-3 w-3" /> Presentar
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable<PeriodoIIBB>
+            data={periodos}
+            columns={[
+              { key: "jurisdiccion", header: "Jurisdicción", cell: (p) => <span className="font-medium">{p.jurisdiccion}</span> },
+              { key: "organismo", header: "Organismo", cell: (p) => <span className="text-sm text-muted-foreground">{p.organismo}</span> },
+              { key: "baseImponible", header: "Base Imponible", align: "right", sortable: true, cell: (p) => fmt(p.baseImponible) },
+              { key: "alicuota", header: "Alícuota", align: "right", cell: (p) => `${p.alicuota}%` },
+              { key: "montoDevengado", header: "Devengado", align: "right", sortable: true, cell: (p) => fmt(p.montoDevengado) },
+              { key: "montoPercibido", header: "Percepciones", align: "right", cell: (p) => <span className="text-emerald-600">{fmt(p.montoPercibido)}</span> },
+              { key: "saldo", header: "Saldo", align: "right", sortable: true, cell: (p) => <span className={p.saldo > 0 ? "text-red-600 font-medium" : "text-emerald-600 font-medium"}>{fmt(p.saldo)}</span> },
+              { key: "estado", header: "Estado", cell: (p) => { const badge = ESTADO_BADGE[p.estado]; return <Badge variant={badge.variant}>{badge.label}</Badge> } },
+              { key: "acciones" as any, header: "", cell: (p) => (
+                <div className="flex gap-1 justify-end">
+                  {p.estado === "abierto" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={actionLoading}><Lock className="h-3 w-3" /> Cerrar</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Cerrar IIBB {p.jurisdiccion}?</AlertDialogTitle><AlertDialogDescription>No se podrán acumular más ventas en este período para {p.jurisdiccion}.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => ejecutarAccion(p.jurisdiccion, "cerrar")}>Cerrar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
+                  {p.estado === "cerrado" && <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={actionLoading} onClick={() => ejecutarAccion(p.jurisdiccion, "presentado")}><ShieldCheck className="h-3 w-3" /> Presentar</Button>}
+                </div>
+              ) },
+            ] as DataTableColumn<PeriodoIIBB>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar jurisdicción..."
+            searchKeys={["jurisdiccion", "organismo"]}
+            exportFilename="iibb-periodos"
+            loading={loading}
+            emptyMessage="Sin movimientos de IIBB en el período seleccionado."
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
     </div>

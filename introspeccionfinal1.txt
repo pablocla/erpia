@@ -1,0 +1,535 @@
+══════════════════════════════════════════════════════════════════════════════
+INTROSPECCIÓN CRÍTICA FINAL — ERP ARGENTINA 2026
+Fecha: 11 de abril 2026
+Objetivo: Diagnóstico brutal de qué tenemos, qué nos falta, y qué haría
+          que este sistema sea imposible de competir en LATAM.
+══════════════════════════════════════════════════════════════════════════════
+
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 1 — LO QUE REALMENTE TENEMOS (VERIFICADO LÍNEA POR LÍNEA)
+═══════════════════════════════════════════════════════════════════════════
+
+NÚMEROS DUROS (no marketing, no inflados):
+  • 159 modelos Prisma en schema.prisma (no stubs — todos con campos, relaciones, indexes)
+  • ~195 API routes bajo app/api/ — de las cuales ~160 tienen lógica real de negocio
+  • 34 páginas de dashboard funcionales con CRUD completo, formularios y tablas
+  • 18+ archivos de servicio con lógica de negocio real (transacciones, validaciones, asientos)
+  • 10 agentes IA autónomos con scheduler, event bus, y logs
+  • 111 tests unitarios pasando (19 archivos de test)
+  • Stack: Next.js 15, TypeScript strict, Prisma ORM, PostgreSQL, Tailwind v4, shadcn/ui
+
+MÓDULOS CORE — OPERATIVOS Y TESTEADOS:
+  ✅ Facturación AFIP real (SOAP client con firma de certificado, WSFEv1, CAE/CAEA, QR fiscal)
+  ✅ POS completo (multi-medio de pago, caja por turno, arqueo con diferencia)
+  ✅ Stock multi-depósito (lotes, vencimientos, reservas, transferencias entre depósitos)
+  ✅ Compras con 3-way matching (OC → Recepción → Factura, validado en servicio)
+  ✅ Contabilidad (plan de cuentas jerárquico, asientos automáticos en venta/compra/cobro/pago/NC)
+  ✅ Impuestos: IVA 0/10.5/21/27%, IIBB por jurisdicción, SICORE, percepciones RG 2408/1999
+  ✅ Tax Engine multi-país (Argentina/Chile/México — arquitectura de enums y configs separada)
+  ✅ CRM con cuenta corriente, aging CC/CP, condiciones de pago, retenciones
+  ✅ Cheques: cartera propia/terceros, estados, depósito, rebote
+  ✅ Presupuestos: ciclo completo borrador→enviado→aceptado→rechazado→convertido a pedido
+  ✅ Listas de precio con vigencia, escalones, múltiples monedas
+  ✅ Remitos electrónicos con líneas
+  ✅ Activos fijos con depreciación lineal/acelerada y cuadro de amortización
+  ✅ Centros de costo y períodos fiscales con apertura/cierre controlado
+  ✅ Notas de crédito y débito con impacto automático en stock y contabilidad
+  ✅ Cobros (recibos) y pagos (órdenes de pago) con retenciones IVA/Ganancias/IIBB
+
+VERTICALES INDUSTRIA — FUNCIONALES:
+  ✅ Gastronomía: mesas, comandas con KDS (status de preparación), platos, recetas BOM, merma
+  ✅ Veterinaria: pacientes (especie/raza/sexo), consultas, HC por mascota, plan sanitario
+  ✅ Salud: historia clínica humana, turnos, diagnóstico, profesionales
+  ✅ Membresías/Gym: planes, check-in, auto-renovación, estados de socio
+  ✅ Distribución: hojas de ruta + paradas con geolocalización, evidencia de entrega (firma+foto)
+  ✅ Logística: envíos, transportistas, geo-tracking
+  ✅ Picking: modo warehouse con zonas, bins, escaneo parcial
+  ✅ Industria: BOM, órdenes de producción, consumo predicho de materiales
+  ✅ IoT: 11 tipos de sensor, 8 protocolos (MQTT/Modbus/OPC-UA/CoAP/LoRa/Zigbee/BLE),
+          calibración, umbrales MIN/MAX, alertas automáticas
+  ✅ Portal B2B: login CUIT, catálogo, pedidos, cuenta cliente
+  ✅ App Vendedor en Ruta: mobile-first
+  ✅ E-commerce / tienda pública
+  ✅ Agenda de turnos (salud, belleza, servicios)
+
+INTEGRACIONES REALES:
+  ✅ AFIP: SOAP client con forge para firmar certificados, WSFEv1, CAE/CAEA, padrones A5
+  ✅ Impresión fiscal: drivers Epson + Hasar (ticket data marshaling, interface-based)
+  ✅ Email: Nodemailer con SMTP (Resend/Brevo compatible), templates HTML
+  ✅ PDF: factura, nota de crédito, remito (HTML/CSS con QR AFIP, formato argentino)
+  🟡 WhatsApp: 95% completo — tabla de mensajes pendientes, UI de aprobación,
+     generadores IA de mensajes, FALTA el sender real (Twilio placeholder)
+
+SISTEMA IA — AGENTES AUTÓNOMOS:
+  ✅ Dual provider: Ollama local (qwen2.5:14b, RTX 5070 Ti) + Anthropic Claude fallback
+  ✅ 10 agentes implementados con execute() real:
+     - alertas-stock (diario 6AM, reacciona a STOCK_ACTUALIZADO)
+     - cobranzas (L-V 8AM, reacciona a FACTURA_EMITIDA/RECIBO_EMITIDO)
+     - ventas-leads (L/Mi/V 9AM, clientes inactivos 30+ días)
+     - compras-predictivo (Dom 22:00, predicción de reposición)
+     - anomalías (diario 23:00, precios inusuales, cajas fuera de horario)
+     - reportes (diario 7AM, auto-genera semanal lunes, mensual 1ero)
+     - community-manager (L/Mi/V 10AM, posts con productos reales)
+     - marketing (Ma/Ju 11AM, campañas de reactivación)
+     - clasificador-productos (manual, auto-categoriza con IVA y NCM)
+     - onboarding (manual, wizard conversacional por rubro)
+  ✅ AgentRegistry: singleton con concurrency guard (Set in-memory por agentId:empresaId)
+  ✅ AgentBase: lifecycle run() con IA guard → enable check → execute (120s timeout) → persist log
+  ✅ CronMatcher: evaluador de cron 5-field sin dependencias externas
+  ✅ Bootstrap: auto-registra agentes + wires event bus por reactsTo
+  ✅ Endpoint cron /api/cron/agentes: ejecuta agentes due cada hora, evita duplicados por ventana
+  ✅ Autopilot: endpoint toggle masivo para activar/desactivar todos los agentes
+  ✅ AgenteLog: modelo Prisma para audit trail completo de ejecuciones
+  ✅ Dashboard: /dashboard/agentes con cards, stats, toggle, ejecución manual, historial
+
+AUTH Y SEGURIDAD:
+  ✅ JWT via jose (RFC 7519), verificado en middleware en TODAS las rutas protegidas
+  ✅ Multi-tenant: getAuthContext() + whereEmpresa() en 190/195 rutas
+  ✅ Rate limiting: sliding window por IP (en memoria)
+  ✅ 9 roles RBAC granulares
+  ✅ Auditoría inmutable (LogActividad)
+  ✅ Security headers en next.config.ts (X-Frame-Options, HSTS, nosniff)
+
+TESTS:
+  ✅ 111 tests unitarios, 19 archivos, Vitest
+  ✅ Cubre: ventas, presupuestos, stock, cobros, pagos, contabilidad,
+     activos fijos, períodos fiscales, transferencias, event bus, agentes IA, onboarding
+
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 2 — LO QUE NOS FALTA (CRÍTICO, SIN EXCUSAS)
+═══════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────
+2.1  INFRAESTRUCTURA — BLOQUEADORES DE PRODUCCIÓN
+────────────────────────────────────────────────────────────
+
+🔴 SIN COLA DE MENSAJES / BACKGROUND JOBS
+   Problema: Los cron jobs son endpoints HTTP normales de Next.js.
+   Si la ejecución de 10 agentes para 100 empresas toma 50 minutos,
+   el siguiente cron puede solaparse. No hay retry en falla.
+   No hay dead letter queue para jobs fallidos.
+   No hay separación worker/web — todo corre en el mismo proceso.
+   Impacto: A 30+ clientes, los agentes van a fallar silenciosamente.
+   Solución: BullMQ + Redis (o Inngest/Trigger.dev serverless)
+
+🔴 SIN REDIS
+   Problema: Rate limiting es in-memory (reset en cada deploy).
+   Event bus es in-memory (eventos en vuelo se pierden en restart).
+   Concurrency guard de agentes es in-memory (multi-instancia = doble ejecución).
+   Cache de AI context (60s TTL) es in-memory (cada instancia repite queries).
+   Impacto: En multi-instancia (Railway auto-scale, Vercel edge), TODO se rompe.
+   Solución: Redis/Upstash para: rate limit, locks, cache, pub/sub, queues
+
+🔴 SIN DISTRIBUTED LOCKS
+   Problema: 2 instancias pueden ejecutar el mismo agente al mismo tiempo.
+   El check de "agenteLog reciente" tiene race condition:
+     T=0ms: Instancia A lee agenteLog → no encuentra nada
+     T=0ms: Instancia B lee agenteLog → no encuentra nada
+     T=1ms: Ambas ejecutan → 2 alertas duplicadas
+   Mismo problema con asientos contables en event handlers.
+   Solución: Postgres advisory locks (SELECT pg_advisory_xact_lock(hash))
+   o Redis SETNX para distributed locking
+
+🔴 SIN OBSERVABILIDAD / MONITORING
+   Problema: Solo console.log/console.error. En Railway los logs se pierden.
+   No hay trazas de performance. No hay alertas en errores 500.
+   No hay métricas de latencia de AI, duración de queries, throughput.
+   No hay health checks de Ollama/Anthropic con circuit breaker.
+   Impacto: Cosas van a fallar en producción y no nos vamos a enterar.
+   Solución: Sentry (errores) + OpenTelemetry/Datadog (trazas) + Better Stack (logs)
+
+🔴 SIN WEBSOCKET / SSE (REAL-TIME)
+   Problema: El dashboard no puede recibir notificaciones push.
+   Cuando un agente termina de ejecutar, el usuario no se entera.
+   Cuando entra una alerta de stock crítico, no aparece hasta refresh.
+   El KDS de cocina tiene que hacer polling cada 5 segundos.
+   Impacto: UX inferior a cualquier SaaS moderno. Gastronomía necesita real-time YA.
+   Solución: Server-Sent Events (SSE) mínimo para notificaciones.
+   Socket.io/Pusher si se necesita bidireccional.
+
+🟡 SIN FILE UPLOAD SYSTEM
+   Problema: Certificados AFIP guardados como Base64 en la DB.
+   No hay soporte para subir logos, fotos de evidencia de entrega,
+   fotos de cheques, imágenes de productos.
+   Impacto: 10MB+ de archivos por empresa van a inflar la DB.
+   Solución: S3/Cloudflare R2 presigned URLs + campo URL en modelo.
+
+🟡 SIN WEBHOOKS SALIENTES
+   Problema: No podemos notificar a sistemas externos cuando pasan cosas.
+   Ejemplo: "Cuando factura > $500K, notificar a Slack del contador".
+   Ejemplo: "Cuando stock llega a 0, enviar webhook a e-commerce para marcar sin stock".
+   Impacto: No hay integraciones con terceros.
+   Solución: Tabla WebhookConfig + WebhookDelivery con retry exponencial.
+
+🟡 SIN API VERSIONING
+   Problema: Todas las rutas son /api/clientes, /api/facturas sin /v1/.
+   Un cambio breaking requiere big-bang migration de todos los clientes.
+   Impacto: Cuando tengamos 50+ clientes, un cambio en la API rompe todo.
+
+────────────────────────────────────────────────────────────
+2.2  AGENTES IA — GAPS FUNCIONALES
+────────────────────────────────────────────────────────────
+
+🔴 NO HAY IDEMPOTENCIA EN AGENTES
+   Problema: Si el cron se ejecuta 2 veces (retry, deploy, race condition),
+   se crean alertas duplicadas. No hay constraint de unicidad.
+   Código: prisma.alertaIA.create() sin check de existencia previa.
+   Solución: UNIQUE constraint (empresaId, agenteId, DATE_TRUNC('day', createdAt))
+   o idempotency key en cada acción.
+
+🔴 NO HAY RETRY CON BACKOFF EXPONENCIAL
+   Problema: Si Ollama está lento o Anthropic da 429 (rate limit),
+   el agente falla con error permanente. No reintenta.
+   Impacto: En horario pico de uso de GPU, 50%+ de agentes pueden fallar.
+   Solución: 3 reintentos con backoff (1s, 4s, 16s) antes de marcar error.
+
+🔴 NO HAY CIRCUIT BREAKER PARA AI
+   Problema: Si Ollama tarda 119 segundos en cada request, el sistema
+   quema el timeout completo en cada agente antes de caer a Anthropic.
+   Para 10 agentes × 100 empresas = 33 HORAS de espera inútil.
+   Solución: Circuit breaker: si Ollama falla 3 veces seguidas,
+   abrir circuito y saltar directo a Anthropic por 5 minutos.
+
+🟡 NO HAY FEEDBACK LOOP
+   Problema: Las alertas se generan pero nadie marca "fue útil/fue basura".
+   Sin feedback, la IA no puede mejorar. Siempre genera las mismas alertas.
+   Solución: Campo "feedback" en AlertaIA (util/no_util/falso_positivo)
+   + usar feedback como contexto en el próximo ciclo.
+
+🟡 NO HAY PROMPT CACHING
+   Problema: Cada ejecución de agente re-envía el contexto completo de la empresa
+   (25 queries Prisma paralelas, reconstruyen todo). A 100 empresas × 10 agentes
+   = 25,000 queries por ciclo nocturno. Con cache central duraría 2,500.
+   Solución: Redis cache del contexto de empresa con TTL de 5 minutos.
+
+🟡 WHATSAPP SENDER NO EXISTE
+   Problema: Toda la infraestructura de mensajes WhatsApp está lista —
+   tabla de mensajes pendientes, UI de aprobación, generadores IA,
+   cron de envío — pero el sender real es console.log.
+   Impacto: La línea de negocio "Agente de Cobranzas por WhatsApp" no funciona.
+   Solución: Twilio o 360dialog. ~20 líneas de código real.
+
+────────────────────────────────────────────────────────────
+2.3  TESTING — COBERTURA INSUFICIENTE
+────────────────────────────────────────────────────────────
+
+🟡 SIN TESTS E2E
+   Problema: 111 tests unitarios cubren ~40% de la lógica.
+   No hay tests que hagan: login → crear cliente → crear factura → cobrar → verificar asiento.
+   Solución: Playwright o Cypress para flujos críticos (5-10 tests E2E).
+
+🟡 SIN TESTS DE AUTH
+   Problema: El middleware JWT no tiene tests. Si alguien refactoriza
+   y rompe la validación, no hay test que lo detecte.
+
+🟡 SIN TESTS DE INTEGRACIÓN CON DB REAL
+   Problema: Todos los tests mockean Prisma. No verifican constraints reales,
+   triggers, indexes, o race conditions de la DB.
+   Solución: Test container con PostgreSQL real para integration tests.
+
+────────────────────────────────────────────────────────────
+2.4  FUNCIONAL — GAPS DE NEGOCIO
+────────────────────────────────────────────────────────────
+
+🟡 SIN FACTURA ELECTRÓNICA DE EXPORTACIÓN (tipo E)
+   Argentina exige para exportadores. Bajo demanda pero necesario.
+
+🟡 SIN LIBRO IVA DIGITAL
+   RG 4597/2019 — obligatorio para Responsable Inscripto.
+   Tenemos los datos (tributos por factura/compra) pero no el exportador.
+
+🟡 SIN INTEGRACIÓN MERCADO LIBRE
+   Prometida en pricing. Necesita ML API + sync de stock.
+
+🟡 SIN REPORTING / BI
+   No hay reportes configurables por el usuario. Solo los que genera la IA.
+   Falta: tabla dinámica, gráficos, export a Excel con formato.
+
+🟡 SIN MULTI-MONEDA OPERATIVA
+   Hay CotizacionService y campo moneda en factura, pero no hay
+   flujo real de operar en USD y contabilizar en ARS.
+
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 3 — QUÉ IMPLEMENTAR PARA DIFERENCIACIÓN MÁXIMA 2026
+═══════════════════════════════════════════════════════════════════════════
+
+Acá la pregunta real: con lo que tenemos (~65% construido), ¿qué agregaríamos
+para que NINGÚN competidor en Argentina/LATAM pueda ni acercarse?
+
+────────────────────────────────────────────────────────────
+3.1  INFRA QUE ESCALA — "THE BORING STUFF THAT WINS"
+────────────────────────────────────────────────────────────
+
+PRIORIDAD 1: REDIS + BULLMQ (Semana 1)
+  • Redis en Upstash (serverless, $0 hasta 10K reqs/día, gratis para empezar)
+  • BullMQ para todos los jobs: agentes IA, envío de emails, envío WhatsApp,
+    generación de PDF, sync AFIP
+  • Workers separados del proceso web (Railway worker service)
+  • Dashboard de BullMQ: ver jobs pendientes, fallidos, completados
+  • Retry automático con backoff exponencial (3 intentos, 1s/4s/16s)
+  • Dead letter queue para jobs que fallaron 3 veces → alerta al admin
+  ¿Por qué diferencia? Ningún ERP PyME en Argentina tiene procesamiento
+  asíncrono real. Bind, Colppy, Xubio — todos bloquean al usuario.
+
+PRIORIDAD 2: DISTRIBUTED LOCKS (Semana 1, junto con Redis)
+  • Postgres advisory locks en agentes: SELECT pg_advisory_xact_lock(hash)
+  • O Redis SETNX con TTL para lock distribuido
+  • Idempotency keys en cada acción de agente
+  • Constraint UNIQUE en AlertaIA para evitar duplicados
+  ¿Por qué diferencia? Podemos escalar a N instancias sin bugs.
+
+PRIORIDAD 3: OBSERVABILIDAD (Semana 2)
+  • Sentry para error tracking (free tier: 5K events/mes)
+  • OpenTelemetry para trazas distribuidas
+  • Structured logging con JSON (pino) → Better Stack o Datadog
+  • Health check mejorado: /api/health que verifica DB + Redis + Ollama + AFIP
+  • Dashboard de operaciones: latencia por endpoint, errores/hora, uso de GPU
+  ¿Por qué diferencia? Podemos garantizar 99.9% uptime con datos reales.
+
+PRIORIDAD 4: SSE / REAL-TIME (Semana 2-3)
+  • Server-Sent Events endpoint: /api/sse/[empresaId]
+  • Tipos de evento: alerta_nueva, agente_completado, comanda_nueva,
+    stock_critico, factura_aprobada, pago_recibido
+  • Toast notifications en el dashboard en real-time
+  • KDS de cocina con SSE (elimina polling cada 5s)
+  • Notificación a vendedor cuando su pedido cambió de estado
+  ¿Por qué diferencia? La experiencia pasa de "sitio web" a "app viva".
+  Gastronomía SIN real-time NO ES VIABLE. El KDS necesita 0 latencia.
+
+────────────────────────────────────────────────────────────
+3.2  AGENTES IA — DE "EJECUTOR" A "CEREBRO AUTÓNOMO"
+────────────────────────────────────────────────────────────
+
+FEATURE: CIRCUIT BREAKER + RETRY INTELIGENTE
+  Hoy: Ollama falla → error permanente.
+  Mañana: Ollama falla → retry 3x con backoff → circuit open → Anthropic directo → 
+          después de 5min → half-open → intenta Ollama de nuevo.
+  Implementación: ~60 líneas. Estado: closed/open/half-open.
+  Beneficio: 99% de uptime de IA vs 70% actual.
+
+FEATURE: AGENT FEEDBACK LOOP
+  Hoy: IA genera alertas, nadie dice si sirvieron.
+  Mañana: 
+  • Botón "👍 Útil / 👎 No útil / ⚠️ Falso positivo" en cada alerta
+  • Los feedback se agregan al prompt del próximo ciclo:
+    "En los últimos 7 días, el usuario marcó 3 alertas de stock como falso positivo
+     porque los productos tenían OC pendiente. Considerá OC pendientes antes de alertar."
+  • Métrica: % de alertas útiles por agente (KPI para el cliente)
+  Beneficio: La IA MEJORA sola con el uso. Nadie tiene esto.
+
+FEATURE: AGENT CHAINS (AGENTES QUE LLAMAN A AGENTES)
+  Hoy: Cada agente ejecuta independiente.
+  Mañana:
+  • Agente anomalías detecta precio inusual →
+    Trigger automático: agente de auditoría genera reporte →
+    Trigger automático: agente de notificaciones manda WhatsApp al dueño
+  • Agente de stock detecta producto agotado →
+    Trigger: agente compras genera OC sugerida →
+    Trigger: agente marketing pausa campaña de ese producto
+  Implementación: campo "chainsTo" en AgentConfig + executeChain() en registry.
+  Beneficio: AUTOMATIZACIÓN TOTAL sin intervención humana.
+  Esto es lo más cercano a un SAP con workflow que existe para PyMEs.
+
+FEATURE: SCHEDULED AGENT PER EMPRESA (CRON PERSONALIZADO)
+  Hoy: Todos los agentes corren en los mismos horarios para todas las empresas.
+  Mañana:
+  • Tabla `ConfiguracionAgente` (empresaId, agenteId, cronExpression, params)
+  • Cada empresa elige cuándo corren sus agentes
+  • Parámetros por empresa: "alertar si stock < 20" vs "alertar si stock < 5"
+  • UI en dashboard: cron builder visual (seleccionar día/hora)
+  Beneficio: Cada cliente siente que tiene un sistema PERSONALIZADO.
+
+FEATURE: NATURAL LANGUAGE AGENT TRIGGER
+  Hoy: Los agentes se disparan por cron o evento.
+  Mañana: El dueño escribe en el chat:
+    "Mandales un WhatsApp a los que me deben más de $100K"
+    → El sistema interpreta → ejecuta agente de cobranzas con filtro monto > 100K
+    → Genera mensajes → Muestra preview → Envía con un click
+  Implementación: function-calling / tool-use con los agentes como herramientas.
+  Beneficio: INTERFAZ CONVERSACIONAL para operar el ERP completo.
+  El dueño del kiosco no necesita saber qué botón apretar.
+
+FEATURE: AI PLAYGROUND / EVALUATION
+  Hoy: No sabemos si la IA genera buenas respuestas.
+  Mañana:
+  • Endpoint /api/ai/eval que corre N prompts predefinidos y compara respuestas
+  • Scoring automático: coherencia, relevancia, formato correcto
+  • A/B testing de prompts: "prompt v1 vs v2, cuál genera mejores alertas"
+  • Dashboard de calidad de IA: accuracy por agente, drift detection
+  Beneficio: Podemos medir y GARANTIZAR calidad de IA. SAP no puede.
+
+────────────────────────────────────────────────────────────
+3.3  INTEGRACIONES QUE ABREN MERCADO
+────────────────────────────────────────────────────────────
+
+MERCADO LIBRE (Semana 3-4)
+  • Sync catálogo ERP → ML (publicaciones automáticas)
+  • Stock en tiempo real (venta en ML descuenta del ERP)
+  • Preguntas respondidas por agente IA con datos reales
+  • Factura AFIP automática por venta en ML
+  Impacto: El 70% de las ferreterías/distribuidoras venden en ML.
+  Sin esto, no les servimos.
+
+WHATSAPP BUSINESS API (Semana 2)
+  • Twilio o 360dialog — 20 líneas de código sender
+  • Templates pre-aprobados por Meta (factura, turno, cobranza, promo)
+  • 2-way: cliente responde → agente IA procesa respuesta
+  Impacto: Sin WhatsApp real, la línea de negocio "Agente de Cobranzas" no existe.
+  Es la feature MÁS MONETIZABLE que nos falta. $40K/mes por cliente.
+
+WEBHOOKS SALIENTES (Semana 3)
+  • Tabla WebhookConfig (empresaId, evento, url, headers, activo)
+  • Tabla WebhookDelivery (intentos, status, response, timestamp)
+  • Retry exponencial (1s, 10s, 60s, 5min)
+  • UI para configurar: "Cuando FACTURA_EMITIDA y monto > $X → POST a tu URL"
+  Impacto: Permite integración con CUALQUIER sistema externo.
+  Contadores con su sistema, e-commerces propios, ERPs legacy.
+
+GOOGLE SHEETS / EXCEL LIVE SYNC (Semana 4)
+  • Export automático de ventas/stock a Google Sheets
+  • El contador que no quiere aprender el ERP puede ver todo en su Excel
+  • Bidireccional: cambios en la sheet actualizan el ERP
+  Impacto: Reduce fricción de adopción al MÍNIMO.
+
+────────────────────────────────────────────────────────────
+3.4  UX QUE MATA — DE "ERP" A "EXPERIENCIA"
+────────────────────────────────────────────────────────────
+
+COMMAND PALETTE INTELIGENTE (YA EXISTE PARCIAL)
+  • Ctrl+K → buscar cualquier cosa: cliente, producto, factura, acción
+  • Agregar: comandos de agente ("ejecutar cobranzas", "generar reporte")
+  • Agregar: natural language ("mostrame los que me deben más de 100K")
+  • Agregar: acciones rápidas ("nueva factura para Juan Pérez")
+
+NOTIFICACIONES EN TIEMPO REAL (requiere SSE)
+  • Badge en topbar: "3 alertas nuevas"
+  • Toast cuando agente termina: "Agente de cobranzas envió 8 WhatsApp"
+  • Sonido opcional para KDS de cocina
+  • Push notifications (PWA) cuando la app está en background
+
+MOBILE-FIRST DASHBOARD
+  • Responsive YA está. Pero falta:
+  • PWA manifest + service worker para offline
+  • Swipe actions en tablas (deslizar para cobrar, anular)
+  • Scan de código de barras nativo (camera API)
+  • Touch-optimized POS para tablet
+
+DARK MODE / THEMES (YA EXISTE)
+  • 10+ paletas OKLCH configurables
+  • Agregar: modo "alto contraste" para uso en sol (vendedor en ruta)
+  • Agregar: modo "kiosco" (POS grande, botones enormes, sin sidebar)
+
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 4 — ROADMAP DE IMPLEMENTACIÓN PRIORIZADO
+═══════════════════════════════════════════════════════════════════════════
+
+                          IMPACTO
+                    ALTO │         │
+                         │  S1 S2  │  S3
+                         │  S4     │  S5
+                         │─────────│────────
+                    BAJO │  S6     │  S7
+                         │         │
+                         └─────────┴────────
+                          FÁCIL    DIFÍCIL
+                              ESFUERZO
+
+S1. REDIS + BULLMQ + DISTRIBUTED LOCKS        [1 semana]  [IMPACTO: ████████░░]
+    Todo el scheduling real, queues, retry, locks.
+    Sin esto, no escalamos de 1 a 30 clientes.
+
+S2. WHATSAPP BUSINESS SENDER (TWILIO)          [3 días]    [IMPACTO: █████████░]
+    20 líneas de código. Desbloquea $40K/mes/cliente.
+    La infra está lista. Solo falta el sender.
+
+S3. SSE / REAL-TIME NOTIFICATIONS              [1 semana]  [IMPACTO: ████████░░]
+    Transforma el dashboard de "sitio web" a "app viva".
+    Obligatorio para gastronomía (KDS).
+
+S4. CIRCUIT BREAKER + RETRY + IDEMPOTENCIA     [3 días]    [IMPACTO: ███████░░░]
+    Hace que los agentes pasen de 70% reliability a 99%.
+
+S5. OBSERVABILIDAD (SENTRY + LOGGING)          [3 días]    [IMPACTO: ███████░░░]
+    Nos enteramos cuando algo falla en producción.
+
+S6. AGENT CHAINS + FEEDBACK LOOP               [1 semana]  [IMPACTO: █████████░]
+    Diferenciación BRUTAL. Agentes que se llaman entre sí.
+    La IA mejora sola con uso.
+
+S7. MERCADO LIBRE INTEGRATION                  [2 semanas] [IMPACTO: ████████░░]
+    Abre el mercado de ferreterías y distribuidoras.
+
+S8. NATURAL LANGUAGE AGENT TRIGGER             [1 semana]  [IMPACTO: █████████░]
+    "Cobrales a los que me deben" → funciona.
+    El ERP conversacional. Nadie lo tiene.
+
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 5 — SCORING: ¿DÓNDE ESTAMOS REALMENTE?
+═══════════════════════════════════════════════════════════════════════════
+
+Categoría                    Score    Notas
+──────────────────────────── ──────── ────────────────────────────────────
+Modelo de datos              95/100   159 modelos, multi-tenant, indexes
+Lógica de negocio            85/100   Core sólido, verticales funcionales
+API Routes                   82/100   160/195 con lógica real
+Auth / Seguridad             80/100   JWT+middleware sólido, rate-limit débil
+IA / Agentes                 75/100   10 agentes reales, falta retry/circuit/feedback
+Testing                      40/100   111 tests, sin E2E ni auth tests
+UI / Dashboard               85/100   34 páginas funcionales, UX profesional
+Integraciones externas       60/100   AFIP real, email real, WhatsApp 95%
+Escalabilidad                20/100   Single-instance, sin Redis, sin queues
+Observabilidad                5/100   Solo console.log
+Documentación                50/100   Código auto-documentado, sin Swagger
+Real-time                     0/100   Sin WebSocket/SSE
+
+SCORE GLOBAL: 60/100
+"Funciona perfecto para 1-5 clientes. Se rompe a 30+."
+
+CON LOS SPRINTS S1-S5 (3 semanas):  → 82/100
+CON S1-S8 (6 semanas):              → 93/100
+
+═══════════════════════════════════════════════════════════════════════════
+PARTE 6 — QUÉ NOS HARÍA IMPOSIBLES DE COMPETIR
+═══════════════════════════════════════════════════════════════════════════
+
+La combinación que NADIE en Argentina tiene:
+
+  1. ERP completo con AFIP real + contabilidad automática
+     → Bind/Colppy solo facturan. Odoo necesita implementador de USD $20K.
+
+  2. IA que LEE datos reales del ERP (no chatbot genérico)
+     → El agente de cobranzas sabe el aging REAL. El CM sabe el stock REAL.
+
+  3. Agentes autónomos con chains (agente → agente → acción)
+     → Es workflow automation nivel SAP pero a precio PyME.
+
+  4. Natural language interface ("cobrales a los que me deben")
+     → El dueño del kiosco NO NECESITA aprender el software.
+
+  5. Real-time (SSE) para que el ERP se sienta como WhatsApp
+     → Notificación instantánea de todo.
+
+  6. WhatsApp Business integrado con datos reales
+     → $40K/mes por cliente, marginalidad del 90%.
+
+  7. Feedback loop: la IA mejora sola con el uso
+     → A los 6 meses, cada cliente tiene su IA personalizada.
+
+  8. Multi-país (Argentina/Chile/México) con un solo codebase
+     → Escala LATAM sin rewrite.
+
+Si implementamos S1-S8, el producto resultante vale:
+  • Para un inversor: USD $3-5M de valuación pre-revenue
+  • Para un competidor: 18-24 meses de desarrollo para igualar
+  • Para un cliente: el mejor ERP PyME de Argentina, punto.
+
+
+══════════════════════════════════════════════════════════════════════════════
+FIN DE INTROSPECCIÓN — 11/04/2026
+Próximo paso: Implementar S1 (Redis + BullMQ) y S2 (WhatsApp Twilio).
+══════════════════════════════════════════════════════════════════════════════

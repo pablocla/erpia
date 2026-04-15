@@ -4,7 +4,7 @@ import { pdfService } from "@/lib/printer/pdf-service"
 import { z } from "zod"
 
 const schema = z.object({
-  tipo: z.enum(["factura", "nc", "remito"]),
+  tipo: z.enum(["factura", "nc", "nd", "remito", "presupuesto", "oc", "remito-transferencia", "remito-entrada"]),
   id: z.number().int().positive(),
 })
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const parsed = schema.safeParse({ tipo, id })
     if (!parsed.success) {
-      return NextResponse.json({ error: "Parámetros inválidos (tipo: factura|nc|remito, id: número)" }, { status: 400 })
+      return NextResponse.json({ error: "Parámetros inválidos (tipo: factura|nc|nd|remito|presupuesto|oc|remito-transferencia|remito-entrada, id: número)" }, { status: 400 })
     }
 
     let result
@@ -32,9 +32,28 @@ export async function GET(request: NextRequest) {
       case "nc":
         result = await pdfService.generarNCPDF(parsed.data.id)
         break
+      case "nd":
+        result = await pdfService.generarNDPDF(parsed.data.id)
+        break
       case "remito":
         result = await pdfService.generarRemitoPDF(parsed.data.id)
         break
+      case "presupuesto":
+        result = await pdfService.generarPresupuestoPDF(parsed.data.id)
+        break
+      case "oc":
+        result = await pdfService.generarOCPDF(parsed.data.id)
+        break
+      case "remito-transferencia":
+        result = await pdfService.generarRemitoTransferenciaPDF(parsed.data.id)
+        break
+      case "remito-entrada":
+        result = await pdfService.generarRemitoEntradaPDF(parsed.data.id)
+        break
+    }
+
+    if (!result) {
+      return NextResponse.json({ error: "Tipo de comprobante no soportado" }, { status: 400 })
     }
 
     // Return as downloadable HTML (browser's print/save as PDF)
@@ -72,9 +91,28 @@ export async function POST(request: NextRequest) {
       case "nc":
         result = await pdfService.generarNCPDF(parsed.data.id)
         break
+      case "nd":
+        result = await pdfService.generarNDPDF(parsed.data.id)
+        break
       case "remito":
         result = await pdfService.generarRemitoPDF(parsed.data.id)
         break
+      case "presupuesto":
+        result = await pdfService.generarPresupuestoPDF(parsed.data.id)
+        break
+      case "oc":
+        result = await pdfService.generarOCPDF(parsed.data.id)
+        break
+      case "remito-transferencia":
+        result = await pdfService.generarRemitoTransferenciaPDF(parsed.data.id)
+        break
+      case "remito-entrada":
+        result = await pdfService.generarRemitoEntradaPDF(parsed.data.id)
+        break
+    }
+
+    if (!result) {
+      return NextResponse.json({ error: "Tipo no soportado" }, { status: 400 })
     }
 
     return NextResponse.json({

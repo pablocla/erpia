@@ -9,8 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit2, Phone, Mail, Building2, RefreshCw } from "lucide-react"
+import { Plus, Search, Edit2, Phone, Mail, Building2, RefreshCw, Download } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
 
 interface Proveedor {
   id: number
@@ -63,6 +66,7 @@ export default function ProveedoresPage() {
   const [error, setError] = useState("")
   const [guardando, setGuardando] = useState(false)
   const [condicionesPago, setCondicionesPago] = useState<MaestroOption[]>([])
+  const { toast } = useToast()
   const [provincias, setProvincias] = useState<MaestroOption[]>([])
   const [paises, setPaises] = useState<MaestroOption[]>([])
   const [localidades, setLocalidades] = useState<MaestroOption[]>([])
@@ -91,6 +95,8 @@ export default function ProveedoresPage() {
   useEffect(() => {
     cargarProveedores()
   }, [cargarProveedores])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarProveedores, onNew: () => { setProveedorSeleccionado(null); setForm(initialForm); setError(""); setDialogOpen(true) } }))
 
   useEffect(() => {
     const cargarMaestros = async () => {
@@ -176,12 +182,15 @@ export default function ProveedoresPage() {
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || "Error al guardar")
+        toast({ title: "Error al guardar proveedor", description: data.error || "Ocurrió un error", variant: "destructive" })
         return
       }
       setDialogOpen(false)
       cargarProveedores()
+      toast({ title: proveedorSeleccionado ? "Proveedor actualizado" : "Proveedor creado", description: "Los datos se guardaron correctamente" })
     } catch {
       setError("Error de conexión")
+      toast({ title: "Error de conexión", description: "No se pudo conectar con el servidor", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -207,93 +216,42 @@ export default function ProveedoresPage() {
         </Button>
       </div>
 
-      {/* Búsqueda */}
+      {/* DataTable */}
       <Card>
         <CardContent className="pt-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Buscar por nombre o CUIT..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Button variant="ghost" onClick={cargarProveedores}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabla */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{proveedoresFiltrados.length} proveedor(es)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Cargando...</div>
-          ) : proveedoresFiltrados.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-2 opacity-30" />
-              No hay proveedores
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>CUIT</TableHead>
-                  <TableHead>Condición IVA</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Compras</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {proveedoresFiltrados.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{p.nombre}</p>
-                        {p.direccion && (
-                          <p className="text-xs text-muted-foreground">{p.direccion}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{p.cuit}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{p.condicionIva}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {p.telefono && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3" /> {p.telefono}
-                          </div>
-                        )}
-                        {p.email && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Mail className="h-3 w-3" /> {p.email}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{p._count?.compras ?? 0} compras</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => abrirEditar(p)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable<Proveedor>
+            data={proveedoresFiltrados}
+            columns={[
+              { key: "nombre", header: "Nombre", sortable: true, cell: (p) => (<div><p className="font-medium">{p.nombre}</p>{p.direccion && <p className="text-xs text-muted-foreground">{p.direccion}</p>}</div>) },
+              { key: "cuit", header: "CUIT", sortable: true, cell: (p) => <span className="font-mono text-sm">{p.cuit}</span> },
+              { key: "condicionIva", header: "Cond. IVA", cell: (p) => <Badge variant="outline">{p.condicionIva}</Badge> },
+              { key: "telefono", header: "Contacto", cell: (p) => (<div className="space-y-1">{p.telefono && <div className="flex items-center gap-1 text-sm text-muted-foreground"><Phone className="h-3 w-3" /> {p.telefono}</div>}{p.email && <div className="flex items-center gap-1 text-sm text-muted-foreground"><Mail className="h-3 w-3" /> {p.email}</div>}</div>), exportFn: (p) => `${p.telefono ?? ""} ${p.email ?? ""}` },
+              { key: "_count" as any, header: "Compras", cell: (p) => <Badge variant="secondary">{p._count?.compras ?? 0} compras</Badge>, exportFn: (p) => String(p._count?.compras ?? 0) },
+              { key: "acciones" as any, header: "Acciones", align: "right", cell: (p) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(p) }}><Edit2 className="h-4 w-4" /></Button> },
+            ] as DataTableColumn<Proveedor>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar por nombre o CUIT..."
+            searchKeys={["nombre", "cuit"]}
+            selectable
+            bulkActions={(selected, clear) => (
+              <Button variant="outline" size="sm" onClick={() => {
+                const h = "nombre,cuit,condicionIva,direccion,telefono,email"
+                const rows = selected.map((p) => [p.nombre, p.cuit, p.condicionIva, p.direccion, p.telefono, p.email].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+                const blob = new Blob(["\uFEFF" + [h, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" })
+                const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "proveedores-seleccionados.csv"; a.click()
+                clear()
+              }}>
+                <Download className="h-4 w-4 mr-1" /> Exportar ({selected.length})
+              </Button>
+            )}
+            exportFilename="proveedores"
+            loading={loading}
+            emptyMessage="No hay proveedores"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin proveedores" description="Cargá tu primer proveedor para gestionar compras." actionLabel="Nuevo Proveedor" onAction={abrirNuevo} />}
+            defaultPageSize={25}
+            compact
+            onRowClick={abrirEditar}
+          />
         </CardContent>
       </Card>
 

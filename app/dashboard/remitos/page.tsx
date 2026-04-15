@@ -31,6 +31,9 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type LineaRemito = { id: number; descripcion: string; cantidad: number; unidad: string }
 type Remito = {
@@ -83,6 +86,8 @@ export default function RemitosPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargar, onNew: () => setModal(true) }))
 
   useEffect(() => {
     fetch("/api/maestros/incoterms?take=200", { headers: authHeaders() })
@@ -202,72 +207,39 @@ export default function RemitosPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Remitos</CardTitle>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar cliente o número..." className="pl-9 h-9 w-56 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  {ESTADOS.map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los estados</SelectItem>
+                {ESTADOS.map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Nro.</th>
-                  <th className="text-left p-3 font-medium">Cliente</th>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-left p-3 font-medium">Factura</th>
-                  <th className="text-left p-3 font-medium">Incoterm</th>
-                  <th className="text-right p-3 font-medium">Líneas</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtrados.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-xs">R-{String(r.numero).padStart(6, "0")}</td>
-                    <td className="p-3">
-                      <p className="font-medium">{r.cliente?.nombre ?? "—"}</p>
-                      {r.cliente?.cuit && <p className="text-xs text-muted-foreground">{r.cliente.cuit}</p>}
-                    </td>
-                    <td className="p-3 text-muted-foreground">{new Date(r.fecha).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3 font-mono text-xs">
-                      {r.factura ? `FAC ${r.factura.tipo} ${String(r.factura.puntoVenta).padStart(4, "0")}-${String(r.factura.numero).padStart(8, "0")}` : "—"}
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {r.incoterm?.nombre ?? "—"}
-                    </td>
-                    <td className="p-3 text-right">
-                      <span className="flex items-center justify-end gap-1"><Package className="h-3.5 w-3.5 text-muted-foreground" />{r.lineas.length}</span>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={r.estado === "entregado" ? "default" : r.estado === "anulado" ? "destructive" : "secondary"} className="text-xs">{r.estado}</Badge>
-                    </td>
-                    <td className="p-3">
-                      {r.estado === "pendiente" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => cambiarEstado(r.id, "entregado")}>
-                          <Truck className="h-3 w-3 mr-1" />Entregar
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {filtrados.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay remitos para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<Remito>
+            data={filtrados}
+            columns={[
+              { key: "numero", header: "Nro.", sortable: true, cell: (r) => <span className="font-mono text-xs">R-{String(r.numero).padStart(6, "0")}</span> },
+              { key: "cliente" as any, header: "Cliente", cell: (r) => (<div><p className="font-medium">{r.cliente?.nombre ?? "—"}</p>{r.cliente?.cuit && <p className="text-xs text-muted-foreground">{r.cliente.cuit}</p>}</div>), exportFn: (r) => r.cliente?.nombre ?? "" },
+              { key: "fecha", header: "Fecha", sortable: true, cell: (r) => <span className="text-muted-foreground">{new Date(r.fecha).toLocaleDateString("es-AR")}</span> },
+              { key: "factura" as any, header: "Factura", cell: (r) => <span className="font-mono text-xs">{r.factura ? `FAC ${r.factura.tipo} ${String(r.factura.puntoVenta).padStart(4, "0")}-${String(r.factura.numero).padStart(8, "0")}` : "—"}</span> },
+              { key: "incoterm" as any, header: "Incoterm", cell: (r) => <span className="text-xs text-muted-foreground">{r.incoterm?.nombre ?? "—"}</span> },
+              { key: "lineas" as any, header: "Líneas", align: "right", cell: (r) => <span className="flex items-center justify-end gap-1"><Package className="h-3.5 w-3.5 text-muted-foreground" />{r.lineas.length}</span>, exportFn: (r) => String(r.lineas.length) },
+              { key: "estado", header: "Estado", cell: (r) => <Badge variant={r.estado === "entregado" ? "default" : r.estado === "anulado" ? "destructive" : "secondary"} className="text-xs">{r.estado}</Badge> },
+              { key: "acciones" as any, header: "", cell: (r) => r.estado === "pendiente" ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); cambiarEstado(r.id, "entregado") }}><Truck className="h-3 w-3 mr-1" />Entregar</Button> : null },
+            ] as DataTableColumn<Remito>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar remito..."
+            searchKeys={["numero"]}
+            selectable
+            exportFilename="remitos"
+            loading={loading}
+            emptyMessage="No hay remitos"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin remitos" description="Cre\u00e1 el primer remito de despacho." actionLabel="Nuevo Remito" onAction={() => setModal(true)} />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

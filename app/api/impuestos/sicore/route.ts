@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { SICOREService, type CrearRetencionInput } from "@/lib/impuestos/sicore-service"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { z } from "zod"
 
 const crearRetencionSchema = z.object({
@@ -16,8 +16,9 @@ const crearRetencionSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    const empresaId = ctx.auth.empresaId
 
     const params = request.nextUrl.searchParams
     const mes = params.get("mes")
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       if (!mes || !anio) {
         return NextResponse.json({ error: "mes y anio son requeridos para exportar" }, { status: 400 })
       }
-      const archivo = await service.generarArchivoSICORE(Number(mes), Number(anio))
+      const archivo = await service.generarArchivoSICORE(Number(mes), Number(anio), empresaId)
       return new NextResponse(archivo, {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const filtros: Record<string, unknown> = {}
+    const filtros: Record<string, unknown> = { empresaId }
     if (mes) filtros.mes = Number(mes)
     if (anio) filtros.anio = Number(anio)
     if (params.get("tipo")) filtros.tipo = params.get("tipo")
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Optionally include period totals when mes+anio are provided
     let totales = null
     if (mes && anio) {
-      totales = await service.totalesPorPeriodo(Number(mes), Number(anio))
+      totales = await service.totalesPorPeriodo(Number(mes), Number(anio), empresaId)
     }
 
     return NextResponse.json({ success: true, retenciones, totales })
@@ -64,11 +65,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
-    // Only adminstrators and accountants can register withholdings
-    if (!["administrador", "contador"].includes(usuario.rol)) {
+    // Only administrators and accountants can register withholdings
+    if (!ctx.auth.rol || !["administrador", "contador"].includes(ctx.auth.rol)) {
       return NextResponse.json({ error: "Sin permisos para registrar retenciones" }, { status: 403 })
     }
 
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
 
     const input: CrearRetencionInput = {
       ...parsed.data,
+      empresaId: ctx.auth.empresaId,
       fechaRetencion: parsed.data.fechaRetencion ? new Date(parsed.data.fechaRetencion) : undefined,
     }
 

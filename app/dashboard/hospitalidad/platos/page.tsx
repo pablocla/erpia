@@ -11,6 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { Plus, UtensilsCrossed, Trash2 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Categoria {
   id: number
@@ -118,6 +122,8 @@ export default function PlatosPage() {
     cargarCategorias()
   }, [cargarPlatos, cargarInsumos, cargarCategorias])
 
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarPlatos, onNew: () => { setPlatoSeleccionado(null); setForm(initialForm); setComponentes([initialLinea]); setError(""); setDialogOpen(true) } }))
+
   const abrirNuevo = () => {
     setPlatoSeleccionado(null)
     setForm(initialForm)
@@ -211,8 +217,16 @@ export default function PlatosPage() {
     }
   }
 
+  const { confirm, ConfirmDialog } = useConfirm()
+
   const desactivarPlato = async (plato: Plato) => {
-    if (!confirm(`¿Desactivar el plato ${plato.producto.nombre}?`)) return
+    const ok = await confirm({
+      title: "Desactivar plato",
+      description: `¿Desactivar el plato ${plato.producto.nombre}?`,
+      confirmLabel: "Desactivar",
+      variant: "destructive",
+    })
+    if (!ok) return
     const res = await fetch(`/api/hospitalidad/platos?productoId=${plato.producto.id}`, {
       method: "DELETE",
       headers: authHeaders(),
@@ -244,38 +258,24 @@ export default function PlatosPage() {
             <div className="flex items-center justify-center py-10">
               <Spinner className="h-6 w-6" />
             </div>
-          ) : platos.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">Sin platos cargados</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Plato</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Receta</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {platos.map((plato) => (
-                  <TableRow key={plato.producto.id}>
-                    <TableCell className="font-mono text-xs">{plato.producto.codigo}</TableCell>
-                    <TableCell>{plato.producto.nombre}</TableCell>
-                    <TableCell>${plato.producto.precioVenta.toFixed(2)}</TableCell>
-                    <TableCell>{plato.receta?.componentes?.length ?? 0} insumos</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => abrirEditar(plato)}>Editar</Button>
-                        <Button size="sm" variant="ghost" onClick={() => desactivarPlato(plato)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <DataTable<Plato>
+              data={platos}
+              columns={[
+                { key: "producto" as any, header: "Código", sortable: true, cell: (p) => <span className="font-mono text-xs">{p.producto.codigo}</span>, exportFn: (p) => p.producto.codigo },
+                { key: "nombre" as any, header: "Plato", cell: (p) => p.producto.nombre, exportFn: (p) => p.producto.nombre },
+                { key: "precio" as any, header: "Precio", sortable: true, cell: (p) => `$${p.producto.precioVenta.toFixed(2)}`, exportFn: (p) => String(p.producto.precioVenta) },
+                { key: "receta" as any, header: "Receta", cell: (p) => `${p.receta?.componentes?.length ?? 0} insumos` },
+                { key: "acciones" as any, header: "Acciones", cell: (p) => <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); abrirEditar(p) }}>Editar</Button><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); desactivarPlato(p) }}><Trash2 className="h-4 w-4 text-red-500" /></Button></div> },
+              ] as DataTableColumn<Plato>[]}
+              rowKey={(p) => String(p.producto.id)}
+              searchPlaceholder="Buscar plato..."
+              searchKeys={["producto"] as any}
+              exportFilename="platos"
+              emptyMessage="Sin platos cargados"
+              emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin platos" description="Creá tu primer plato." />}
+              compact
+            />
           )}
         </CardContent>
       </Card>
@@ -406,6 +406,7 @@ export default function PlatosPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div>
   )
 }

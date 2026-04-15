@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import {
   Lock,
   LockOpen,
@@ -75,6 +76,10 @@ export default function PeriodosFiscalesPage() {
   }, [anio, toast])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   const ejecutarAccion = async (mes: number, accion: "cerrar" | "reabrir") => {
     setActionLoading(mes)

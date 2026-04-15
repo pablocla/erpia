@@ -48,6 +48,27 @@ export class FacturaService {
 
       const nuevoNumero = ultimoNumero + 1
 
+      // IDEMPOTENCY: If a factura with this pv+tipo+numero already exists, return it
+      const existing = await prisma.factura.findFirst({
+        where: {
+          empresaId: empresa.id,
+          puntoVenta: payload.puntoVenta,
+          tipoCbte: payload.tipoCbte,
+          numero: nuevoNumero,
+        },
+      })
+      if (existing?.cae) {
+        return {
+          success: true,
+          facturaId: existing.id,
+          cae: existing.cae,
+          fechaCAE: existing.fechaCAE?.toISOString() ?? "",
+          vencimientoCAE: existing.vencimientoCAE?.toISOString() ?? "",
+          qrBase64: existing.qrBase64 ?? "",
+          numero: existing.numero,
+        }
+      }
+
       // 4. Calcular totales
       const { subtotal, iva, total } = this.calcularTotales(payload.items)
 
@@ -133,45 +154,138 @@ export class FacturaService {
       }
 
       // 6. Preparar el comprobante para AFIP
-      const comprobante = {
-        Concepto: 1, // Productos
+      // Concepto: 1=Productos, 2=Servicios, 3=Productos y Servicios
+      const concepto = payload.concepto ?? 1
+
+      // Calcular neto exento y no gravado de los items
+      const netoExento = payload.items
+        .filter((item) => item.iva === 0 && item.exento)
+        .reduce((sum, item) => sum + item.cantidad * item.precioUnitario, 0)
+      const netoNoGravado = payload.items
+        .filter((item) => item.iva === 0 && !item.exento)
+        .reduce((sum, item) => sum + item.cantidad * item.precioUnitario, 0)
+      const netoGravado = subtotal - netoExento - netoNoGravado
+
+      // Build WSFE Tributos[] array from tax engine breakdown
+      const tributos: Array<{ Id: number; Desc: string; BaseImp: number; Alic: number; Importe: number }> = []
+      if (breakdown) {
+        // Percepciones IVA → Tributo Id 1 (Nacional)
+        for (const perc of breakdown.percepciones ?? []) {
+          tributos.push({
+            Id: perc.jurisdiccion === "federal" ? 1 : 2, // 1=Nacional, 2=Provincial
+            Desc: perc.nombre ?? `Percepción ${perc.tipo}`,
+            BaseImp: perc.base,
+            Alic: perc.alicuota,
+            Importe: perc.monto,
+          })
+        }
+        // Percepciones IIBB → Tributo Id 2 (Provincial)
+        for (const iibb of breakdown.iibb ?? []) {
+          if (iibb.monto > 0) {
+            tributos.push({
+              Id: 2, // Provincial
+              Desc: `Percepción IIBB ${iibb.jurisdiccion ?? ""}`,
+              BaseImp: iibb.base,
+              Alic: iibb.alicuota,
+              Importe: iibb.monto,
+            })
+          }
+        }
+      }
+
+      const impTrib = tributos.reduce((sum, t) => sum + t.Importe, 0)
+
+      const comprobante: any = {
+        Concepto: concepto,
         DocTipo: payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99),
         DocNro: payload.cliente.cuit || payload.cliente.dni || 0,
         CbteDesde: nuevoNumero,
         CbteHasta: nuevoNumero,
         CbteFch: this.formatearFecha(new Date()),
-        ImpTotal: totalConPercepciones,
-        ImpTotConc: 0,
-        ImpNeto: subtotal,
-        ImpOpEx: 0,
+        ImpTotal: total + impTrib,
+        ImpTotConc: netoNoGravado,
+        ImpNeto: netoGravado,
+        ImpOpEx: netoExento,
         ImpIVA: iva,
-        ImpTrib: totalPercepciones,
+        ImpTrib: impTrib,
         MonId: monedaOrigen,
         MonCotiz: tipoCambio,
         Iva: this.calcularIVAPorAlicuota(payload.items),
       }
 
-      // 7. Emitir el comprobante en AFIP
-      const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, payload.puntoVenta, comprobante)
-
-      // 8. Verificar respuesta
-      if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
-        const errores = resultado.FeDetResp?.FECAEDetResponse?.Observaciones
-        return {
-          success: false,
-          error: `Error AFIP: ${JSON.stringify(errores)}`,
-        }
+      // Concepto 2 o 3: servicios requieren fechas
+      if (concepto >= 2) {
+        if (payload.fechaServicioDesde) comprobante.FchServDesde = this.formatearFecha(payload.fechaServicioDesde)
+        if (payload.fechaServicioHasta) comprobante.FchServHasta = this.formatearFecha(payload.fechaServicioHasta)
+        if (payload.fechaVtoPago)       comprobante.FchVtoPago   = this.formatearFecha(payload.fechaVtoPago)
       }
 
-      const cae = resultado.FeDetResp.FECAEDetResponse.CAE
-      const fechaCAE = resultado.FeDetResp.FECAEDetResponse.CAEFchVto
+      // Include tributos array only if not empty
+      if (tributos.length > 0) {
+        comprobante.Tributos = tributos
+      }
 
-      // 9. Generar código QR
-      const qrData = this.generarDatosQR(empresa.cuit, payload.tipoCbte, payload.puntoVenta, cae, fechaCAE)
-      const qrBase64 = await QRCode.toDataURL(qrData)
+      // 7. Emitir el comprobante en AFIP (con fallback offline)
+      let cae: string
+      let fechaCAE: string
+      let modoOffline = false
+
+      try {
+        const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, payload.puntoVenta, comprobante, empresa.id)
+
+        // 8. Verificar respuesta AFIP
+        if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
+          const errores = resultado.FeDetResp?.FECAEDetResponse?.Observaciones
+          return {
+            success: false,
+            error: `Error AFIP: ${JSON.stringify(errores)}`,
+          }
+        }
+
+        cae = resultado.FeDetResp.FECAEDetResponse.CAE
+        fechaCAE = resultado.FeDetResp.FECAEDetResponse.CAEFchVto
+      } catch (afipErr) {
+        // AFIP caído: guardamos en modo offline para sincronizar después.
+        // AFIP tiene mantenimiento 00:00-00:30 diario y puede fallar fines de semana.
+        const esErrorConectividad = afipErr instanceof Error && (
+          afipErr.message.includes("ECONNREFUSED") ||
+          afipErr.message.includes("ETIMEDOUT") ||
+          afipErr.message.includes("ENOTFOUND") ||
+          afipErr.message.includes("socket hang up") ||
+          afipErr.message.toLowerCase().includes("timeout")
+        )
+
+        if (!esErrorConectividad) throw afipErr  // error lógico → propagar
+
+        modoOffline = true
+        cae = ""
+        fechaCAE = ""
+        console.warn("[FacturaService] AFIP no disponible — guardando como PENDIENTE_CAE")
+      }
+
+      // 9. Generar código QR con URL verificable por la app AFIP (solo si tenemos CAE)
+      const tipoDocReceptor = payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99)
+      const nroDocReceptor  = payload.cliente.cuit || payload.cliente.dni || 0
+      let qrBase64: string | null = null
+      if (!modoOffline && cae) {
+        const qrData = this.generarDatosQR(
+          empresa.cuit,
+          payload.tipoCbte,
+          payload.puntoVenta,
+          nuevoNumero,
+          cae,
+          fechaCAE,
+          total + impTrib,
+          monedaOrigen,
+          tipoCambio,
+          tipoDocReceptor,
+          nroDocReceptor,
+        )
+        qrBase64 = await QRCode.toDataURL(qrData)
+      }
 
       // 10. Guardar la factura en la base de datos
-      const cliente = await this.obtenerOCrearCliente(payload.cliente)
+      const cliente = await this.obtenerOCrearCliente(payload.cliente, empresa.id)
 
       const facturaCreada = await prisma.factura.create({
         data: {
@@ -179,34 +293,58 @@ export class FacturaService {
           tipoCbte: payload.tipoCbte,
           numero: nuevoNumero,
           puntoVenta: payload.puntoVenta,
-          cae,
-          fechaCAE: new Date(),
-          vencimientoCAE: this.parsearFechaCAE(fechaCAE),
+          cae: modoOffline ? null : cae,
+          fechaCAE: modoOffline ? null : new Date(),
+          vencimientoCAE: modoOffline ? null : this.parsearFechaCAE(fechaCAE),
           qrBase64,
+          estado: modoOffline ? "pendiente_cae" : "emitida",
           subtotal,
           iva,
           total,
-          totalPercepciones,
+          totalPercepciones: impTrib,
           totalRetenciones,
           monedaOrigen,
           tipoCambio,
           cuitReceptor,
           modalidadAuth: "CAE",
+          concepto,
+          netoExento,
+          netoNoGravado,
+          impInternosTotal: 0,
+          condicionIvaReceptor: payload.cliente.condicionIva,
+          fechaServicioDesde: concepto >= 2 ? payload.fechaServicioDesde : undefined,
+          fechaServicioHasta: concepto >= 2 ? payload.fechaServicioHasta : undefined,
+          fechaVtoPago: concepto >= 2 ? payload.fechaVtoPago : undefined,
           empresaId: empresa.id,
           clienteId: cliente.id,
           estado: "emitida",
           lineas: {
-            create: payload.items.map((item) => ({
-              descripcion: item.descripcion,
-              cantidad: item.cantidad,
-              productoId: item.productoId,
-              precioUnitario: item.precioUnitario,
-              porcentajeIva: item.iva,
-              subtotal: item.cantidad * item.precioUnitario,
-              iva: (item.cantidad * item.precioUnitario * item.iva) / 100,
-              total: item.cantidad * item.precioUnitario * (1 + item.iva / 100),
-            })),
+            create: payload.items.map((item) => {
+              const codigoAfipIva = this.ivaToCodigoAfip(item.iva)
+              return {
+                descripcion: item.descripcion,
+                cantidad: item.cantidad,
+                productoId: item.productoId,
+                precioUnitario: item.precioUnitario,
+                porcentajeIva: item.iva,
+                codigoAfipIva,
+                subtotal: item.cantidad * item.precioUnitario,
+                iva: (item.cantidad * item.precioUnitario * item.iva) / 100,
+                total: item.cantidad * item.precioUnitario * (1 + item.iva / 100),
+              }
+            }),
           },
+          // Persist tributos breakdown for Libro IVA Digital
+          tributos: tributos.length > 0 ? {
+            create: tributos.map((t) => ({
+              codigoAfip: t.Id,
+              descripcion: t.Desc,
+              baseImponible: t.BaseImp,
+              alicuota: t.Alic,
+              importe: t.Importe,
+              empresaId: empresa.id,
+            })),
+          } : undefined,
         },
       })
 
@@ -235,13 +373,27 @@ export class FacturaService {
         timestamp: new Date(),
       })
 
+      if (modoOffline) {
+        return {
+          success: true,
+          facturaId: facturaCreada.id,
+          cae: "",
+          fechaCAE: "",
+          vencimientoCAE: "",
+          qrBase64: "",
+          numero: nuevoNumero,
+          pendienteCAE: true,
+          advertencia: "AFIP no disponible. La factura quedó guardada en modo PENDIENTE_CAE y se sincronizará automáticamente cuando AFIP esté en línea.",
+        }
+      }
+
       return {
         success: true,
         facturaId: facturaCreada.id,
         cae,
         fechaCAE: new Date().toISOString(),
         vencimientoCAE: this.parsearFechaCAE(fechaCAE).toISOString(),
-        qrBase64,
+        qrBase64: qrBase64 ?? "",
         numero: nuevoNumero,
       }
     } catch (error) {
@@ -273,21 +425,27 @@ export class FacturaService {
   }
 
   private calcularIVAPorAlicuota(items: FacturaPayload["items"]) {
-    const ivaMap = new Map<number, number>()
+    // WSFE Iva[]: BaseImp = base neta gravada, Importe = monto de IVA
+    // Ambos deben ir separados por alícuota.
+    const ivaMap = new Map<number, { base: number; importe: number }>()
 
-    items.forEach((item) => {
-      const itemSubtotal = item.cantidad * item.precioUnitario
-      const itemIva = (itemSubtotal * item.iva) / 100
+    for (const item of items) {
+      const base = item.cantidad * item.precioUnitario
+      const ivaImporte = (base * item.iva) / 100
+      const entry = ivaMap.get(item.iva) ?? { base: 0, importe: 0 }
+      ivaMap.set(item.iva, {
+        base: entry.base + base,
+        importe: entry.importe + ivaImporte,
+      })
+    }
 
-      const current = ivaMap.get(item.iva) || 0
-      ivaMap.set(item.iva, current + itemIva)
-    })
-
-    return Array.from(ivaMap.entries()).map(([alicuota, importe]) => ({
-      Id: this.obtenerCodigoAlicuota(alicuota),
-      BaseImp: Math.round(importe * 100) / 100,
-      Importe: Math.round(importe * 100) / 100,
-    }))
+    return Array.from(ivaMap.entries())
+      .filter(([, v]) => v.base > 0)
+      .map(([alicuota, { base, importe }]) => ({
+        Id: this.obtenerCodigoAlicuota(alicuota),
+        BaseImp: Math.round(base * 100) / 100,
+        Importe: Math.round(importe * 100) / 100,
+      }))
   }
 
   private obtenerCodigoAlicuota(porcentaje: number): number {
@@ -316,6 +474,15 @@ export class FacturaService {
     return `${year}${month}${day}`
   }
 
+  /**
+   * Maps IVA percentage to AFIP IVA code (WSFE Iva[] array Id).
+   * 3=0%, 4=10.5%, 5=21%, 6=27%, 8=5%, 9=2.5%
+   */
+  private ivaToCodigoAfip(porcentajeIva: number): string {
+    const map: Record<number, string> = { 0: "3", 2.5: "9", 5: "8", 10.5: "4", 21: "5", 27: "6" }
+    return map[porcentajeIva] ?? "5"
+  }
+
   private parsearFechaCAE(fechaStr: string): Date {
     // Formato: YYYYMMDD
     const year = Number.parseInt(fechaStr.substring(0, 4))
@@ -324,25 +491,44 @@ export class FacturaService {
     return new Date(year, month, day)
   }
 
-  private generarDatosQR(cuit: string, tipoCbte: number, puntoVenta: number, cae: string, fechaVto: string): string {
-    return JSON.stringify({
+  /**
+   * Genera el payload JSON del QR AFIP según RG 4291/2018 y su actualización.
+   * La URL de verificación es: https://www.afip.gob.ar/fe/qr/?p=<base64url(json)>
+   */
+  private generarDatosQR(
+    cuit: string,
+    tipoCbte: number,
+    puntoVenta: number,
+    nroComprobante: number,
+    cae: string,
+    fechaVto: string,
+    importe: number,
+    moneda: string,
+    tipoCambio: number,
+    tipoDocReceptor: number,
+    nroDocReceptor: number | string,
+  ): string {
+    const payload = {
       ver: 1,
       fecha: new Date().toISOString().split("T")[0],
-      cuit,
+      cuit: Number(cuit.replace(/\D/g, "")),
       ptoVta: puntoVenta,
       tipoCmp: tipoCbte,
-      nroCmp: 1,
-      importe: 0,
-      moneda: "PES",
-      ctz: 1,
-      tipoDocRec: 99,
-      nroDocRec: 0,
+      nroCmp: nroComprobante,
+      importe: Math.round(importe * 100) / 100,
+      moneda,
+      ctz: tipoCambio,
+      tipoDocRec: tipoDocReceptor,
+      nroDocRec: Number(String(nroDocReceptor).replace(/\D/g, "")) || 0,
       tipoCodAut: "E",
-      codAut: cae,
-    })
+      codAut: Number(cae),
+    }
+    // Base64url encode para incluir en la URL de AFIP
+    const base64 = Buffer.from(JSON.stringify(payload)).toString("base64url")
+    return `https://www.afip.gob.ar/fe/qr/?p=${base64}`
   }
 
-  private async obtenerOCrearCliente(clienteData: FacturaPayload["cliente"]) {
+  private async obtenerOCrearCliente(clienteData: FacturaPayload["cliente"], empresaId: number) {
     const where = clienteData.cuit ? { cuit: clienteData.cuit } : { nombre: clienteData.nombre }
 
     let cliente = await prisma.cliente.findFirst({ where })
@@ -354,6 +540,7 @@ export class FacturaService {
           cuit: clienteData.cuit,
           dni: clienteData.dni,
           condicionIva: clienteData.condicionIva,
+          empresaId,
         },
       })
     }

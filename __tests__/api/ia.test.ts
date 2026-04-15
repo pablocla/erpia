@@ -80,6 +80,15 @@ vi.mock("@/lib/ai/context-builder", async (importOriginal) => {
         cajaAbierta: true,
         saldoCaja: 13000,
       },
+      maestros: {
+        productos: [{ sku: "HAM001", nombre: "Hamburguesa", descripcion: null, precio: 2000, precioCompra: 1000, stock: 50, stockMinimo: 10, unidad: "unidad", categoria: "Comidas", activo: true, esPlato: true, esInsumo: false }],
+        clientes: [],
+        proveedores: [],
+        categorias: [{ nombre: "Comidas", cantidadProductos: 10 }],
+        totalProductos: 25,
+        totalClientes: 10,
+        totalProveedores: 5,
+      },
       historico: {
         ventasUltimos30Dias: [{ fecha: "2026-04-01", total: 15000, cantidad: 3 }],
         productosEstancados: [],
@@ -103,11 +112,11 @@ describe("isIAEnabled()", () => {
     expect(await isIAEnabled(1)).toBe(false)
   })
 
-  it("retorna false cuando no hay registro en DB (opt-in por defecto)", async () => {
+  it("retorna true cuando no hay registro en DB (habilitado por defecto)", async () => {
     process.env.AI_ENABLED = "true"
     mockPrismaClient.configuracionModulo.findUnique.mockResolvedValue(null)
     const { isIAEnabled } = await import("@/lib/ai/ia-guard")
-    expect(await isIAEnabled(1)).toBe(false)
+    expect(await isIAEnabled(1)).toBe(true)
   })
 
   it("retorna true cuando habilitado=true en DB", async () => {
@@ -182,17 +191,22 @@ describe("buildEmpresaContexto() — saldo caja", () => {
   // Usamos el Prisma mock de setup.ts
 
   beforeEach(() => {
-    // Setup mínimo para las 14 queries del context-builder
+    // Setup mínimo para las 21 queries del context-builder (Promise.allSettled)
     mockPrismaClient.empresa.findUniqueOrThrow.mockResolvedValue({
       id: 1, nombre: "Test", rubro: "gastronomia", cuit: "20123456789", condicionIva: "Responsable Inscripto",
     })
     mockPrismaClient.factura.aggregate.mockResolvedValue({ _sum: { total: 50000 }, _count: { id: 10 } })
     mockPrismaClient.factura.findMany.mockResolvedValue([])
     mockPrismaClient.producto.findMany.mockResolvedValue([])
+    mockPrismaClient.producto.count.mockResolvedValue(0)
     mockPrismaClient.lineaFactura.groupBy.mockResolvedValue([])
     mockPrismaClient.cuentaCobrar.findMany.mockResolvedValue([])
     mockPrismaClient.turno.count.mockResolvedValue(0)
     mockPrismaClient.cliente.findMany.mockResolvedValue([])
+    mockPrismaClient.cliente.count.mockResolvedValue(0)
+    mockPrismaClient.proveedor.findMany.mockResolvedValue([])
+    mockPrismaClient.proveedor.count.mockResolvedValue(0)
+    mockPrismaClient.categoria.findMany.mockResolvedValue([])
   })
 
   it("saldoCaja = saldoInicial + ingresos - egresos (no solo saldoInicial)", async () => {

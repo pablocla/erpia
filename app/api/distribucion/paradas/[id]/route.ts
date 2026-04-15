@@ -21,12 +21,12 @@ const updateSchema = z.object({
   evidencia: evidenciaSchema.optional(),
 })
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    const id = parseInt(params.id, 10)
+    const id = parseInt((await params).id, 10)
     if (!id) return NextResponse.json({ error: "ID invalido" }, { status: 400 })
 
     const body = await request.json()

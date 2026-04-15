@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = verificarAutenticacion(request)
+    const auth = await verificarAutenticacion(request)
 
     if (!auth.autenticado) {
       return crearRespuestaNoAutorizado(auth.error)

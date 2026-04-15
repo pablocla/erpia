@@ -38,15 +38,43 @@ export function useAuth() {
         const data = await response.json()
         setUsuario(data.usuario)
       } else {
-        // Token inválido, limpiar
+        // If token expired, try to refresh it
+        const data = await response.json().catch(() => ({}))
+        if (data.code === "TOKEN_EXPIRED" || response.status === 401) {
+          const refreshed = await intentarRefresh(tokenActual)
+          if (refreshed) return
+        }
+        // Token inválido and refresh failed, clean up and redirect to login
         localStorage.removeItem("token")
         setToken(null)
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login"
+        }
       }
     } catch (error) {
       console.error("Error al cargar usuario:", error)
     } finally {
       setCargando(false)
     }
+  }
+
+  const intentarRefresh = async (tokenExpirado: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tokenExpirado}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.token) {
+          localStorage.setItem("token", data.token)
+          setToken(data.token)
+          if (data.usuario) setUsuario(data.usuario)
+          return true
+        }
+      }
+    } catch {}
+    return false
   }
 
   const login = async (email: string, password: string) => {

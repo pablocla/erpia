@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,10 @@ import {
   Plus, Trash2, ShoppingCart, FileCheck, PackageCheck,
   CheckCircle2, XCircle, AlertTriangle, Loader2, Eye,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
 interface Proveedor {
   id: number
@@ -117,6 +121,8 @@ export default function ComprasPage() {
     cargarProveedores()
     cargarOrdenes()
   }, [cargarProveedores, cargarOrdenes])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarOrdenes, onNew: () => setCrearOcOpen(true) }))
 
   // ── OC CRUD ────────────────────────────────────────────────────────────
   const crearOrdenCompra = async () => {
@@ -253,6 +259,30 @@ export default function ComprasPage() {
 
   const fmt = (n: number) => n.toLocaleString("es-AR", { style: "currency", currency: "ARS" })
 
+  const filterFields: FilterField[] = [
+    { key: "estado", label: "Estado", type: "select", options: [
+      { value: "borrador", label: "Borrador" },
+      { value: "aprobada", label: "Aprobada" },
+      { value: "enviada", label: "Enviada" },
+      { value: "parcial", label: "Parcial" },
+      { value: "recibida", label: "Recibida" },
+      { value: "facturada", label: "Facturada" },
+      { value: "anulada", label: "Anulada" },
+    ]},
+    { key: "proveedor", label: "Proveedor", type: "text", placeholder: "Buscar proveedor..." },
+  ]
+
+  const ordenesFiltradas = useMemo(() => {
+    return ordenes.filter((oc) => {
+      if (filters.estado && oc.estado !== filters.estado) return false
+      if (filters.proveedor) {
+        const nombre = (oc.proveedor?.nombre ?? oc.proveedor?.razonSocial ?? oc.proveedor?.cuit ?? "").toLowerCase()
+        if (!nombre.includes(String(filters.proveedor).toLowerCase())) return false
+      }
+      return true
+    })
+  }, [ordenes, filters])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -279,68 +309,46 @@ export default function ComprasPage() {
 
         {/* ── Tab: Órdenes de Compra ──────────────────────────────────── */}
         <TabsContent value="ordenes" className="space-y-4">
-          {loadingOC ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
-          ) : ordenes.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <PackageCheck className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>Sin órdenes de compra. Creá la primera para comenzar.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Órdenes de Compra ({totalOC})</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>N° OC</TableHead>
-                      <TableHead>Proveedor</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Recepciones</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ordenes.map((oc) => {
-                      const est = ESTADO_OC[oc.estado] ?? { label: oc.estado, variant: "outline" as const }
-                      return (
-                        <TableRow key={oc.id}>
-                          <TableCell className="font-mono text-sm">{oc.numero}</TableCell>
-                          <TableCell>{oc.proveedor?.nombre ?? oc.proveedor?.cuit ?? "—"}</TableCell>
-                          <TableCell className="text-sm">{new Date(oc.fechaEmision).toLocaleDateString("es-AR")}</TableCell>
-                          <TableCell className="text-right font-medium">{fmt(Number(oc.total))}</TableCell>
-                          <TableCell><Badge variant={est.variant}>{est.label}</Badge></TableCell>
-                          <TableCell className="text-sm">{oc._count?.recepciones ?? 0}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              {oc.estado === "borrador" && (
-                                <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => aprobarOC(oc.id)}>
-                                  <CheckCircle2 className="h-3 w-3" /> Aprobar
-                                </Button>
-                              )}
-                              {["aprobada", "enviada", "parcial"].includes(oc.estado) && (
-                                <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => abrirRecepcion(oc)}>
-                                  <PackageCheck className="h-3 w-3" /> Recibir
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+          <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
+          <Card>
+            <CardContent className="pt-4">
+              <DataTable<OrdenCompra>
+                data={ordenesFiltradas}
+                columns={[
+                  { key: "numero", header: "N° OC", sortable: true, cell: (oc) => <span className="font-mono text-sm">{oc.numero}</span> },
+                  { key: "proveedor" as any, header: "Proveedor", cell: (oc) => oc.proveedor?.nombre ?? oc.proveedor?.cuit ?? "—", exportFn: (oc) => oc.proveedor?.nombre ?? "" },
+                  { key: "fechaEmision", header: "Fecha", sortable: true, cell: (oc) => new Date(oc.fechaEmision).toLocaleDateString("es-AR") },
+                  { key: "total", header: "Total", align: "right", sortable: true, cell: (oc) => <span className="font-medium">{fmt(Number(oc.total))}</span> },
+                  { key: "estado", header: "Estado", cell: (oc) => { const est = ESTADO_OC[oc.estado] ?? { label: oc.estado, variant: "outline" as const }; return <Badge variant={est.variant}>{est.label}</Badge> } },
+                  { key: "_count" as any, header: "Recepciones", cell: (oc) => <span className="text-sm">{oc._count?.recepciones ?? 0}</span>, exportFn: (oc) => String(oc._count?.recepciones ?? 0) },
+                  { key: "acciones" as any, header: "Acciones", align: "right", cell: (oc) => (
+                    <div className="flex gap-1 justify-end">
+                      {oc.estado === "borrador" && (
+                        <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); aprobarOC(oc.id) }}>
+                          <CheckCircle2 className="h-3 w-3" /> Aprobar
+                        </Button>
+                      )}
+                      {["aprobada", "enviada", "parcial"].includes(oc.estado) && (
+                        <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); abrirRecepcion(oc) }}>
+                          <PackageCheck className="h-3 w-3" /> Recibir
+                        </Button>
+                      )}
+                    </div>
+                  )},
+                ] as DataTableColumn<OrdenCompra>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar órdenes..."
+                searchKeys={["numero"]}
+                selectable
+                exportFilename="ordenes-compra"
+                loading={loadingOC}
+                emptyMessage="Sin órdenes de compra"
+                emptyIcon={<EmptyStateIllustration type="compras" compact actionLabel="Nueva OC" onAction={() => setCrearOcOpen(true)} />}
+                defaultPageSize={25}
+                compact
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Tab: Registrar Factura Proveedor ────────────────────────── */}

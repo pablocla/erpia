@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Edit2, Shield, User, Search, RefreshCw } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Usuario {
   id: number
@@ -74,6 +77,8 @@ export default function UsuariosPage() {
   useEffect(() => {
     cargarUsuarios()
   }, [cargarUsuarios])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarUsuarios, onNew: () => { setUsuarioSeleccionado(null); setForm(initialForm); setError(""); setDialogOpen(true) } }))
 
   const abrirNuevo = () => {
     setUsuarioSeleccionado(null)
@@ -173,89 +178,40 @@ export default function UsuariosPage() {
         ))}
       </div>
 
-      {/* Filtro */}
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Buscar usuario..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <Button variant="ghost" onClick={cargarUsuarios}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Tabla */}
+      {/* DataTable */}
       <Card>
-        <CardHeader>
-          <CardTitle>{usuariosFiltrados.length} usuario(s)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Cargando...</div>
-          ) : usuariosFiltrados.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <User className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              No hay usuarios
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Permisos</TableHead>
-                  <TableHead>Activo</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usuariosFiltrados.map((u) => {
-                  const rol = ROLES.find((r) => r.value === u.rol)
-                  const permisos = PERMISOS_POR_ROL[u.rol] ?? []
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center">
-                            {u.nombre.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-medium">{u.nombre}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                      <TableCell>
-                        <Badge className={rol?.color ?? ""}>{rol?.label ?? u.rol}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {permisos.slice(0, 3).map((p) => (
-                            <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
-                          ))}
-                          {permisos.length > 3 && (
-                            <Badge variant="outline" className="text-xs">+{permisos.length - 3}</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Switch checked={u.activo} onCheckedChange={() => toggleActivo(u)} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => abrirEditar(u)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
+        <CardContent className="pt-4">
+          <DataTable<Usuario>
+            data={usuariosFiltrados}
+            columns={[
+              {
+                key: "nombre", header: "Usuario", sortable: true,
+                cell: (u) => (
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center">
+                      {u.nombre.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium">{u.nombre}</span>
+                  </div>
+                ),
+              },
+              { key: "email", header: "Email", sortable: true, cell: (u) => <span className="text-muted-foreground">{u.email}</span> },
+              { key: "rol", header: "Rol", cell: (u) => { const rol = ROLES.find(r => r.value === u.rol); return <Badge className={rol?.color ?? ""}>{rol?.label ?? u.rol}</Badge> } },
+              { key: "activo", header: "Activo", cell: (u) => <Switch checked={u.activo} onCheckedChange={() => toggleActivo(u)} />, exportFn: (u) => u.activo ? "Sí" : "No" },
+              { key: "acciones" as any, header: "Acciones", align: "right", cell: (u) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(u) }}><Edit2 className="h-4 w-4" /></Button> },
+            ] as DataTableColumn<Usuario>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar usuario..."
+            searchKeys={["nombre", "email", "rol"]}
+            selectable
+            exportFilename="usuarios"
+            loading={loading}
+            emptyMessage="No hay usuarios"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin usuarios" description="Cre\u00e1 el primer usuario del sistema." actionLabel="Nuevo Usuario" onAction={abrirNuevo} />}
+            defaultPageSize={25}
+            compact
+            onRowClick={abrirEditar}
+          />
         </CardContent>
       </Card>
 

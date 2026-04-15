@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Download, FileSpreadsheet, Loader2, Calculator, TrendingUp, TrendingDown } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface DetalleIVA {
   total: number
@@ -38,6 +39,10 @@ export default function ImpuestosPage() {
       if (data.success) setReporte(data.reporte)
     } catch { /* ignore */ } finally { setLoading(false) }
   }
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: generarReporte,
+  }))
 
   const descargarLibro = async (tipo: "ventas" | "compras") => {
     const endpoint = tipo === "ventas" ? "libro-iva-ventas" : "libro-iva-compras"

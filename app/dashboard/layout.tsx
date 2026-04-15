@@ -3,13 +3,14 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Topbar } from "@/components/topbar"
+import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MotionPage, MotionPresence } from "@/components/ui/motion"
 import {
   LayoutDashboard,
@@ -71,8 +72,21 @@ import {
   Banknote,
   Search,
   Bot,
+  GraduationCap,
+  Target,
+  Calculator,
+  Wallet2,
+  ClipboardCheck,
+  Bell,
+  Repeat,
+  Wrench,
+  UserCircle,
+  FileSpreadsheet,
 } from "lucide-react"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
+import { useUIStore } from "@/lib/stores/ui-store"
+import { Breadcrumbs } from "@/components/breadcrumbs"
+import { RecentlyViewed } from "@/components/recently-viewed"
 
 interface MenuItem {
   href?: string
@@ -88,6 +102,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     color: "text-slate-500",
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas" },
     ],
   },
   {
@@ -105,11 +120,14 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     color: "text-green-500",
     moduloKey: "ventas",
     items: [
+      { href: "/dashboard/pos", icon: Store, label: "Punto de Venta (POS)" },
+      { href: "/dashboard/pos/cierre", icon: BarChart3, label: "Cierre X / Z" },
       { href: "/dashboard/ventas", icon: Receipt, label: "Facturación" },
       { href: "/dashboard/ventas/presupuestos", icon: FileCheck, label: "Presupuestos" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       { href: "/dashboard/listas-precio", icon: ListOrdered, label: "Listas de Precio" },
       { href: "/dashboard/notas-credito", icon: FileMinus, label: "Notas Crédito/Débito" },
+      { href: "/dashboard/facturacion-recurrente", icon: Repeat, label: "Facturación Recurrente" },
     ],
   },
   {
@@ -131,6 +149,9 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Cuentas a Cobrar" },
       { href: "/dashboard/cuentas-pagar", icon: FileMinus, label: "Cuentas a Pagar" },
       { href: "/dashboard/cheques", icon: Banknote, label: "Cheques" },
+      { href: "/dashboard/cashflow", icon: Wallet2, label: "Flujo de Fondos" },
+      { href: "/dashboard/presupuesto", icon: Calculator, label: "Control Presupuestario" },
+      { href: "/dashboard/mercadopago", icon: CreditCard, label: "MercadoPago" },
     ],
   },
   {
@@ -144,6 +165,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/contabilidad/periodos", icon: Clock, label: "Períodos Fiscales" },
       { href: "/dashboard/contabilidad/activos-fijos", icon: TrendingDown, label: "Activos Fijos" },
       { href: "/dashboard/contabilidad/centros-costo", icon: FolderTree, label: "Centros de Costo" },
+      { href: "/dashboard/contabilidad/inflacion", icon: TrendingDown, label: "Ajuste por Inflación" },
     ],
   },
   {
@@ -157,6 +179,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/impuestos/presentacion",  icon: Receipt,       label: "Presentación AFIP" },
       { href: "/dashboard/puntos-venta",            icon: Store,         label: "Puntos de Venta" },
       { href: "/dashboard/series",                  icon: Hash,          label: "Series de Comprobantes" },
+      { href: "/dashboard/impuestos/citi",        icon: FileSpreadsheet, label: "CITI Ventas/Compras" },
     ],
   },
   {
@@ -217,6 +240,9 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     items: [
       { href: "/dashboard/industria", icon: Factory, label: "Órdenes de Producción" },
       { href: "/dashboard/industria", icon: Layers, label: "Lista de Materiales (BOM)" },
+      { href: "/dashboard/mrp", icon: Factory, label: "MRP (Planificación)" },
+      { href: "/dashboard/calidad", icon: ClipboardCheck, label: "Control de Calidad" },
+      { href: "/dashboard/mantenimiento", icon: Wrench, label: "Mantenimiento Preventivo" },
     ],
   },
   {
@@ -240,11 +266,38 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     ],
   },
   {
+    label: "Gestión Comercial",
+    color: "text-rose-500",
+    items: [
+      { href: "/dashboard/crm", icon: Target, label: "CRM / Pipeline" },
+      { href: "/dashboard/aprobaciones", icon: Shield, label: "Aprobaciones" },
+      { href: "/dashboard/kpis", icon: Activity, label: "Tablero KPIs" },
+      { href: "/dashboard/alertas", icon: Bell, label: "Alertas Configurables" },
+    ],
+  },
+  {
+    label: "RRHH",
+    color: "text-lime-500",
+    items: [
+      { href: "/dashboard/empleados", icon: UserCircle, label: "Empleados / Legajos" },
+    ],
+  },
+  {
+    label: "Capacitación",
+    color: "text-indigo-500",
+    items: [
+      { href: "/dashboard/capacitacion", icon: GraduationCap, label: "Centro de Capacitación" },
+      { href: "/dashboard/capacitacion/parametrizacion", icon: Settings, label: "Parametrización" },
+      { href: "/dashboard/capacitacion/manual-usuario", icon: BookOpen, label: "Manual de Usuario" },
+      { href: "/dashboard/capacitacion/diagnostico", icon: Target, label: "Diagnóstico Gaps" },
+    ],
+  },
+  {
     label: "Configuración",
     color: "text-slate-400",
     items: [
       { href: "/dashboard/configuracion", icon: Settings, label: "Parámetros" },
-      { href: "/dashboard/configuracion/cotizaciones", icon: DollarSign, label: "Cotizaciones" },
+      { href: "/dashboard/cotizaciones", icon: DollarSign, label: "Cotizaciones" },
       { href: "/dashboard/soporte", icon: Bug, label: "Soporte / Tickets" },
       { href: "/dashboard/usuarios", icon: Shield, label: "Usuarios y Permisos" },
       { href: "/dashboard/configuracion/tablas", icon: Database, label: "Tablas del Sistema" },
@@ -323,8 +376,7 @@ function CollapseSection({
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
-          "sidebar-section-header w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer select-none rounded-md transition-colors hover:bg-muted/40",
-          modulo.color,
+          "sidebar-section-header w-full flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] cursor-pointer select-none rounded-md transition-colors hover:bg-muted/40 text-muted-foreground",
         )}
       >
         <ChevronDown
@@ -386,8 +438,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [sidebarSearch, setSidebarSearch] = useState("")
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => setMounted(true), [])
+
+  // Redirect to login if no token on mount
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token && mounted) {
+      router.replace("/login")
+    }
+  }, [mounted, router])
+
+  // Track recently viewed pages
+  const addRecentPage = useUIStore((s) => s.addRecentPage)
+  useEffect(() => {
+    if (pathname && pathname !== "/dashboard") {
+      const segments = pathname.split("/").filter(Boolean)
+      const last = segments[segments.length - 1]
+      const label = last ? last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, " ") : ""
+      if (label) addRecentPage(pathname, label)
+    }
+  }, [pathname, addRecentPage])
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("token")
+    router.replace("/login")
+  }, [router])
 
   const authHeaders = useCallback((): HeadersInit => {
     const token = localStorage.getItem("token")
@@ -453,13 +530,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [modulosOrdenados, sidebarSearch])
 
   return (
-    <div className="dashboard-canvas flex min-h-screen bg-background/80">
+    <div className="dashboard-canvas flex min-h-screen relative overflow-hidden bg-background">
+      {/* Ambient background glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-blue-500/5 blur-[100px] pointer-events-none" />
+
       {/* Sidebar */}
       <aside
         className={cn(
-          "sidebar-container dashboard-surface border-r flex flex-col",
+          "sidebar-container border-r flex flex-col z-20 relative bg-sidebar/95 backdrop-blur-xl shadow-[1px_0_12px_rgba(0,0,0,0.02)]",
           "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          sidebarOpen ? "w-60" : "w-14"
+          sidebarOpen ? "w-64" : "w-[4.25rem]"
         )}
       >
         {/* Header */}
@@ -524,6 +605,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </ScrollArea>
 
+        <RecentlyViewed collapsed={!sidebarOpen} />
+
         {/* Footer */}
         {sidebarOpen && (
           <div className="p-3 border-t">
@@ -536,7 +619,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <p className="text-[10px] text-muted-foreground">admin@empresa.com</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground h-7 text-xs">
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground h-7 text-xs" onClick={handleLogout}>
               <LogOut className="h-3.5 w-3.5" />
               Salir
             </Button>
@@ -545,10 +628,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full rounded-tl-xl border-t border-l border-border/30 bg-background/40 backdrop-blur-sm sm:mt-1.5 sm:ml-1.5 shadow-[-4px_-4px_24px_rgba(0,0,0,0.02)]">
         <Topbar />
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6">
+        <main className="flex-1 overflow-auto bg-surface/30">
+          <div className="p-4 sm:p-6 pb-20 md:pb-6">
+            <Breadcrumbs className="mb-4" />
             <div className="mx-auto w-full max-w-[1400px]">
               <MotionPresence mode="wait">
                 <MotionPage pageKey={pathname}>
@@ -558,6 +642,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </main>
+        <MobileBottomNav />
       </div>
     </div>
   )

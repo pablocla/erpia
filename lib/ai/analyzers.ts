@@ -118,9 +118,8 @@ export async function analizarAlertasInteligentes(empresaId: number, rubro: stri
     prisma.producto.findMany({
       where: {
         empresaId, activo: true, deletedAt: null,
-        stockActual: { lte: prisma.producto.fields.stockMinimo ? undefined : 0 },
       },
-      select: { id: true, nombre: true, stockActual: true, stockMinimo: true, precio: true },
+      select: { id: true, nombre: true, stock: true, stockMinimo: true, precioVenta: true },
       take: 50,
     }).catch(() => []),
 
@@ -149,7 +148,7 @@ export async function analizarAlertasInteligentes(empresaId: number, rubro: stri
 
   const prompt = promptAlertasInteligentes(rubro, {
     ventasUltimos30Dias: ventas.map(v => ({ fecha: v.createdAt, total: Number(v.total), clienteId: v.clienteId })),
-    stockCritico: stockCritico.map(p => ({ nombre: p.nombre, actual: p.stockActual, minimo: p.stockMinimo })),
+    stockCritico: stockCritico.map(p => ({ nombre: p.nombre, actual: p.stock, minimo: p.stockMinimo })),
     cuentasCobrarVencidas: cuentasVencidas.map(c => ({
       monto: Number(c.montoOriginal), saldo: Number(c.saldo), vencimiento: c.fechaVencimiento, clienteId: c.clienteId,
     })),
@@ -170,7 +169,7 @@ export async function analizarAlertasInteligentes(empresaId: number, rubro: stri
 
 export async function clasificarProducto(descripcion: string, empresaId: number): Promise<ClasificacionProducto | null> {
   const categorias = await prisma.categoria.findMany({
-    where: { empresaId, deletedAt: null },
+    where: { empresaId },
     select: { nombre: true },
   })
 
@@ -229,7 +228,7 @@ export async function predecirCompras(empresaId: number): Promise<ReposicionSuge
   const [productos, ventasRecientes] = await Promise.all([
     prisma.producto.findMany({
       where: { empresaId, activo: true, deletedAt: null },
-      select: { id: true, nombre: true, stockActual: true, stockMinimo: true, precio: true },
+      select: { id: true, nombre: true, stock: true, stockMinimo: true, precioVenta: true },
       take: 200,
     }),
     prisma.lineaFactura.findMany({
@@ -254,7 +253,7 @@ export async function predecirCompras(empresaId: number): Promise<ReposicionSuge
   const productosConVentas = productos.map(p => ({
     id: p.id,
     nombre: p.nombre,
-    stockActual: p.stockActual,
+    stockActual: p.stock,
     stockMinimo: p.stockMinimo,
     ventasTotal8Semanas: ventasPorProducto[p.id] || 0,
     consumoSemanal: Math.round(((ventasPorProducto[p.id] || 0) / 8) * 10) / 10,
@@ -404,13 +403,13 @@ export async function procesarOnboardingConversacional(mensaje: string): Promise
 export async function generarPresupuestoPorTexto(texto: string, empresaId: number) {
   const productos = await prisma.producto.findMany({
     where: { empresaId, activo: true, deletedAt: null },
-    select: { id: true, nombre: true, codigo: true, precio: true },
+    select: { id: true, nombre: true, codigo: true, precioVenta: true },
     take: 500,
   })
 
   const prompt = promptGenerarPresupuesto(
     texto,
-    productos.map(p => ({ id: p.id, nombre: p.nombre, codigo: p.codigo, precio: p.precio }))
+    productos.map(p => ({ id: p.id, nombre: p.nombre, codigo: p.codigo, precio: p.precioVenta }))
   )
 
   const result = await aiService.chatJson(

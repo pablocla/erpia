@@ -20,8 +20,8 @@
  *  - Agregar campo `endosadoAProveedorId Int?` para tracking de endosos
  */
 
-import { useState, useEffect, useCallback } from "react"
-import { FileText, Plus, Search, AlertTriangle, CheckCircle2, Clock, ArrowRight, DollarSign, RefreshCw } from "lucide-react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { FileText, Plus, Search, AlertTriangle, CheckCircle2, Clock, ArrowRight, DollarSign, RefreshCw, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +32,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
+import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
 interface Cheque {
   id: number
@@ -88,6 +93,8 @@ export default function ChequesPage() {
   const [error, setError] = useState("")
   const [cambioEstado, setCambioEstado] = useState<{ chequeId: number; estadoActual: string } | null>(null)
   const [nuevoEstado, setNuevoEstado] = useState("")
+  const [filters, setFilters] = useState<FilterValues>({})
+  const { toast } = useToast()
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
   const fetchCheques = useCallback(async () => {
@@ -113,6 +120,8 @@ export default function ChequesPage() {
     return () => clearTimeout(t)
   }, [fetchCheques])
 
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: fetchCheques, onNew: () => { setForm(initialForm); setError(""); setDialogOpen(true) } }))
+
   const guardar = async () => {
     if (!form.numero.trim()) { setError("El número es obligatorio"); return }
     if (!form.monto || parseFloat(form.monto) <= 0) { setError("El monto debe ser mayor a 0"); return }
@@ -136,10 +145,11 @@ export default function ChequesPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || "Error al guardar"); return }
+      if (!res.ok) { setError(data.error || "Error al guardar"); toast({ title: "Error al guardar cheque", description: data.error || "Ocurrió un error", variant: "destructive" }); return }
       setDialogOpen(false)
       setForm(initialForm)
       fetchCheques()
+      toast({ title: "Cheque registrado", description: `Cheque N° ${form.numero} guardado correctamente` })
     } finally { setGuardando(false) }
   }
 
@@ -153,6 +163,7 @@ export default function ChequesPage() {
     setCambioEstado(null)
     setNuevoEstado("")
     fetchCheques()
+    toast({ title: "Estado actualizado", description: "El cheque cambió de estado correctamente" })
   }
 
   const chequesFiltrados = cheques.filter((c) => {
@@ -160,6 +171,36 @@ export default function ChequesPage() {
     if (filtroTipo !== "todos" && c.tipoCheque !== filtroTipo) return false
     return true
   })
+
+  const filterFields: FilterField[] = [
+    { key: "tipo", label: "Tipo", type: "select", options: [
+      { value: "propio", label: "Propio (emitido)" },
+      { value: "tercero", label: "Tercero (recibido)" },
+    ]},
+    { key: "estadoFilter", label: "Estado", type: "select", options: [
+      { value: "cartera", label: "En cartera" },
+      { value: "depositado", label: "Depositado" },
+      { value: "endosado", label: "Endosado" },
+      { value: "rechazado", label: "Rechazado" },
+      { value: "debitado", label: "Debitado" },
+      { value: "anulado", label: "Anulado" },
+    ]},
+    { key: "fechaVencimiento", label: "Vencimiento", type: "date-range" },
+  ]
+
+  const chequesFinal = useMemo(() => {
+    return chequesFiltrados.filter((c) => {
+      if (filters.tipo && c.tipoCheque !== filters.tipo) return false
+      if (filters.estadoFilter && c.estado !== filters.estadoFilter) return false
+      if (filters.fechaVencimiento) {
+        const range = filters.fechaVencimiento as { from?: string; to?: string }
+        const fecha = c.fechaVencimiento.slice(0, 10)
+        if (range.from && fecha < range.from) return false
+        if (range.to && fecha > range.to) return false
+      }
+      return true
+    })
+  }, [chequesFiltrados, filters])
 
   const proximosVencer = cheques.filter((c) => {
     const dias = diasParaVencer(c.fechaVencimiento)
@@ -219,6 +260,8 @@ export default function ChequesPage() {
         </Card>
       </div>
 
+      <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
+
       <Tabs defaultValue="todos">
         <TabsList>
           <TabsTrigger value="todos">Todos ({cheques.length})</TabsTrigger>
@@ -229,7 +272,7 @@ export default function ChequesPage() {
 
         <TabsContent value="todos" className="mt-4">
           <ChequeTable
-            cheques={chequesFiltrados}
+            cheques={chequesFinal}
             loading={loading}
             search={search}
             onSearchChange={setSearch}
@@ -383,10 +426,6 @@ function ChequeTable({
   return (
     <div className="space-y-3">
       <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar..." value={search} onChange={(e) => onSearchChange(e.target.value)} className="pl-9" />
-        </div>
         <Select value={filtroEstado} onValueChange={onFiltroEstadoChange}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -399,65 +438,39 @@ function ChequeTable({
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Titular</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
-                <TableHead>Vencimiento</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
-              ) : cheques.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay cheques</TableCell></TableRow>
-              ) : cheques.map((c) => {
-                const dias = diasParaVencer(c.fechaVencimiento)
-                const venceProx = dias >= 0 && dias <= 7
-                const cfg = ESTADO_CONFIG[c.estado] || { label: c.estado, color: "bg-gray-100 text-gray-600", icon: FileText }
-                return (
-                  <TableRow key={c.id} className={venceProx && c.estado !== "debitado" ? "bg-orange-50 dark:bg-orange-900/10" : ""}>
-                    <TableCell>
-                      <p className="font-mono font-medium">{c.numero}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.tipoCheque === "tercero" ? "Recibido" : "Emitido"}</p>
-                    </TableCell>
-                    <TableCell>
-                      {c.cliente?.nombre || c.proveedor?.nombre || "—"}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      {currency.format(c.monto)}
-                    </TableCell>
-                    <TableCell>
-                      <p className={`text-sm ${venceProx ? "font-bold text-orange-600" : ""}`}>
-                        {new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}
-                      </p>
-                      {venceProx && <p className="text-[10px] text-orange-500">En {dias} días</p>}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
-                        {cfg.label}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => onCambiarEstado(c.id, c.estado)}
-                      >
-                        Cambiar estado
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<Cheque>
+            data={cheques}
+            columns={[
+              { key: "numero", header: "Número", sortable: true, cell: (c) => (<div><p className="font-mono font-medium">{c.numero}</p><p className="text-[10px] text-muted-foreground">{c.tipoCheque === "tercero" ? "Recibido" : "Emitido"}</p></div>) },
+              { key: "cliente" as any, header: "Titular", cell: (c) => c.cliente?.nombre || c.proveedor?.nombre || "—", exportFn: (c) => c.cliente?.nombre || c.proveedor?.nombre || "" },
+              { key: "monto", header: "Monto", align: "right", sortable: true, cell: (c) => <span className="font-semibold">{currency.format(c.monto)}</span> },
+              { key: "fechaVencimiento", header: "Vencimiento", sortable: true, cell: (c) => { const dias = diasParaVencer(c.fechaVencimiento); const venceProx = dias >= 0 && dias <= 7; return (<div><p className={`text-sm ${venceProx ? "font-bold text-orange-600" : ""}`}>{new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}</p>{venceProx && <p className="text-[10px] text-orange-500">En {dias} días</p>}</div>) } },
+              { key: "estado", header: "Estado", cell: (c) => { const cfg = ESTADO_CONFIG[c.estado] || { label: c.estado, color: "bg-gray-100 text-gray-600", icon: FileText }; return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>{cfg.label}</span> } },
+              { key: "acciones" as any, header: "Acciones", cell: (c) => <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onCambiarEstado(c.id, c.estado) }}>Cambiar estado</Button> },
+            ] as DataTableColumn<Cheque>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar cheque..."
+            searchKeys={["numero"]}
+            selectable
+            bulkActions={(selected, clear) => (
+              <Button variant="outline" size="sm" onClick={() => {
+                const h = "numero,tipoCheque,monto,fechaEmision,fechaVencimiento,estado,titular"
+                const rows = selected.map((c) => [c.numero, c.tipoCheque, c.monto, c.fechaEmision?.slice(0, 10), c.fechaVencimiento?.slice(0, 10), c.estado, c.cliente?.nombre || c.proveedor?.nombre].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+                const blob = new Blob(["\uFEFF" + [h, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" })
+                const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "cheques-seleccionados.csv"; a.click()
+                clear()
+              }}>
+                <Download className="h-4 w-4 mr-1" /> Exportar ({selected.length})
+              </Button>
+            )}
+            exportFilename="cheques"
+            loading={loading}
+            emptyMessage="No hay cheques"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin cheques" description="Cargá cheques recibidos o emitidos." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
     </div>

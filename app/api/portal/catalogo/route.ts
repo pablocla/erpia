@@ -6,15 +6,30 @@ import { prisma } from "@/lib/prisma"
  * Devuelve productos activos con stock > 0 para el portal B2B.
  * Reutiliza la misma lógica de /api/ecommerce/catalogo.
  */
+/**
+ * FIX C-005: Validar empresaId contra lista blanca de env vars.
+ * Previene enumeration attack donde un atacante pasa ?empresaId=2,3,4...
+ */
+function getEmpresaIdPermitido(paramValue: string | null): number | null {
+  // Lista blanca: solo el ID configurado en env (portal B2B de una empresa específica)
+  const permitido = parseInt(process.env.NEXT_PUBLIC_ECOMMERCE_EMPRESA_ID || "0")
+  const solicitado = parseInt(paramValue || String(permitido))
+
+  if (isNaN(solicitado) || solicitado < 1) return null
+  // Si está configurado el env, solo permite ese ID
+  if (permitido > 0 && solicitado !== permitido) return null
+  return solicitado
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const empresaId = parseInt(searchParams.get("empresaId") || "1")
+    const empresaId = getEmpresaIdPermitido(searchParams.get("empresaId"))
     const soloConStock = searchParams.get("soloConStock") === "true"
     const search = searchParams.get("search") || ""
 
-    if (isNaN(empresaId) || empresaId < 1) {
-      return NextResponse.json({ error: "empresaId inválido" }, { status: 400 })
+    if (!empresaId) {
+      return NextResponse.json({ error: "empresaId no autorizado" }, { status: 403 })
     }
 
     const where: Record<string, unknown> = {

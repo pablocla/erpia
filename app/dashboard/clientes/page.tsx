@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,8 +22,15 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight,
-  Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye,
+  Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { CSVImport } from "@/components/csv-import"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useConfirm } from "@/hooks/use-confirm"
+import { useToast } from "@/hooks/use-toast"
+import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
 /* ---------- helpers ---------- */
 const authHeaders = (): HeadersInit => ({
@@ -162,6 +169,8 @@ export default function ClientesPage() {
   const [clienteEditando, setClienteEditando] = useState<any>(null)
   const [formData, setFormData] = useState<Record<string, any>>({ ...EMPTY_FORM })
   const [guardando, setGuardando] = useState(false)
+  const [filters, setFilters] = useState<FilterValues>({})
+  const { toast } = useToast()
 
   const set = (key: string, value: any) => setFormData(prev => ({ ...prev, [key]: value }))
 
@@ -189,15 +198,17 @@ export default function ClientesPage() {
       const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(formToPayload(formData)) })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        alert(err.error || "Error al guardar")
+        toast({ title: "Error al guardar cliente", description: err.error || "Ocurrió un error inesperado", variant: "destructive" })
         return
       }
       setDialogAbierto(false)
       setClienteEditando(null)
       setFormData({ ...EMPTY_FORM })
       cargarClientes()
+      toast({ title: clienteEditando ? "Cliente actualizado" : "Cliente creado", description: "Los datos se guardaron correctamente" })
     } catch (error) {
       console.error("Error al guardar cliente:", error)
+      toast({ title: "Error al guardar cliente", description: "Error de conexión", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -232,17 +243,50 @@ export default function ClientesPage() {
     }
   }
 
+  const { confirm, ConfirmDialog } = useConfirm()
+
   const eliminarCliente = async (id: number) => {
-    if (!confirm("¿Desactivar este cliente? Quedará marcado como inactivo.")) return
+    const ok = await confirm({
+      title: "Desactivar cliente",
+      description: "¿Desactivar este cliente? Quedará marcado como inactivo.",
+      confirmLabel: "Desactivar",
+      variant: "destructive",
+    })
+    if (!ok) return
     try {
       await fetch(`/api/clientes/${id}`, { method: "DELETE", headers: authHeaders() })
       cargarClientes()
+      toast({ title: "Cliente desactivado", description: "El cliente fue marcado como inactivo" })
     } catch (error) {
       console.error("Error al eliminar cliente:", error)
+      toast({ title: "Error al desactivar", description: "No se pudo desactivar el cliente", variant: "destructive" })
     }
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
+
+  const filterFields: FilterField[] = [
+    { key: "condicionIva", label: "Condición IVA", type: "select", options: [
+      { value: "RESPONSABLE_INSCRIPTO", label: "Responsable Inscripto" },
+      { value: "MONOTRIBUTISTA", label: "Monotributista" },
+      { value: "CONSUMIDOR_FINAL", label: "Consumidor Final" },
+      { value: "EXENTO", label: "Exento" },
+    ]},
+    { key: "tipoPersona", label: "Tipo Persona", type: "select", options: [
+      { value: "persona_fisica", label: "Persona Física" },
+      { value: "persona_juridica", label: "Persona Jurídica" },
+    ]},
+    { key: "activo", label: "Activo", type: "boolean" },
+  ]
+
+  const clientesFiltrados = useMemo(() => {
+    return clientes.filter((c: any) => {
+      if (filters.condicionIva && c.condicionIva !== filters.condicionIva) return false
+      if (filters.tipoPersona && c.tipoPersona !== filters.tipoPersona) return false
+      if (filters.activo !== undefined && c.activo !== filters.activo) return false
+      return true
+    })
+  }, [clientes, filters])
 
   /* ---------- RENDER ---------- */
   return (
@@ -253,80 +297,104 @@ export default function ClientesPage() {
           <h1 className="text-3xl font-bold">Clientes</h1>
           <p className="text-muted-foreground">Maestro de clientes — Fiscal, Financiero, Comercial</p>
         </div>
-        <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />Nuevo Cliente</Button>
+        <div className="flex items-center gap-2">
+          <CSVImport
+            columns={[
+              { key: "codigo", label: "Código" },
+              { key: "nombre", label: "Razón Social", required: true },
+              { key: "cuit", label: "CUIT", validate: (v) => v && !/^\d{2}-\d{8}-\d$/.test(v) ? "Formato: XX-XXXXXXXX-X" : null },
+              { key: "condicionIva", label: "Condición IVA" },
+              { key: "email", label: "Email" },
+              { key: "telefono", label: "Teléfono" },
+              { key: "direccion", label: "Dirección" },
+            ]}
+            onImport={async (rows) => {
+              let success = 0
+              const errors: { row: number; field: string; message: string }[] = []
+              for (let i = 0; i < rows.length; i++) {
+                try {
+                  const res = await fetch("/api/clientes", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ ...EMPTY_FORM, ...rows[i] }),
+                  })
+                  if (res.ok) success++
+                  else {
+                    const d = await res.json()
+                    errors.push({ row: i + 1, field: "", message: d.error || "Error" })
+                  }
+                } catch {
+                  errors.push({ row: i + 1, field: "", message: "Error de conexión" })
+                }
+              }
+              cargarClientes()
+              return { success, errors }
+            }}
+            title="Importar Clientes desde CSV"
+          />
+          <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />Nuevo Cliente</Button>
+        </div>
       </div>
 
-      {/* Search + pagination */}
+      <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
+
+      {/* DataTable */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle>Lista de Clientes</CardTitle>
-              <CardDescription>{total} clientes registrados</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre, CUIT, código..."
-                  className="pl-8 w-[300px]"
-                  value={busqueda}
-                  onChange={e => { setBusqueda(e.target.value); setPage(0) }}
-                />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Razón Social</TableHead>
-                <TableHead>CUIT</TableHead>
-                <TableHead>Cond. IVA</TableHead>
-                <TableHead>Provincia</TableHead>
-                <TableHead>Cond. Pago</TableHead>
-                <TableHead>Lím. Crédito</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clientes.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No se encontraron clientes</TableCell></TableRow>
-              )}
-              {clientes.map((c) => (
-                <TableRow key={c.id} className={!c.activo ? "opacity-50" : ""}>
-                  <TableCell className="font-mono text-xs">{c.codigo || "-"}</TableCell>
-                  <TableCell className="font-medium">{c.nombre}</TableCell>
-                  <TableCell>{c.cuit || "-"}</TableCell>
-                  <TableCell className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</TableCell>
-                  <TableCell className="text-xs">{c.provincia?.nombre || "-"}</TableCell>
-                  <TableCell className="text-xs">{c.condicionPago?.nombre || "-"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{c.limiteCredito != null ? Number(c.limiteCredito).toLocaleString("es-AR", { style: "currency", currency: "ARS" }) : "-"}</TableCell>
-                  <TableCell>{c.activo !== false ? <Badge variant="default">Activo</Badge> : <Badge variant="secondary">Inactivo</Badge>}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => verDetalle(c)} title="Ver detalle"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => editarCliente(c)} title="Editar"><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => eliminarCliente(c.id)} title="Desactivar"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-muted-foreground">Página {page + 1} de {totalPages}</span>
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
-              </div>
-            </div>
-          )}
+        <CardContent className="pt-4">
+          <DataTable
+            data={clientesFiltrados}
+            columns={[
+              { key: "codigo", header: "Código", sortable: true, cell: (c: any) => <span className="font-mono text-xs">{c.codigo || "-"}</span> },
+              { key: "nombre", header: "Razón Social", sortable: true, cell: (c: any) => <span className="font-medium">{c.nombre}</span> },
+              { key: "cuit", header: "CUIT", sortable: true, cell: (c: any) => c.cuit || "-" },
+              { key: "condicionIva", header: "Cond. IVA", cell: (c: any) => <span className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</span> },
+              { key: "provincia", header: "Provincia", cell: (c: any) => <span className="text-xs">{c.provincia?.nombre || "-"}</span>, exportFn: (c: any) => c.provincia?.nombre ?? "" },
+              { key: "limiteCredito", header: "Lím. Crédito", align: "right" as const, sortable: true, cell: (c: any) => c.limiteCredito != null ? Number(c.limiteCredito).toLocaleString("es-AR", { style: "currency", currency: "ARS" }) : "-" },
+              { key: "activo", header: "Estado", cell: (c: any) => c.activo !== false ? <Badge variant="default">Activo</Badge> : <Badge variant="secondary">Inactivo</Badge>, exportFn: (c: any) => c.activo ? "Activo" : "Inactivo" },
+              {
+                key: "acciones" as any, header: "Acciones", align: "right" as const,
+                cell: (c: any) => (
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); verDetalle(c) }} title="Ver detalle"><Eye className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); editarCliente(c) }} title="Editar"><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); eliminarCliente(c.id) }} title="Desactivar"><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                ),
+              },
+            ] as DataTableColumn<any>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar por nombre, CUIT, código..."
+            searchKeys={["nombre", "cuit", "codigo"]}
+            selectable
+            bulkActions={(selected, clear) => (
+              <>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const h = "codigo,nombre,cuit,condicionIva,activo"
+                  const rows = selected.map((c: any) => [c.codigo, c.nombre, c.cuit, c.condicionIva, c.activo ? "Activo" : "Inactivo"].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+                  const blob = new Blob(["\uFEFF" + [h, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" })
+                  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "clientes-seleccionados.csv"; a.click()
+                  clear()
+                }}>
+                  <Download className="h-4 w-4 mr-1" /> Exportar ({selected.length})
+                </Button>
+                <Button variant="outline" size="sm" onClick={async () => {
+                  const activos = selected.filter((c: any) => c.activo !== false)
+                  if (!activos.length) return
+                  await Promise.all(activos.map((c: any) => fetch(`/api/clientes/${c.id}`, { method: "DELETE", headers: authHeaders() })))
+                  cargarClientes(); clear()
+                }}>
+                  <ToggleRight className="h-4 w-4 mr-1" /> Desactivar ({selected.filter((c: any) => c.activo !== false).length})
+                </Button>
+              </>
+            )}
+            exportFilename="clientes"
+            loading={false}
+            emptyMessage="No se encontraron clientes"
+            emptyIcon={<EmptyStateIllustration type="clientes" compact actionLabel="Nuevo Cliente" onAction={nuevoCliente} />}
+            defaultPageSize={25}
+            compact
+            onRowClick={verDetalle}
+          />
         </CardContent>
       </Card>
 
@@ -660,6 +728,7 @@ export default function ClientesPage() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div>
   )
 }

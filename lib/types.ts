@@ -22,9 +22,18 @@ export interface FacturaPayload {
     precioUnitario: number
     iva: number
     productoId?: number
+    exento?: boolean
   }[]
   total: number
   remitoId?: number
+  /** AFIP concepto: 1=Productos, 2=Servicios, 3=Productos y Servicios */
+  concepto?: number
+  /** Fecha inicio período de servicio (concepto >= 2) */
+  fechaServicioDesde?: Date
+  /** Fecha fin período de servicio (concepto >= 2) */
+  fechaServicioHasta?: Date
+  /** Fecha vencimiento de pago (concepto >= 2) */
+  fechaVtoPago?: Date
   /** Optional: jurisdicción IIBB principal ("PBA" | "CABA" | "SF" | "CBA" | "MZA") */
   jurisdiccion?: string
   /** Optional: emisor agent flags for full tax calculation */

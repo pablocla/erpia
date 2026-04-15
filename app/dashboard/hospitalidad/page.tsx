@@ -14,6 +14,7 @@ import {
   UtensilsCrossed, Users, Clock, Plus, Trash2,
   CheckCircle2, Receipt, Coffee,
 } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type EstadoMesa = "libre" | "ocupada" | "reservada"
 
@@ -119,6 +120,8 @@ export default function HospitalidadPage() {
   }, [authHeaders])
 
   useEffect(() => { cargarDatos(); cargarPlatos(); cargarClientes() }, [cargarDatos, cargarPlatos, cargarClientes])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarDatos }))
 
   const abrirMesa = (mesa: Mesa) => {
     setMesaSeleccionada(mesa)

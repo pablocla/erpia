@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 // ─── SALDO DE ENVASES POR CLIENTE ─────────────────────────────────────────────
@@ -13,12 +13,12 @@ export async function GET(request: NextRequest) {
   try {
     const db = prisma as any
     const ctx = await getAuthContext(request)
-    if (!ctx) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get("clienteId") ? Number(searchParams.get("clienteId")) : undefined
 
-    const where: any = { empresaId: ctx.empresaId }
+    const where: any = { empresaId: ctx.auth.empresaId }
     if (clienteId) where.clienteId = clienteId
 
     // Agrupar por cliente + tipoEnvase + tipo de movimiento

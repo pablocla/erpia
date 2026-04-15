@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,9 +12,10 @@ import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   Plus, Trash2, CheckCircle2, QrCode, Search, Package,
-  FileText, Receipt, RefreshCw, Tags,
+  FileText, Receipt, RefreshCw, Tags, Keyboard,
 } from "lucide-react"
 import { getTESVentaPorCondicion, getTipoCbteAFIP } from "@/lib/tes/tes-config"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Cliente {
   id: number
@@ -92,10 +93,13 @@ export default function VentasPage() {
   const [series, setSeries] = useState<Serie[]>([])
   const [puntoVentaId, setPuntoVentaId] = useState<string>("")
   const [serieId, setSerieId] = useState<string>("")
+  const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [productoFocusIdx, setProductoFocusIdx] = useState(0)
   const clienteSearchRef = useRef<HTMLInputElement | null>(null)
   const productoSearchRef = useRef<HTMLInputElement | null>(null)
+  const productosListRef = useRef<HTMLDivElement | null>(null)
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
@@ -134,6 +138,8 @@ export default function VentasPage() {
     void cargar()
   }, [])
 
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: () => window.location.reload() }))
+
   useEffect(() => {
     const cargarSeries = async () => {
       if (!puntoVentaId) {
@@ -158,37 +164,73 @@ export default function VentasPage() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "F1") {
+        event.preventDefault()
+        setMostrarAyuda(v => !v)
+        return
+      }
+
       if (event.key === "F2") {
         event.preventDefault()
         clienteSearchRef.current?.focus()
+        return
       }
 
       if (event.key === "F3") {
         event.preventDefault()
         agregarItemManual()
+        return
       }
 
       if (event.key === "F4") {
         event.preventDefault()
         setModalProductos(true)
+        setProductoFocusIdx(0)
         setTimeout(() => productoSearchRef.current?.focus(), 60)
+        return
       }
 
       if (event.key === "F9") {
         event.preventDefault()
         if (!loading) void emitirFactura()
+        return
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") {
         if (!resultado) return
         event.preventDefault()
         window.print()
+        return
+      }
+
+      // Arrow keys in product modal
+      if (modalProductos) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault()
+          setProductoFocusIdx(i => Math.min(i + 1, productosFiltrados.slice(0, 20).length - 1))
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault()
+          setProductoFocusIdx(i => Math.max(i - 1, 0))
+        } else if (event.key === "Enter") {
+          const selected = productosFiltrados[productoFocusIdx]
+          if (selected) {
+            event.preventDefault()
+            void agregarProducto(selected)
+          }
+        }
       }
     }
 
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [loading, resultado, clienteSeleccionado, items])
+  }, [loading, resultado, clienteSeleccionado, items, modalProductos, productoFocusIdx, productosFiltrados])
+
+  // Scroll el item focalizado a la vista cuando cambia con flechas
+  useEffect(() => {
+    if (!productosListRef.current) return
+    const el = productosListRef.current.querySelector(`[data-idx="${productoFocusIdx}"]`)
+    el?.scrollIntoView({ block: "nearest" })
+  }, [productoFocusIdx])
 
   const clientesFiltrados = clientes.filter(
     c => !buscadorCliente || c.nombre.toLowerCase().includes(buscadorCliente.toLowerCase()) || (c.cuit || "").includes(buscadorCliente)
@@ -306,6 +348,7 @@ export default function VentasPage() {
     if (!puntoVentaId) { setError("Seleccioná punto de venta"); return }
     if (!serieId) { setError("Seleccioná una serie de comprobante"); return }
 
+    if (!clienteSeleccionado) { setError("Seleccioná un cliente"); return }
     const errorAfip = validarDatosAfipCliente()
     if (errorAfip) { setError(errorAfip); return }
     if (items.length === 0) { setError("Agregá al menos un ítem"); return }
@@ -402,12 +445,18 @@ export default function VentasPage() {
         <div>
           <h1 className="text-3xl font-bold">Facturación</h1>
           <p className="text-muted-foreground">Emisión de comprobantes electrónicos con AFIP/ARCA</p>
-          <p className="text-xs text-muted-foreground mt-1">Atajos: F2 cliente, F3 manual, F4 producto, F9 emitir, Ctrl+P imprimir</p>
+          <p className="text-xs text-muted-foreground mt-1">F1 ayuda · F2 cliente · F3 ítem manual · F4 producto · F9 emitir · ↑↓ navegar lista</p>
         </div>
-        <Button variant="outline" size="sm">
-          <FileText className="h-4 w-4 mr-2" />
-          Historial de Facturas
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setMostrarAyuda(true)}>
+            <Keyboard className="h-4 w-4 mr-2" />
+            Atajos (F1)
+          </Button>
+          <Button variant="outline" size="sm">
+            <FileText className="h-4 w-4 mr-2" />
+            Historial de Facturas
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -471,13 +520,19 @@ export default function VentasPage() {
                 <Input
                   ref={clienteSearchRef}
                   className="pl-9"
-                  placeholder="Buscar cliente..."
+                  placeholder="Buscar cliente... (F2)"
                   value={buscadorCliente}
                   onChange={(e) => setBuscadorCliente(e.target.value)}
+                  onFocus={e => e.target.select()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && clientesFiltrados[0]) {
                       setClienteSeleccionado(clientesFiltrados[0])
                       setBuscadorCliente("")
+                    }
+                    // Arrow down moves to first result
+                    if (e.key === "ArrowDown" && clientesFiltrados[0]) {
+                      const first = document.querySelector<HTMLButtonElement>("[data-cliente-item]")
+                      first?.focus()
                     }
                   }}
                 />
@@ -487,8 +542,13 @@ export default function VentasPage() {
                   {clientesFiltrados.slice(0, 8).map(c => (
                     <button
                       key={c.id}
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                      data-cliente-item
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm focus:bg-muted outline-none"
                       onClick={() => { setClienteSeleccionado(c); setBuscadorCliente("") }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") { setClienteSeleccionado(c); setBuscadorCliente("") }
+                        if (e.key === "Escape") clienteSearchRef.current?.focus()
+                      }}
                     >
                       <p className="font-medium">{c.nombre}</p>
                       <p className="text-xs text-muted-foreground">{c.condicionIva} {c.cuit ? `— ${c.cuit}` : ""}</p>
@@ -658,6 +718,7 @@ export default function VentasPage() {
                               value={item.cantidad}
                               onChange={e => actualizarCantidad(item.id, Number(e.target.value))}
                               min="1"
+                              onFocus={e => e.target.select()}
                             />
                           </div>
                           <div className="w-32">
@@ -669,6 +730,7 @@ export default function VentasPage() {
                               onChange={e => actualizarPrecio(item.id, Number(e.target.value))}
                               min="0"
                               step="0.01"
+                              onFocus={e => e.target.select()}
                             />
                           </div>
                           <div className="w-24">
@@ -709,28 +771,31 @@ export default function VentasPage() {
       </div>
 
       {/* Modal búsqueda de productos */}
-      <Dialog open={modalProductos} onOpenChange={setModalProductos}>
+      <Dialog open={modalProductos} onOpenChange={v => { setModalProductos(v); if (!v) setProductoFocusIdx(0) }}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Buscar Producto</DialogTitle>
           </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">↑↓ para navegar · Enter para seleccionar · Esc para cerrar</p>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               ref={productoSearchRef}
               className="pl-9"
-              placeholder="Código o nombre..."
+              placeholder="Código, nombre o escaneá código de barras..."
               value={buscadorProducto}
-              onChange={e => setBuscadorProducto(e.target.value)}
+              onChange={e => { setBuscadorProducto(e.target.value); setProductoFocusIdx(0) }}
               autoFocus
             />
           </div>
-          <div className="max-h-80 overflow-y-auto border rounded-lg divide-y">
-            {productosFiltrados.slice(0, 20).map(p => (
+          <div ref={productosListRef} className="max-h-80 overflow-y-auto border rounded-lg divide-y">
+            {productosFiltrados.slice(0, 20).map((p, idx) => (
               <button
                 key={p.id}
-                className="w-full text-left px-4 py-3 hover:bg-muted transition-colors"
+                data-idx={idx}
+                className={`w-full text-left px-4 py-3 transition-colors ${idx === productoFocusIdx ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : "hover:bg-muted"}`}
                 onClick={() => agregarProducto(p)}
+                onMouseEnter={() => setProductoFocusIdx(idx)}
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -752,6 +817,43 @@ export default function VentasPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de ayuda de atajos de teclado */}
+      <Dialog open={mostrarAyuda} onOpenChange={setMostrarAyuda}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Keyboard className="h-5 w-5" />
+              Atajos de teclado — Facturación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            {[
+              { key: "F1",      desc: "Mostrar/ocultar esta ayuda" },
+              { key: "F2",      desc: "Ir al buscador de clientes" },
+              { key: "F3",      desc: "Agregar ítem manual" },
+              { key: "F4",      desc: "Abrir buscador de productos" },
+              { key: "F9",      desc: "Emitir factura electrónica" },
+              { key: "Ctrl+P",  desc: "Imprimir comprobante" },
+              { key: "↑ ↓",    desc: "Navegar lista de productos" },
+              { key: "Enter",   desc: "Seleccionar producto / confirmar" },
+              { key: "Esc",     desc: "Cerrar diálogo activo" },
+              { key: "Tab",     desc: "Mover al siguiente campo del ítem" },
+              { key: "Del",     desc: "Enfocar campo para editar" },
+            ].map(({ key, desc }) => (
+              <div key={key} className="flex items-center justify-between gap-4">
+                <kbd className="inline-flex h-6 min-w-[2.5rem] items-center justify-center rounded border bg-muted px-2 font-mono text-xs font-semibold text-foreground shadow-sm">
+                  {key}
+                </kbd>
+                <span className="flex-1 text-muted-foreground text-xs">{desc}</span>
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" className="w-full mt-2" onClick={() => setMostrarAyuda(false)}>
+            Cerrar (Esc)
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

@@ -29,6 +29,7 @@ export interface CrearRetencionInput {
   compraId?: number
   proveedorId?: number
   fechaRetencion?: Date
+  empresaId?: number
 }
 
 export interface FiltrosRetencion {
@@ -37,6 +38,7 @@ export interface FiltrosRetencion {
   tipo?: "IVA" | "ganancias"
   estado?: "pendiente" | "acreditada" | "compensada"
   proveedorId?: number
+  empresaId?: number
 }
 
 // ─── SERVICE ──────────────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ export class SICOREService {
         estado:         "pendiente",
         compraId:       data.compraId,
         proveedorId:    data.proveedorId,
+        empresaId:      data.empresaId,
       },
       include: { proveedor: true, compra: true },
     })
@@ -73,6 +76,7 @@ export class SICOREService {
     if (filtros.tipo)        where.tipo    = filtros.tipo
     if (filtros.estado)      where.estado  = filtros.estado
     if (filtros.proveedorId) where.proveedorId = filtros.proveedorId
+    if (filtros.empresaId)   where.empresaId = filtros.empresaId
 
     if (filtros.mes && filtros.anio) {
       const desde = new Date(filtros.anio, filtros.mes - 1, 1)
@@ -94,13 +98,14 @@ export class SICOREService {
   /**
    * Returns totals by code for a given period.
    */
-  async totalesPorPeriodo(mes: number, anio: number) {
+  async totalesPorPeriodo(mes: number, anio: number, empresaId?: number) {
     const desde = new Date(anio, mes - 1, 1)
     const hasta = new Date(anio, mes, 0, 23, 59, 59)
 
-    const retenciones = await prisma.retencionSICORE.findMany({
-      where: { fechaRetencion: { gte: desde, lte: hasta } },
-    })
+    const where: any = { fechaRetencion: { gte: desde, lte: hasta } }
+    if (empresaId) where.empresaId = empresaId
+
+    const retenciones = await prisma.retencionSICORE.findMany({ where })
 
     const agrupado: Record<string, { codigo: string; tipo: string; cantidad: number; totalBase: number; totalMonto: number }> = {}
     for (const r of retenciones) {
@@ -142,12 +147,15 @@ export class SICOREService {
    *   53-53  tipo operación   (1) "V"=venta "C"=compra
    *   54-100 reserved spaces  (47)
    */
-  async generarArchivoSICORE(mes: number, anio: number): Promise<string> {
+  async generarArchivoSICORE(mes: number, anio: number, empresaId?: number): Promise<string> {
     const desde = new Date(anio, mes - 1, 1)
     const hasta = new Date(anio, mes, 0, 23, 59, 59)
 
+    const where: any = { fechaRetencion: { gte: desde, lte: hasta } }
+    if (empresaId) where.empresaId = empresaId
+
     const retenciones = await prisma.retencionSICORE.findMany({
-      where: { fechaRetencion: { gte: desde, lte: hasta } },
+      where,
       include: { proveedor: true },
       orderBy: { fechaRetencion: "asc" },
     })

@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Route, Plus, Truck, User } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Vehiculo {
   id: number
@@ -101,6 +104,10 @@ export default function DistribucionPage() {
     fetchChoferes()
     fetchHojas()
   }, [fetchVehiculos, fetchChoferes, fetchHojas])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: () => { fetchVehiculos(); fetchChoferes(); fetchHojas() },
+  }))
 
   const agregarParada = () => {
     setParadas((prev) => [...prev, { direccion: "", envioId: "", ventanaDesde: "", ventanaHasta: "", contactoNombre: "", contactoTelefono: "" }])
@@ -211,42 +218,26 @@ export default function DistribucionPage() {
 
         <TabsContent value="hojas" className="space-y-4">
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Numero</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Vehiculo</TableHead>
-                    <TableHead>Chofer</TableHead>
-                    <TableHead>Paradas</TableHead>
-                    <TableHead>Estado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {hojas.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Sin hojas de ruta</TableCell></TableRow>
-                  ) : hojas.map((h) => (
-                    <TableRow key={h.id}>
-                      <TableCell className="font-mono text-xs">{h.numero}</TableCell>
-                      <TableCell>{new Date(h.fecha).toLocaleDateString("es-AR")}</TableCell>
-                      <TableCell>{h.vehiculo?.patente || "-"}</TableCell>
-                      <TableCell>{h.chofer?.nombre || "-"}</TableCell>
-                      <TableCell>{h.paradas?.length ?? 0}</TableCell>
-                      <TableCell>
-                        <Select value={h.estado} onValueChange={(v) => actualizarEstadoHoja(h.id, v)}>
-                          <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {ESTADOS_RUTA.map((e) => (
-                              <SelectItem key={e} value={e}>{e}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<HojaRuta>
+                data={hojas}
+                columns={[
+                  { key: "numero", header: "Numero", sortable: true, cell: (h) => <span className="font-mono text-xs">{h.numero}</span> },
+                  { key: "fecha", header: "Fecha", sortable: true, cell: (h) => new Date(h.fecha).toLocaleDateString("es-AR") },
+                  { key: "vehiculo" as any, header: "Vehiculo", cell: (h) => h.vehiculo?.patente || "-", exportFn: (h) => h.vehiculo?.patente || "" },
+                  { key: "chofer" as any, header: "Chofer", cell: (h) => h.chofer?.nombre || "-", exportFn: (h) => h.chofer?.nombre || "" },
+                  { key: "paradas" as any, header: "Paradas", cell: (h) => h.paradas?.length ?? 0 },
+                  { key: "estado", header: "Estado", cell: (h) => <Select value={h.estado} onValueChange={(v) => actualizarEstadoHoja(h.id, v)}><SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger><SelectContent>{ESTADOS_RUTA.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select> },
+                ] as DataTableColumn<HojaRuta>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar hoja de ruta..."
+                searchKeys={["numero", "estado"]}
+                exportFilename="hojas-ruta"
+                loading={false}
+                emptyMessage="Sin hojas de ruta"
+                emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin hojas de ruta" />}
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -258,29 +249,22 @@ export default function DistribucionPage() {
             </Button>
           </div>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Patente</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Capacidad Kg</TableHead>
-                    <TableHead>Capacidad Bultos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {vehiculos.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Sin vehiculos</TableCell></TableRow>
-                  ) : vehiculos.map((v) => (
-                    <TableRow key={v.id}>
-                      <TableCell className="font-mono text-xs">{v.patente}</TableCell>
-                      <TableCell>{v.tipo}</TableCell>
-                      <TableCell>{v.capacidadKg ?? "-"}</TableCell>
-                      <TableCell>{v.capacidadBultos ?? "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<Vehiculo>
+                data={vehiculos}
+                columns={[
+                  { key: "patente", header: "Patente", sortable: true, cell: (v) => <span className="font-mono text-xs">{v.patente}</span> },
+                  { key: "tipo", header: "Tipo", sortable: true },
+                  { key: "capacidadKg", header: "Capacidad Kg", sortable: true, cell: (v) => v.capacidadKg ?? "-" },
+                  { key: "capacidadBultos", header: "Capacidad Bultos", sortable: true, cell: (v) => v.capacidadBultos ?? "-" },
+                ] as DataTableColumn<Vehiculo>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar vehículo..."
+                searchKeys={["patente", "tipo"]}
+                exportFilename="vehiculos"
+                emptyMessage="Sin vehiculos"
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -292,29 +276,22 @@ export default function DistribucionPage() {
             </Button>
           </div>
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Documento</TableHead>
-                    <TableHead>Licencia</TableHead>
-                    <TableHead>Telefono</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {choferes.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Sin choferes</TableCell></TableRow>
-                  ) : choferes.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell>{c.nombre}</TableCell>
-                      <TableCell>{c.documento || "-"}</TableCell>
-                      <TableCell>{c.licencia || "-"}</TableCell>
-                      <TableCell>{c.telefono || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<Chofer>
+                data={choferes}
+                columns={[
+                  { key: "nombre", header: "Nombre", sortable: true },
+                  { key: "documento", header: "Documento", cell: (c) => c.documento || "-" },
+                  { key: "licencia", header: "Licencia", cell: (c) => c.licencia || "-" },
+                  { key: "telefono", header: "Telefono", cell: (c) => c.telefono || "-" },
+                ] as DataTableColumn<Chofer>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar chofer..."
+                searchKeys={["nombre", "documento"]}
+                exportFilename="choferes"
+                emptyMessage="Sin choferes"
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>

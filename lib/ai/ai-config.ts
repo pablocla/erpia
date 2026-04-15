@@ -2,14 +2,11 @@
  * AI Configuration — Hardware-Optimized for RTX 5070 Ti (16GB VRAM) + 32GB RAM
  *
  * Strategy:
- * - PRIMARY: Qwen 3.5 27B (~16GB VRAM) — high quality analysis, JSON generation, chat
- * - FAST:    Qwen 3.5 27B (~16GB VRAM) — same model for all tiers (single model setup)
- * - HEAVY:   Qwen 3.5 27B (~16GB VRAM) — deep analysis
- * - CLOUD:   Anthropic claude-sonnet-4-20250514 — fallback if Ollama unavailable / critical tasks
+ * - ALL TIERS: Qwen 2.5 7B (~4.7GB) — fits comfortably in available memory
+ * - CLOUD:     Anthropic claude-sonnet-4-20250514 — fallback if Ollama unavailable
  *
- * Current setup: Single model (qwen3.5:27b) for all tiers.
- * The 27B model fits in 16GB VRAM and provides excellent quality for ERP tasks.
- * For better realtime speed, add mistral:7b-instruct-v0.3-q4_K_M later.
+ * Current setup: Single model (qwen2.5:7b) for all tiers.
+ * Fast, reliable, and fits in ~5GB memory. Good quality for ERP tasks.
  */
 
 export interface AIModelConfig {
@@ -26,37 +23,37 @@ export interface AIModelConfig {
 export const AI_MODELS: Record<string, AIModelConfig> = {
   fast: {
     id: "fast",
-    ollamaTag: "qwen3.5:27b",
-    description: "Qwen 3.5 27B — clasificación, alertas, notificaciones",
-    vramMB: 16000,
-    tokensPerSec: 10,
+    ollamaTag: "qwen2.5:7b",
+    description: "Qwen 2.5 7B — clasificación, alertas, notificaciones",
+    vramMB: 5000,
+    tokensPerSec: 35,
     maxContextTokens: 131072,
     tier: "realtime",
   },
   primary: {
     id: "primary",
-    ollamaTag: "qwen3.5:27b",
-    description: "Qwen 3.5 27B — análisis estructurado, generación JSON, reportes",
-    vramMB: 16000,
-    tokensPerSec: 10,
+    ollamaTag: "qwen2.5:7b",
+    description: "Qwen 2.5 7B — análisis estructurado, generación JSON, reportes",
+    vramMB: 5000,
+    tokensPerSec: 35,
     maxContextTokens: 131072,
     tier: "batch",
   },
   heavy: {
     id: "heavy",
-    ollamaTag: "qwen3.5:27b",
-    description: "Qwen 3.5 27B — análisis profundo",
-    vramMB: 16000,
-    tokensPerSec: 10,
+    ollamaTag: "qwen2.5:7b",
+    description: "Qwen 2.5 7B — análisis profundo",
+    vramMB: 5000,
+    tokensPerSec: 35,
     maxContextTokens: 131072,
     tier: "nightly",
   },
   code: {
     id: "code",
-    ollamaTag: "qwen3.5:27b",
-    description: "Qwen 3.5 27B — generación de queries, fórmulas, expresiones",
-    vramMB: 16000,
-    tokensPerSec: 10,
+    ollamaTag: "qwen2.5:7b",
+    description: "Qwen 2.5 7B — generación de queries, fórmulas, expresiones",
+    vramMB: 5000,
+    tokensPerSec: 35,
     maxContextTokens: 131072,
     tier: "batch",
   },

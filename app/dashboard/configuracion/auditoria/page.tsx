@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Clock, Search, User, RefreshCw, Sparkles, Filter, BarChart3 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { type DateRange } from "react-day-picker"
 
 type LogEntry = {
   id: number
@@ -47,6 +51,7 @@ export default function AuditoriaPage() {
   const [busqueda, setBusqueda] = useState("")
   const [filtroModulo, setFiltroModulo] = useState("todos")
   const [filtroAccion, setFiltroAccion] = useState("todas")
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
   const headers: Record<string, string> = {
@@ -73,12 +78,27 @@ export default function AuditoriaPage() {
     void cargar()
   }, [cargar])
 
-  const logsFiltrados = logs.filter((l) =>
-    l.usuario?.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    l.usuario?.email?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    l.detalle?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    l.entidad?.toLowerCase().includes(busqueda.toLowerCase())
-  )
+  const logsFiltrados = useMemo(() => {
+    let filtered = logs.filter((l) =>
+      l.usuario?.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      l.usuario?.email?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      l.detalle?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      l.entidad?.toLowerCase().includes(busqueda.toLowerCase())
+    )
+    if (dateRange?.from) {
+      filtered = filtered.filter((l) => {
+        const d = new Date(l.createdAt)
+        if (dateRange.from && d < dateRange.from) return false
+        if (dateRange.to) {
+          const end = new Date(dateRange.to)
+          end.setHours(23, 59, 59, 999)
+          if (d > end) return false
+        }
+        return true
+      })
+    }
+    return filtered
+  }, [logs, busqueda, dateRange])
 
   const modulosUnicos = resumen?.porModulo?.map((m) => m.modulo) ?? []
   const accionesUnicas = resumen?.porAccion?.map((a) => a.accion) ?? []
@@ -94,10 +114,13 @@ export default function AuditoriaPage() {
           <h1 className="text-3xl font-bold tracking-tight">Auditoría / Logs</h1>
           <p className="text-muted-foreground text-sm mt-1">Registro completo de acciones en el sistema</p>
         </div>
-        <Button variant="outline" onClick={cargar} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <Button variant="outline" onClick={cargar} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       {/* KPIs row */}
@@ -144,10 +167,6 @@ export default function AuditoriaPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Eventos recientes</CardTitle>
             <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9 h-9 w-48 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
               {modulosUnicos.length > 0 && (
                 <Select value={filtroModulo} onValueChange={setFiltroModulo}>
                   <SelectTrigger className="h-9 w-36"><Filter className="h-3.5 w-3.5 mr-1" /><SelectValue /></SelectTrigger>
@@ -173,50 +192,27 @@ export default function AuditoriaPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-left p-3 font-medium">Usuario</th>
-                  <th className="text-left p-3 font-medium">Acción</th>
-                  <th className="text-left p-3 font-medium">Módulo</th>
-                  <th className="text-left p-3 font-medium">Entidad</th>
-                  <th className="text-left p-3 font-medium">Detalle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logsFiltrados.map((l) => (
-                  <tr key={l.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(l.createdAt).toLocaleString("es-AR")}
-                    </td>
-                    <td className="p-3 text-xs">
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {l.usuario?.nombre ?? "Sistema"}
-                      </span>
-                      {l.usuario?.email && <p className="text-muted-foreground text-[10px]">{l.usuario.email}</p>}
-                    </td>
-                    <td className="p-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${ACCION_COLORS[l.accion] ?? "bg-gray-100 text-gray-700"}`}>
-                        {l.accion}
-                      </span>
-                    </td>
-                    <td className="p-3"><Badge variant="outline" className="text-xs">{l.modulo}</Badge></td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {l.entidad && <span>{l.entidad}{l.entidadId ? ` #${l.entidadId}` : ""}</span>}
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground max-w-xs truncate">{l.detalle ?? "—"}</td>
-                  </tr>
-                ))}
-                {logsFiltrados.length === 0 && (
-                  <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay logs para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<LogEntry>
+            data={logsFiltrados}
+            columns={[
+              { key: "createdAt", header: "Fecha", sortable: true, cell: (l) => <span className="text-xs text-muted-foreground">{new Date(l.createdAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span> },
+              { key: "usuario" as any, header: "Usuario", cell: (l) => l.usuario ? (<div><p className="font-medium text-xs">{l.usuario.nombre}</p><p className="text-[10px] text-muted-foreground">{l.usuario.email}</p></div>) : <span className="text-muted-foreground">Sistema</span>, exportFn: (l) => l.usuario?.nombre ?? "Sistema" },
+              { key: "accion", header: "Acción", cell: (l) => <Badge variant="secondary" className={`text-xs ${ACCION_COLORS[l.accion] ?? ""}`}>{l.accion}</Badge> },
+              { key: "modulo", header: "Módulo", cell: (l) => <span className="font-medium text-xs">{l.modulo}</span> },
+              { key: "entidad", header: "Entidad", cell: (l) => l.entidad ? <span className="text-xs">{l.entidad}{l.entidadId ? ` #${l.entidadId}` : ""}</span> : <span className="text-muted-foreground">—</span> },
+              { key: "detalle", header: "Detalle", cell: (l) => <span className="text-xs text-muted-foreground truncate max-w-[200px] block">{l.detalle ?? "—"}</span> },
+            ] as DataTableColumn<LogEntry>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar evento..."
+            searchKeys={["accion", "modulo", "detalle"]}
+            exportFilename="auditoria-logs"
+            loading={loading}
+            emptyMessage="No hay eventos registrados"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin eventos" description="Los eventos se registran automáticamente." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
     </div>

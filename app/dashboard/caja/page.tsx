@@ -17,6 +17,9 @@ import {
   ArrowUpCircle, ArrowDownCircle, CheckCircle2, AlertTriangle,
   ClipboardCheck, Calculator,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
 
 interface MovimientoCaja {
   id: number
@@ -83,6 +86,7 @@ export default function CajaPage() {
   const [error, setError] = useState("")
   const [guardando, setGuardando] = useState(false)
   const [cierreMensaje, setCierreMensaje] = useState("")
+  const { toast } = useToast()
 
   const cargarCaja = useCallback(async () => {
     setLoading(true)
@@ -105,6 +109,8 @@ export default function CajaPage() {
   useEffect(() => {
     cargarCaja()
   }, [cargarCaja])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargarCaja }))
 
   const abrirCaja = async () => {
     setGuardando(true)
@@ -129,8 +135,10 @@ export default function CajaPage() {
       setSaldoInicial("0")
       setTurno("")
       cargarCaja()
+      toast({ title: "Caja abierta", description: "Se abrió la caja correctamente" })
     } catch {
       setError("Error de conexión")
+      toast({ title: "Error al abrir caja", description: "No se pudo abrir la caja", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -195,8 +203,10 @@ export default function CajaPage() {
         (Math.abs(diff) > 0 ? ` | Diferencia: $${diff.toFixed(2)}` : " | Sin diferencias")
       )
       cargarCaja()
+      toast({ title: "Caja cerrada", description: `Saldo final: $${data.saldoFinal?.toFixed(2)}${Math.abs(diff) > 0 ? ` — Diferencia: $${diff.toFixed(2)}` : ""}` })
     } catch {
       setError("Error al cerrar caja")
+      toast({ title: "Error al cerrar caja", description: "No se pudo completar el cierre", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -229,8 +239,10 @@ export default function CajaPage() {
       setMovimientoDialogOpen(false)
       setNuevoMovimiento({ tipo: "ingreso", concepto: "", monto: "", medioPago: "efectivo", referencia: "" })
       cargarCaja()
+      toast({ title: "Movimiento registrado", description: `${nuevoMovimiento.tipo === "ingreso" ? "Ingreso" : "Egreso"} de $${nuevoMovimiento.monto} registrado` })
     } catch {
       setError("Error al registrar movimiento")
+      toast({ title: "Error al registrar movimiento", description: "No se pudo completar la operación", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -384,50 +396,24 @@ export default function CajaPage() {
               <Badge variant="secondary">{cajaActual.movimientos.length}</Badge>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-              {cajaActual.movimientos.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">Sin movimientos aún</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Concepto</TableHead>
-                      <TableHead>Medio de Pago</TableHead>
-                      <TableHead>Referencia</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                      <TableHead>Hora</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cajaActual.movimientos.map((m) => (
-                      <TableRow key={m.id}>
-                        <TableCell>
-                          {m.tipo === "ingreso" ? (
-                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 gap-1">
-                              <ArrowUpCircle className="h-3 w-3" /> Ingreso
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 gap-1">
-                              <ArrowDownCircle className="h-3 w-3" /> Egreso
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">{m.concepto}</TableCell>
-                        <TableCell className="capitalize">{m.medioPago.replace("_", " ")}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{m.referencia || "—"}</TableCell>
-                        <TableCell
-                          className={`text-right font-bold ${m.tipo === "ingreso" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}
-                        >
-                          {m.tipo === "ingreso" ? "+" : "-"}${m.monto.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(m.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <DataTable<MovimientoCaja>
+                data={cajaActual.movimientos}
+                columns={[
+                  { key: "tipo", header: "Tipo", cell: (m) => m.tipo === "ingreso" ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 gap-1"><ArrowUpCircle className="h-3 w-3" /> Ingreso</Badge> : <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 gap-1"><ArrowDownCircle className="h-3 w-3" /> Egreso</Badge> },
+                  { key: "concepto", header: "Concepto", cell: (m) => <span className="font-medium">{m.concepto}</span> },
+                  { key: "medioPago", header: "Medio de Pago", cell: (m) => <span className="capitalize">{m.medioPago.replace("_", " ")}</span> },
+                  { key: "referencia", header: "Referencia", cell: (m) => <span className="text-muted-foreground text-sm">{m.referencia || "—"}</span> },
+                  { key: "monto", header: "Monto", align: "right", sortable: true, cell: (m) => <span className={`font-bold ${m.tipo === "ingreso" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>{m.tipo === "ingreso" ? "+" : "-"}${m.monto.toFixed(2)}</span> },
+                  { key: "createdAt", header: "Hora", cell: (m) => <span className="text-sm text-muted-foreground">{new Date(m.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</span> },
+                ] as DataTableColumn<MovimientoCaja>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar movimiento..."
+                searchKeys={["concepto", "medioPago"]}
+                exportFilename="movimientos-caja"
+                emptyMessage="Sin movimientos aún"
+                defaultPageSize={10}
+                compact
+              />
             </CardContent>
           </Card>
         </>
@@ -440,52 +426,23 @@ export default function CajaPage() {
             <CardTitle className="text-base">Historial de Cajas</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Turno</TableHead>
-                  <TableHead>Saldo Inicial</TableHead>
-                  <TableHead>Saldo Final</TableHead>
-                  <TableHead>Diferencia</TableHead>
-                  <TableHead>Movimientos</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {historial.map((c) => {
-                  const tot = calcularTotales(c.movimientos)
-                  return (
-                    <TableRow key={c.id}>
-                      <TableCell>
-                        {new Date(c.fecha).toLocaleDateString("es-AR")}
-                      </TableCell>
-                      <TableCell className="capitalize">{c.turno ?? "—"}</TableCell>
-                      <TableCell>${c.saldoInicial.toFixed(2)}</TableCell>
-                      <TableCell className="font-bold">${c.saldoFinal?.toFixed(2) ?? "—"}</TableCell>
-                      <TableCell>
-                        {c.diferencia != null ? (
-                          <span className={Math.abs(c.diferencia) > 0 ? "text-amber-600 font-medium" : "text-green-600"}>
-                            ${c.diferencia.toFixed(2)}
-                            {c.diferenciaJustif && (
-                              <span className="text-xs text-muted-foreground ml-1" title={c.diferenciaJustif}>ⓘ</span>
-                            )}
-                          </span>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-green-700 dark:text-green-400">+${tot.ingresos.toFixed(2)}</span>
-                        {" / "}
-                        <span className="text-red-700 dark:text-red-400">-${tot.egresos.toFixed(2)}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">Cerrada</Badge>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+            <DataTable<Caja>
+              data={historial}
+              columns={[
+                { key: "fecha", header: "Fecha", sortable: true, cell: (c) => new Date(c.fecha).toLocaleDateString("es-AR") },
+                { key: "turno" as any, header: "Turno", cell: (c) => <span className="capitalize">{c.turno ?? "—"}</span> },
+                { key: "saldoInicial", header: "Saldo Inicial", align: "right", cell: (c) => `$${c.saldoInicial.toFixed(2)}` },
+                { key: "saldoFinal" as any, header: "Saldo Final", align: "right", cell: (c) => <span className="font-bold">${c.saldoFinal?.toFixed(2) ?? "—"}</span> },
+                { key: "diferencia" as any, header: "Diferencia", align: "right", cell: (c) => c.diferencia != null ? <span className={Math.abs(c.diferencia) > 0 ? "text-amber-600 font-medium" : "text-green-600"}>${c.diferencia.toFixed(2)}{c.diferenciaJustif && <span className="text-xs text-muted-foreground ml-1" title={c.diferenciaJustif}>ⓘ</span>}</span> : <span>—</span> },
+                { key: "movimientos" as any, header: "Movimientos", cell: (c) => { const tot = calcularTotales(c.movimientos); return <><span className="text-green-700 dark:text-green-400">+${tot.ingresos.toFixed(2)}</span>{" / "}<span className="text-red-700 dark:text-red-400">-${tot.egresos.toFixed(2)}</span></> } },
+                { key: "estado", header: "Estado", cell: () => <Badge variant="secondary">Cerrada</Badge> },
+              ] as DataTableColumn<Caja>[]}
+              rowKey="id"
+              exportFilename="historial-cajas"
+              emptyMessage="Sin historial"
+              defaultPageSize={10}
+              compact
+            />
           </CardContent>
         </Card>
       )}

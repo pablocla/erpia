@@ -8,19 +8,19 @@ import { getAIConfig } from "./ai-config"
  * 1. GLOBAL: env var AI_ENABLED=false → disables for ALL empresas
  * 2. PER-EMPRESA: ConfiguracionModulo where modulo="ia" and habilitado=false
  *
- * If the empresa has no row in ConfiguracionModulo for "ia", defaults to FALSE
- * (opt-in: client must explicitly activate IA from Configuración > Módulos).
+ * If the empresa has no row in ConfiguracionModulo for "ia", defaults to TRUE
+ * (enabled by default, can be explicitly disabled from Configuración > Módulos).
  */
 export async function isIAEnabled(empresaId: number): Promise<boolean> {
   // Global kill switch
   const config = getAIConfig()
   if (!config.enabled) return false
 
-  // Per-empresa toggle (opt-in: default false)
+  // Per-empresa toggle (default true — enabled unless explicitly disabled)
   const row = await prisma.configuracionModulo.findUnique({
     where: { empresaId_modulo: { empresaId, modulo: "ia" } },
     select: { habilitado: true },
   })
 
-  return row?.habilitado ?? false
+  return row?.habilitado ?? true
 }

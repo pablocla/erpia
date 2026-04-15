@@ -8,7 +8,7 @@ const registroSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   rol: z.enum(["administrador", "contador", "vendedor"]),
-  empresaId: z.number().int().positive(),
+  empresaId: z.number().int().positive().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
     }
 
-    const { nombre, email, password, rol, empresaId } = validacion.data
+    const { nombre, email, password, rol } = validacion.data
+    // Use empresaId from body if provided, fallback to the admin's own empresaId
+    const empresaId = validacion.data.empresaId || solicitante.empresaId
 
     const authService = new AuthService()
     const resultado = await authService.registrarUsuario(nombre, email, password, rol, empresaId)

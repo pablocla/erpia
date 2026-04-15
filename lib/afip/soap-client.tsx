@@ -1,5 +1,27 @@
 import soap from "soap"
 import forge from "node-forge"
+import { prisma } from "@/lib/prisma"
+
+/** FIX C-006: Guarda request/response de AFIP en BD para auditoría. */
+async function logAfip(params: {
+  empresaId: number
+  webservice: string
+  operacion: string
+  requestBody?: string
+  responseBody?: string
+  statusCode?: string
+  cae?: string
+  facturaId?: number
+  duracionMs?: number
+  errorMsg?: string
+}) {
+  try {
+    await prisma.afipWebserviceLog.create({ data: params })
+  } catch {
+    // El log no puede romper el flujo principal
+    console.error("[AfipLog] No se pudo guardar log AFIP")
+  }
+}
 
 export interface AFIPAuthResponse {
   token: string
@@ -49,30 +71,61 @@ export class AFIPSoapClient {
     }
   }
 
-  async emitirComprobante(auth: AFIPAuthResponse, cuit: string, puntoVenta: number, comprobante: any): Promise<any> {
+  async emitirComprobante(
+    auth: AFIPAuthResponse,
+    cuit: string,
+    puntoVenta: number,
+    comprobante: any,
+    empresaId?: number,
+    facturaId?: number,
+  ): Promise<any> {
+    const t0 = Date.now()
+    const requestPayload = { Auth: { Cuit: cuit }, FeCAEReq: { FeCabReq: { PtoVta: puntoVenta, CbteTipo: comprobante.CbteTipo }, FeDetReq: { FECAEDetRequest: comprobante } } }
+
     try {
       const client = await soap.createClientAsync(this.wsfeUrl)
 
       const [result] = await client.FECAESolicitarAsync({
-        Auth: {
-          Token: auth.token,
-          Sign: auth.sign,
-          Cuit: cuit,
-        },
+        Auth: { Token: auth.token, Sign: auth.sign, Cuit: cuit },
         FeCAEReq: {
-          FeCabReq: {
-            CantReg: 1,
-            PtoVta: puntoVenta,
-            CbteTipo: comprobante.CbteTipo,
-          },
-          FeDetReq: {
-            FECAEDetRequest: comprobante,
-          },
+          FeCabReq: { CantReg: 1, PtoVta: puntoVenta, CbteTipo: comprobante.CbteTipo },
+          FeDetReq: { FECAEDetRequest: comprobante },
         },
       })
 
-      return result.FECAESolicitarResult
+      const wsResult = result.FECAESolicitarResult
+      const cae = wsResult?.FeDetResp?.FECAEDetResponse?.CAE
+
+      // FIX C-006: Guardar log exitoso
+      if (empresaId) {
+        await logAfip({
+          empresaId,
+          webservice: "WSFE",
+          operacion: "FECAESolicitar",
+          requestBody: JSON.stringify(requestPayload),
+          responseBody: JSON.stringify(wsResult),
+          statusCode: wsResult?.FeDetResp?.FECAEDetResponse?.Resultado ?? "?",
+          cae: cae ?? undefined,
+          facturaId,
+          duracionMs: Date.now() - t0,
+        })
+      }
+
+      return wsResult
     } catch (error) {
+      // FIX C-006: Guardar log de error
+      if (empresaId) {
+        await logAfip({
+          empresaId,
+          webservice: "WSFE",
+          operacion: "FECAESolicitar",
+          requestBody: JSON.stringify(requestPayload),
+          statusCode: "ERROR",
+          duracionMs: Date.now() - t0,
+          errorMsg: error instanceof Error ? error.message : String(error),
+          facturaId,
+        })
+      }
       console.error("Error al emitir comprobante:", error)
       throw new Error("Error al emitir comprobante en AFIP")
     }

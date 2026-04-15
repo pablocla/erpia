@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Receipt, Download, CheckCircle2, Clock, Loader2, RefreshCw } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface PeriodoIVA {
   periodo: string
@@ -51,6 +52,10 @@ export default function PresentacionAFIPPage() {
   }, [])
 
   useEffect(() => { cargarPeriodos() }, [cargarPeriodos])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarPeriodos,
+  }))
 
   const descargar = async (tipo: "ventas" | "compras" | "presentacion", p: PeriodoIVA) => {
     setDescargando(`${tipo}-${p.mes}-${p.anio}`)

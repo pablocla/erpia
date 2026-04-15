@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Plus, FolderTree, BarChart3, ChevronRight, ChevronDown,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface CentroCosto {
   id: number
@@ -58,6 +60,10 @@ export default function CentrosCostoPage() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   useEffect(() => { cargar() }, [])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   async function cargar() {
     setLoading(true)
@@ -193,29 +199,22 @@ export default function CentrosCostoPage() {
           {/* Flat list */}
           <Card>
             <CardHeader><CardTitle>Lista Completa</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Centro Padre</TableHead>
-                    <TableHead className="text-right">Movimientos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {centros.map(cc => (
-                    <TableRow key={cc.id}>
-                      <TableCell className="font-mono">{cc.codigo}</TableCell>
-                      <TableCell className="font-medium">{cc.nombre}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {cc.parent ? `${cc.parent.codigo} — ${cc.parent.nombre}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">{cc._count?.movimientos ?? 0}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<CentroCosto>
+                data={centros}
+                columns={[
+                  { key: "codigo", header: "Código", sortable: true, cell: (cc) => <span className="font-mono">{cc.codigo}</span> },
+                  { key: "nombre", header: "Nombre", sortable: true, cell: (cc) => <span className="font-medium">{cc.nombre}</span> },
+                  { key: "parent" as any, header: "Centro Padre", cell: (cc) => <span className="text-muted-foreground">{cc.parent ? `${cc.parent.codigo} — ${cc.parent.nombre}` : "—"}</span>, exportFn: (cc) => cc.parent ? `${cc.parent.codigo} - ${cc.parent.nombre}` : "" },
+                  { key: "_count" as any, header: "Movimientos", cell: (cc) => <span className="text-right block">{cc._count?.movimientos ?? 0}</span>, exportFn: (cc) => String(cc._count?.movimientos ?? 0) },
+                ] as DataTableColumn<CentroCosto>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar centro de costo..."
+                searchKeys={["codigo", "nombre"]}
+                exportFilename="centros-costo"
+                emptyMessage="Sin centros de costo"
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>

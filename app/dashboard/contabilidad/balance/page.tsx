@@ -1,8 +1,11 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Download, Loader2 } from "lucide-react"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { type DateRange } from "react-day-picker"
 
 interface LineaBalance {
   cuenta: string
@@ -14,17 +17,25 @@ interface LineaBalance {
 export default function BalancePage() {
   const [lineas, setLineas] = useState<LineaBalance[]>([])
   const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const cargar = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/contabilidad/balance-sumas")
+      const params = new URLSearchParams()
+      if (dateRange?.from) params.set("desde", dateRange.from.toISOString().slice(0, 10))
+      if (dateRange?.to) params.set("hasta", dateRange.to.toISOString().slice(0, 10))
+      const res = await fetch(`/api/contabilidad/balance-sumas?${params}`)
       const data = await res.json()
       if (data.success) setLineas(data.balance ?? [])
     } catch { /* ignore */ } finally { setLoading(false) }
-  }, [])
+  }, [dateRange])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   // Classify by account code prefix
   const activo = lineas.filter(l => l.cuenta.startsWith("1."))
@@ -85,7 +96,10 @@ export default function BalancePage() {
           <BarChart3 className="h-6 w-6 text-cyan-500" />
           <div><h1 className="text-2xl font-bold">Balance General</h1><p className="text-sm text-muted-foreground">Estado patrimonial — {lineas.length} cuentas con movimientos</p></div>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={exportarCSV}><Download className="h-3.5 w-3.5" />Exportar CSV</Button>
+        <div className="flex items-center gap-2">
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <Button variant="outline" size="sm" className="gap-2" onClick={exportarCSV}><Download className="h-3.5 w-3.5" />Exportar CSV</Button>
+        </div>
       </div>
 
       {/* KPIs */}

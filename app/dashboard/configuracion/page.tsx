@@ -42,13 +42,19 @@ import {
   Save,
   ArrowRight,
   Sparkles,
+  UserPlus,
+  Users,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type SectionKey =
   | "empresa"
   | "afip"
   | "modulos"
+  | "usuarios"
   | "fiscal"
   | "stock"
   | "ventas"
@@ -63,6 +69,7 @@ const SECCIONES: { key: SectionKey; label: string; icon: React.ElementType; desc
   { key: "empresa", label: "Datos de la Empresa", icon: Building2, descripcion: "Razón social, CUIT, domicilio fiscal", color: "text-blue-500", bgColor: "bg-blue-500/10", grupo: "negocio" },
   { key: "afip", label: "AFIP / ARCA", icon: Shield, descripcion: "Certificados digitales, punto de venta, entorno", color: "text-red-500", bgColor: "bg-red-500/10", grupo: "negocio" },
   { key: "modulos", label: "Módulos activos", icon: Zap, descripcion: "Habilitar/deshabilitar módulos del sistema", color: "text-amber-500", bgColor: "bg-amber-500/10", grupo: "negocio" },
+  { key: "usuarios", label: "Usuarios", icon: Users, descripcion: "Crear, editar y gestionar usuarios del ERP", color: "text-emerald-500", bgColor: "bg-emerald-500/10", grupo: "negocio" },
   { key: "fiscal", label: "Parámetros Fiscales", icon: Receipt, descripcion: "Condición IVA, alícuotas, retenciones", color: "text-orange-500", bgColor: "bg-orange-500/10", grupo: "negocio" },
   { key: "stock", label: "Stock y Costos", icon: Package, descripcion: "Método de costeo, alertas de stock", color: "text-green-500", bgColor: "bg-green-500/10", grupo: "operacion" },
   { key: "ventas", label: "Ventas y Caja", icon: CreditCard, descripcion: "Formas de pago, descuentos, apertura automática", color: "text-violet-500", bgColor: "bg-violet-500/10", grupo: "operacion" },
@@ -117,12 +124,19 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 }
 
 export default function ConfiguracionPage() {
+  const { toast } = useToast()
   const [seccionActiva, setSeccionActiva] = useState<SectionKey | null>(null)
   const [guardado, setGuardado] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [modulos, setModulos] = useState(defaultModulos)
   const [notificaciones, setNotificaciones] = useState(defaultNotificaciones)
   const [certificadoSubido, setCertificadoSubido] = useState(false)
+
+  // ─── Usuarios state ────────────────────────────────────────────────
+  interface UsuarioRow { id: number; nombre: string; email: string; rol: string; activo: boolean }
+  const [usuarios, setUsuarios] = useState<UsuarioRow[]>([])
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(false)
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", email: "", password: "", rol: "vendedor" })
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
@@ -145,6 +159,54 @@ export default function ConfiguracionPage() {
     cargarModulos()
   }, [authHeaders])
 
+  // ─── Cargar usuarios ────────────────────────────────────────────────
+  const cargarUsuarios = useCallback(async () => {
+    setCargandoUsuarios(true)
+    try {
+      const res = await fetch("/api/auth/me", { headers: authHeaders() })
+      if (!res.ok) return
+      // The /api/auth/me only returns current user. Use a list endpoint if available.
+      // For now, we'll use a dedicated usuarios endpoint
+      const resUsuarios = await fetch("/api/config/usuarios", { headers: authHeaders() })
+      if (resUsuarios.ok) {
+        const data = await resUsuarios.json()
+        setUsuarios(data.usuarios || [])
+      }
+    } catch {} finally { setCargandoUsuarios(false) }
+  }, [authHeaders])
+
+  useEffect(() => {
+    if (seccionActiva === "usuarios") cargarUsuarios()
+  }, [seccionActiva, cargarUsuarios])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarUsuarios,
+  }))
+
+  async function crearUsuario() {
+    if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.password) {
+      toast({ title: "Completá todos los campos", variant: "destructive" })
+      return
+    }
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(nuevoUsuario),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast({ title: "Usuario creado", description: `${data.usuario?.nombre || nuevoUsuario.nombre} registrado` })
+        setNuevoUsuario({ nombre: "", email: "", password: "", rol: "vendedor" })
+        cargarUsuarios()
+      } else {
+        toast({ title: "Error al crear usuario", description: data.error || "Error desconocido", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error de conexión", variant: "destructive" })
+    }
+  }
+
   function toggleParam(list: ToggleParam[], setList: React.Dispatch<React.SetStateAction<ToggleParam[]>>, key: string) {
     setList(list.map(p => p.key === key ? { ...p, value: !p.value } : p))
   }
@@ -166,8 +228,14 @@ export default function ConfiguracionPage() {
         setGuardado(true)
         // Dispatch storage event so sidebar picks up the change
         window.dispatchEvent(new Event("modulos-updated"))
+        toast({ title: "Configuración guardada", description: "Los módulos se actualizaron correctamente" })
         setTimeout(() => setGuardado(false), 2000)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
       }
+    } catch (err) {
+      toast({ title: "Error de conexión", description: "No se pudo guardar la configuración", variant: "destructive" })
     } finally {
       setGuardando(false)
     }
@@ -484,6 +552,94 @@ export default function ConfiguracionPage() {
               ))}
             </CardContent>
           </Card>
+        )}
+
+        {/* ── USUARIOS ── */}
+        {seccionActiva === "usuarios" && (
+          <div className="space-y-4">
+            {/* Crear nuevo usuario */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Crear nuevo usuario
+                </CardTitle>
+                <CardDescription>Registrá empleados, vendedores o contadores en el sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Nombre completo</Label>
+                    <Input placeholder="Juan Pérez" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario(p => ({ ...p, nombre: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Email</Label>
+                    <Input type="email" placeholder="juan@empresa.com" value={nuevoUsuario.email} onChange={e => setNuevoUsuario(p => ({ ...p, email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Contraseña</Label>
+                    <Input type="password" placeholder="Mínimo 8 caracteres" value={nuevoUsuario.password} onChange={e => setNuevoUsuario(p => ({ ...p, password: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Rol</Label>
+                    <Select value={nuevoUsuario.rol} onValueChange={v => setNuevoUsuario(p => ({ ...p, rol: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="administrador">Administrador</SelectItem>
+                        <SelectItem value="contador">Contador</SelectItem>
+                        <SelectItem value="vendedor">Vendedor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button onClick={crearUsuario} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Crear usuario
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Lista de usuarios */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Usuarios registrados
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {cargandoUsuarios ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">Cargando...</p>
+                ) : usuarios.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">No se encontraron usuarios. Creá el primero arriba.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {usuarios.map(u => (
+                      <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {u.nombre.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{u.nombre}</p>
+                            <p className="text-xs text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={u.activo ? "default" : "secondary"} className="text-xs">
+                            {u.rol}
+                          </Badge>
+                          <Badge variant={u.activo ? "outline" : "destructive"} className="text-xs">
+                            {u.activo ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* ── FISCAL ── */}

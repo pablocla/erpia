@@ -30,6 +30,9 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type CC = {
   id: number
@@ -122,6 +125,10 @@ export default function CuentasCobrarPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   useEffect(() => {
     fetch("/api/clientes?take=500", { headers: authHeaders() })
@@ -265,10 +272,6 @@ export default function CuentasCobrarPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Comprobantes pendientes</CardTitle>
             <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9 h-9 w-48 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
               <Select value={clienteFiltro} onValueChange={setClienteFiltro}>
                 <SelectTrigger className="h-9 w-52"><SelectValue placeholder="Cliente" /></SelectTrigger>
                 <SelectContent>
@@ -291,57 +294,30 @@ export default function CuentasCobrarPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Cliente</th>
-                  <th className="text-left p-3 font-medium">Comprobante</th>
-                  <th className="text-left p-3 font-medium">Emisión</th>
-                  <th className="text-left p-3 font-medium">Vencimiento</th>
-                  <th className="text-right p-3 font-medium">Total</th>
-                  <th className="text-right p-3 font-medium">Saldo</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cuentasFiltradas.map((c) => {
-                  const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente
-                  return (
-                    <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
-                      <td className="p-3">
-                        <p className="font-medium">{c.cliente?.nombre ?? "—"}</p>
-                        {c.cliente?.cuit && <p className="text-xs text-muted-foreground">{c.cliente.cuit}</p>}
-                      </td>
-                      <td className="p-3 font-mono text-xs">
-                        {c.factura ? `FAC ${c.factura.tipo} ${formatPV(c.factura.puntoVenta, c.factura.numero)}` : `CC #${c.id}`}
-                      </td>
-                      <td className="p-3 text-muted-foreground">{new Date(c.fechaEmision).toLocaleDateString("es-AR")}</td>
-                      <td className="p-3">
-                        <div className={cn("text-xs font-medium px-1.5 py-0.5 rounded inline-block", conf.bg, conf.color)}>
-                          {new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}
-                          {c.diasVencido > 0 && ` (${c.diasVencido}d)`}
-                        </div>
-                      </td>
-                      <td className="p-3 text-right font-medium">{formatCurrency(c.montoOriginal)}</td>
-                      <td className="p-3 text-right font-bold text-primary">{formatCurrency(c.saldo)}</td>
-                      <td className="p-3"><span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span></td>
-                      <td className="p-3">
-                        {c.estado !== "pagada" && c.saldo > 0 && (
-                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => abrirCobro(c)}>Registrar cobro</Button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-                {cuentasFiltradas.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay cuentas para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<CC>
+            data={cuentasFiltradas}
+            columns={[
+              { key: "cliente" as any, header: "Cliente", cell: (c) => (<div><p className="font-medium">{c.cliente?.nombre ?? "—"}</p>{c.cliente?.cuit && <p className="text-xs text-muted-foreground">{c.cliente.cuit}</p>}</div>), exportFn: (c) => c.cliente?.nombre ?? "" },
+              { key: "factura" as any, header: "Comprobante", cell: (c) => <span className="font-mono text-xs">{c.factura ? `FAC ${c.factura.tipo} ${formatPV(c.factura.puntoVenta, c.factura.numero)}` : `CC #${c.id}`}</span> },
+              { key: "fechaEmision", header: "Emisión", sortable: true, cell: (c) => <span className="text-muted-foreground">{new Date(c.fechaEmision).toLocaleDateString("es-AR")}</span> },
+              { key: "fechaVencimiento", header: "Vencimiento", sortable: true, cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <div className={cn("text-xs font-medium px-1.5 py-0.5 rounded inline-block", conf.bg, conf.color)}>{new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}{c.diasVencido > 0 && ` (${c.diasVencido}d)`}</div> } },
+              { key: "montoOriginal", header: "Total", align: "right", sortable: true, cell: (c) => <span className="font-medium">{formatCurrency(c.montoOriginal)}</span> },
+              { key: "saldo", header: "Saldo", align: "right", sortable: true, cell: (c) => <span className="font-bold text-primary">{formatCurrency(c.saldo)}</span> },
+              { key: "estado", header: "Estado", cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span> } },
+              { key: "acciones" as any, header: "", cell: (c) => c.estado !== "pagada" && c.saldo > 0 ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); abrirCobro(c) }}>Registrar cobro</Button> : null },
+            ] as DataTableColumn<CC>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar cuenta..."
+            searchKeys={["id"]}
+            selectable
+            exportFilename="cuentas-cobrar"
+            loading={loading}
+            emptyMessage="No hay cuentas para mostrar"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin cuentas a cobrar" description="Las cuentas se generan al emitir facturas." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 
@@ -349,41 +325,27 @@ export default function CuentasCobrarPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Recibos recientes</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Recibo</th>
-                  <th className="text-left p-3 font-medium">Cliente</th>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-right p-3 font-medium">Total</th>
-                  <th className="text-right p-3 font-medium">Retenciones</th>
-                  <th className="text-right p-3 font-medium">Neto</th>
-                  <th className="text-left p-3 font-medium">Medio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recibos.map((r) => (
-                  <tr key={r.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-xs">{r.numero}</td>
-                    <td className="p-3">
-                      <p className="font-medium">{r.cliente?.nombre ?? "—"}</p>
-                      {r.cliente?.cuit && <p className="text-xs text-muted-foreground">{r.cliente.cuit}</p>}
-                    </td>
-                    <td className="p-3 text-muted-foreground">{new Date(r.fecha).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3 text-right font-medium">{formatCurrency(r.montoTotal)}</td>
-                    <td className="p-3 text-right text-amber-700">{formatCurrency(r.totalRetenciones)}</td>
-                    <td className="p-3 text-right font-bold text-primary">{formatCurrency(r.netoRecibido)}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{r.medioPago}</td>
-                  </tr>
-                ))}
-                {recibos.length === 0 && (
-                  <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{loadingRecibos ? "Cargando..." : "No hay recibos para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<Recibo>
+            data={recibos}
+            columns={[
+              { key: "numero", header: "Recibo", sortable: true, cell: (r) => <span className="font-mono text-xs">{r.numero}</span> },
+              { key: "cliente" as any, header: "Cliente", cell: (r) => (<div><p className="font-medium">{r.cliente?.nombre ?? "—"}</p>{r.cliente?.cuit && <p className="text-xs text-muted-foreground">{r.cliente.cuit}</p>}</div>), exportFn: (r) => r.cliente?.nombre ?? "" },
+              { key: "fecha", header: "Fecha", sortable: true, cell: (r) => <span className="text-muted-foreground">{new Date(r.fecha).toLocaleDateString("es-AR")}</span> },
+              { key: "montoTotal", header: "Total", align: "right", sortable: true, cell: (r) => <span className="font-medium">{formatCurrency(r.montoTotal)}</span> },
+              { key: "totalRetenciones", header: "Retenciones", align: "right", cell: (r) => <span className="text-amber-700">{formatCurrency(r.totalRetenciones)}</span> },
+              { key: "netoRecibido", header: "Neto", align: "right", cell: (r) => <span className="font-bold text-primary">{formatCurrency(r.netoRecibido)}</span> },
+              { key: "medioPago", header: "Medio", cell: (r) => <span className="text-xs text-muted-foreground">{r.medioPago}</span> },
+            ] as DataTableColumn<Recibo>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar recibo..."
+            searchKeys={["numero"]}
+            exportFilename="recibos"
+            loading={loadingRecibos}
+            emptyMessage="No hay recibos"
+            defaultPageSize={10}
+            compact
+          />
         </CardContent>
       </Card>
 

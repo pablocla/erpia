@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 // ─── TIPOS ─────────────────────────────────────────────────────────────────────
 
@@ -409,6 +410,11 @@ export default function VeterinariaPage() {
   const [dialogConsulta, setDialogConsulta] = useState(false)
   const [pacienteConsulta, setPacienteConsulta] = useState<Paciente | null>(null)
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: fetchPacientes,
+    onNew: () => setDialogPaciente(true),
+  }))
 
   const fetchPacientes = useCallback(async () => {
     setLoading(true)

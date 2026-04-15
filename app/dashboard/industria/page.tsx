@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Factory, Plus, Search, Pencil, PlayCircle, PauseCircle, CheckCircle2, Layers } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Producto {
   id: number
@@ -105,6 +108,8 @@ export default function IndustriaPage() {
   }, [])
 
   useEffect(() => { fetchOrdenes(); fetchBoms(); fetchProductos() }, [fetchOrdenes, fetchBoms, fetchProductos])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: fetchOrdenes, onNew: () => { setOrdenSeleccionada(null); setForm(initialOrdenForm); setError(""); setOrdenDialogOpen(true) } }))
 
   const abrirDialogNuevaOrden = () => {
     setOrdenSeleccionada(null)
@@ -222,93 +227,36 @@ export default function IndustriaPage() {
           </div>
 
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Producto</TableHead>
-                    <TableHead>BOM</TableHead>
-                    <TableHead>Cantidad</TableHead>
-                    <TableHead>Producido</TableHead>
-                    <TableHead>Fecha plan</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
-                  ) : ordenes.length === 0 ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay órdenes de producción</TableCell></TableRow>
-                  ) : ordenes.map((orden) => {
-                    const progreso = orden.cantidad > 0 ? Math.round((orden.cantidadProd / orden.cantidad) * 100) : 0
-                    return (
-                      <TableRow key={orden.id}>
-                        <TableCell className="font-mono font-medium">{orden.numero}</TableCell>
-                        <TableCell>{orden.producto?.nombre || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{orden.bom?.nombre || "—"}</TableCell>
-                        <TableCell>{orden.cantidad}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span>{orden.cantidadProd}</span>
-                            <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(progreso, 100)}%` }} />
-                            </div>
-                            <span className="text-xs text-muted-foreground">{progreso}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{orden.fechaFinPlan ? new Date(orden.fechaFinPlan).toLocaleDateString("es-AR") : "—"}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${ESTADO_COLORS[orden.estado] || "bg-gray-100 text-gray-700"}`}>
-                            {ESTADOS_ORDEN[orden.estado]?.label || orden.estado}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {orden.estado === "borrador" && (
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Iniciar" onClick={() => cambiarEstado(orden.id, "en_proceso")}>
-                                <PlayCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            {orden.estado === "en_proceso" && (
-                              <>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-yellow-600" title="Pausar" onClick={() => cambiarEstado(orden.id, "pausada")}>
-                                  <PauseCircle className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" title="Terminar" onClick={() => cambiarEstado(orden.id, "terminada")}>
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </>
-                            )}
-                            {orden.estado === "pausada" && (
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Reanudar" onClick={() => cambiarEstado(orden.id, "en_proceso")}>
-                                <PlayCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={() => {
-                              setOrdenSeleccionada(orden)
-                              setForm({
-                                numero: orden.numero,
-                                cantidad: orden.cantidad.toString(),
-                                bomId: orden.bom?.id.toString() || "",
-                                productoId: orden.producto?.id.toString() || "",
-                                fechaInicio: orden.fechaInicio ? orden.fechaInicio.substring(0, 10) : "",
-                                fechaFinPlan: orden.fechaFinPlan ? orden.fechaFinPlan.substring(0, 10) : "",
-                                observaciones: orden.observaciones || "",
-                              })
-                              setError("")
-                              setOrdenDialogOpen(true)
-                            }}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<OrdenProduccion>
+                data={ordenes}
+                columns={[
+                  { key: "numero", header: "Número", sortable: true, cell: (o) => <span className="font-mono font-medium">{o.numero}</span> },
+                  { key: "producto" as any, header: "Producto", cell: (o) => o.producto?.nombre || "—", exportFn: (o) => o.producto?.nombre ?? "" },
+                  { key: "bom" as any, header: "BOM", cell: (o) => <span className="text-sm text-muted-foreground">{o.bom?.nombre || "—"}</span>, exportFn: (o) => o.bom?.nombre ?? "" },
+                  { key: "cantidad", header: "Cantidad", align: "right", sortable: true },
+                  { key: "cantidadProd", header: "Producido", cell: (o) => { const progreso = o.cantidad > 0 ? Math.round((o.cantidadProd / o.cantidad) * 100) : 0; return <div className="flex items-center gap-2"><span>{o.cantidadProd}</span><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(progreso, 100)}%` }} /></div><span className="text-xs text-muted-foreground">{progreso}%</span></div> } },
+                  { key: "fechaFinPlan", header: "Fecha plan", sortable: true, cell: (o) => o.fechaFinPlan ? new Date(o.fechaFinPlan).toLocaleDateString("es-AR") : "—" },
+                  { key: "estado", header: "Estado", cell: (o) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${ESTADO_COLORS[o.estado] || "bg-gray-100 text-gray-700"}`}>{ESTADOS_ORDEN[o.estado]?.label || o.estado}</span> },
+                  { key: "acciones" as any, header: "", cell: (o) => (
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                      {o.estado === "borrador" && <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Iniciar" onClick={() => cambiarEstado(o.id, "en_proceso")}><PlayCircle className="h-3.5 w-3.5" /></Button>}
+                      {o.estado === "en_proceso" && <><Button size="icon" variant="ghost" className="h-7 w-7 text-yellow-600" title="Pausar" onClick={() => cambiarEstado(o.id, "pausada")}><PauseCircle className="h-3.5 w-3.5" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" title="Terminar" onClick={() => cambiarEstado(o.id, "terminada")}><CheckCircle2 className="h-3.5 w-3.5" /></Button></>}
+                      {o.estado === "pausada" && <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Reanudar" onClick={() => cambiarEstado(o.id, "en_proceso")}><PlayCircle className="h-3.5 w-3.5" /></Button>}
+                      <Button size="icon" variant="ghost" className="h-7 w-7" title="Editar" onClick={() => { setOrdenSeleccionada(o); setForm({ numero: o.numero, cantidad: o.cantidad.toString(), bomId: o.bom?.id.toString() || "", productoId: o.producto?.id.toString() || "", fechaInicio: o.fechaInicio ? o.fechaInicio.substring(0, 10) : "", fechaFinPlan: o.fechaFinPlan ? o.fechaFinPlan.substring(0, 10) : "", observaciones: o.observaciones || "" }); setError(""); setOrdenDialogOpen(true) }}><Pencil className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  ) },
+                ] as DataTableColumn<OrdenProduccion>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar orden..."
+                searchKeys={["numero"]}
+                exportFilename="ordenes-produccion"
+                loading={loading}
+                emptyMessage="No hay órdenes de producción"
+                emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin órdenes" description="Creá una orden de producción." />}
+                defaultPageSize={25}
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>

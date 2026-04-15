@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,7 +55,9 @@ function KPICard({
 }) {
   const card = (
     <MotionCard hover={!!href}>
-      <Card className={`dashboard-surface ${href ? "cursor-pointer" : ""}`}>
+      <Card className={`glass-panel border-border/50 relative overflow-hidden group ${href ? "cursor-pointer hover:shadow-lg transition-all" : ""}`}>
+        {/* Decorative corner glow */}
+        <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors pointer-events-none" />
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">{titulo}</CardTitle>
           <Icon className={`h-4 w-4 ${colorClass || "text-muted-foreground"}`} />
@@ -251,15 +253,17 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <MotionFadeDown>
-        <div className="dashboard-surface rounded-xl p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-2">
+        <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 sm:p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
+          {/* Subtle gradient background for main header */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent pointer-events-none" />
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3 shadow-[0_0_12px_rgba(var(--primary-rgb),0.15)] glow-pulse">
               <Sparkles className="h-3.5 w-3.5" />
               Centro de control operativo
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Resumen ejecutivo del negocio con foco en rubro: <span className="font-medium text-foreground">{rubroConfig.nombre}</span>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gradient">Dashboard Ejecutivo</h1>
+            <p className="text-muted-foreground text-sm mt-1.5 max-w-xl">
+              Resumen ejecutivo consolidado del negocio. Perfil activo: <span className="font-semibold text-foreground">{rubroConfig.nombre}</span>
               {lastUpdate && (
                 <span className="ml-2 text-xs opacity-60">
                   — Actualizado {lastUpdate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
@@ -284,8 +288,8 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
 
-            <Button variant="ghost" size="icon" onClick={cargarStats} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button variant="outline" size="icon" onClick={cargarStats} disabled={loading} className="bg-background/50 backdrop-blur-md hover:bg-muted ml-2">
+              <RefreshCw className={`h-4 w-4 text-muted-foreground ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
@@ -306,15 +310,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <Card className="dashboard-surface">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">KPIs recomendados por rubro</CardTitle>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">KPIs clave del rubro</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <div className="flex flex-wrap gap-2">
               {rubroConfig.foco.map((item) => (
-                <Badge key={item} variant="secondary" className="text-xs px-2.5 py-1">
+                <Badge key={item} variant="secondary" className="text-[11px] font-medium px-3 py-1 bg-secondary shadow-sm">
                   {item}
                 </Badge>
               ))}
@@ -322,14 +326,14 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="dashboard-surface">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Alertas prioritarias a instrumentar</CardTitle>
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Alertas a instrumentar</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <div className="flex flex-wrap gap-2">
               {rubroConfig.alertas.map((item) => (
-                <Badge key={item} className="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-700 border-amber-300" variant="outline">
+                <Badge key={item} className="text-[11px] font-medium px-3 py-1 bg-amber-500/10 text-amber-700 border-amber-300 shadow-sm" variant="outline">
                   {item}
                 </Badge>
               ))}
@@ -339,14 +343,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="dashboard-surface lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+        <Card className="glass-panel border-border/50 lg:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 tracking-wide uppercase text-muted-foreground">
               <Rocket className="h-4 w-4 text-primary" />
-              Acciones rápidas para {rubroConfig.nombre}
+              Acciones rápidas operativas
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {rubroConfig.quickActions.map((action) => (
                 <Link
@@ -362,11 +366,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="dashboard-surface">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Salud operativa</CardTitle>
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">Salud operativa</CardTitle>
           </CardHeader>
-          <CardContent className="pt-0 space-y-3">
+          <CardContent className="pt-4 space-y-4">
             <div className="flex items-center gap-4">
               {/* Circular progress */}
               <div className="relative h-16 w-16 shrink-0">
@@ -468,11 +472,11 @@ export default function DashboardPage() {
 
       <ScrollReveal>
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="dashboard-surface lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Evolución de Ventas</CardTitle>
+          <Card className="glass-panel border-border/50 lg:col-span-2">
+            <CardHeader className="border-b border-border/40 bg-muted/10 pb-4">
+              <CardTitle className="text-base font-semibold">Evolución de Ingresos (Facturado vs Mes)</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {s.ventasPorMes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm gap-2">
                   <BarChart3 className="h-10 w-10 opacity-20" />
@@ -507,11 +511,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="dashboard-surface">
-            <CardHeader>
-              <CardTitle>IVA del Período</CardTitle>
+          <Card className="glass-panel border-border/50">
+            <CardHeader className="border-b border-border/40 bg-muted/10 pb-4">
+              <CardTitle className="text-base font-semibold">Carga Impositiva (IVA)</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {s.resumenMes.ivaDebito + s.resumenMes.ivaCredito === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm gap-2">
                   <FileText className="h-8 w-8 opacity-20" />
@@ -543,14 +547,14 @@ export default function DashboardPage() {
 
       {s.topClientes.length > 0 && (
         <ScrollReveal>
-          <Card className="dashboard-surface">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Top Clientes</CardTitle>
+          <Card className="glass-panel border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border/40 bg-muted/10 pb-4">
+              <CardTitle className="text-base font-semibold">Distribuición de Cartera de Clientes</CardTitle>
               <Link href="/dashboard/clientes">
-                <Button variant="ghost" size="sm">Ver todos</Button>
+                <Button variant="outline" size="sm" className="h-8">Análisis completo</Button>
               </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
             <div className="space-y-3">
               {s.topClientes.map((c, i) => {
                 const pct = s.resumenMes.totalVentas > 0 ? (c.total / s.resumenMes.totalVentas) * 100 : 0
@@ -628,9 +632,10 @@ function AIInsightsWidget() {
 
   return (
     <MotionCard>
-      <Card className="dashboard-surface border-amber-200/50">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
+      <Card className="glass-panel border-amber-500/20 shadow-[0_4px_24px_-8px_rgba(245,158,11,0.15)] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent pointer-events-none" />
+        <CardHeader className="pb-3 border-b border-border/40 bg-amber-50/30 dark:bg-amber-900/10 flex flex-row items-center justify-between relative z-10">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-500 tracking-wide uppercase">
             <Bot className="h-5 w-5 text-amber-500" />
             Alertas IA
           </CardTitle>

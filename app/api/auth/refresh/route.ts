@@ -1,13 +1,14 @@
 /**
  * POST /api/auth/refresh — Refresh an expired JWT
  * Accepts expired token, verifies user still exists & active, issues new token.
+ * Uses jose (Edge-compatible) — consistent with the rest of the auth system.
  */
 import { type NextRequest, NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
+import { decodeJwt, SignJWT } from "jose"
 import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 
-const JWT_SECRET = process.env.JWT_SECRET || ""
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "")
 
 export async function POST(request: NextRequest) {
   // Rate limit refresh attempts
@@ -23,13 +24,12 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7)
 
     // Decode without verification first to get payload
-    const decoded = jwt.decode(token) as {
-      userId?: number
-      email?: string
-      rol?: string
-      empresaId?: number
-      iat?: number
-    } | null
+    let decoded: { userId?: number; email?: string; rol?: string; empresaId?: number; iat?: number }
+    try {
+      decoded = decodeJwt(token) as typeof decoded
+    } catch {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 })
+    }
 
     if (!decoded?.userId) {
       return NextResponse.json({ error: "Token inválido" }, { status: 401 })
@@ -57,17 +57,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Issue fresh token
-    const newToken = jwt.sign(
-      {
-        userId: usuario.id,
-        email: usuario.email,
-        rol: usuario.rol,
-        empresaId: usuario.empresaId,
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" },
-    )
+    // Issue fresh token using jose
+    const newToken = await new SignJWT({
+      userId: usuario.id,
+      email: usuario.email,
+      rol: usuario.rol,
+      empresaId: usuario.empresaId,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("24h")
+      .sign(JWT_SECRET)
 
     return NextResponse.json({
       token: newToken,

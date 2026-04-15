@@ -30,6 +30,9 @@ import {
   DollarSign,
   AlertTriangle,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 type NC = {
   id: number
@@ -91,6 +94,8 @@ export default function NotasCreditoPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargar, onNew: () => setModal(true) }))
 
   const ncFiltradas = ncs.filter((nc) => {
     const matchBusqueda =
@@ -201,62 +206,39 @@ export default function NotasCreditoPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Comprobantes</CardTitle>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar cliente, motivo, número..." className="pl-9 h-9 w-60 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
-              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-                <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  {ESTADOS_NC.map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los estados</SelectItem>
+                {ESTADOS_NC.map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Tipo</th>
-                  <th className="text-left p-3 font-medium">Número</th>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-left p-3 font-medium">Cliente</th>
-                  <th className="text-left p-3 font-medium">Factura origen</th>
-                  <th className="text-left p-3 font-medium">Motivo</th>
-                  <th className="text-right p-3 font-medium">Importe</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ncFiltradas.map((nc) => (
-                  <tr key={nc.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3"><Badge variant="outline" className="font-mono text-xs">NC {nc.tipo}</Badge></td>
-                    <td className="p-3 font-mono text-xs">{formatPV(nc.puntoVenta, nc.numero)}</td>
-                    <td className="p-3 text-muted-foreground">{new Date(nc.createdAt).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3">
-                      <p className="font-medium">{nc.cliente?.nombre ?? "—"}</p>
-                      {nc.cliente?.cuit && <p className="text-xs text-muted-foreground">{nc.cliente.cuit}</p>}
-                    </td>
-                    <td className="p-3 font-mono text-xs">
-                      {nc.factura ? `FAC ${nc.factura.tipo} ${formatPV(nc.factura.puntoVenta, nc.factura.numero)}` : "—"}
-                    </td>
-                    <td className="p-3 text-muted-foreground max-w-[200px] truncate">{nc.motivo}</td>
-                    <td className="p-3 text-right font-bold text-red-600">-{formatCurrency(nc.total)}</td>
-                    <td className="p-3">
-                      <Badge variant={nc.estado === "emitida" ? "default" : nc.estado === "anulada" ? "destructive" : "secondary"} className="text-xs">{nc.estado}</Badge>
-                    </td>
-                  </tr>
-                ))}
-                {ncFiltradas.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay notas de crédito para mostrar."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<NC>
+            data={ncFiltradas}
+            columns={[
+              { key: "tipo", header: "Tipo", cell: (nc) => <Badge variant="outline" className="font-mono text-xs">NC {nc.tipo}</Badge> },
+              { key: "numero", header: "Número", sortable: true, cell: (nc) => <span className="font-mono text-xs">{formatPV(nc.puntoVenta, nc.numero)}</span> },
+              { key: "createdAt", header: "Fecha", sortable: true, cell: (nc) => <span className="text-muted-foreground">{new Date(nc.createdAt).toLocaleDateString("es-AR")}</span> },
+              { key: "cliente" as any, header: "Cliente", cell: (nc) => (<div><p className="font-medium">{nc.cliente?.nombre ?? "—"}</p>{nc.cliente?.cuit && <p className="text-xs text-muted-foreground">{nc.cliente.cuit}</p>}</div>), exportFn: (nc) => nc.cliente?.nombre ?? "" },
+              { key: "factura" as any, header: "Factura origen", cell: (nc) => <span className="font-mono text-xs">{nc.factura ? `FAC ${nc.factura.tipo} ${formatPV(nc.factura.puntoVenta, nc.factura.numero)}` : "—"}</span> },
+              { key: "motivo", header: "Motivo", cell: (nc) => <span className="text-muted-foreground max-w-[200px] truncate block">{nc.motivo}</span> },
+              { key: "total", header: "Importe", align: "right", sortable: true, cell: (nc) => <span className="font-bold text-red-600">-{formatCurrency(nc.total)}</span> },
+              { key: "estado", header: "Estado", cell: (nc) => <Badge variant={nc.estado === "emitida" ? "default" : nc.estado === "anulada" ? "destructive" : "secondary"} className="text-xs">{nc.estado}</Badge> },
+            ] as DataTableColumn<NC>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar nota de crédito..."
+            searchKeys={["numero", "motivo"]}
+            selectable
+            exportFilename="notas-credito"
+            loading={loading}
+            emptyMessage="No hay notas de crédito"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin notas de crédito" description="Emití una NC desde una factura para reversar." actionLabel="Nueva NC" onAction={() => setModal(true)} />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

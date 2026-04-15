@@ -22,9 +22,15 @@ const pedidoSchema = z.object({
 })
 
 const actionSchema = z.object({
-  action: z.enum(["confirmar", "picking", "remito", "anular"]),
+  action: z.enum(["confirmar", "picking", "remito", "anular", "facturar"]),
   pedidoId: z.number().int().positive(),
   depositoId: z.number().int().positive().optional(),
+  // Datos para facturación (solo cuando action=facturar)
+  tipo: z.enum(["A", "B", "C"]).optional(),
+  tipoCbte: z.number().int().optional(),
+  puntoVenta: z.number().int().positive().optional(),
+  cae: z.string().optional(),
+  condicionPagoId: z.number().int().positive().optional(),
 })
 
 // ─── GET — List pedidos de venta ────────────────────────────────────────────
@@ -83,6 +89,19 @@ export async function POST(request: NextRequest) {
         case "anular":
           result = await ventasService.anularPedido(pedidoId)
           break
+        case "facturar": {
+          const tipo = actionResult.data.tipo ?? "B"
+          const tipoCbteMap: Record<string, number> = { A: 1, B: 6, C: 11 }
+          result = await ventasService.facturarPedido(pedidoId, {
+            empresaId: ctx.auth.empresaId,
+            tipo,
+            tipoCbte: actionResult.data.tipoCbte ?? tipoCbteMap[tipo] ?? 6,
+            puntoVenta: actionResult.data.puntoVenta ?? 1,
+            cae: actionResult.data.cae,
+            condicionPagoId: actionResult.data.condicionPagoId,
+          })
+          break
+        }
       }
       return NextResponse.json(result, { status: 200 })
     }

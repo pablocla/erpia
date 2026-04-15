@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Database, Search, Eye, Loader2, RefreshCw, Save, Plus } from "lucide-react"
 
 const TABLAS = [
@@ -97,6 +98,10 @@ export default function TablasPage() {
   }, [authHeaders])
 
   useEffect(() => { cargarConteos() }, [cargarConteos])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarConteos,
+  }))
 
   const abrirVisor = async (clave: string, nombre: string) => {
     setLoadingVisor(true)

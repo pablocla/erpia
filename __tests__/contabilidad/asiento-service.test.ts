@@ -18,6 +18,8 @@ beforeEach(() => {
   mockPrismaClient.periodoFiscal.create.mockResolvedValue({ id: 1, estado: "abierto" })
   // Default: no custom account config → fallback to hardcoded labels
   mockPrismaClient.configAsientoCuenta.findFirst.mockResolvedValue(null)
+  // Default: TipoAsiento maestro lookup → null (backward compatible)
+  mockPrismaClient.tipoAsiento.findFirst.mockResolvedValue(null)
 })
 
 describe("AsientoService", () => {

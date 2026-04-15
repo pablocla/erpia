@@ -15,9 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RefreshCw, Plus, DollarSign, ArrowRightLeft, TrendingUp, Download,
 } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface Moneda { id: number; codigo: string; descripcion: string; simbolo: string; esBase: boolean }
 interface CotizacionEntry { fecha: string; tipo: string; valorArs: number; fuente?: string }
+interface CotizacionFlat { _key: string; moneda: string; fecha: string; tipo: string; valorArs: number; fuente?: string }
 interface MonedaCotiz { monedaId: number; codigo: string; descripcion: string; simbolo: string; cotizaciones: CotizacionEntry[] }
 
 const TIPO_COLOR: Record<string, string> = {
@@ -54,6 +57,10 @@ export default function CotizacionesPage() {
     cargar()
     fetch("/api/config/cotizaciones?vista=monedas").then(r => r.json()).then(setMonedas).catch(() => {})
   }, [])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
 
   async function cargar() {
     setLoading(true)
@@ -219,31 +226,23 @@ export default function CotizacionesPage() {
                   <TrendingUp className="h-5 w-5" /> Historial reciente
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Moneda</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Valor (ARS)</TableHead>
-                      <TableHead>Fuente</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cotizaciones.flatMap(mc =>
-                      mc.cotizaciones.map((c, i) => (
-                        <TableRow key={`${mc.monedaId}-${i}`}>
-                          <TableCell className="font-medium">{mc.codigo} ({mc.simbolo})</TableCell>
-                          <TableCell>{new Date(c.fecha).toLocaleDateString("es-AR")}</TableCell>
-                          <TableCell><Badge className={TIPO_COLOR[c.tipo] ?? "bg-gray-500"}>{c.tipo}</Badge></TableCell>
-                          <TableCell className="text-right font-mono">${fmt(c.valorArs, 4)}</TableCell>
-                          <TableCell className="text-muted-foreground">{c.fuente ?? "—"}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+              <CardContent className="pt-4">
+                <DataTable<CotizacionFlat>
+                  data={cotizaciones.flatMap(mc => mc.cotizaciones.map((c, i) => ({ _key: `${mc.monedaId}-${i}`, moneda: `${mc.codigo} (${mc.simbolo})`, fecha: c.fecha, tipo: c.tipo, valorArs: c.valorArs, fuente: c.fuente })))}
+                  columns={[
+                    { key: "moneda", header: "Moneda", sortable: true, cell: (r) => <span className="font-medium">{r.moneda}</span> },
+                    { key: "fecha", header: "Fecha", sortable: true, cell: (r) => new Date(r.fecha).toLocaleDateString("es-AR") },
+                    { key: "tipo", header: "Tipo", sortable: true, cell: (r) => <Badge className={TIPO_COLOR[r.tipo] ?? "bg-gray-500"}>{r.tipo}</Badge> },
+                    { key: "valorArs", header: "Valor (ARS)", sortable: true, cell: (r) => <span className="text-right block font-mono">${fmt(r.valorArs, 4)}</span> },
+                    { key: "fuente", header: "Fuente", cell: (r) => <span className="text-muted-foreground">{r.fuente ?? "—"}</span> },
+                  ] as DataTableColumn<CotizacionFlat>[]}
+                  rowKey="_key"
+                  searchPlaceholder="Buscar cotización..."
+                  searchKeys={["moneda", "tipo", "fuente"]}
+                  exportFilename="cotizaciones"
+                  emptyMessage="Sin cotizaciones registradas"
+                  compact
+                />
               </CardContent>
             </Card>
           )}

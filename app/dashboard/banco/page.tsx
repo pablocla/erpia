@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Landmark, Search, RefreshCw, CheckCircle2, XCircle, Plus, Sparkles, ArrowLeftRight } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { cn } from "@/lib/utils"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
+import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
 type Mov = {
   id: number
@@ -46,6 +51,7 @@ export default function BancoPage() {
   const [loading, setLoading] = useState(false)
   const [busqueda, setBusqueda] = useState("")
   const [filtroCuenta, setFiltroCuenta] = useState("todas")
+  const [filters, setFilters] = useState<FilterValues>({})
 
   // Modal nuevo movimiento
   const [modalNuevo, setModalNuevo] = useState(false)
@@ -68,6 +74,7 @@ export default function BancoPage() {
   const [tFecha, setTFecha] = useState(new Date().toISOString().split("T")[0])
   const [transferError, setTransferError] = useState("")
   const [transfiriendo, setTransfiriendo] = useState(false)
+  const { toast } = useToast()
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
@@ -93,14 +100,42 @@ export default function BancoPage() {
     void cargar()
   }, [cargar])
 
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargar, onNew: () => setModalNuevo(true) }))
+
   const movsFiltrados = movimientos.filter((m) =>
     m.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
     m.referencia?.toLowerCase().includes(busqueda.toLowerCase())
   )
 
+  const filterFields: FilterField[] = [
+    { key: "tipo", label: "Tipo", type: "select", options: [
+      { value: "credito", label: "Ingreso (crédito)" },
+      { value: "debito", label: "Egreso (débito)" },
+    ]},
+    { key: "descripcion", label: "Concepto", type: "text", placeholder: "Buscar concepto..." },
+    { key: "fecha", label: "Fecha", type: "date-range" },
+  ]
+
+  const movsConFiltros = useMemo(() => {
+    return movsFiltrados.filter((m) => {
+      if (filters.tipo && m.tipo !== filters.tipo) return false
+      if (filters.descripcion) {
+        if (!m.descripcion.toLowerCase().includes(String(filters.descripcion).toLowerCase())) return false
+      }
+      if (filters.fecha) {
+        const range = filters.fecha as { from?: string; to?: string }
+        const fecha = m.fecha.slice(0, 10)
+        if (range.from && fecha < range.from) return false
+        if (range.to && fecha > range.to) return false
+      }
+      return true
+    })
+  }, [movsFiltrados, filters])
+
   const conciliar = async (ids: number[]) => {
     await fetch("/api/banco/conciliar", { method: "PATCH", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ ids }) })
     await cargar()
+    toast({ title: "Movimientos conciliados", description: `${ids.length} movimiento(s) marcados como conciliados` })
   }
 
   const crearMovimiento = async () => {
@@ -125,9 +160,10 @@ export default function BancoPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setErrorNuevo(data.error || "Error"); return }
+      if (!res.ok) { setErrorNuevo(data.error || "Error"); toast({ title: "Error al crear movimiento", description: data.error || "Ocurrió un error", variant: "destructive" }); return }
       setModalNuevo(false)
       await cargar()
+      toast({ title: "Movimiento bancario creado", description: `${nTipo === "credito" ? "Ingreso" : "Egreso"} registrado correctamente` })
     } finally {
       setCreando(false)
     }
@@ -168,9 +204,10 @@ export default function BancoPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setTransferError(data.error || "Error al transferir"); return }
+      if (!res.ok) { setTransferError(data.error || "Error al transferir"); toast({ title: "Error en transferencia", description: data.error || "No se pudo completar", variant: "destructive" }); return }
       setModalTransfer(false)
       await cargar()
+      toast({ title: "Transferencia realizada", description: "La transferencia entre cuentas se registró correctamente" })
     } finally {
       setTransfiriendo(false)
     }
@@ -238,16 +275,14 @@ export default function BancoPage() {
         </Card>
       </div>
 
+      <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
+
       {/* Table */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Movimientos bancarios</CardTitle>
             <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9 h-9 w-56 text-sm" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-              </div>
               {cuentas.length > 1 && (
                 <Select value={filtroCuenta} onValueChange={setFiltroCuenta}>
                   <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
@@ -262,46 +297,28 @@ export default function BancoPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-t">
-                <tr>
-                  <th className="text-left p-3 font-medium">Fecha</th>
-                  <th className="text-left p-3 font-medium">Descripción</th>
-                  <th className="text-left p-3 font-medium">Referencia</th>
-                  <th className="text-right p-3 font-medium">Importe</th>
-                  <th className="text-left p-3 font-medium">Estado</th>
-                  <th className="p-3"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {movsFiltrados.map((m) => (
-                  <tr key={m.id} className="border-t hover:bg-muted/30 transition-colors">
-                    <td className="p-3 text-muted-foreground">{new Date(m.fecha).toLocaleDateString("es-AR")}</td>
-                    <td className="p-3">{m.descripcion}</td>
-                    <td className="p-3 text-xs text-muted-foreground font-mono">{m.referencia ?? "—"}</td>
-                    <td className={cn("p-3 text-right font-bold", m.tipo === "credito" ? "text-green-700" : "text-red-700")}>
-                      {m.tipo === "credito" ? "+" : "-"}{formatCurrency(Math.abs(m.importe))}
-                    </td>
-                    <td className="p-3">
-                      {m.estado === "conciliado"
-                        ? <span className="flex items-center gap-1 text-green-600 text-xs"><CheckCircle2 className="h-3.5 w-3.5" />Conciliado</span>
-                        : <span className="flex items-center gap-1 text-amber-600 text-xs"><XCircle className="h-3.5 w-3.5" />Pendiente</span>}
-                    </td>
-                    <td className="p-3">
-                      {m.estado === "pendiente" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => conciliar([m.id])}>Conciliar</Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {movsFiltrados.length === 0 && (
-                  <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{loading ? "Cargando..." : "No hay movimientos bancarios."}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="pt-0">
+          <DataTable<Mov>
+            data={movsConFiltros}
+            columns={[
+              { key: "fecha", header: "Fecha", sortable: true, cell: (m) => <span className="text-muted-foreground">{new Date(m.fecha).toLocaleDateString("es-AR")}</span> },
+              { key: "descripcion", header: "Descripción", sortable: true },
+              { key: "referencia", header: "Referencia", cell: (m) => <span className="text-xs text-muted-foreground font-mono">{m.referencia ?? "—"}</span> },
+              { key: "importe", header: "Importe", align: "right", sortable: true, cell: (m) => <span className={cn("font-bold", m.tipo === "credito" ? "text-green-700" : "text-red-700")}>{m.tipo === "credito" ? "+" : "-"}{formatCurrency(Math.abs(m.importe))}</span> },
+              { key: "estado", header: "Estado", cell: (m) => m.estado === "conciliado" ? <span className="flex items-center gap-1 text-green-600 text-xs"><CheckCircle2 className="h-3.5 w-3.5" />Conciliado</span> : <span className="flex items-center gap-1 text-amber-600 text-xs"><XCircle className="h-3.5 w-3.5" />Pendiente</span> },
+              { key: "acciones" as any, header: "", cell: (m) => m.estado === "pendiente" ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); conciliar([m.id]) }}>Conciliar</Button> : null },
+            ] as DataTableColumn<Mov>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar movimiento..."
+            searchKeys={["descripcion", "referencia"]}
+            selectable
+            exportFilename="movimientos-banco"
+            loading={loading}
+            emptyMessage="No hay movimientos bancarios"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin movimientos" description="Cargá movimientos o sincronizá con el banco." />}
+            defaultPageSize={25}
+            compact
+          />
         </CardContent>
       </Card>
 

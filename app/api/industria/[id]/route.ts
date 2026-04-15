@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verificarToken } from "@/lib/auth/middleware"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const usuario = await verificarToken(request)
     if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-    const id = parseInt(params.id)
+    const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
     const body = await request.json()
@@ -35,12 +35,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const usuario = await verificarToken(request)
     if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
 
-    const id = parseInt(params.id)
+    const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
     await prisma.ordenProduccion.update({ where: { id }, data: { estado: "anulada" } })

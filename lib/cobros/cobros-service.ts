@@ -17,6 +17,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
+import { getCuentaLabel } from "@/lib/config/parametro-service"
 import type { ReciboEmitidoPayload } from "@/lib/events/types"
 
 export interface CobroInput {
@@ -160,25 +161,35 @@ export class CobrosService {
 
       const movimientos: { cuenta: string; debe: number; haber: number }[] = []
 
+      // Resolve account labels from DB config (professional plan de cuentas)
+      const [ctaCaja, ctaBanco, ctaRetIVA, ctaRetGan, ctaRetIIBB, ctaDeudores] = await Promise.all([
+        getCuentaLabel(empresaId, "cobro", "caja", "1.1.1", "Caja Moneda Nacional"),
+        getCuentaLabel(empresaId, "cobro", "banco", "1.1.3", "Banco Cuenta Corriente"),
+        getCuentaLabel(empresaId, "cobro", "ret_iva_sufrida", "1.5.2", "Retenciones de IVA Sufridas"),
+        getCuentaLabel(empresaId, "cobro", "ret_gan_sufrida", "1.5.3", "Retenciones de Ganancias Sufridas"),
+        getCuentaLabel(empresaId, "cobro", "ret_iibb_sufrida", "1.5.4", "Retenciones de IIBB Sufridas"),
+        getCuentaLabel(empresaId, "cobro", "deudores", "1.3.1", "Deudores por Ventas"),
+      ])
+
       // DEBE: cash / bank received
-      const cuentaCaja = medioPago === "efectivo" ? "1.1 Caja" : "1.2 Banco"
+      const cuentaCaja = medioPago === "efectivo" ? ctaCaja : ctaBanco
       if (netoRecibido > 0) {
         movimientos.push({ cuenta: cuentaCaja, debe: netoRecibido, haber: 0 })
       }
 
       // DEBE: retenciones sufridas (activos — crédito fiscal a nuestro favor)
       if (retencionIVA > 0) {
-        movimientos.push({ cuenta: "1.7.1 Ret. IVA sufridas", debe: retencionIVA, haber: 0 })
+        movimientos.push({ cuenta: ctaRetIVA, debe: retencionIVA, haber: 0 })
       }
       if (retencionGanancias > 0) {
-        movimientos.push({ cuenta: "1.7.2 Ret. Ganancias sufridas", debe: retencionGanancias, haber: 0 })
+        movimientos.push({ cuenta: ctaRetGan, debe: retencionGanancias, haber: 0 })
       }
       if (retencionIIBB > 0) {
-        movimientos.push({ cuenta: "1.7.3 Ret. IIBB sufridas", debe: retencionIIBB, haber: 0 })
+        movimientos.push({ cuenta: ctaRetIIBB, debe: retencionIIBB, haber: 0 })
       }
 
       // HABER: accounts receivable extinguished
-      movimientos.push({ cuenta: "1.3 Deudores por Ventas", debe: 0, haber: montoTotal })
+      movimientos.push({ cuenta: ctaDeudores, debe: 0, haber: montoTotal })
 
       const cliente = await tx.cliente.findUnique({ where: { id: clienteId }, select: { nombre: true } })
 
@@ -188,6 +199,7 @@ export class CobrosService {
           numero: numeroAsiento,
           descripcion: `Cobro Recibo ${numero} - Cliente: ${cliente?.nombre ?? clienteId}`,
           tipo: "cobro",
+          tipoAsientoId: (await prisma.tipoAsiento.findFirst({ where: { empresaId, codigo: "COBRO", activo: true } }))?.id,
           empresaId,
           movimientos: { create: movimientos },
         },

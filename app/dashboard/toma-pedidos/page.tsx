@@ -8,6 +8,7 @@ import {
   Plus, Minus, Trash2, ChefHat, ShoppingCart, Search, Send
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -53,24 +54,26 @@ export default function TomaPedidosPage() {
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
 
-  useEffect(() => {
-    const cargar = async () => {
-      const [resPlatos, resHosp] = await Promise.all([
-        fetch("/api/hospitalidad/platos", { headers: authHeaders() }),
-        fetch("/api/hospitalidad", { headers: authHeaders() }),
-      ])
-      if (resPlatos.ok) {
-        const data = await resPlatos.json()
-        // platos viene como array de { producto, receta }
-        setProductos(data.map((d: { producto: Producto }) => d.producto))
-      }
-      if (resHosp.ok) {
-        const data = await resHosp.json()
-        setMesas(data.mesas ?? [])
-      }
+  const cargar = useCallback(async () => {
+    const [resPlatos, resHosp] = await Promise.all([
+      fetch("/api/hospitalidad/platos", { headers: authHeaders() }),
+      fetch("/api/hospitalidad", { headers: authHeaders() }),
+    ])
+    if (resPlatos.ok) {
+      const data = await resPlatos.json()
+      setProductos(data.map((d: { producto: Producto }) => d.producto))
     }
-    cargar()
+    if (resHosp.ok) {
+      const data = await resHosp.json()
+      setMesas(data.mesas ?? [])
+    }
   }, [authHeaders])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+  }))
+
+  useEffect(() => { cargar() }, [cargar])
 
   // ── Carrito ──────────────────────────────────────────────────────────────────
 

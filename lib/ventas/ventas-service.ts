@@ -313,6 +313,91 @@ export class VentasService {
 
     return { pedidos, total, page, limit }
   }
+
+  /**
+   * facturarPedido — Transitions a remitido pedido to "facturado" state.
+   * Creates the factura record with all lines, links it to the pedido's remito(s),
+   * and emits the PEDIDO_FACTURADO event for downstream listeners (contabilidad, etc).
+   *
+   * Expected to be called AFTER AFIP emission confirms CAE, or for internal invoicing.
+   */
+  async facturarPedido(pedidoId: number, datosFactura: {
+    empresaId: number
+    tipo: string                // "A" | "B" | "C"
+    tipoCbte: number            // AFIP code: 1/6/11
+    puntoVenta: number
+    cae?: string
+    fechaCAE?: Date
+    vencimientoCAE?: Date
+    condicionPagoId?: number
+  }) {
+    const pedido = await prisma.pedidoVenta.findUnique({
+      where: { id: pedidoId },
+      include: { lineas: { include: { producto: true } }, cliente: true, remitos: true },
+    })
+    if (!pedido) throw new Error("Pedido no encontrado")
+    if (pedido.estado !== "remitido") throw new Error(`Pedido en estado '${pedido.estado}', se requiere 'remitido'`)
+
+    // Auto-number factura
+    const ultimaFactura = await prisma.factura.findFirst({
+      where: { empresaId: datosFactura.empresaId, tipo: datosFactura.tipo, puntoVenta: datosFactura.puntoVenta },
+      orderBy: { numero: "desc" },
+    })
+    const numero = (ultimaFactura?.numero ?? 0) + 1
+
+    // Build factura lines from pedido lines
+    const lineasFactura = pedido.lineas.map((l, i) => ({
+      productoId: l.productoId,
+      descripcion: l.descripcion ?? l.producto?.nombre ?? "",
+      cantidad: Number(l.cantidad),
+      precioUnitario: Number(l.precioUnitario),
+      subtotal: Number(l.subtotal),
+      porcentajeIva: 21,
+      iva: Number(l.subtotal) * 0.21,
+      total: Number(l.subtotal) * 1.21,
+      orden: i + 1,
+    }))
+
+    const subtotal = Number(pedido.subtotal)
+    const iva = Number(pedido.impuestos)
+    const total = Number(pedido.total)
+
+    const [factura] = await prisma.$transaction([
+      prisma.factura.create({
+        data: {
+          tipo: datosFactura.tipo,
+          tipoCbte: datosFactura.tipoCbte,
+          numero,
+          puntoVenta: datosFactura.puntoVenta,
+          cae: datosFactura.cae ?? null,
+          fechaCAE: datosFactura.fechaCAE ?? null,
+          vencimientoCAE: datosFactura.vencimientoCAE ?? null,
+          subtotal,
+          iva,
+          total,
+          estado: datosFactura.cae ? "emitida" : "pendiente",
+          empresaId: datosFactura.empresaId,
+          clienteId: pedido.clienteId,
+          vendedorId: pedido.vendedorId,
+          condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId,
+          lineas: { create: lineasFactura },
+        },
+        include: { lineas: true },
+      }),
+      prisma.pedidoVenta.update({
+        where: { id: pedidoId },
+        data: { estado: "facturado" },
+      }),
+    ])
+
+    eventBus.emit({
+      type: "FACTURA_EMITIDA",
+      payload: { facturaId: factura.id, empresaId: datosFactura.empresaId, clienteId: pedido.clienteId },
+      timestamp: new Date(),
+    })
+
+    return factura
+  }
 }
 
 export const ventasService = new VentasService()

@@ -12,6 +12,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Truck, Plus, Search, Pencil, Trash2, Package, MapPin, Users } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface Transportista {
   id: number
@@ -66,6 +71,7 @@ export default function LogisticaPage() {
   const [transportistaForm, setTransportistaForm] = useState(initialTransportistaForm)
   const [error, setError] = useState("")
   const [guardando, setGuardando] = useState(false)
+  const { toast } = useToast()
 
   const fetchEnvios = useCallback(async () => {
     setLoading(true)
@@ -86,6 +92,8 @@ export default function LogisticaPage() {
   }, [])
 
   useEffect(() => { fetchEnvios(); fetchTransportistas() }, [fetchEnvios, fetchTransportistas])
+
+  useKeyboardShortcuts(erpShortcuts({ onRefresh: fetchEnvios, onNew: () => { setEnvioSeleccionado(null); setForm(initialEnvioForm); setError(""); setDialogOpen(true) } }))
 
   const abrirDialogNuevo = () => {
     setEnvioSeleccionado(null)
@@ -129,9 +137,10 @@ export default function LogisticaPage() {
       const url = envioSeleccionado ? `/api/logistica/${envioSeleccionado.id}` : "/api/logistica"
       const method = envioSeleccionado ? "PATCH" : "POST"
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
-      if (!res.ok) { const d = await res.json(); setError(d.error || "Error al guardar"); return }
+      if (!res.ok) { const d = await res.json(); setError(d.error || "Error al guardar"); toast({ title: "Error al guardar envío", description: d.error || "Ocurrió un error", variant: "destructive" }); return }
       setDialogOpen(false)
       fetchEnvios()
+      toast({ title: envioSeleccionado ? "Envío actualizado" : "Envío creado", description: `Envío N° ${form.numero} guardado correctamente` })
     } finally {
       setGuardando(false)
     }
@@ -142,10 +151,19 @@ export default function LogisticaPage() {
     fetchEnvios()
   }
 
+  const { confirm, ConfirmDialog } = useConfirm()
+
   const eliminarEnvio = async (id: number) => {
-    if (!confirm("¿Eliminar este envío?")) return
+    const ok = await confirm({
+      title: "Eliminar envío",
+      description: "¿Eliminar este envío? Esta acción no se puede deshacer.",
+      confirmLabel: "Eliminar",
+      variant: "destructive",
+    })
+    if (!ok) return
     await fetch(`/api/logistica/${id}`, { method: "DELETE" })
     fetchEnvios()
+    toast({ title: "Envío eliminado", description: "El envío fue eliminado correctamente" })
   }
 
   const guardarTransportista = async () => {
@@ -205,10 +223,6 @@ export default function LogisticaPage() {
 
         <TabsContent value="envios" className="space-y-4">
           <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por número o destino..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-            </div>
             <Select value={filtroEstado} onValueChange={setFiltroEstado}>
               <SelectTrigger className="w-44"><SelectValue placeholder="Estado" /></SelectTrigger>
               <SelectContent>
@@ -222,61 +236,28 @@ export default function LogisticaPage() {
           </div>
 
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Destino</TableHead>
-                    <TableHead>Transportista</TableHead>
-                    <TableHead>Bultos</TableHead>
-                    <TableHead>Embarque</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Cargando...</TableCell></TableRow>
-                  ) : envios.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay envíos registrados</TableCell></TableRow>
-                  ) : envios.map((envio) => {
-                    const est = ESTADOS_ENVIO[envio.estado] || { label: envio.estado, color: "bg-gray-100 text-gray-800" }
-                    return (
-                      <TableRow key={envio.id}>
-                        <TableCell className="font-mono font-medium">{envio.numero}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            {envio.direccionDestino}
-                          </div>
-                        </TableCell>
-                        <TableCell>{envio.transportista?.nombre || <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell>{envio.bultos}</TableCell>
-                        <TableCell>{envio.fechaEmbarque ? new Date(envio.fechaEmbarque).toLocaleDateString("es-AR") : "—"}</TableCell>
-                        <TableCell>
-                          <Select value={envio.estado} onValueChange={(v) => cambiarEstado(envio.id, v)}>
-                            <SelectTrigger className="h-7 w-36 text-xs">
-                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${est.color}`}>{est.label}</span>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(ESTADOS_ENVIO).map(([k, v]) => (
-                                <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => abrirDialogEditar(envio)}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => eliminarEnvio(envio.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-4">
+              <DataTable<Envio>
+                data={envios}
+                columns={[
+                  { key: "numero", header: "Número", sortable: true, cell: (e) => <span className="font-mono font-medium">{e.numero}</span> },
+                  { key: "direccionDestino", header: "Destino", cell: (e) => <div className="flex items-center gap-1 text-sm"><MapPin className="h-3 w-3 text-muted-foreground" />{e.direccionDestino}</div> },
+                  { key: "transportista" as any, header: "Transportista", cell: (e) => e.transportista?.nombre || <span className="text-muted-foreground">—</span>, exportFn: (e) => e.transportista?.nombre ?? "" },
+                  { key: "bultos", header: "Bultos", align: "right", sortable: true },
+                  { key: "fechaEmbarque", header: "Embarque", sortable: true, cell: (e) => e.fechaEmbarque ? new Date(e.fechaEmbarque).toLocaleDateString("es-AR") : "—" },
+                  { key: "estado", header: "Estado", cell: (e) => { const est = ESTADOS_ENVIO[e.estado] || { label: e.estado, color: "bg-gray-100 text-gray-800" }; return <Select value={e.estado} onValueChange={(v) => cambiarEstado(e.id, v)}><SelectTrigger className="h-7 w-36 text-xs"><span className={`px-1.5 py-0.5 rounded text-xs font-medium ${est.color}`}>{est.label}</span></SelectTrigger><SelectContent>{Object.entries(ESTADOS_ENVIO).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select> } },
+                  { key: "acciones" as any, header: "", cell: (e) => <div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={(ev) => { ev.stopPropagation(); abrirDialogEditar(e) }}><Pencil className="h-3.5 w-3.5" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(ev) => { ev.stopPropagation(); eliminarEnvio(e.id) }}><Trash2 className="h-3.5 w-3.5" /></Button></div> },
+                ] as DataTableColumn<Envio>[]}
+                rowKey="id"
+                searchPlaceholder="Buscar envío..."
+                searchKeys={["numero", "direccionDestino"]}
+                exportFilename="envios"
+                loading={loading}
+                emptyMessage="No hay envíos registrados"
+                emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin envíos" description="Creá un nuevo envío para empezar." />}
+                defaultPageSize={25}
+                compact
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -395,6 +376,7 @@ export default function LogisticaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div>
   )
 }

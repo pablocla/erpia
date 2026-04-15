@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Upload, Search, Database, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Users } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface PadronEntry {
   id: number
@@ -69,6 +72,10 @@ export default function PadronIIBBPage() {
   const [buscando, setBuscando] = useState(false)
 
   useEffect(() => { cargarDatos() }, [filtroOrganismo, soloVigentes])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargarDatos,
+  }))
 
   async function cargarDatos() {
     setLoading(true)
@@ -320,45 +327,26 @@ export default function PadronIIBBPage() {
             <span className="text-sm text-muted-foreground ml-auto">{total} registros</span>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>CUIT</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Organismo</TableHead>
-                <TableHead>Jurisdicción</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Alícuota</TableHead>
-                <TableHead>Vigencia</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {padrones.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-mono text-xs">{p.cuitSujeto}</TableCell>
-                  <TableCell className="text-sm">{p.cliente?.nombre ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{p.organismo}</Badge>
-                  </TableCell>
-                  <TableCell>{p.jurisdiccion}</TableCell>
-                  <TableCell className="text-xs">{p.tipoRegimen}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {Number(p.alicuota).toFixed(2)}%
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {new Date(p.vigenciaDesde).toLocaleDateString("es-AR")} — {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString("es-AR") : "∞"}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {padrones.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    {loading ? "Cargando..." : "Sin registros. Importá un padrón para comenzar."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <DataTable<PadronEntry>
+            data={padrones}
+            columns={[
+              { key: "cuitSujeto", header: "CUIT", sortable: true, cell: (p) => <span className="font-mono text-xs">{p.cuitSujeto}</span> },
+              { key: "cliente" as any, header: "Cliente", cell: (p) => <span className="text-sm">{p.cliente?.nombre ?? "—"}</span>, exportFn: (p) => p.cliente?.nombre ?? "" },
+              { key: "organismo", header: "Organismo", sortable: true, cell: (p) => <Badge variant="outline">{p.organismo}</Badge> },
+              { key: "jurisdiccion", header: "Jurisdicción", sortable: true },
+              { key: "tipoRegimen", header: "Tipo", cell: (p) => <span className="text-xs">{p.tipoRegimen}</span> },
+              { key: "alicuota", header: "Alícuota", sortable: true, cell: (p) => <span className="text-right block font-medium">{Number(p.alicuota).toFixed(2)}%</span> },
+              { key: "vigenciaDesde", header: "Vigencia", cell: (p) => <span className="text-xs">{new Date(p.vigenciaDesde).toLocaleDateString("es-AR")} — {p.vigenciaHasta ? new Date(p.vigenciaHasta).toLocaleDateString("es-AR") : "∞"}</span> },
+            ] as DataTableColumn<PadronEntry>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar por CUIT, cliente, organismo..."
+            searchKeys={["cuitSujeto", "organismo", "jurisdiccion", "tipoRegimen"]}
+            exportFilename="padron-impuestos"
+            loading={loading}
+            emptyMessage="Sin registros. Importá un padrón para comenzar."
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin registros de padrón" description="Importá un padrón para comenzar." />}
+            compact
+          />
         </TabsContent>
 
         <TabsContent value="consulta" className="space-y-4">
@@ -389,30 +377,19 @@ export default function PadronIIBBPage() {
                       CUIT no encontrado en ningún padrón
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Organismo</TableHead>
-                          <TableHead>Jurisdicción</TableHead>
-                          <TableHead>Tipo Régimen</TableHead>
-                          <TableHead className="text-right">Alícuota</TableHead>
-                          <TableHead>Vigencia</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {consultaResult.map((r, i) => (
-                          <TableRow key={i}>
-                            <TableCell><Badge variant="outline">{r.organismo}</Badge></TableCell>
-                            <TableCell>{r.jurisdiccion}</TableCell>
-                            <TableCell className="text-xs">{r.tipoRegimen}</TableCell>
-                            <TableCell className="text-right font-bold">{r.alicuota.toFixed(2)}%</TableCell>
-                            <TableCell className="text-xs">
-                              {new Date(r.vigenciaDesde).toLocaleDateString("es-AR")} — {r.vigenciaHasta ? new Date(r.vigenciaHasta).toLocaleDateString("es-AR") : "∞"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <DataTable<PadronEntry>
+                      data={consultaResult}
+                      columns={[
+                        { key: "organismo", header: "Organismo", cell: (r) => <Badge variant="outline">{r.organismo}</Badge> },
+                        { key: "jurisdiccion", header: "Jurisdicción" },
+                        { key: "tipoRegimen", header: "Tipo Régimen", cell: (r) => <span className="text-xs">{r.tipoRegimen}</span> },
+                        { key: "alicuota", header: "Alícuota", sortable: true, cell: (r) => <span className="text-right block font-bold">{Number(r.alicuota).toFixed(2)}%</span> },
+                        { key: "vigenciaDesde", header: "Vigencia", cell: (r) => <span className="text-xs">{new Date(r.vigenciaDesde).toLocaleDateString("es-AR")} — {r.vigenciaHasta ? new Date(r.vigenciaHasta).toLocaleDateString("es-AR") : "∞"}</span> },
+                      ] as DataTableColumn<PadronEntry>[]}
+                      rowKey="id"
+                      exportFilename="consulta-cuit"
+                      compact
+                    />
                   )}
                 </div>
               )}

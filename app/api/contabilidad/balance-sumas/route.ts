@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { AsientoService } from "@/lib/contabilidad/asiento-service"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const asientoService = new AsientoService()
-    const balance = await asientoService.obtenerBalanceSumas()
+    const balance = await asientoService.obtenerBalanceSumas(ctx.auth.empresaId)
 
     return NextResponse.json({
       success: true,

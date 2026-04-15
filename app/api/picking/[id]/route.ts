@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { logError } from "@/lib/monitoring/error-logger"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    const id = parseInt(params.id)
+    const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
     const lista = await prisma.listaPicking.findFirst({
@@ -28,12 +28,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    const id = parseInt(params.id)
+    const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
     const body = await request.json()

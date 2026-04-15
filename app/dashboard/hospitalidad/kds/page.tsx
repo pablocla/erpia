@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Clock, ChefHat, RefreshCw, Wifi, WifiOff } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -98,6 +99,10 @@ export default function KDSPage() {
       setCargando(false)
     }
   }, [])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: fetchComandas,
+  }))
 
   useEffect(() => {
     fetchComandas()

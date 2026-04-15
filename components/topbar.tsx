@@ -32,7 +32,13 @@ import {
   User,
   Sun,
   Moon,
+  Sparkles,
+  CheckSquare,
 } from "lucide-react"
+
+import { useUIStore } from "@/lib/stores/ui-store"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import { NotificationCenter, type Notification } from "@/components/notification-center"
 
 const BREADCRUMB_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -66,6 +72,10 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   kds: "KDS",
   onboarding: "Onboarding IA",
   soporte: "Soporte",
+  capacitacion: "Capacitación",
+  parametrizacion: "Parametrización",
+  "manual-usuario": "Manual de Usuario",
+  diagnostico: "Diagnóstico Gaps",
   movimientos: "Movimientos",
   tablas: "Tablas del Sistema",
   auditoria: "Auditoría",
@@ -110,6 +120,42 @@ export function Topbar({ onSearchClick }: TopbarProps) {
   const [bellShake, setBellShake] = useState(false)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
+  const toggleChatWidget = useUIStore((s) => s.toggleChatWidget)
+  const [tareasPendientes, setTareasPendientes] = useState(0)
+
+  useEffect(() => {
+    const cargarTareas = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      try {
+        const res = await fetch("/api/mis-tareas?incluirCompletadas=false", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setTareasPendientes(Array.isArray(data) ? data.length : 0)
+        }
+      } catch { /* silencioso */ }
+    }
+    void cargarTareas()
+    const interval = setInterval(() => void cargarTareas(), 60_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Notification state
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: "1", title: "Stock bajo en Producto A", description: "Solo quedan 3 unidades disponibles", type: "alerta", module: "stock", timestamp: new Date(Date.now() - 300_000), read: false, href: "/dashboard/productos" },
+    { id: "2", title: "Venta #1042 completada", description: "Total: $54.200,00", type: "exito", module: "ventas", timestamp: new Date(Date.now() - 1_800_000), read: false },
+    { id: "3", title: "Factura #B-0012 vence mañana", type: "vencimiento", module: "ventas", timestamp: new Date(Date.now() - 3_600_000), read: false, href: "/dashboard/cuentas-cobrar" },
+    { id: "4", title: "Backup completado", description: "Respaldo automático exitoso", type: "sistema", timestamp: new Date(Date.now() - 7_200_000), read: true },
+    { id: "5", title: "Nueva versión disponible", description: "v2.1.0 incluye mejoras de facturación", type: "info", timestamp: new Date(Date.now() - 86_400_000), read: true },
+  ])
+
+  const handleMarkRead = (id: string) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
+  const handleMarkAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const handleDismiss = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const handleClearAll = () => setNotifications([])
 
   useEffect(() => setMounted(true), [])
 
@@ -128,7 +174,10 @@ export function Topbar({ onSearchClick }: TopbarProps) {
   }
 
   return (
-    <header className="h-12 border-b bg-background/60 backdrop-blur-md flex items-center justify-between px-4 shrink-0 animate-fade-in">
+    <header className="h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
+      {/* Subtle top glare */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+
       {/* Left: Breadcrumbs */}
       <Breadcrumbs />
 
@@ -139,7 +188,7 @@ export function Topbar({ onSearchClick }: TopbarProps) {
           variant="ghost"
           size="sm"
           className="h-8 gap-2 text-muted-foreground hover:text-foreground text-xs"
-          onClick={onSearchClick}
+          onClick={() => { onSearchClick?.(); toggleCommandPalette() }}
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden md:inline">Buscar</span>
@@ -160,6 +209,27 @@ export function Topbar({ onSearchClick }: TopbarProps) {
           </Link>
         </Button>
 
+        {/* Mis Tareas — indicador */}
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
+                <Link href="/dashboard/mis-tareas">
+                  <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                  {tareasPendientes > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
+                      {tareasPendientes > 9 ? "9+" : tareasPendientes}
+                    </span>
+                  )}
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p className="text-xs">{tareasPendientes} tarea{tareasPendientes !== 1 ? "s" : ""} pendiente{tareasPendientes !== 1 ? "s" : ""}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         {/* Tickets — actionable */}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
@@ -179,28 +249,36 @@ export function Topbar({ onSearchClick }: TopbarProps) {
           </Tooltip>
         </TooltipProvider>
 
-        {/* Notifications — actionable */}
+        {/* Notifications — interactive center */}
+        <NotificationCenter
+          notifications={notifications}
+          onMarkRead={handleMarkRead}
+          onMarkAllRead={handleMarkAllRead}
+          onDismiss={handleDismiss}
+          onClearAll={handleClearAll}
+        />
+
+        {/* AI Assistant */}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
-                <Link href="/dashboard/configuracion/auditoria">
-                  <Bell className={`h-4 w-4 text-muted-foreground ${bellShake ? "animate-bell-shake" : ""}`} onAnimationEnd={() => setBellShake(false)} />
-                  <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-destructive text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
-                    5
-                  </span>
-                </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 relative group"
+                onClick={() => toggleChatWidget()}
+              >
+                <Sparkles className="h-4 w-4 text-purple-500 transition-transform group-hover:scale-110 group-hover:rotate-12" />
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p className="text-xs">5 notificaciones</p>
+              <p className="text-xs">Asistente IA (Ctrl+Shift+I)</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-
-        {/* Dark/Light toggle */}
         {mounted && (
           <TooltipProvider delayDuration={300}>
             <Tooltip>
@@ -237,20 +315,16 @@ export function Topbar({ onSearchClick }: TopbarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 gap-2 px-2">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-[10px] font-bold text-primary ring-1 ring-primary/20">
-                A
-              </div>
-              <span className="hidden md:inline text-xs font-medium">Admin</span>
+              <UserAvatar />
+              <span className="hidden md:inline text-xs font-medium"><UserDisplayName /></span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <div className="px-3 py-2 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-bold text-primary">
-                A
-              </div>
+              <UserAvatar size="lg" />
               <div>
-                <p className="text-sm font-medium">Administrador</p>
-                <p className="text-xs text-muted-foreground">admin@empresa.com</p>
+                <p className="text-sm font-medium"><UserDisplayName /></p>
+                <p className="text-xs text-muted-foreground"><UserEmail /></p>
               </div>
             </div>
             <DropdownMenuSeparator />
@@ -276,4 +350,39 @@ export function Topbar({ onSearchClick }: TopbarProps) {
       </div>
     </header>
   )
+}
+
+/* ── Auth-aware avatar helpers ─────────────────────────────────── */
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+}
+
+function UserAvatar({ size = "sm" }: { size?: "sm" | "lg" }) {
+  const user = useAuthStore((s) => s.user)
+  const initials = user?.nombre ? getInitials(user.nombre) : "U"
+  const dim = size === "lg" ? "h-8 w-8 text-xs" : "h-6 w-6 text-[10px]"
+  return (
+    <div
+      className={`${dim} rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center font-bold text-primary ring-1 ring-primary/20`}
+    >
+      {initials}
+    </div>
+  )
+}
+
+function UserDisplayName() {
+  const user = useAuthStore((s) => s.user)
+  return <>{user?.nombre ?? "Usuario"}</>
+}
+
+function UserEmail() {
+  const user = useAuthStore((s) => s.user)
+  return <>{user?.email ?? "—"}</>
 }

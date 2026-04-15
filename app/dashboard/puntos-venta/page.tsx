@@ -18,6 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Plus, Pencil, Store, Star, CheckCircle, XCircle } from "lucide-react"
+import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface PuntoVenta {
   id: number
@@ -64,6 +67,11 @@ export default function PuntosVentaPage() {
   }, [])
 
   useEffect(() => { cargar() }, [cargar])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: cargar,
+    onNew: () => { setEditando(null); setForm({ numero: "", nombre: "", descripcion: "", tipo: "electronico", esDefault: false, empresaId: "1" }); setDialogOpen(true) },
+  }))
 
   function abrirNuevo() {
     setEditando(null)
@@ -170,69 +178,27 @@ export default function PuntosVentaPage() {
 
       {/* Tabla */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Nº PV</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Series</TableHead>
-                <TableHead className="w-24 text-center">Default</TableHead>
-                <TableHead className="w-20 text-center">Activo</TableHead>
-                <TableHead className="w-20" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Cargando…</TableCell></TableRow>
-              ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay puntos de venta configurados</TableCell></TableRow>
-              ) : (
-                items.map((pv) => (
-                  <TableRow key={pv.id}>
-                    <TableCell className="font-mono font-bold text-lg">{String(pv.numero).padStart(4, "0")}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Store className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div>
-                          <p className="font-medium">{pv.nombre}</p>
-                          {pv.descripcion && <p className="text-xs text-muted-foreground">{pv.descripcion}</p>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{TIPOS_PV.find((t) => t.value === pv.tipo)?.label ?? pv.tipo}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {pv.series?.map((s) => (
-                          <Badge key={s.id} variant="outline" className="text-xs">{s.codigo}</Badge>
-                        ))}
-                        {(!pv.series || pv.series.length === 0) && (
-                          <span className="text-xs text-muted-foreground">Sin series</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {pv.esDefault && <Star className="h-4 w-4 text-amber-500 mx-auto" />}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {pv.activo
-                        ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
-                        : <XCircle className="h-4 w-4 text-red-400 mx-auto" />
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => abrirEditar(pv)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <CardContent className="pt-4">
+          <DataTable<PuntoVenta>
+            data={items}
+            columns={[
+              { key: "numero", header: "Nº PV", sortable: true, cell: (pv) => <span className="font-mono font-bold text-lg">{String(pv.numero).padStart(4, "0")}</span> },
+              { key: "nombre", header: "Nombre", cell: (pv) => <div className="flex items-center gap-2"><Store className="h-4 w-4 text-muted-foreground shrink-0" /><div><p className="font-medium">{pv.nombre}</p>{pv.descripcion && <p className="text-xs text-muted-foreground">{pv.descripcion}</p>}</div></div> },
+              { key: "tipo", header: "Tipo", cell: (pv) => <Badge variant="secondary">{TIPOS_PV.find((t) => t.value === pv.tipo)?.label ?? pv.tipo}</Badge> },
+              { key: "series" as any, header: "Series", cell: (pv) => <div className="flex flex-wrap gap-1">{pv.series?.map((s) => <Badge key={s.id} variant="outline" className="text-xs">{s.codigo}</Badge>)}{(!pv.series || pv.series.length === 0) && <span className="text-xs text-muted-foreground">Sin series</span>}</div> },
+              { key: "esDefault", header: "Default", cell: (pv) => pv.esDefault ? <Star className="h-4 w-4 text-amber-500 mx-auto" /> : null },
+              { key: "activo", header: "Activo", cell: (pv) => pv.activo ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <XCircle className="h-4 w-4 text-red-400 mx-auto" /> },
+              { key: "acciones" as any, header: "", cell: (pv) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(pv) }}><Pencil className="h-3.5 w-3.5" /></Button> },
+            ] as DataTableColumn<PuntoVenta>[]}
+            rowKey="id"
+            searchPlaceholder="Buscar punto de venta..."
+            searchKeys={["nombre", "tipo"]}
+            exportFilename="puntos-venta"
+            loading={loading}
+            emptyMessage="No hay puntos de venta configurados"
+            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin puntos de venta" description="Configurá tu primer punto de venta." />}
+            compact
+          />
         </CardContent>
       </Card>
 

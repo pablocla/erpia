@@ -8,7 +8,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
-import type { FacturaEmitidaPayload, CompraRegistradaPayload } from "@/lib/events/types"
+import type { FacturaEmitidaPayload, CompraRegistradaPayload, NCEmitidaPayload } from "@/lib/events/types"
 
 export class CuentasService {
   // ─── CUENTAS A COBRAR ───────────────────────────────────────────────────────
@@ -284,6 +284,61 @@ export class CuentasService {
 
     return { buckets, total: Object.values(buckets).reduce((a, b) => a + b, 0), detalle }
   }
+
+  // ─── NC REVERSAL ──────────────────────────────────────────────────────────
+
+  /**
+   * Reverses CC records when a Nota de Crédito is emitted.
+   * Finds the CC records linked to the original factura and reduces their saldo.
+   * If the NC total exceeds a single CC saldo, the excess is applied to subsequent cuotas.
+   */
+  async reversarCCPorNC(notaCreditoId: number, facturaId: number, total: number): Promise<void> {
+    // Get outstanding CC records for the original factura, ordered by cuota (latest first)
+    const cuentas = await prisma.cuentaCobrar.findMany({
+      where: {
+        facturaId,
+        estado: { in: ["pendiente", "parcial", "vencida"] },
+      },
+      orderBy: { numeroCuota: "desc" },
+    })
+
+    let restante = total
+    for (const cc of cuentas) {
+      if (restante <= 0) break
+
+      const saldoActual = Number(cc.saldo)
+      const aDescontar = Math.min(restante, saldoActual)
+      const nuevoSaldo = Math.max(0, saldoActual - aDescontar)
+
+      await prisma.cuentaCobrar.update({
+        where: { id: cc.id },
+        data: {
+          saldo: nuevoSaldo,
+          estado: nuevoSaldo <= 0 ? "pagada" : "parcial",
+          observaciones: `Reducido por NC #${notaCreditoId} — $${aDescontar.toFixed(2)}`,
+        },
+      })
+
+      restante -= aDescontar
+    }
+
+    // If NC exceeds all outstanding CC, create a credit balance (saldo a favor)
+    if (restante > 0) {
+      await prisma.cuentaCobrar.create({
+        data: {
+          facturaId,
+          clienteId: cuentas[0]?.clienteId ?? 0,
+          numeroCuota: 0,
+          montoOriginal: -restante,
+          saldo: -restante,
+          fechaEmision: new Date(),
+          fechaVencimiento: new Date(),
+          estado: "saldo_favor",
+          observaciones: `Saldo a favor por NC #${notaCreditoId}`,
+        },
+      })
+    }
+  }
 }
 
 // ─── EVENT BUS HANDLER REGISTRATION ─────────────────────────────────────────────
@@ -296,6 +351,14 @@ eventBus.on<FacturaEmitidaPayload>("FACTURA_EMITIDA", "cc_por_venta", async (eve
 
 eventBus.on<CompraRegistradaPayload>("COMPRA_REGISTRADA", "cp_por_compra", async (event) => {
   await cuentasService.generarCPPorCompra(event.payload.compraId)
+})
+
+eventBus.on<NCEmitidaPayload>("NC_EMITIDA", "cc_reversal_por_nc", async (event) => {
+  await cuentasService.reversarCCPorNC(
+    event.payload.notaCreditoId,
+    event.payload.facturaId,
+    event.payload.total,
+  )
 })
 
 export { cuentasService }

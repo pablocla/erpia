@@ -60,3 +60,34 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+
+    const body = await request.json()
+    const { asientoId, motivo } = body
+
+    if (!asientoId || !motivo) {
+      return NextResponse.json({ error: "asientoId y motivo son requeridos" }, { status: 400 })
+    }
+
+    const asientoService = new AsientoService()
+    const reversoId = await asientoService.anularAsiento(asientoId, motivo, ctx.auth.empresaId)
+
+    return NextResponse.json({
+      success: true,
+      reversoId,
+      mensaje: "Asiento anulado correctamente con contrapartida",
+    })
+  } catch (error) {
+    console.error("Error al anular asiento:", error)
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Error al anular asiento",
+      },
+      { status: 500 },
+    )
+  }
+}

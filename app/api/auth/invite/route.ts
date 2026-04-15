@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     await prisma.logActividad.create({
       data: {
         accion: "user_invitation",
+        modulo: "auth",
         detalle: JSON.stringify({
           token: inviteToken,
           userId: usuario.id,

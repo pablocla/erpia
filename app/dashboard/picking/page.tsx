@@ -13,8 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { ScanLine, Plus, Search, CheckCircle2, Clock, AlertCircle, ListChecks } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
-import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface LineaPicking {

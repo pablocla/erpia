@@ -8,7 +8,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const { searchParams } = request.nextUrl

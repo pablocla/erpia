@@ -203,7 +203,7 @@ export async function PUT(request: NextRequest) {
         tipoCbte: f.tipoCbte,
         cbteDesde: f.numero,
         cbteHasta: f.numero,
-        fecha: f.fecha.toISOString().slice(0, 10).replace(/-/g, ""),
+        fecha: f.createdAt.toISOString().slice(0, 10).replace(/-/g, ""),
         docTipo: f.cliente?.cuit ? 80 : 99,
         docNro: f.cliente?.cuit ?? "0",
         impTotal: Number(f.total),

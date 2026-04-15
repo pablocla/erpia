@@ -11,7 +11,7 @@ import { agentRegistry } from "@/lib/ai/agents"
 import type { AgentId, AgentRunContext } from "@/lib/ai/agents"
 
 export async function GET(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const statuses = await agentRegistry.getStatusForEmpresa(ctx.auth.empresaId)
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const body = await request.json()
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const body = await request.json()

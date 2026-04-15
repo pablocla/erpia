@@ -7,9 +7,9 @@ import {
 } from "@/lib/documentos/documentos-service"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
-  if (!(await auth).ok) return (await auth as any).response
-  const { empresaId } = (await auth as any).auth
+  const auth = await getAuthContext(request)
+  if (!auth.ok) return auth.response
+  const { empresaId } = auth.auth
 
   const { searchParams } = new URL(request.url)
   const entidadTipo = searchParams.get("entidad") as any

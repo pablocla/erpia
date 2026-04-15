@@ -7,7 +7,7 @@
  * Autenticación: header Authorization: Bearer <CRON_SECRET>
  *
  * Ejemplo cron (vercel.json):
- *   { "crons": [{ "path": "/api/cron/sync-afip", "schedule": "*/5 * * * *" }] }
+ *   { "crons": [{ "path": "/api/cron/sync-afip", "schedule": "cada 5 minutos" }] }
  */
 
 import { NextRequest, NextResponse } from "next/server"

@@ -13,7 +13,13 @@
       "Bash(awk '/^model Factura \\\\{/,/^}/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
       "Bash(awk '/^model Factura \\\\{/,/^model [A-Z]/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
       "Bash(awk '/^model Factura/,/^}/' \"/c/Users/Pablo Clavero/Downloads/pos-system-argentina/prisma/schema.prisma\")",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(node_modules/.bin/next build *)",
+      "Bash(tee /tmp/build_output.txt)",
+      "Bash(echo \"EXIT:$?\")",
+      "Read(//tmp/**)",
+      "Bash(tee /tmp/build2.txt)",
+      "Bash(tee /tmp/build3.txt)"
     ]
   }
 }

@@ -269,7 +269,7 @@ export default function CuentasPagarPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CaSelect value={proveedorFiltro} onValueChange={setProveedorFiltro}>
+            <Select value={proveedorFiltro} onValueChange={setProveedorFiltro}>
                 <SelectTrigger className="h-9 w-52"><SelectValue placeholder="Proveedor" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos los proveedores</SelectItem>
@@ -289,7 +289,6 @@ export default function CuentasPagarPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
         </CardHeader>
         <CardContent className="pt-0">
           <DataTable<CP>
@@ -342,9 +341,9 @@ export default function CuentasPagarPage() {
             emptyMessage="No hay órdenes de pago"
             defaultPageSize={10}
             compact
-          /logFooter>
-        </DialogContent>
-      </Dialog>
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

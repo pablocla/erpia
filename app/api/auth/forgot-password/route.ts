@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     await prisma.logActividad.create({
       data: {
         accion: "password_reset_token",
+        modulo: "auth",
         detalle: JSON.stringify({
           token,
           userId: usuario.id,

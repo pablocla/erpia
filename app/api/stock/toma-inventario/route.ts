@@ -3,7 +3,7 @@ import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { tomaInventarioService } from "@/lib/stock/toma-inventario-service"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

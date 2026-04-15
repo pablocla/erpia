@@ -8,7 +8,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { agentRegistry } from "@/lib/ai/agents"
 
 export async function POST(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   // Only admin/superadmin can trigger batch

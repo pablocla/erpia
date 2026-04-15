@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma"
 import { agentRegistry } from "@/lib/ai/agents"
 
 export async function POST(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const body = await request.json()
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const ctx = getAuthContext(request)
+  const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
   const allAgents = agentRegistry.getAll()

@@ -130,7 +130,6 @@ model Empresa {
   notasDebito       NotaDebito[]
   listasPrecio      ListaPrecio[]
   // Sprint Rubro Config — dynamic feature activation
-  configuracionesRubro ConfiguracionRubro[]
   featuresEmpresa      FeatureEmpresa[]
   instanciasWorkflow   WorkflowInstancia[]
   // Sprint Competitivo — SAP/Tango/Colppy gap closers
@@ -5423,6 +5422,7 @@ model DocumentoAdjunto {
   createdAt       DateTime  @default(now())
 
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, entidadTipo, entidadId])
   @@map("documentos_adjuntos")
@@ -5465,6 +5465,7 @@ model FacturaRecurrente {
 
   clienteId       Int
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, activo, proximaEmision])
   @@map("facturas_recurrentes")
@@ -5497,6 +5498,7 @@ model MercadoPagoConfig {
   updatedAt       DateTime  @updatedAt
 
   empresaId       Int       @unique
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
   transacciones   MercadoPagoTransaccion[]
 
   @@map("mercadopago_config")
@@ -5537,6 +5539,7 @@ model MercadoPagoTransaccion {
   configId        Int
   config          MercadoPagoConfig @relation(fields: [configId], references: [id])
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, estado])
   @@index([mpPaymentId])
@@ -5574,6 +5577,7 @@ model ReglaAlerta {
   updatedAt       DateTime  @updatedAt
 
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, activo])
   @@map("reglas_alertas")
@@ -5649,6 +5653,7 @@ model Empleado {
   updatedAt       DateTime  @updatedAt
 
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, estado])
   @@index([cuil])
@@ -5679,6 +5684,7 @@ model GeneracionCITI {
   createdAt       DateTime  @default(now())
 
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@unique([empresaId, tipo, periodo])
   @@map("generaciones_citi")
@@ -5735,6 +5741,7 @@ model PlanMantenimiento {
   updatedAt       DateTime  @updatedAt
 
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
   ordenesTrabajo  OrdenTrabajo[]
 
   @@index([empresaId, activo])
@@ -5773,6 +5780,7 @@ model OrdenTrabajo {
   planId          Int?
   plan            PlanMantenimiento? @relation(fields: [planId], references: [id])
   empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, estado])
   @@map("ordenes_trabajo")

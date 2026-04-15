@@ -9,9 +9,9 @@ import { prisma } from "@/lib/prisma"
 
 // GET — Listar solicitudes pendientes (opcionalmente por rol)
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
-  if (!(await auth).ok) return (await auth).response
-  const { auth: ctx } = await auth as { ok: true; auth: { empresaId: number; rol: string } }
+  const auth = await getAuthContext(request)
+  if (!auth.ok) return auth.response
+  const ctx = auth.auth as { empresaId: number; rol: string }
 
   const rol = request.nextUrl.searchParams.get("rol") ?? undefined
   const solicitudes = await listarPendientes(ctx.empresaId, rol)

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
       include: {
         cuentaBancaria: {
-          select: { id: true, nombre: true, numeroCuenta: true, banco: { select: { nombre: true } } },
+          select: { id: true, alias: true, numeroCuenta: true, banco: { select: { nombre: true } } },
         },
       },
     })
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           },
           include: {
             cuentaBancaria: {
-              select: { id: true, nombre: true, numeroCuenta: true, banco: { select: { nombre: true } } },
+              select: { id: true, alias: true, numeroCuenta: true, banco: { select: { nombre: true } } },
             },
           },
         })

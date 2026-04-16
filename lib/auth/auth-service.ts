@@ -2,13 +2,17 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { SignJWT, jwtVerify } from "jose"
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET no está configurado. Defínelo en las variables de entorno.")
+// Lazy getter — evaluated at request time, not at module load time.
+// This prevents build failures when JWT_SECRET is only available at runtime (e.g. Vercel).
+function getEncodedSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET no está configurado. Defínelo en las variables de entorno.")
+  }
+  // In dev, fall back to a fixed secret so tokens survive HMR / hot-reload.
+  // NEVER use this in production — JWT_SECRET env var is enforced above.
+  return new TextEncoder().encode(secret || "dev-pos-system-argentina-2025-unsafe")
 }
-// In dev, use a deterministic fixed secret so tokens survive HMR / hot-reload.
-// NEVER use this in production — JWT_SECRET env var is enforced above.
-const JWT_SECRET = process.env.JWT_SECRET || "dev-pos-system-argentina-2025-unsafe"
-const encodedSecret = new TextEncoder().encode(JWT_SECRET)
 
 export interface TokenPayload {
   userId: number
@@ -170,12 +174,12 @@ export class AuthService {
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("24h")
       .setIssuedAt()
-      .sign(encodedSecret)
+      .sign(getEncodedSecret())
   }
 
   async verificarToken(token: string): Promise<TokenPayload | null> {
     try {
-      const { payload } = await jwtVerify(token, encodedSecret)
+      const { payload } = await jwtVerify(token, getEncodedSecret())
       return payload as unknown as TokenPayload
     } catch (error) {
       console.error("Error al verificar token:", error)

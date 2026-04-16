@@ -113,8 +113,11 @@ export default function LoginPage() {
               {cargando ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
 
-            <div className="text-right">
-              <a href="/login/forgot-password" className="text-sm text-primary hover:underline">
+            <div className="flex items-center justify-between text-sm">
+              <a href="/login/register" className="text-primary hover:underline">
+                Crear cuenta
+              </a>
+              <a href="/login/forgot-password" className="text-muted-foreground hover:underline">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>

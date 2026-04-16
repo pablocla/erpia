@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { jwtVerify } from "jose"
 
 // ─── Public routes that skip auth ─────────────────────────────────────────────
-const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/register", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh", "/api/ecommerce", "/api/ai/status", "/api/health"]
+const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh", "/api/ecommerce", "/api/ai/status", "/api/health"]
 
 // ─── Static asset extensions ──────────────────────────────────────────────────
 const STATIC_EXT = /\.(ico|png|jpg|jpeg|svg|webp|avif|woff2?|ttf|css|js|map)$/i

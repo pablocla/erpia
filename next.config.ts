@@ -42,13 +42,13 @@ const nextConfig: NextConfig = {
     // Ignore type errors for demo build — fix progressively
     ignoreBuildErrors: true,
   },
+  // Typed routes — compile-time route type safety (moved from experimental in Next.js 15.5)
+  typedRoutes: true,
   experimental: {
     // React Compiler — automatic memoization, eliminates manual useMemo/useCallback
     reactCompiler: true,
     // View Transitions — native CSS transitions between routes
     viewTransition: true,
-    // Typed routes — compile-time route type safety
-    typedRoutes: true,
     // Server Actions — improved streaming
     serverActions: {
       bodySizeLimit: "2mb",

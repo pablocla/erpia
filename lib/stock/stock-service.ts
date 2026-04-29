@@ -135,13 +135,16 @@ export class StockService {
   async reingresarStockPorNC(notaCreditoId: number, depositoId?: number): Promise<void> {
     const nc = await prisma.notaCredito.findUnique({
       where: { id: notaCreditoId },
-      include: { factura: { include: { lineas: true } } },
+      include: {
+        lineas: true,
+        factura: { include: { lineas: true } },
+      },
     })
     if (!nc) return
 
-    // Reingresa todos los productos de la factura original (NC total)
-    // For partial NC, the caller should specify which lines
-    for (const linea of nc.factura.lineas) {
+    const lineasParaReingresar = Array.isArray(nc.lineas) && nc.lineas.length > 0 ? nc.lineas : nc.factura?.lineas ?? []
+
+    for (const linea of lineasParaReingresar) {
       if (!linea.productoId) continue
       await this.ajustarStock(
         linea.productoId,
@@ -152,6 +155,11 @@ export class StockService {
       )
     }
   }
+
+  /**
+   * Reingresar stock based on credit note lines when NC is partial.
+   * Falls back to original invoice lines for legacy NC records.
+   */
 
   /**
    * Decrement stock for each line in a remito (delivery).
@@ -287,7 +295,7 @@ eventBus.on<CompraRegistradaPayload>("COMPRA_REGISTRADA", "stock_por_compra", as
 })
 
 eventBus.on<NCEmitidaPayload>("NC_EMITIDA", "stock_por_nc", async (event) => {
-  await stockService.reingresarStockPorNC(event.payload.notaCreditoId)
+  await stockService.reingresarStockPorNC(event.payload.notaCreditoId, event.payload.depositoId ?? undefined)
 })
 
 // ─── REMITO_EMITIDO → stock decrement (pedido venta → remito flow) ──────────

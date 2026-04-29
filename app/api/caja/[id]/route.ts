@@ -22,20 +22,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!caja) return NextResponse.json({ error: "Caja no encontrada" }, { status: 404 })
 
-    // Compute live totals
+    const montoA = (value: unknown) => Number(value ?? 0)
+
     const ingresos = caja.movimientos
       .filter((m) => m.tipo === "ingreso")
-      .reduce((sum, m) => sum + m.monto, 0)
+      .reduce((sum, m) => sum + montoA(m.monto), 0)
     const egresos = caja.movimientos
       .filter((m) => m.tipo === "egreso")
-      .reduce((sum, m) => sum + m.monto, 0)
-    const saldoActual = caja.saldoInicial + ingresos - egresos
+      .reduce((sum, m) => sum + montoA(m.monto), 0)
+    const saldoActual = montoA(caja.saldoInicial) + ingresos - egresos
 
-    // Breakdown by payment method
     const porMedioPago = (medio: string) =>
       caja.movimientos
         .filter((m) => m.medioPago === medio)
-        .reduce((s, m) => s + (m.tipo === "ingreso" ? m.monto : -m.monto), 0)
+        .reduce((s, m) => s + (m.tipo === "ingreso" ? montoA(m.monto) : -montoA(m.monto)), 0)
 
     return NextResponse.json({
       ...caja,
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         totalEgresos: egresos,
         cantidadMovimientos: caja.movimientos.length,
         porMedioPago: {
-          efectivo: caja.saldoInicial + porMedioPago("efectivo"),
+          efectivo: montoA(caja.saldoInicial) + porMedioPago("efectivo"),
           tarjeta_debito: porMedioPago("tarjeta_debito"),
           tarjeta_credito: porMedioPago("tarjeta_credito"),
           transferencia: porMedioPago("transferencia"),

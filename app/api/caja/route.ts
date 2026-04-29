@@ -6,7 +6,6 @@ import { z } from "zod"
 
 const abrirCajaSchema = z.object({
   saldoInicial: z.number().min(0).default(0),
-  empresaId: z.number().int().positive(),
   observaciones: z.string().optional(),
   turno: z.enum(["mañana", "tarde", "noche"]).optional(),
 })
@@ -63,7 +62,8 @@ export async function POST(request: NextRequest) {
     if (!validacion.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
     }
-    const { saldoInicial, empresaId, observaciones } = validacion.data
+    const { saldoInicial, observaciones } = validacion.data
+    const empresaId = ctx.auth.empresaId
 
     // Verificar si hay una caja abierta para esta empresa
     const cajaAbierta = await prisma.caja.findFirst({
@@ -105,8 +105,8 @@ export async function PATCH(request: NextRequest) {
       diferenciaJustif,
     } = validacion.data
 
-    const caja = await prisma.caja.findUnique({
-      where: { id: cajaId },
+    const caja = await prisma.caja.findFirst({
+      where: { id: cajaId, empresaId: ctx.auth.empresaId },
       include: { movimientos: true },
     })
 
@@ -114,21 +114,23 @@ export async function PATCH(request: NextRequest) {
     if (caja.estado === "cerrada") return NextResponse.json({ error: "La caja ya está cerrada" }, { status: 400 })
 
     // Calcular saldo final del sistema
+    const montoA = (value: unknown) => Number(value ?? 0)
+
     const ingresos = caja.movimientos
       .filter((m) => m.tipo === "ingreso")
-      .reduce((sum, m) => sum + m.monto, 0)
+      .reduce((sum, m) => sum + montoA(m.monto), 0)
     const egresos = caja.movimientos
       .filter((m) => m.tipo === "egreso")
-      .reduce((sum, m) => sum + m.monto, 0)
-    const saldoFinal = caja.saldoInicial + ingresos - egresos
+      .reduce((sum, m) => sum + montoA(m.monto), 0)
+    const saldoFinal = montoA(caja.saldoInicial) + ingresos - egresos
 
     // Calcular totales del sistema por medio de pago
     const porMedio = (medio: string, tipo?: string) =>
       caja.movimientos
         .filter((m) => m.medioPago === medio && (!tipo || m.tipo === tipo))
-        .reduce((s, m) => s + (m.tipo === "ingreso" ? m.monto : -m.monto), 0)
+        .reduce((s, m) => s + (m.tipo === "ingreso" ? montoA(m.monto) : -montoA(m.monto)), 0)
 
-    const sistemaEfectivo = caja.saldoInicial + porMedio("efectivo")
+    const sistemaEfectivo = montoA(caja.saldoInicial) + porMedio("efectivo")
     const sistemaTarjeta = porMedio("tarjeta_debito") + porMedio("tarjeta_credito")
     const sistemaTransferencia = porMedio("transferencia")
     const sistemaCheque = porMedio("cheque")

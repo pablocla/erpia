@@ -8,7 +8,7 @@
 
 import { useState } from "react"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { authFetch } from "@/lib/stores"
+import { authFetch, useAuthStore } from "@/lib/stores"
 import { useToast } from "@/hooks/use-toast"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Plus, Pencil, Trash2, Eye, EyeOff, GripVertical } from "lucide-react"
@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils"
 
 const ENTIDADES = [
   { value: "cliente", label: "Clientes" },
+  { value: "turno", label: "Turnos" },
+  { value: "profesional", label: "Profesionales" },
   { value: "producto", label: "Productos" },
   { value: "proveedor", label: "Proveedores" },
   { value: "factura", label: "Facturas" },
@@ -34,6 +36,7 @@ const TIPOS_DATO = [
   { value: "textarea", label: "Texto largo" },
   { value: "email", label: "Email" },
   { value: "url", label: "URL" },
+  { value: "formula", label: "Cálculo / Fórmula" },
 ]
 
 interface CampoPersonalizado {
@@ -48,6 +51,7 @@ interface CampoPersonalizado {
   visibleEnLista: boolean
   visibleEnFormulario: boolean
   valorDefault: string | null
+  formula: string | null
   placeholder: string | null
   ayuda: string | null
   activo: boolean
@@ -58,6 +62,8 @@ export default function CamposPersonalizadosPage() {
   const [mostrarForm, setMostrarForm] = useState(false)
   const [editando, setEditando] = useState<CampoPersonalizado | null>(null)
   const { toast } = useToast()
+  const user = useAuthStore((state) => state.user)
+  const isHydrated = useAuthStore((state) => state.isHydrated)
 
   const { data, mutate, isLoading } = useAuthFetch<{ data: CampoPersonalizado[] }>(
     `/api/campos-personalizados?entidad=${entidadSeleccionada}`
@@ -70,6 +76,16 @@ export default function CamposPersonalizadosPage() {
 
   const campos = data?.data ?? []
 
+  if (!isHydrated) return null
+  if (user?.rol !== "administrador") {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center">
+        <h1 className="text-2xl font-bold">Acceso denegado</h1>
+        <p className="mt-4 text-muted-foreground">Solo usuarios con rol administrador pueden ver y modificar campos personalizados.</p>
+      </div>
+    )
+  }
+
   // ─── Form state ────────────────────────────────────────────────────────────
 
   const [form, setForm] = useState({
@@ -77,6 +93,7 @@ export default function CamposPersonalizadosPage() {
     etiqueta: "",
     tipoDato: "texto",
     opciones: "",
+    formula: "",
     obligatorio: false,
     visibleEnLista: false,
     visibleEnFormulario: true,
@@ -92,6 +109,7 @@ export default function CamposPersonalizadosPage() {
       etiqueta: campo.etiqueta,
       tipoDato: campo.tipoDato,
       opciones: Array.isArray(campo.opciones) ? campo.opciones.join(", ") : "",
+      formula: campo.formula ?? "",
       obligatorio: campo.obligatorio,
       visibleEnLista: campo.visibleEnLista,
       visibleEnFormulario: campo.visibleEnFormulario,
@@ -116,6 +134,7 @@ export default function CamposPersonalizadosPage() {
       etiqueta: form.etiqueta,
       tipoDato: form.tipoDato,
       opciones: form.opciones ? form.opciones.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+      formula: form.formula || undefined,
       obligatorio: form.obligatorio,
       visibleEnLista: form.visibleEnLista,
       visibleEnFormulario: form.visibleEnFormulario,
@@ -258,6 +277,21 @@ export default function CamposPersonalizadosPage() {
                   {TIPOS_DATO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
+              {form.tipoDato === "formula" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fórmula</label>
+                  <textarea
+                    value={form.formula}
+                    onChange={(e) => setForm({ ...form, formula: e.target.value })}
+                    className="w-full min-h-[120px] rounded-lg border px-3 py-2 text-sm"
+                    placeholder="Ej: diffMinutes(horaInicio, horaFin)"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Usa campos de la entidad por nombre: <code>horaInicio</code>, <code>horaFin</code>, <code>motivo</code>.
+                    Funciones disponibles: <code>diffMinutes()</code>, <code>diffHours()</code>.
+                  </p>
+                </div>
+              )}
 
               {(form.tipoDato === "select" || form.tipoDato === "multiselect") && (
                 <div>

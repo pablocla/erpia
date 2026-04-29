@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { invalidateContextCache } from "@/lib/ai"
+import { eventBus } from "@/lib/events/event-bus"
+import type { ProductoCreadoPayload, StockActualizadoPayload } from "@/lib/events/types"
+import "@/lib/producto/producto-event-handlers"
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,7 +111,42 @@ export async function POST(request: NextRequest) {
           motivo: "Stock inicial",
         },
       })
+
+      await eventBus.emit<StockActualizadoPayload>({
+        type: "STOCK_ACTUALIZADO",
+        payload: {
+          productoId: producto.id,
+          cantidadAnterior: 0,
+          cantidadNueva: producto.stock,
+          motivo: "Stock inicial",
+        },
+        timestamp: new Date(),
+        userId: ctx.auth.userId,
+        empresaId: ctx.auth.empresaId,
+      })
     }
+
+    await eventBus.emit<ProductoCreadoPayload>({
+      type: "PRODUCTO_CREADO",
+      payload: {
+        productoId: producto.id,
+        empresaId: ctx.auth.empresaId,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        activo: producto.activo,
+        categoriaId: producto.categoriaId,
+        precioVenta: producto.precioVenta,
+        precioCompra: producto.precioCompra,
+        porcentajeIva: producto.porcentajeIva,
+        esPlato: producto.esPlato,
+        esInsumo: producto.esInsumo,
+        stock: producto.stock,
+        stockMinimo: producto.stockMinimo,
+      },
+      timestamp: new Date(),
+      userId: ctx.auth.userId,
+      empresaId: ctx.auth.empresaId,
+    })
 
     invalidateContextCache(ctx.auth.empresaId)
     return NextResponse.json(producto, { status: 201 })

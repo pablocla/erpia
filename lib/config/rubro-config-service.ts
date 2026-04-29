@@ -8,6 +8,7 @@
  * - Cache en memoria con TTL para evitar queries repetitivas
  */
 
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
 // ─── CACHE ───────────────────────────────────────────────────────────────────
@@ -161,12 +162,12 @@ export async function setFeature(
       featureKey,
       activado: data.activado ?? true,
       modoSimplificado: data.modoSimplificado ?? false,
-      parametros: data.parametros ?? undefined,
+      parametros: data.parametros as Prisma.InputJsonValue | undefined,
     },
     update: {
       ...(data.activado !== undefined && { activado: data.activado }),
       ...(data.modoSimplificado !== undefined && { modoSimplificado: data.modoSimplificado }),
-      ...(data.parametros !== undefined && { parametros: data.parametros }),
+      ...(data.parametros !== undefined && { parametros: data.parametros as Prisma.InputJsonValue }),
     },
   })
   invalidateCache(empresaId)

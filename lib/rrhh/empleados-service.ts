@@ -156,3 +156,67 @@ export async function resumenEmpleados(empresaId: number) {
     })),
   }
 }
+
+export interface LiquidacionSueldosEmpleado {
+  id: number
+  nombre: string
+  cargo: string | null
+  departamento: string | null
+  sueldoBruto: number
+  descuentoEstimado: number
+  netoEstimado: number
+}
+
+export interface LiquidacionSueldosResumen {
+  periodo: string
+  totalEmpleados: number
+  totalBruto: number
+  totalDescuento: number
+  totalNeto: number
+  promedioNeto: number
+  empleados: LiquidacionSueldosEmpleado[]
+}
+
+export async function liquidacionSueldos(empresaId: number, periodo: string) {
+  const empleados = await prisma.empleado.findMany({
+    where: { empresaId, estado: "activo", sueldoBruto: { not: null } },
+    orderBy: { nombre: "asc" },
+    select: {
+      id: true,
+      nombre: true,
+      cargo: true,
+      departamento: true,
+      sueldoBruto: true,
+    },
+  })
+
+  const items: LiquidacionSueldosEmpleado[] = empleados.map((empleado) => {
+    const bruto = Number(empleado.sueldoBruto ?? 0)
+    const descuentoEstimado = Math.round(bruto * 0.3 * 100) / 100
+    const netoEstimado = Math.round((bruto - descuentoEstimado) * 100) / 100
+    return {
+      id: empleado.id,
+      nombre: empleado.nombre,
+      cargo: empleado.cargo,
+      departamento: empleado.departamento,
+      sueldoBruto: bruto,
+      descuentoEstimado,
+      netoEstimado,
+    }
+  })
+
+  const totalBruto = Math.round(items.reduce((sum, item) => sum + item.sueldoBruto, 0) * 100) / 100
+  const totalDescuento = Math.round(items.reduce((sum, item) => sum + item.descuentoEstimado, 0) * 100) / 100
+  const totalNeto = Math.round(items.reduce((sum, item) => sum + item.netoEstimado, 0) * 100) / 100
+  const promedioNeto = items.length ? Math.round((totalNeto / items.length) * 100) / 100 : 0
+
+  return {
+    periodo,
+    totalEmpleados: items.length,
+    totalBruto,
+    totalDescuento,
+    totalNeto,
+    promedioNeto,
+    empleados: items,
+  }
+}

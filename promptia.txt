@@ -1,0 +1,1089 @@
+Acá va. Copiá esto completo y pegalo en Copilot Chat modo Agent con `@workspace` activado:
+
+---
+
+```
+# MISIÓN PRINCIPAL
+
+Sos un senior full-stack developer + AI engineer trabajando en NegocioOS, 
+un ERP SaaS multi-rubro para PyMEs argentinas construido con:
+- Next.js 14 (App Router), TypeScript, Prisma ORM, PostgreSQL (Supabase), shadcn/ui, Tailwind CSS
+- 121 modelos en prisma/schema.prisma, 122 rutas API, 50 páginas dashboard
+- Facturación AFIP real (CAE/CAEA), multi-empresa, multi-sucursal, 9 roles RBAC
+- Ollama corriendo localmente como motor de IA (modelo: qwen2.5:14b por defecto)
+
+Tu objetivo es implementar un MOTOR DE INTELIGENCIA ARTIFICIAL completo que se integre 
+como capa transversal del ERP, aprenda de los datos reales de cada empresa, 
+y genere valor automático para cada rubro retail argentino.
+
+REGLAS ABSOLUTAS:
+- NUNCA rompas tipos TypeScript existentes
+- SIEMPRE Prisma, nunca SQL crudo
+- SIEMPRE try/catch en todo lo que toque la IA o la DB
+- SIEMPRE prisma.$transaction() en operaciones multi-tabla
+- El motor de IA NUNCA ejecuta acciones destructivas sin confirmación del usuario
+- Todos los prompts al LLM deben pedir respuesta en JSON válido y parsearlo con zod
+- Si Ollama no responde → fallback a respuesta estática, nunca romper el ERP
+
+---
+
+# PASO 1 — INFRAESTRUCTURA BASE DEL MOTOR IA
+
+## 1.1 Creá /lib/ai/ollama-client.ts
+
+Cliente singleton para Ollama con retry automático y timeout:
+
+```typescript
+import { z } from 'zod'
+
+const OLLAMA_BASE_URL = process.env.OLLAMA_URL ?? 'http://localhost:11434'
+const DEFAULT_MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5:14b'
+const TIMEOUT_MS = 30000
+
+export interface OllamaMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
+export interface OllamaResponse {
+  model: string
+  message: { role: string; content: string }
+  done: boolean
+}
+
+class OllamaClient {
+  private static instance: OllamaClient
+  
+  static getInstance(): OllamaClient {
+    if (!this.instance) this.instance = new OllamaClient()
+    return this.instance
+  }
+
+  async chat(messages: OllamaMessage[], model = DEFAULT_MODEL): Promise<string> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    
+    try {
+      const res = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ model, messages, stream: false })
+      })
+      
+      if (!res.ok) throw new Error(`Ollama error: ${res.status}`)
+      const data: OllamaResponse = await res.json()
+      return data.message.content
+      
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') throw new Error('Ollama timeout')
+      throw err
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  async chatJSON<T>(
+    messages: OllamaMessage[], 
+    schema: z.ZodSchema<T>,
+    model = DEFAULT_MODEL
+  ): Promise<T> {
+    const raw = await this.chat(messages, model)
+    const clean = raw.replace(/```json|```/g, '').trim()
+    try {
+      return schema.parse(JSON.parse(clean))
+    } catch {
+      throw new Error(`IA retornó JSON inválido: ${clean.slice(0, 200)}`)
+    }
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`, { 
+        signal: AbortSignal.timeout(3000) 
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+}
+
+export const ollama = OllamaClient.getInstance()
+```
+
+---
+
+## 1.2 Creá /lib/ai/context-builder.ts
+
+Este archivo construye el contexto dinámico de cada empresa para alimentar la IA.
+Es el archivo MÁS IMPORTANTE — es lo que hace que la IA "conozca" el negocio:
+
+```typescript
+import { prisma } from '@/lib/prisma'
+
+export interface EmpresaContexto {
+  empresa: {
+    nombre: string
+    rubro: string
+    localidad: string
+    provincia: string
+    cuit: string
+  }
+  snapshot: {
+    ventasHoy: { total: number; cantidad: number }
+    ventasSemana: { total: number; cantidad: number }
+    ventasMes: { total: number; cantidad: number }
+    ticketPromedio: number
+    stockCritico: Array<{ nombre: string; stock: number; stockMinimo: number; unidad: string }>
+    topProductos: Array<{ nombre: string; cantidad: number; total: number }>
+    clientesDeudores: Array<{ nombre: string; deuda: number; diasVencido: number }>
+    turnosPendientesHoy: number
+    turnosPendientesMañana: number
+    cajaAbierta: boolean
+    saldoCaja: number
+  }
+  historico: {
+    ventasUltimos30Dias: Array<{ fecha: string; total: number; cantidad: number }>
+    productosEstancados: Array<{ nombre: string; diasSinVenta: number }>
+    clientesInactivos: Array<{ nombre: string; diasSinCompra: number; promedioCompra: number }>
+  }
+  config: {
+    modulosActivos: string[]
+    moneda: string
+    timezone: string
+  }
+}
+
+export async function buildEmpresaContexto(empresaId: string): Promise<EmpresaContexto> {
+  const ahora = new Date()
+  const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
+  const semanaAtras = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const mesAtras = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const manana = new Date(hoy.getTime() + 24 * 60 * 60 * 1000)
+
+  const [
+    empresa,
+    ventasHoyAgg,
+    ventasSemanaAgg,
+    ventasMesAgg,
+    stockCritico,
+    topProductos,
+    clientesDeudores,
+    turnosHoy,
+    turnosMañana,
+    cajaTurno,
+    ventasDiarias,
+    productosEstancados,
+    clientesInactivos
+  ] = await Promise.all([
+    
+    prisma.empresa.findUniqueOrThrow({ 
+      where: { id: empresaId },
+      select: { nombre: true, rubro: true, localidad: true, provincia: true, cuit: true }
+    }),
+    
+    prisma.venta.aggregate({
+      where: { empresaId, createdAt: { gte: hoy }, estado: 'COMPLETADA' },
+      _sum: { total: true }, _count: { id: true }
+    }),
+    
+    prisma.venta.aggregate({
+      where: { empresaId, createdAt: { gte: semanaAtras }, estado: 'COMPLETADA' },
+      _sum: { total: true }, _count: { id: true }
+    }),
+    
+    prisma.venta.aggregate({
+      where: { empresaId, createdAt: { gte: mesAtras }, estado: 'COMPLETADA' },
+      _sum: { total: true }, _count: { id: true }
+    }),
+
+    prisma.producto.findMany({
+      where: { 
+        empresaId, 
+        activo: true,
+        deletedAt: null,
+        controlaStock: true,
+        stockActual: { lte: prisma.producto.fields.stockMinimo }
+      },
+      select: { nombre: true, stockActual: true, stockMinimo: true, unidadMedida: true },
+      take: 15,
+      orderBy: { stockActual: 'asc' }
+    }),
+
+    prisma.lineaVenta.groupBy({
+      by: ['productoId'],
+      where: { venta: { empresaId, createdAt: { gte: mesAtras } } },
+      _sum: { cantidad: true, subtotal: true },
+      orderBy: { _sum: { subtotal: 'desc' } },
+      take: 10
+    }),
+
+    prisma.cuentaCorrienteCliente.findMany({
+      where: { empresaId, saldo: { gt: 0 } },
+      include: { cliente: { select: { nombre: true, apellido: true } } },
+      orderBy: { saldo: 'desc' },
+      take: 10
+    }),
+
+    prisma.turno.count({
+      where: { empresaId, fecha: { gte: hoy, lt: manana }, estado: { in: ['CONFIRMADO', 'PENDIENTE'] } }
+    }),
+
+    prisma.turno.count({
+      where: { empresaId, fecha: { gte: manana, lt: new Date(manana.getTime() + 86400000) }, estado: { in: ['CONFIRMADO', 'PENDIENTE'] } }
+    }),
+
+    prisma.cajaTurno.findFirst({
+      where: { empresaId, estado: 'ABIERTO' },
+      select: { saldoActual: true }
+    }),
+
+    prisma.$queryRaw<Array<{fecha: string, total: number, cantidad: number}>>`
+      SELECT DATE(created_at)::text as fecha, 
+             SUM(total)::float as total, 
+             COUNT(*)::int as cantidad
+      FROM "Venta"
+      WHERE empresa_id = ${empresaId} 
+        AND created_at >= ${mesAtras}
+        AND estado = 'COMPLETADA'
+      GROUP BY DATE(created_at)
+      ORDER BY fecha DESC
+    `,
+
+    prisma.producto.findMany({
+      where: {
+        empresaId, activo: true, deletedAt: null,
+        lineasVenta: { none: { venta: { createdAt: { gte: semanaAtras } } } }
+      },
+      select: { nombre: true, createdAt: true },
+      take: 10
+    }),
+
+    prisma.cliente.findMany({
+      where: {
+        empresaId, activo: true, deletedAt: null,
+        ventas: { some: { createdAt: { lt: new Date(Date.now() - 30 * 86400000) } } }
+      },
+      select: { nombre: true, apellido: true, ventas: { select: { total: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 5 } },
+      take: 15
+    })
+  ])
+
+  const totalMes = Number(ventasMesAgg._sum.total ?? 0)
+  const cantidadMes = ventasMesAgg._count.id ?? 0
+
+  return {
+    empresa: {
+      nombre: empresa.nombre,
+      rubro: empresa.rubro ?? 'GENERAL',
+      localidad: empresa.localidad ?? 'Rosario',
+      provincia: empresa.provincia ?? 'Santa Fe',
+      cuit: empresa.cuit
+    },
+    snapshot: {
+      ventasHoy: { 
+        total: Number(ventasHoyAgg._sum.total ?? 0), 
+        cantidad: ventasHoyAgg._count.id ?? 0 
+      },
+      ventasSemana: { 
+        total: Number(ventasSemanaAgg._sum.total ?? 0), 
+        cantidad: ventasSemanaAgg._count.id ?? 0 
+      },
+      ventasMes: { total: totalMes, cantidad: cantidadMes },
+      ticketPromedio: cantidadMes > 0 ? Math.round(totalMes / cantidadMes) : 0,
+      stockCritico: stockCritico.map(p => ({
+        nombre: p.nombre,
+        stock: Number(p.stockActual),
+        stockMinimo: Number(p.stockMinimo),
+        unidad: p.unidadMedida ?? 'u'
+      })),
+      topProductos: topProductos.map(p => ({
+        nombre: p.productoId,
+        cantidad: Number(p._sum.cantidad ?? 0),
+        total: Number(p._sum.subtotal ?? 0)
+      })),
+      clientesDeudores: clientesDeudores.map(c => ({
+        nombre: `${c.cliente.nombre} ${c.cliente.apellido ?? ''}`.trim(),
+        deuda: Number(c.saldo),
+        diasVencido: 0
+      })),
+      turnosPendientesHoy: turnosHoy,
+      turnosPendientesMañana: turnosMañana,
+      cajaAbierta: !!cajaTurno,
+      saldoCaja: Number(cajaTurno?.saldoActual ?? 0)
+    },
+    historico: {
+      ventasUltimos30Dias: ventasDiarias,
+      productosEstancados: productosEstancados.map(p => ({
+        nombre: p.nombre,
+        diasSinVenta: Math.floor((Date.now() - p.createdAt.getTime()) / 86400000)
+      })),
+      clientesInactivos: clientesInactivos.map(c => {
+        const ultimaVenta = c.ventas[0]
+        const diasSinCompra = ultimaVenta 
+          ? Math.floor((Date.now() - ultimaVenta.createdAt.getTime()) / 86400000) 
+          : 999
+        const promedioCompra = c.ventas.length > 0 
+          ? c.ventas.reduce((a, v) => a + Number(v.total), 0) / c.ventas.length 
+          : 0
+        return { 
+          nombre: `${c.nombre} ${c.apellido ?? ''}`.trim(), 
+          diasSinCompra, 
+          promedioCompra: Math.round(promedioCompra) 
+        }
+      })
+    },
+    config: {
+      modulosActivos: [],
+      moneda: 'ARS',
+      timezone: 'America/Argentina/Buenos_Aires'
+    }
+  }
+}
+```
+
+---
+
+## 1.3 Creá /lib/ai/system-prompts.ts
+
+Prompts del sistema diferenciados por rubro. Esto es lo que hace que la IA 
+hable como si conociera el negocio de toda la vida:
+
+```typescript
+export function buildSystemPrompt(contexto: EmpresaContexto): string {
+  const rubroInstrucciones = getRubroInstrucciones(contexto.empresa.rubro)
+  
+  return `Sos el asistente de inteligencia artificial de ${contexto.empresa.nombre}, 
+un ${contexto.empresa.rubro.toLowerCase()} ubicado en ${contexto.empresa.localidad}, ${contexto.empresa.provincia}.
+
+CONTEXTO DEL NEGOCIO HOY (${new Date().toLocaleDateString('es-AR')}):
+- Ventas de hoy: $${contexto.snapshot.ventasHoy.total.toLocaleString('es-AR')} (${contexto.snapshot.ventasHoy.cantidad} operaciones)
+- Ventas de la semana: $${contexto.snapshot.ventasSemana.total.toLocaleString('es-AR')}
+- Ventas del mes: $${contexto.snapshot.ventasMes.total.toLocaleString('es-AR')} (${contexto.snapshot.ventasMes.cantidad} ventas)
+- Ticket promedio: $${contexto.snapshot.ticketPromedio.toLocaleString('es-AR')}
+- Caja: ${contexto.snapshot.cajaAbierta ? `ABIERTA con $${contexto.snapshot.saldoCaja.toLocaleString('es-AR')}` : 'CERRADA'}
+- Turnos hoy: ${contexto.snapshot.turnosPendientesHoy} | Mañana: ${contexto.snapshot.turnosPendientesMañana}
+
+STOCK CRÍTICO (${contexto.snapshot.stockCritico.length} productos bajo mínimo):
+${contexto.snapshot.stockCritico.map(p => `- ${p.nombre}: ${p.stock}${p.unidad} (mínimo: ${p.stockMinimo}${p.unidad})`).join('\n')}
+
+CLIENTES CON DEUDA:
+${contexto.snapshot.clientesDeudores.map(c => `- ${c.nombre}: $${c.deuda.toLocaleString('es-AR')}`).join('\n')}
+
+CLIENTES INACTIVOS (no compran hace más de 30 días):
+${contexto.historico.clientesInactivos.slice(0, 5).map(c => `- ${c.nombre}: ${c.diasSinCompra} días sin comprar (promedio $${c.promedioCompra.toLocaleString('es-AR')})`).join('\n')}
+
+INSTRUCCIONES ESPECÍFICAS DEL RUBRO:
+${rubroInstrucciones}
+
+REGLAS DE COMPORTAMIENTO:
+1. Respondé SIEMPRE en español rioplatense informal y directo
+2. Los montos son en pesos argentinos, usá punto para miles: $1.250.000
+3. Las fechas en formato DD/MM/YYYY
+4. NUNCA inventes datos que no estén en el contexto. Si no sabés, decí "no tengo ese dato"
+5. Cuando propongas una acción (enviar WhatsApp, crear orden, etc.) SIEMPRE preguntá confirmación
+6. Sé conciso. Máximo 3-4 líneas por respuesta salvo que pidan un reporte
+7. Cuando detectes algo urgente, empezá con 🔴. Importante con 🟡. Info con 🟢
+8. NUNCA menciones que sos una IA o que usás Ollama. Sos el asistente del negocio.`
+}
+
+function getRubroInstrucciones(rubro: string): string {
+  const instrucciones: Record<string, string> = {
+    KIOSCO: `
+- Horarios pico típicos: 7-9hs, 12-14hs, 18-20hs. Alertá reposición ANTES de cada pico.
+- Productos que se venden juntos: cigarrillos+encendedor, gaseosa+papas, café+medialunas.
+- Estacionalidad: verano → helados/bebidas frías. Invierno → chocolates/alfajores/infusiones.
+- Si hay stock bajo en cigarrillos o gaseosas → es URGENTE, bloquean ventas frecuentes.
+- El kiosco opera con margen bajo. Cualquier producto sin rotación en 7 días es problema.`,
+
+    FERRETERIA: `
+- Clientes tipo albañil: compran cemento+arena+ladrillos+plastificante en conjunto.
+- Clientes tipo plomero: caños+uniones+pegamento+cinta teflón.
+- Clientes tipo electricista: cables+llaves+tomas+disyuntores.
+- Estacionalidad: primavera → pinturas. Previo a lluvias → impermeabilizantes/selladores.
+- Los clientes de cuenta corriente son los más valiosos. Priorizalos en alertas.
+- Si un cliente mayorista baja su volumen → puede estar yendo a la competencia.`,
+
+    VETERINARIA: `
+- Los recordatorios de vacunas son el driver de retención más fuerte del rubro.
+- Ciclos clave: antirrábica (anual), triple felina/canina (anual), desparasitación (cada 3 meses).
+- Estacionalidad: verano → garrapatas/pulgas. Invierno → moquillo/tos de las perreras.
+- Una mascota sin consulta hace 6+ meses = cliente perdido. Alertar.
+- Post-cirugía: seguimiento a los 3, 7 y 14 días mejora la fidelización.`,
+
+    PELUQUERIA: `
+- Frecuencia promedio de visita: cada 30-45 días para corte, cada 60-90 para color.
+- Cliente sin visita hace 1.5x su frecuencia habitual = en riesgo de irse.
+- Los turnos de fin de semana son más valiosos. Priorizarlos para servicios de mayor ticket.
+- El servicio de color tiene el margen más alto. Incentivá su venta.
+- Las recomendaciones de clientes son el principal canal de adquisición del rubro.`,
+
+    GYM: `
+- Los primeros 90 días son críticos. Socio que no viene en semana 2 → probabilidad alta de baja.
+- Picos de alta: enero (año nuevo) y marzo (vuelta al cole). Valles: julio y diciembre.
+- Un socio que va 3+ veces/semana tiene 80% menos probabilidad de darse de baja.
+- Las clases grupales retienen más que el libre. Si tienen clases → recordarles.
+- Las bajas suelen avisarse entre el 25 y 30 del mes. Anticiparse el día 20.`,
+
+    GASTRONOMIA: `
+- Lluvia aumenta el delivery un 40-60%. Anticipar stock de insumos.
+- Los viernes y sábados representan el 50% de la facturación semanal típica.
+- El desperdicio de insumos es el principal destructor de margen. Proyectar bien.
+- Tiempo promedio de preparación real vs estimado: trackear para mejorar tiempos de entrega.
+- Las quejas en delivery son 3x más frecuentes que en salón. Gestión inmediata.`,
+
+    DISTRIBUIDORA: `
+- Los clientes de reparto tienen patrones de compra semanales muy estables. Desviaciones = señal.
+- Los envases/retornables son un activo crítico. Saldo alto = capital inmovilizado.
+- El orden de las paradas impacta directo en el costo de combustible.
+- Clientes que pagan al contado son más rentables que cuenta corriente → protegerlos.
+- Los feriados desplazan pedidos. Anticipar al cliente anterior al feriado.`,
+
+    TALLER: `
+- El service por km es la principal fuente de clientes recurrentes.
+- Intervalos típicos: service básico cada 10.000km o 6 meses. Distribución cada 40.000km.
+- Un cliente que no vuelve tras la primera visita es una venta perdida de por vida.
+- Los repuestos de alta rotación (filtros, pastillas, correas) deben estar siempre en stock.
+- La aprobación del presupuesto por WhatsApp reduce el abandono de órdenes un 40%.`,
+
+    OPTICA: `
+- Renovación de receta cada 1-2 años. Recordatorio = visita casi asegurada.
+- Los armazones tienen el margen más alto. El lente es el volumen.
+- Obras sociales: tener claro qué cubre cada plan evita reclamos post-venta.
+- Clientes con más de 2 años de la última receta son urgentes para contactar.`,
+
+    SALON_BELLEZA: `
+- Similar a peluquería pero con servicios de mayor duración y ticket (uñas, depilación, masajes).
+- Los paquetes de servicios combinados aumentan el ticket promedio 60%.
+- La fidelización por programa de puntos funciona mejor que los descuentos.
+- Las citas canceladas de último momento son el principal problema operativo.`
+  }
+  
+  return instrucciones[rubro] ?? `
+- Analizá los datos del negocio y detectá oportunidades de mejora.
+- Priorizá la retención de clientes y la optimización del stock.
+- Alertá sobre deudas vencidas y productos sin rotación.`
+}
+```
+
+---
+
+## 1.4 Creá /lib/ai/ai-service.ts
+
+El servicio principal que orquesta todo. Un método por funcionalidad:
+
+```typescript
+import { ollama } from './ollama-client'
+import { buildEmpresaContexto, EmpresaContexto } from './context-builder'
+import { buildSystemPrompt } from './system-prompts'
+import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+
+// Schemas Zod para parsear respuestas de la IA
+const AlertaSchema = z.object({
+  alertas: z.array(z.object({
+    tipo: z.enum(['stock', 'cobranza', 'cliente_inactivo', 'turno', 'caja', 'venta', 'general']),
+    prioridad: z.enum(['alta', 'media', 'baja']),
+    titulo: z.string(),
+    descripcion: z.string(),
+    accion_sugerida: z.string().optional(),
+    datos: z.record(z.any()).optional()
+  }))
+})
+
+const ReporteSchema = z.object({
+  resumen: z.string(),
+  metricas_clave: z.array(z.object({ label: z.string(), valor: z.string(), tendencia: z.enum(['sube', 'baja', 'estable']).optional() })),
+  insights: z.array(z.string()),
+  recomendaciones: z.array(z.string()),
+  alertas_criticas: z.array(z.string())
+})
+
+const MensajeWhatsAppSchema = z.object({
+  mensajes: z.array(z.object({
+    destinatario: z.string(),
+    telefono: z.string(),
+    mensaje: z.string(),
+    tipo: z.enum(['recordatorio_turno', 'cobranza', 'cliente_inactivo', 'stock', 'pedido', 'general']),
+    prioridad: z.number().min(1).max(10)
+  }))
+})
+
+const ProyeccionSchema = z.object({
+  proyeccion_semana: z.number(),
+  proyeccion_mes: z.number(),
+  confianza: z.enum(['alta', 'media', 'baja']),
+  factores: z.array(z.string()),
+  recomendaciones_stock: z.array(z.object({
+    producto: z.string(),
+    cantidad_sugerida: z.number(),
+    razon: z.string()
+  }))
+})
+
+const ClasificacionProductoSchema = z.object({
+  categoria: z.string(),
+  subcategoria: z.string().optional(),
+  alicuota_iva: z.enum(['0', '10.5', '21', '27']),
+  unidad_medida: z.string(),
+  precio_sugerido: z.number().optional(),
+  tags: z.array(z.string()),
+  observaciones: z.string().optional()
+})
+
+export class AIService {
+  private static instance: AIService
+  
+  static getInstance(): AIService {
+    if (!this.instance) this.instance = new AIService()
+    return this.instance
+  }
+
+  // ─────────────────────────────────────────────
+  // MÉTODO PRINCIPAL: Chat libre con contexto del negocio
+  // ─────────────────────────────────────────────
+  async chat(empresaId: string, userMessage: string, historial: Array<{role: 'user'|'assistant', content: string}> = []): Promise<string> {
+    const available = await ollama.isAvailable()
+    if (!available) return 'El asistente IA no está disponible en este momento. Verificá que Ollama esté corriendo.'
+    
+    try {
+      const contexto = await buildEmpresaContexto(empresaId)
+      const systemPrompt = buildSystemPrompt(contexto)
+      
+      const messages = [
+        { role: 'system' as const, content: systemPrompt },
+        ...historial,
+        { role: 'user' as const, content: userMessage }
+      ]
+      
+      return await ollama.chat(messages)
+    } catch (err) {
+      console.error('[AIService.chat]', err)
+      return 'No pude procesar tu consulta. Intentá de nuevo.'
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // ALERTAS INTELIGENTES AUTOMÁTICAS
+  // ─────────────────────────────────────────────
+  async generarAlertas(empresaId: string): Promise<z.infer<typeof AlertaSchema>> {
+    try {
+      const contexto = await buildEmpresaContexto(empresaId)
+      
+      const messages = [
+        { 
+          role: 'system' as const, 
+          content: buildSystemPrompt(contexto) + '\n\nRespondé ÚNICAMENTE con JSON válido, sin texto adicional ni markdown.'
+        },
+        { 
+          role: 'user' as const, 
+          content: `Analizá todos los datos del negocio y generá las alertas más importantes para hoy.
+          
+          Considerá:
+          1. Stock bajo en productos críticos para el rubro
+          2. Clientes con deuda vencida hace más de 30 días
+          3. Clientes inactivos que solían comprar con frecuencia
+          4. Turnos sin confirmar para mañana
+          5. Tendencias de venta preocupantes (caída vs semana anterior)
+          6. Cualquier anomalía en los datos
+          
+          Respondé con este JSON exacto:
+          {
+            "alertas": [
+              {
+                "tipo": "stock|cobranza|cliente_inactivo|turno|caja|venta|general",
+                "prioridad": "alta|media|baja",
+                "titulo": "título corto de la alerta",
+                "descripcion": "descripción detallada con números reales",
+                "accion_sugerida": "qué hacer al respecto",
+                "datos": { "cualquier": "dato relevante" }
+              }
+            ]
+          }
+          
+          Ordená por prioridad descendente. Máximo 8 alertas.`
+        }
+      ]
+      
+      return await ollama.chatJSON(messages, AlertaSchema)
+    } catch (err) {
+      console.error('[AIService.generarAlertas]', err)
+      return { alertas: [] }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // REPORTE DIARIO / SEMANAL / MENSUAL
+  // ─────────────────────────────────────────────
+  async generarReporte(empresaId: string, periodo: 'dia' | 'semana' | 'mes'): Promise<z.infer<typeof ReporteSchema>> {
+    try {
+      const contexto = await buildEmpresaContexto(empresaId)
+      
+      const periodoTexto = { dia: 'hoy', semana: 'esta semana', mes: 'este mes' }[periodo]
+      const ventasPeriodo = { dia: contexto.snapshot.ventasHoy, semana: contexto.snapshot.ventasSemana, mes: contexto.snapshot.ventasMes }[periodo]
+      
+      const messages = [
+        { role: 'system' as const, content: buildSystemPrompt(contexto) + '\n\nRespondé ÚNICAMENTE con JSON válido.' },
+        { 
+          role: 'user' as const, 
+          content: `Generá un reporte completo del negocio para ${periodoTexto}.
+          
+          Ventas del período: $${ventasPeriodo.total.toLocaleString('es-AR')} en ${ventasPeriodo.cantidad} operaciones.
+          Historial de ventas diarias (últimos 30 días): ${JSON.stringify(contexto.historico.ventasUltimos30Dias)}
+          
+          Respondé con este JSON:
+          {
+            "resumen": "párrafo de 2-3 líneas con el estado general del negocio",
+            "metricas_clave": [
+              { "label": "nombre de la métrica", "valor": "valor formateado", "tendencia": "sube|baja|estable" }
+            ],
+            "insights": ["observación 1", "observación 2"],
+            "recomendaciones": ["acción concreta 1", "acción concreta 2"],
+            "alertas_criticas": ["alerta urgente 1"]
+          }`
+        }
+      ]
+      
+      return await ollama.chatJSON(messages, ReporteSchema)
+    } catch (err) {
+      console.error('[AIService.generarReporte]', err)
+      return { resumen: 'Error generando reporte', metricas_clave: [], insights: [], recomendaciones: [], alertas_criticas: [] }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // GENERADOR DE MENSAJES WHATSAPP PERSONALIZADOS
+  // ─────────────────────────────────────────────
+  async generarMensajesWhatsApp(
+    empresaId: string, 
+    tipo: 'cobranza' | 'inactivos' | 'turnos' | 'stock' | 'todos'
+  ): Promise<z.infer<typeof MensajeWhatsAppSchema>> {
+    try {
+      const contexto = await buildEmpresaContexto(empresaId)
+      
+      let instruccion = ''
+      
+      if (tipo === 'cobranza' || tipo === 'todos') {
+        instruccion += `
+        DEUDORES: Generá mensajes de cobranza cordiales pero directos para:
+        ${contexto.snapshot.clientesDeudores.map(c => `- ${c.nombre}: debe $${c.deuda.toLocaleString('es-AR')}`).join('\n')}
+        `
+      }
+      
+      if (tipo === 'inactivos' || tipo === 'todos') {
+        instruccion += `
+        CLIENTES INACTIVOS: Generá mensajes de reactivación para:
+        ${contexto.historico.clientesInactivos.slice(0, 5).map(c => `- ${c.nombre}: ${c.diasSinCompra} días sin comprar, promedio $${c.promedioCompra.toLocaleString('es-AR')}`).join('\n')}
+        `
+      }
+      
+      if (tipo === 'turnos' || tipo === 'todos') {
+        instruccion += `
+        TURNOS: Hay ${contexto.snapshot.turnosPendientesMañana} turnos para mañana que necesitan recordatorio.
+        `
+      }
+      
+      const messages = [
+        { role: 'system' as const, content: buildSystemPrompt(contexto) + '\n\nRespondé ÚNICAMENTE con JSON válido.' },
+        { 
+          role: 'user' as const, 
+          content: `Generá mensajes de WhatsApp personalizados para cada destinatario.
+          Los mensajes deben ser en español rioplatense, amigables, con el nombre del negocio: ${contexto.empresa.nombre}.
+          No deben superar 3 líneas. No usar emojis en exceso.
+          
+          ${instruccion}
+          
+          Respondé con este JSON:
+          {
+            "mensajes": [
+              {
+                "destinatario": "nombre del cliente",
+                "telefono": "numero sin el +54 (usar placeholder '1100000000' si no tenés el dato)",
+                "mensaje": "texto del mensaje listo para enviar",
+                "tipo": "recordatorio_turno|cobranza|cliente_inactivo|stock|pedido|general",
+                "prioridad": 1-10
+              }
+            ]
+          }
+          
+          Ordená por prioridad descendente.`
+        }
+      ]
+      
+      return await ollama.chatJSON(messages, MensajeWhatsAppSchema)
+    } catch (err) {
+      console.error('[AIService.generarMensajesWhatsApp]', err)
+      return { mensajes: [] }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // PROYECCIÓN DE VENTAS E INSUMOS
+  // ─────────────────────────────────────────────
+  async generarProyeccion(empresaId: string): Promise<z.infer<typeof ProyeccionSchema>> {
+    try {
+      const contexto = await buildEmpresaContexto(empresaId)
+      
+      const messages = [
+        { role: 'system' as const, content: buildSystemPrompt(contexto) + '\n\nRespondé ÚNICAMENTE con JSON válido.' },
+        { 
+          role: 'user' as const, 
+          content: `Basándote en el historial de ventas, proyectá:
+          1. Ventas de la próxima semana (en pesos)
+          2. Ventas del mes completo (en pesos)
+          3. Qué productos hay que reponer y en qué cantidad
+          
+          Historial diario: ${JSON.stringify(contexto.historico.ventasUltimos30Dias)}
+          Stock crítico actual: ${JSON.stringify(contexto.snapshot.stockCritico)}
+          
+          Respondé con este JSON:
+          {
+            "proyeccion_semana": 0,
+            "proyeccion_mes": 0,
+            "confianza": "alta|media|baja",
+            "factores": ["factor que influye en la proyección"],
+            "recomendaciones_stock": [
+              {
+                "producto": "nombre del producto",
+                "cantidad_sugerida": 0,
+                "razon": "por qué recomendás esa cantidad"
+              }
+            ]
+          }`
+        }
+      ]
+      
+      return await ollama.chatJSON(messages, ProyeccionSchema)
+    } catch (err) {
+      console.error('[AIService.generarProyeccion]', err)
+      return { proyeccion_semana: 0, proyeccion_mes: 0, confianza: 'baja', factores: [], recomendaciones_stock: [] }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // CLASIFICADOR INTELIGENTE DE PRODUCTOS
+  // ─────────────────────────────────────────────
+  async clasificarProducto(
+    descripcion: string, 
+    rubro: string,
+    precioCompra?: number
+  ): Promise<z.infer<typeof ClasificacionProductoSchema>> {
+    try {
+      const messages = [
+        { 
+          role: 'system' as const, 
+          content: `Sos un experto en categorización de productos para un ERP de ${rubro} argentino.
+          Conocés perfectamente la legislación fiscal argentina: IVA 21% (general), 10.5% (alimentos básicos, medicamentos), 0% (exentos), 27% (servicios digitales).
+          Respondé ÚNICAMENTE con JSON válido.`
+        },
+        { 
+          role: 'user' as const, 
+          content: `Clasificá este producto para el ERP:
+          Descripción: "${descripcion}"
+          Rubro del negocio: ${rubro}
+          ${precioCompra ? `Precio de compra: $${precioCompra}` : ''}
+          
+          Determiná:
+          - Categoría y subcategoría adecuada para el rubro
+          - Alícuota de IVA correcta según legislación argentina
+          - Unidad de medida estándar
+          - Precio de venta sugerido (margen típico del rubro si tenés precio de compra)
+          - Tags para búsqueda
+          
+          JSON:
+          {
+            "categoria": "categoría principal",
+            "subcategoria": "subcategoría opcional",
+            "alicuota_iva": "0|10.5|21|27",
+            "unidad_medida": "u|kg|lt|ml|m|m2|caja|pack|docena",
+            "precio_sugerido": null,
+            "tags": ["tag1", "tag2"],
+            "observaciones": "nota importante si hay algo a destacar"
+          }`
+        }
+      ]
+      
+      return await ollama.chatJSON(messages, ClasificacionProductoSchema)
+    } catch (err) {
+      console.error('[AIService.clasificarProducto]', err)
+      return { categoria: 'General', alicuota_iva: '21', unidad_medida: 'u', tags: [] }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // GENERADOR DE PRESUPUESTO EN LENGUAJE NATURAL
+  // ─────────────────────────────────────────────
+  async interpretarPedidoNatural(
+    empresaId: string,
+    textoLibre: string
+  ): Promise<{ items: Array<{ descripcion: string; cantidad: number; unidad: string }>; clienteSugerido?: string }> {
+    try {
+      const schema = z.object({
+        items: z.array(z.object({
+          descripcion: z.string(),
+          cantidad: z.number(),
+          unidad: z.string()
+        })),
+        cliente_sugerido: z.string().optional()
+      })
+
+      const messages = [
+        { 
+          role: 'system' as const, 
+          content: 'Sos un asistente que interpreta pedidos en lenguaje natural y los convierte en ítems estructurados. Respondé ÚNICAMENTE con JSON válido.'
+        },
+        { 
+          role: 'user' as const, 
+          content: `Interpretá este pedido y extraé los ítems con cantidad y unidad:
+          
+          "${textoLibre}"
+          
+          JSON:
+          {
+            "items": [
+              { "descripcion": "nombre del producto", "cantidad": 0, "unidad": "u|kg|lt|m|caja" }
+            ],
+            "cliente_sugerido": "nombre del cliente si se menciona"
+          }`
+        }
+      ]
+      
+      const result = await ollama.chatJSON(messages, schema)
+      return { items: result.items, clienteSugerido: result.cliente_sugerido }
+    } catch (err) {
+      console.error('[AIService.interpretarPedidoNatural]', err)
+      return { items: [] }
+    }
+  }
+}
+
+export const aiService = AIService.getInstance()
+```
+
+---
+
+# PASO 2 — API ROUTES
+
+## 2.1 Creá /app/api/ai/chat/route.ts
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { aiService } from '@/lib/ai/ai-service'
+import { z } from 'zod'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth/auth-options'
+
+const ChatRequestSchema = z.object({
+  mensaje: z.string().min(1).max(2000),
+  historial: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string()
+  })).optional().default([])
+})
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.empresaId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    
+    const body = ChatRequestSchema.parse(await req.json())
+    const respuesta = await aiService.chat(session.user.empresaId, body.mensaje, body.historial)
+    
+    return NextResponse.json({ success: true, data: { respuesta } })
+  } catch (err) {
+    return NextResponse.json({ success: false, error: (err as Error).message }, { status: 500 })
+  }
+}
+```
+
+## 2.2 Creá /app/api/ai/alertas/route.ts
+
+GET → genera y retorna alertas del día. También guarda en DB para historial.
+
+## 2.3 Creá /app/api/ai/reporte/route.ts
+
+GET con query param ?periodo=dia|semana|mes → retorna reporte completo.
+
+## 2.4 Creá /app/api/ai/whatsapp-mensajes/route.ts
+
+POST con { tipo: 'cobranza'|'inactivos'|'turnos'|'todos' } → genera mensajes.
+GET → retorna mensajes generados pendientes de envío.
+
+## 2.5 Creá /app/api/ai/proyeccion/route.ts
+
+GET → retorna proyección de ventas e insumos para la semana/mes.
+
+## 2.6 Creá /app/api/ai/clasificar-producto/route.ts
+
+POST con { descripcion, precioCompra? } → retorna clasificación completa.
+
+---
+
+# PASO 3 — JOBS AUTOMÁTICOS (CRON)
+
+## 3.1 Creá /app/api/cron/ia-diaria/route.ts
+
+Este endpoint lo llama Vercel Cron o Railway Cron todos los días a las 6:00am.
+Protegelo con CRON_SECRET en el header Authorization.
+
+Lógica:
+1. Obtener todas las empresas activas con módulo IA habilitado
+2. Para cada empresa:
+   a. buildEmpresaContexto()
+   b. aiService.generarAlertas() → guardar en tabla AlertaIA
+   c. aiService.generarMensajesWhatsApp('todos') → guardar en tabla MensajePendienteWhatsApp
+   d. Si es lunes → aiService.generarReporte('semana') → guardar en ReporteIA
+   e. Si es día 1 del mes → aiService.generarReporte('mes') → guardar en ReporteIA
+3. Retornar { procesadas: N, errores: [] }
+
+## 3.2 Creá /app/api/cron/enviar-whatsapp/route.ts
+
+Corre cada hora. Busca MensajePendienteWhatsApp con estado='PENDIENTE' y prioridad >= 8.
+Los envía por WhatsApp (Twilio) y marca como ENVIADO.
+
+---
+
+# PASO 4 — MODELOS EN SCHEMA.PRISMA
+
+Agregá estos modelos al final del schema.prisma:
+
+model AlertaIA {
+  id          String   @id @default(cuid())
+  empresaId   String
+  tipo        String
+  prioridad   String
+  titulo      String
+  descripcion String   @db.Text
+  accion      String?  @db.Text
+  datos       Json?
+  leida       Boolean  @default(false)
+  resuelta    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([empresaId, createdAt])
+  @@index([empresaId, leida])
+}
+
+model ReporteIA {
+  id              String   @id @default(cuid())
+  empresaId       String
+  periodo         String
+  resumen         String   @db.Text
+  metricasClave   Json
+  insights        Json
+  recomendaciones Json
+  alertasCriticas Json
+  createdAt       DateTime @default(now())
+  
+  @@index([empresaId, periodo, createdAt])
+}
+
+model MensajePendienteWhatsApp {
+  id           String   @id @default(cuid())
+  empresaId    String
+  destinatario String
+  telefono     String
+  mensaje      String   @db.Text
+  tipo         String
+  prioridad    Int      @default(5)
+  estado       String   @default("PENDIENTE")
+  enviadoAt    DateTime?
+  error        String?
+  createdAt    DateTime @default(now())
+  
+  @@index([empresaId, estado])
+  @@index([estado, prioridad])
+}
+
+model ChatIAHistorial {
+  id        String   @id @default(cuid())
+  empresaId String
+  usuarioId String
+  role      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  @@index([empresaId, usuarioId, createdAt])
+}
+
+---
+
+# PASO 5 — UI
+
+## 5.1 Creá /app/dashboard/ia/page.tsx
+
+Panel principal de IA con estas secciones:
+
+SECCIÓN 1 — Chat con el negocio:
+- Interfaz de chat tipo WhatsApp
+- Input de texto con botón enviar
+- Historial de conversación en la sesión
+- Botones rápidos: "¿Cómo estoy hoy?", "¿Qué repongo?", "¿Quién me debe?", "Dame el reporte"
+- Mantiene historial en ChatIAHistorial de la DB
+
+SECCIÓN 2 — Alertas del día:
+- Cards con las alertas generadas por el cron
+- Semáforo de prioridad (rojo/amarillo/verde)
+- Botón "Marcar como resuelta"
+- Botón "Ver más detalles"
+
+SECCIÓN 3 — Mensajes WhatsApp sugeridos:
+- Lista de mensajes generados por la IA
+- Preview del mensaje
+- Botón "Enviar ahora" → llama a Twilio
+- Botón "Editar antes de enviar"
+- Botón "Descartar"
+
+SECCIÓN 4 — Proyección:
+- Card con proyección de ventas de la semana
+- Barra de progreso: ventas actuales vs proyección
+- Lista de productos a reponer con cantidades sugeridas
+
+## 5.2 Actualizá el menú lateral del dashboard
+
+Agregá ítem "🤖 Asistente IA" con badge con el número de alertas sin leer.
+Posicionarlo después de "Dashboard" en el menú, visible para roles: ADMIN, GERENTE, DUEÑO.
+
+## 5.3 Creá widget de alertas IA en /app/dashboard/page.tsx
+
+En el dashboard principal, agregá un panel lateral o card con:
+- Las 3 alertas más urgentes del día
+- Link "Ver todas las alertas →"
+- Si no hay alertas: "✅ Todo en orden hoy"
+
+---
+
+# PASO 6 — VARIABLES DE ENTORNO
+
+Agregá al .env.example:
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:14b
+AI_ENABLED=true
+CRON_SECRET=tu_secret_para_proteger_los_cron_endpoints
+
+---
+
+# INSTRUCCIONES FINALES PARA COPILOT
+
+Implementá en este orden exacto:
+1. /lib/ai/ollama-client.ts
+2. /lib/ai/context-builder.ts  
+3. /lib/ai/system-prompts.ts
+4. /lib/ai/ai-service.ts
+5. Migraciones del schema.prisma (npx prisma migrate dev --name add_ia_models)
+6. API routes (/app/api/ai/*)
+7. Cron jobs (/app/api/cron/*)
+8. UI (/app/dashboard/ia/page.tsx)
+9. Widget en dashboard principal
+10. Actualizar menú lateral
+
+NUNCA uses SQL crudo. SIEMPRE Prisma.
+SIEMPRE manejo de errores. La IA NUNCA puede romper el ERP si falla.
+Si Ollama no responde → retornar gracefully, no lanzar excepción al usuario.
+Todos los métodos de AIService son async y tienen try/catch propio.
+```
+
+---
+
+Ese es el prompt completo. Cuando lo pegués en Copilot Agent, decile después: **"Empezá por el Paso 1 solamente, archivo por archivo, mostrándome el código completo de cada uno antes de continuar."** Así lo controlás sin que se vaya al mazo.

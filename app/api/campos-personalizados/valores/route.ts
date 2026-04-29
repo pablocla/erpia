@@ -13,6 +13,29 @@ const valorSchema = z.object({
   valorJson: z.any().optional().nullable(),
 })
 
+function diffMinutes(start: string, end: string): number {
+  const [h1, m1] = start.split(":").map(Number)
+  const [h2, m2] = end.split(":").map(Number)
+  return (h2 * 60 + m2) - (h1 * 60 + m1)
+}
+
+function diffHours(start: string, end: string): number {
+  return diffMinutes(start, end) / 60
+}
+
+function evaluateFormula(formula: string, context: Record<string, unknown>): string | number | null {
+  try {
+    const allowedKeys = Object.keys(context)
+    const values = allowedKeys.map((key) => context[key])
+    const fn = new Function(...allowedKeys, "diffMinutes", "diffHours", "Number", "String", "Boolean", "Date", `return (${formula})`)
+    const result = fn(...values, diffMinutes, diffHours, Number, String, Boolean, Date)
+    return result ?? null
+  } catch (error) {
+    console.error("Error evaluating formula:", error)
+    return null
+  }
+}
+
 const valorBatchSchema = z.object({
   entidadId: z.string().min(1),
   valores: z.array(z.object({
@@ -31,6 +54,9 @@ export async function GET(request: NextRequest) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden acceder a este recurso" }, { status: 403 })
+    }
 
     const { searchParams } = new URL(request.url)
     const entidad = searchParams.get("entidad")
@@ -51,19 +77,47 @@ export async function GET(request: NextRequest) {
       orderBy: { orden: "asc" },
     })
 
+    let registro: Record<string, unknown> | null = null
+    if (entidad === "turno") {
+      registro = await prisma.turno.findFirst({
+        where: { id: Number(entidadId), profesional: { empresaId: ctx.auth.empresaId } },
+        select: {
+          id: true,
+          fecha: true,
+          horaInicio: true,
+          horaFin: true,
+          estado: true,
+          motivo: true,
+          notas: true,
+          clienteId: true,
+          profesionalId: true,
+        },
+      })
+    }
+
     // Flatten: return field definition + current value
-    const result = campos.map((c) => ({
-      id: c.id,
-      nombreCampo: c.nombreCampo,
-      etiqueta: c.etiqueta,
-      tipoDato: c.tipoDato,
-      opciones: c.opciones,
-      obligatorio: c.obligatorio,
-      placeholder: c.placeholder,
-      ayuda: c.ayuda,
-      valorDefault: c.valorDefault,
-      valor: c.valores[0] ?? null,
-    }))
+    const result = campos.map((c) => {
+      const valor = c.valores[0] ?? null
+      const computedValue = c.tipoDato === "formula" && c.formula && registro
+        ? evaluateFormula(c.formula, { ...registro, ...valor })
+        : null
+
+      return {
+        id: c.id,
+        nombreCampo: c.nombreCampo,
+        etiqueta: c.etiqueta,
+        tipoDato: c.tipoDato,
+        opciones: c.opciones,
+        obligatorio: c.obligatorio,
+        placeholder: c.placeholder,
+        ayuda: c.ayuda,
+        valorDefault: c.valorDefault,
+        formula: c.formula,
+        valor: c.tipoDato === "formula"
+          ? { ...valor, valorTexto: typeof computedValue === "string" ? computedValue : computedValue?.toString() ?? null }
+          : valor,
+      }
+    })
 
     return NextResponse.json({ data: result })
   } catch (error) {
@@ -78,6 +132,9 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden modificar campos personalizados" }, { status: 403 })
+    }
 
     const body = await request.json()
     const parsed = valorBatchSchema.safeParse(body)

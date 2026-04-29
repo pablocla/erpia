@@ -1,11 +1,11 @@
 "use client"
 
-import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ThemeCustomizer } from "@/components/theme-customizer"
 import { ContextualHelp } from "@/components/contextual-help"
+import { Breadcrumbs } from "@/components/breadcrumbs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -34,89 +34,19 @@ import {
   Moon,
   Sparkles,
   CheckSquare,
+  Menu,
 } from "lucide-react"
 
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
 
-const BREADCRUMB_LABELS: Record<string, string> = {
-  dashboard: "Dashboard",
-  ventas: "Ventas",
-  compras: "Compras",
-  productos: "Productos",
-  clientes: "Clientes",
-  proveedores: "Proveedores",
-  caja: "Caja",
-  banco: "Banco",
-  contabilidad: "Contabilidad",
-  configuracion: "Configuración",
-  usuarios: "Usuarios",
-  impuestos: "Impuestos",
-  hospitalidad: "Hospitalidad",
-  "listas-precio": "Listas de Precio",
-  "notas-credito": "Notas Crédito/Débito",
-  "cuentas-cobrar": "Cuentas a Cobrar",
-  "cuentas-pagar": "Cuentas a Pagar",
-  "plan-cuentas": "Plan de Cuentas",
-  balance: "Balances",
-  tes: "TES",
-  remitos: "Remitos",
-  agenda: "Agenda",
-  "historia-clinica": "Historia Clínica",
-  membresias: "Membresías",
-  logistica: "Logística",
-  industria: "Industria",
-  picking: "Picking",
-  iot: "IoT",
-  kds: "KDS",
-  onboarding: "Onboarding IA",
-  soporte: "Soporte",
-  capacitacion: "Capacitación",
-  parametrizacion: "Parametrización",
-  "manual-usuario": "Manual de Usuario",
-  diagnostico: "Diagnóstico Gaps",
-  movimientos: "Movimientos",
-  tablas: "Tablas del Sistema",
-  auditoria: "Auditoría",
-  "puntos-venta": "Puntos de Venta",
-  series: "Series",
-  presentacion: "Presentación AFIP",
-}
-
-function Breadcrumbs() {
-  const pathname = usePathname()
-  const segments = pathname.split("/").filter(Boolean)
-
-  return (
-    <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-      {segments.map((segment, i) => {
-        const href = "/" + segments.slice(0, i + 1).join("/")
-        const label = BREADCRUMB_LABELS[segment] || segment.charAt(0).toUpperCase() + segment.slice(1)
-        const isLast = i === segments.length - 1
-
-        return (
-          <span key={href} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 animate-fade-in" />}
-            {isLast ? (
-              <span className="font-medium text-foreground animate-slide-down-fade">{label}</span>
-            ) : (
-              <Link href={href} className="hover:text-foreground transition-colors">
-                {label}
-              </Link>
-            )}
-          </span>
-        )
-      })}
-    </nav>
-  )
-}
-
 interface TopbarProps {
   onSearchClick?: () => void
+  onMenuClick?: () => void
 }
 
-export function Topbar({ onSearchClick }: TopbarProps) {
+export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   const [bellShake, setBellShake] = useState(false)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -178,8 +108,21 @@ export function Topbar({ onSearchClick }: TopbarProps) {
       {/* Subtle top glare */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
 
-      {/* Left: Breadcrumbs */}
-      <Breadcrumbs />
+      {/* Left: Mobile menu + Breadcrumbs */}
+      <div className="flex items-center gap-2">
+        {onMenuClick && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-8 w-8"
+            onClick={onMenuClick}
+          >
+            <Menu className="h-4 w-4" />
+            <span className="sr-only">Abrir menú</span>
+          </Button>
+        )}
+        <Breadcrumbs />
+      </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1">

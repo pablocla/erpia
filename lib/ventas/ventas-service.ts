@@ -88,9 +88,9 @@ export class VentasService {
     return pedido
   }
 
-  async confirmarPedido(pedidoId: number) {
-    const pedido = await prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+  async confirmarPedido(pedidoId: number, empresaId: number) {
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
       include: { lineas: true },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
@@ -124,9 +124,9 @@ export class VentasService {
     })
   }
 
-  async generarListaPicking(pedidoId: number) {
-    const pedido = await prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+  async generarListaPicking(pedidoId: number, empresaId: number) {
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
       include: { lineas: { include: { producto: true } } },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
@@ -163,9 +163,9 @@ export class VentasService {
     return picking
   }
 
-  async generarRemito(pedidoId: number, depositoId?: number) {
-    const pedido = await prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+  async generarRemito(pedidoId: number, empresaId: number, depositoId?: number) {
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
       include: { lineas: { include: { producto: true } }, cliente: true },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
@@ -247,9 +247,9 @@ export class VentasService {
     return result
   }
 
-  async anularPedido(pedidoId: number) {
-    const pedido = await prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+  async anularPedido(pedidoId: number, empresaId: number) {
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
       include: { lineas: true },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
@@ -279,9 +279,9 @@ export class VentasService {
     })
   }
 
-  async obtenerPedido(pedidoId: number) {
-    return prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+  async obtenerPedido(pedidoId: number, empresaId: number) {
+    return prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
       include: {
         lineas: { include: { producto: true }, orderBy: { orden: "asc" } },
         cliente: true,
@@ -330,9 +330,10 @@ export class VentasService {
     fechaCAE?: Date
     vencimientoCAE?: Date
     condicionPagoId?: number
+    depositoId?: number | null
   }) {
-    const pedido = await prisma.pedidoVenta.findUnique({
-      where: { id: pedidoId },
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId: datosFactura.empresaId },
       include: { lineas: { include: { producto: true } }, cliente: true, remitos: true },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
@@ -362,8 +363,8 @@ export class VentasService {
     const iva = Number(pedido.impuestos)
     const total = Number(pedido.total)
 
-    const [factura] = await prisma.$transaction([
-      prisma.factura.create({
+    const factura = await prisma.$transaction(async (tx) => {
+      const createdFactura = await tx.factura.create({
         data: {
           tipo: datosFactura.tipo,
           tipoCbte: datosFactura.tipoCbte,
@@ -383,16 +384,30 @@ export class VentasService {
           lineas: { create: lineasFactura },
         },
         include: { lineas: true },
-      }),
-      prisma.pedidoVenta.update({
+      })
+
+      await tx.pedidoVenta.update({
         where: { id: pedidoId },
         data: { estado: "facturado" },
-      }),
-    ])
+      })
 
-    eventBus.emit({
+      await tx.remito.updateMany({
+        where: { pedidoVentaId: pedidoId, facturaId: null },
+        data: { facturaId: createdFactura.id },
+      })
+
+      return createdFactura
+    })
+
+    await eventBus.emit({
       type: "FACTURA_EMITIDA",
-      payload: { facturaId: factura.id, empresaId: datosFactura.empresaId, clienteId: pedido.clienteId },
+      payload: {
+        facturaId: factura.id,
+        empresaId: datosFactura.empresaId,
+        clienteId: pedido.clienteId,
+        condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId ?? null,
+        depositoId: datosFactura.depositoId ?? null,
+      },
       timestamp: new Date(),
     })
 

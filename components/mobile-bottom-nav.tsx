@@ -21,6 +21,7 @@ import {
   BarChart3,
   Truck,
   FileText,
+  Scissors,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
@@ -37,6 +38,7 @@ const ITEMS = [
 const MORE_ITEMS = [
   { href: "/dashboard/productos", icon: Package, label: "Productos" },
   { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+  { href: "/dashboard/peluqueria", icon: Scissors, label: "Peluquería" },
   { href: "/dashboard/stock", icon: Truck, label: "Stock" },
   { href: "/dashboard/facturas", icon: FileText, label: "Facturas" },
   { href: "/dashboard/kpis", icon: BarChart3, label: "KPIs" },

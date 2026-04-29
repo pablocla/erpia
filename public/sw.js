@@ -11,22 +11,20 @@ const PRECACHE_URLS = [
 
 // Install: precache offline shell
 self.addEventListener("install", (event) => {
-  const e = event as ExtendableEvent
-  e.waitUntil(
+  event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   )
-  ;(self as unknown as ServiceWorkerGlobalScope).skipWaiting()
+  self.skipWaiting()
 })
 
 // Activate: clear old caches
 self.addEventListener("activate", (event) => {
-  const e = event as ExtendableEvent
-  e.waitUntil(
+  event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     )
   )
-  ;(self as unknown as ServiceWorkerGlobalScope).clients.claim()
+  self.clients.claim()
 })
 
 // Fetch strategy: Network-first for API, Cache-first for static assets

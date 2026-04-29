@@ -12,13 +12,19 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { campoPersonalizadoService } from "@/lib/config/campo-personalizado-service"
 
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden acceder a este recurso" }, { status: 403 })
+    }
     const { searchParams } = new URL(request.url)
     const action = searchParams.get("action")
-    const empresaId = Number(searchParams.get("empresaId") || "1")
+    const empresaId = ctx.auth.empresaId
 
     if (action === "valores") {
       const entidad = searchParams.get("entidad")
@@ -45,6 +51,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    const empresaId = ctx.auth.empresaId
     const body = await request.json()
 
     if (body.action === "guardarValores") {
@@ -56,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, count: result.length })
     }
 
-    const { empresaId = 1, ...data } = body
+    const data = body
     if (!data.entidad || !data.nombreCampo || !data.etiqueta || !data.tipoDato) {
       return NextResponse.json({ error: "entidad, nombreCampo, etiqueta y tipoDato requeridos" }, { status: 400 })
     }
@@ -71,11 +80,17 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden modificar campos" }, { status: 403 })
+    }
+    const empresaId = ctx.auth.empresaId
     const body = await request.json()
     const { id, ...data } = body
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 })
 
-    const campo = await campoPersonalizadoService.actualizarCampo(id, data)
+    const campo = await campoPersonalizadoService.actualizarCampo(id, data, empresaId)
     return NextResponse.json({ campo })
   } catch (error) {
     console.error("Error actualizar campo:", error)
@@ -85,10 +100,16 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden eliminar campos" }, { status: 403 })
+    }
+    const empresaId = ctx.auth.empresaId
     const body = await request.json()
     if (!body.id) return NextResponse.json({ error: "id requerido" }, { status: 400 })
 
-    await campoPersonalizadoService.eliminarCampo(body.id)
+    await campoPersonalizadoService.eliminarCampo(body.id, empresaId)
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("Error eliminar campo:", error)

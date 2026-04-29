@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { logError } from "@/lib/monitoring/error-logger"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
@@ -17,19 +17,24 @@ export async function GET(request: NextRequest) {
     const skip = parseInt(searchParams.get("skip") ?? "0", 10)
     const take = Math.min(parseInt(searchParams.get("take") ?? "100", 10), 500)
 
-    // If no specific cuentaId, get first empresa account
     let cuentaBancariaId: number | undefined
     if (cuentaId) {
-      cuentaBancariaId = parseInt(cuentaId, 10)
+      cuentaBancariaId = Number(cuentaId)
+      if (Number.isNaN(cuentaBancariaId) || cuentaBancariaId <= 0) {
+        return NextResponse.json({ error: "cuentaId inválido" }, { status: 400 })
+      }
     }
 
-    const where: Record<string, unknown> = {}
-    if (cuentaBancariaId) where.cuentaBancariaId = cuentaBancariaId
-    if (estado) where.estado = estado
+    const movimientosWhere: Record<string, unknown> = {
+      cuentaBancaria: whereEmpresa(ctx.auth.empresaId),
+      tipo: { contains: "transf", mode: "insensitive" },
+      ...(cuentaBancariaId ? { cuentaBancariaId } : {}),
+      ...(estado ? { estado } : {}),
+    }
 
     const [movimientos, total, cuentas] = await Promise.all([
       prisma.movimientoBancario.findMany({
-        where,
+        where: movimientosWhere,
         include: {
           cuentaBancaria: {
             select: { id: true, alias: true, cbu: true, tipo: true, banco: { select: { nombre: true } } },
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest) {
         skip,
         take,
       }),
-      prisma.movimientoBancario.count({ where }),
+      prisma.movimientoBancario.count({ where: movimientosWhere }),
       prisma.cuentaBancaria.findMany({
         where: { empresaId: ctx.auth.empresaId, activo: true },
         select: { id: true, alias: true, cbu: true, tipo: true, banco: { select: { nombre: true } } },
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate summary
     const allMovs = await prisma.movimientoBancario.findMany({
-      where: cuentaBancariaId ? { cuentaBancariaId } : {},
+      where: movimientosWhere,
       select: { tipo: true, importe: true, estado: true },
     })
 
@@ -109,8 +114,14 @@ export async function POST(request: NextRequest) {
 
     const { cuentaBancariaId, fecha, tipo, importe, descripcion, referencia } = validacion.data
 
-    const cuenta = await prisma.cuentaBancaria.findUnique({ where: { id: cuentaBancariaId } })
+    const cuenta = await prisma.cuentaBancaria.findUnique({
+      where: { id: cuentaBancariaId },
+      select: { id: true, empresaId: true },
+    })
     if (!cuenta) return NextResponse.json({ error: "Cuenta bancaria no encontrada" }, { status: 404 })
+    if (cuenta.empresaId !== ctx.auth.empresaId) {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+    }
 
     const mov = await prisma.movimientoBancario.create({
       data: {

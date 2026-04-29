@@ -15,6 +15,9 @@ export type ERPEventType =
   | "PRESUPUESTO_APROBADO"
   | "OC_APROBADA"
   | "REMITO_EMITIDO"
+  | "PRODUCTO_CREADO"
+  | "PRODUCTO_ACTUALIZADO"
+  | "PRODUCTO_ELIMINADO"
   | "CAJA_CERRADA"
   | "CHEQUE_DEPOSITADO"
   | "CHEQUE_RECHAZADO"
@@ -50,6 +53,7 @@ export interface NCEmitidaPayload {
   clienteId: number
   total: number
   motivo: string
+  depositoId?: number | null
 }
 
 export interface StockActualizadoPayload {
@@ -93,6 +97,47 @@ export interface RemitoEmitidoPayload {
   clienteId: number
   facturaId?: number | null
   depositoId?: number | null
+}
+
+export interface ProductoCreadoPayload {
+  productoId: number
+  empresaId: number
+  codigo: string
+  nombre: string
+  activo: boolean
+  categoriaId?: number | null
+  precioVenta: number
+  precioCompra: number
+  porcentajeIva: number
+  esPlato: boolean
+  esInsumo: boolean
+  stock: number
+  stockMinimo: number
+}
+
+export interface ProductoActualizadoPayload {
+  productoId: number
+  empresaId: number
+  cambios: {
+    codigo?: string
+    nombre?: string
+    descripcion?: string | null
+    precioVenta?: number
+    precioCompra?: number
+    porcentajeIva?: number
+    stockMinimo?: number
+    unidad?: string
+    categoriaId?: number | null
+    activo?: boolean
+    esPlato?: boolean
+    esInsumo?: boolean
+  }
+}
+
+export interface ProductoEliminadoPayload {
+  productoId: number
+  empresaId: number
+  activo: boolean
 }
 
 export interface CajaCerradaPayload {

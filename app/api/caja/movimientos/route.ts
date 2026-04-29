@@ -22,8 +22,23 @@ export async function GET(request: NextRequest) {
 
     if (!cajaId) return NextResponse.json({ error: "cajaId requerido" }, { status: 400 })
 
+    const cajaIdParsed = Number(cajaId)
+    if (Number.isNaN(cajaIdParsed) || cajaIdParsed <= 0) {
+      return NextResponse.json({ error: "cajaId inválido" }, { status: 400 })
+    }
+
+    const caja = await prisma.caja.findUnique({
+      where: { id: cajaIdParsed },
+      select: { id: true, empresaId: true },
+    })
+
+    if (!caja) return NextResponse.json({ error: "Caja no encontrada" }, { status: 404 })
+    if (caja.empresaId !== ctx.auth.empresaId) {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+    }
+
     const movimientos = await prisma.movimientoCaja.findMany({
-      where: { cajaId: parseInt(cajaId) },
+      where: { cajaId: caja.id },
       orderBy: { createdAt: "desc" },
     })
 
@@ -46,8 +61,14 @@ export async function POST(request: NextRequest) {
     }
     const { cajaId, tipo, concepto, monto, medioPago, referencia } = validacion.data
 
-    const caja = await prisma.caja.findUnique({ where: { id: cajaId } })
+    const caja = await prisma.caja.findUnique({
+      where: { id: cajaId },
+      select: { id: true, estado: true, empresaId: true },
+    })
     if (!caja) return NextResponse.json({ error: "Caja no encontrada" }, { status: 404 })
+    if (caja.empresaId !== ctx.auth.empresaId) {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+    }
     if (caja.estado === "cerrada") {
       return NextResponse.json({ error: "No se pueden agregar movimientos a una caja cerrada" }, { status: 400 })
     }

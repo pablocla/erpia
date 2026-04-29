@@ -547,10 +547,19 @@
   }
 
   .sidebar-link {
+    display: flex;
+    align-items: center;
     @apply relative w-full justify-start gap-2 text-sm font-medium h-9;
     color: color-mix(in oklab, var(--foreground) 72%, transparent);
     border-radius: calc(var(--radius) - 4px);
     transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1), transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sidebar-link .sidebar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1rem;
   }
 
   .sidebar-link::before {
@@ -842,6 +851,6 @@
 
   /* Safe area for mobile bottom nav padding — not needed in print */
   .safe-area-pb {
-    padding-bottom: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 16px) !important;
   }
 }

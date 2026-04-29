@@ -162,6 +162,44 @@ describe("StockService", () => {
         data: { stock: 1 },
       })
     })
+
+    it("should reenter stock based on NC lineas for partial NC", async () => {
+      const mockNC = {
+        id: 2,
+        tipo: "A",
+        puntoVenta: 1,
+        numero: 2,
+        lineas: [{ productoId: 20, cantidad: 3 }],
+        factura: {
+          lineas: [
+            { productoId: 10, cantidad: 2 },
+            { productoId: 20, cantidad: 3 },
+          ],
+        },
+      }
+
+      const productoDB: Record<number, any> = {
+        20: { id: 20, stock: 10, stockMinimo: 5, nombre: "B" },
+      }
+
+      mockPrismaClient.notaCredito.findUnique.mockResolvedValue(mockNC)
+      mockPrismaClient.producto.findUnique.mockImplementation(({ where }: any) =>
+        Promise.resolve(productoDB[where.id] ?? null)
+      )
+      mockPrismaClient.producto.update.mockResolvedValue({})
+      mockPrismaClient.movimientoStock.create.mockResolvedValue({})
+      mockPrismaClient.configuracionFuncional.findMany.mockResolvedValue([])
+      mockPrismaClient.handlerLog.create.mockResolvedValue({})
+
+      const service = new StockService()
+      await service.reingresarStockPorNC(2)
+
+      expect(mockPrismaClient.producto.update).toHaveBeenCalledTimes(1)
+      expect(mockPrismaClient.producto.update).toHaveBeenCalledWith({
+        where: { id: 20 },
+        data: { stock: 13 },
+      })
+    })
   })
 
   // ─── warehouse stock (depositoId) ─────────────────────────────────────

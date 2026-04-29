@@ -26,6 +26,9 @@ eventBus.on<NCEmitidaPayload>("NC_EMITIDA", "asiento_nc", async (event) => {
 // Stock handlers (self-registering)
 import "@/lib/stock/stock-service"
 
+// Producto handlers (self-registering)
+import "@/lib/producto/producto-event-handlers"
+
 // CC/CP handlers (self-registering)
 import "@/lib/cc-cp/cuentas-service"
 

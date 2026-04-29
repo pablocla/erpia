@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { useToast } from "@/hooks/use-toast"
+import { authFetch } from "@/lib/stores"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import {
   Calendar, Clock, Plus, ChevronLeft, ChevronRight,
@@ -36,6 +38,30 @@ interface Turno {
   cliente: { id: number; nombre: string; telefono: string | null } | null
 }
 
+interface CustomFieldValue {
+  id: number
+  campoId: number
+  entidadId: string
+  valorTexto?: string | null
+  valorNumero?: number | null
+  valorFecha?: string | null
+  valorBooleano?: boolean | null
+  valorJson?: unknown | null
+}
+
+interface CustomFieldDefinition {
+  id: number
+  nombreCampo: string
+  etiqueta: string
+  tipoDato: string
+  opciones: string[] | null
+  obligatorio: boolean
+  placeholder?: string | null
+  ayuda?: string | null
+  valorDefault?: string | null
+  valor: CustomFieldValue | null
+}
+
 const HORARIOS = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"]
 
 const ESTADO_CONFIG: Record<EstadoTurno, { label: string; color: string }> = {
@@ -61,6 +87,7 @@ function obtenerFechasSemana(offset: number): { dias: string[]; fechas: Date[] }
 export default function AgendaPage() {
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [profesionales, setProfesionales] = useState<Profesional[]>([])
+  const [servicios, setServicios] = useState<Array<{ id: number; nombre: string; duracionMinutos: number }>>([])
   const [loading, setLoading] = useState(true)
   const [resumen, setResumen] = useState({ totalHoy: 0, pendientes: 0, confirmados: 0, completados: 0 })
   const [semanaOffset, setSemanaOffset] = useState(0)
@@ -69,7 +96,13 @@ export default function AgendaPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [turnoSeleccionado, setTurnoSeleccionado] = useState<Turno | null>(null)
   const [vistaDetalle, setVistaDetalle] = useState(false)
-  const [form, setForm] = useState({ horaInicio: "09:00", motivo: "", notas: "", profesionalId: "", duracion: "30" })
+  const [customFields, setCustomFields] = useState<CustomFieldDefinition[] | null>(null)
+  const [loadingCustomFields, setLoadingCustomFields] = useState(false)
+  const [savingCustomFields, setSavingCustomFields] = useState(false)
+  const [actualizandoTurno, setActualizandoTurno] = useState(false)
+  const [cancelandoTurno, setCancelandoTurno] = useState(false)
+  const [form, setForm] = useState({ horaInicio: "09:00", motivo: "", notas: "", profesionalId: "", duracion: "30", servicioId: "" })
+  const { toast } = useToast()
 
   const { dias: diasConFecha, fechas } = obtenerFechasSemana(semanaOffset)
   const fechaSeleccionada = fechas[diaSeleccionado]
@@ -82,11 +115,35 @@ export default function AgendaPage() {
       const data = await res.json()
       setTurnos(data.turnos ?? [])
       setProfesionales(data.profesionales ?? [])
+      setServicios(data.servicios ?? [])
       setResumen(data.resumen ?? { totalHoy: 0, pendientes: 0, confirmados: 0, completados: 0 })
     } catch { /* silently fail */ } finally { setLoading(false) }
   }, [fechaSeleccionada])
 
   useEffect(() => { cargarDatos() }, [cargarDatos])
+
+  useEffect(() => {
+    if (!turnoSeleccionado || !vistaDetalle) {
+      setCustomFields(null)
+      return
+    }
+
+    const loadCustomFields = async () => {
+      setLoadingCustomFields(true)
+      try {
+        const res = await authFetch(`/api/campos-personalizados/valores?entidad=turno&entidadId=${turnoSeleccionado.id}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setCustomFields(data.data ?? [])
+      } catch {
+        setCustomFields([])
+      } finally {
+        setLoadingCustomFields(false)
+      }
+    }
+
+    void loadCustomFields()
+  }, [turnoSeleccionado, vistaDetalle])
 
   useKeyboardShortcuts(erpShortcuts({
     onRefresh: cargarDatos,
@@ -104,7 +161,8 @@ export default function AgendaPage() {
 
   const agregarTurno = async () => {
     if (!form.motivo || !form.profesionalId) return
-    const dur = parseInt(form.duracion)
+    const servicioSeleccionado = servicios.find((s) => String(s.id) === form.servicioId)
+    const dur = servicioSeleccionado ? servicioSeleccionado.duracionMinutos : parseInt(form.duracion)
     const [h, m] = form.horaInicio.split(":").map(Number)
     const totalMin = h * 60 + m + dur
     const horaFin = `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`
@@ -116,6 +174,8 @@ export default function AgendaPage() {
           fecha: fechaSeleccionada.toISOString().split("T")[0],
           horaInicio: form.horaInicio,
           horaFin,
+          duracionMinutos: dur,
+          servicioId: servicioSeleccionado?.id,
           profesionalId: Number(form.profesionalId),
           motivo: form.motivo,
           notas: form.notas || undefined,
@@ -123,6 +183,105 @@ export default function AgendaPage() {
       })
       if (res.ok) { setDialogOpen(false); cargarDatos() }
     } catch { /* silently fail */ }
+  }
+
+  const handleCampoPersonalizadoChange = (campoId: number, value: Partial<CustomFieldValue>) => {
+    setCustomFields((current) =>
+      current?.map((campo) => {
+        if (campo.id !== campoId) return campo
+        return {
+          ...campo,
+          valor: {
+            ...(campo.valor ?? {}),
+            ...value,
+          },
+        }
+      }) ?? null,
+    )
+  }
+
+  const guardarCamposPersonalizados = async () => {
+    if (!turnoSeleccionado || !customFields) return
+    setSavingCustomFields(true)
+
+    const valores = customFields.map((campo) => {
+      const valor = campo.valor ?? {}
+      const base: Record<string, unknown> = { campoId: campo.id }
+      switch (campo.tipoDato) {
+        case "numero":
+          return { ...base, valorNumero: valor.valorNumero ?? (typeof valor.valorTexto === "string" ? Number(valor.valorTexto) : undefined) }
+        case "fecha":
+          return { ...base, valorFecha: valor.valorFecha ?? null }
+        case "booleano":
+          return { ...base, valorBooleano: valor.valorBooleano ?? false }
+        case "multiselect":
+          return { ...base, valorJson: valor.valorJson ?? valor.valorTexto ?? null }
+        default:
+          return { ...base, valorTexto: valor.valorTexto ?? "" }
+      }
+    })
+
+    try {
+      const res = await authFetch("/api/campos-personalizados", {
+        method: "POST",
+        body: JSON.stringify({ action: "guardarValores", registroId: turnoSeleccionado.id, valores }),
+      })
+      if (res.ok) {
+        setCustomFields(customFields.map((campo) => ({ ...campo, valor: { ...campo.valor } })))
+        toast({ title: "Campos guardados", description: "Se actualizaron los detalles del turno." })
+      } else {
+        const error = await res.json().catch(() => ({}))
+        toast({ title: "Error al guardar", description: error.error ?? "No se pudieron guardar los campos", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "No se pudo conectar con el servidor", variant: "destructive" })
+    } finally {
+      setSavingCustomFields(false)
+    }
+  }
+
+  const actualizarTurno = async (changes: { estado?: EstadoTurno }) => {
+    if (!turnoSeleccionado) return
+    setActualizandoTurno(true)
+    try {
+      const res = await fetch(`/api/agenda/${turnoSeleccionado.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      })
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        toast({ title: "Error", description: error.error ?? "No se pudo actualizar el turno.", variant: "destructive" })
+        return
+      }
+      toast({ title: "Turno actualizado", description: "El estado del turno se actualizó correctamente." })
+      setVistaDetalle(false)
+      cargarDatos()
+    } catch {
+      toast({ title: "Error", description: "No se pudo conectar con el servidor", variant: "destructive" })
+    } finally {
+      setActualizandoTurno(false)
+    }
+  }
+
+  const cancelarTurno = async () => {
+    if (!turnoSeleccionado) return
+    setCancelandoTurno(true)
+    try {
+      const res = await fetch(`/api/agenda/${turnoSeleccionado.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        toast({ title: "Error", description: error.error ?? "No se pudo cancelar el turno.", variant: "destructive" })
+        return
+      }
+      toast({ title: "Turno cancelado", description: "El turno se canceló correctamente." })
+      setVistaDetalle(false)
+      cargarDatos()
+    } catch {
+      toast({ title: "Error", description: "No se pudo conectar con el servidor", variant: "destructive" })
+    } finally {
+      setCancelandoTurno(false)
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
@@ -241,6 +400,20 @@ export default function AgendaPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Servicio</Label>
+                <Select value={form.servicioId} onValueChange={v => setForm({ ...form, servicioId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sin servicio específico</SelectItem>
+                    {servicios.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.nombre} · {s.duracionMinutos} min
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Profesional *</Label>
                 <Select value={form.profesionalId} onValueChange={v => setForm({ ...form, profesionalId: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccioná" /></SelectTrigger>
@@ -249,11 +422,20 @@ export default function AgendaPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Hora de inicio</Label>
                 <Select value={form.horaInicio} onValueChange={v => setForm({ ...form, horaInicio: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{HORARIOS.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Duración (min)</Label>
+                <Select value={form.duracion} onValueChange={v => setForm({ ...form, duracion: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{["15", "30", "45", "60", "90", "120"].map(d => <SelectItem key={d} value={d}>{d} min</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -303,6 +485,88 @@ export default function AgendaPage() {
                   {turnoSeleccionado.notas && (
                     <div className="col-span-2"><span className="font-medium">Notas:</span> {turnoSeleccionado.notas}</div>
                   )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold">Campos personalizados</h3>
+                    <Button size="sm" onClick={guardarCamposPersonalizados} disabled={!customFields || savingCustomFields}>
+                      Guardar campos
+                    </Button>
+                  </div>
+
+                  {loadingCustomFields ? (
+                    <div className="py-4 text-center text-muted-foreground">Cargando campos personalizados...</div>
+                  ) : customFields && customFields.length > 0 ? (
+                    <div className="space-y-3">
+                      {customFields.map((campo) => (
+                        <div key={campo.id} className="space-y-2 rounded-lg border p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{campo.etiqueta}</span>
+                            <span className="text-xs text-muted-foreground">{campo.tipoDato}</span>
+                          </div>
+                          {campo.tipoDato === "booleano" ? (
+                            <label className="inline-flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={campo.valor?.valorBooleano ?? false}
+                                onChange={(e) => handleCampoPersonalizadoChange(campo.id, { valorBooleano: e.target.checked })}
+                                className="h-4 w-4 rounded border-muted"
+                              />
+                              {campo.placeholder ?? campo.etiqueta}
+                            </label>
+                          ) : campo.tipoDato === "select" ? (
+                            <Select value={campo.valor?.valorTexto ?? campo.valorDefault ?? ""} onValueChange={(value) => handleCampoPersonalizadoChange(campo.id, { valorTexto: value })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder={campo.placeholder ?? "Seleccioná…"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(campo.opciones ?? []).map((opcion) => (
+                                  <SelectItem key={opcion} value={opcion}>{opcion}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : campo.tipoDato === "fecha" ? (
+                            <Input
+                              type="date"
+                              value={campo.valor?.valorFecha ?? campo.valorDefault ?? ""}
+                              onChange={(e) => handleCampoPersonalizadoChange(campo.id, { valorFecha: e.target.value })}
+                            />
+                          ) : campo.tipoDato === "numero" ? (
+                            <Input
+                              type="number"
+                              value={campo.valor?.valorNumero ?? campo.valor?.valorTexto ?? campo.valorDefault ?? ""}
+                              onChange={(e) => handleCampoPersonalizadoChange(campo.id, { valorNumero: Number(e.target.value) })}
+                            />
+                          ) : campo.tipoDato === "formula" ? (
+                            <Input
+                              value={campo.valor?.valorTexto ?? campo.valorDefault ?? ""
+                              }
+                              readOnly
+                              className="bg-muted/50"
+                            />
+                          ) : (
+                            <Input
+                              value={campo.valor?.valorTexto ?? campo.valorDefault ?? ""}
+                              onChange={(e) => handleCampoPersonalizadoChange(campo.id, { valorTexto: e.target.value })}
+                              placeholder={campo.placeholder ?? "Ingresa un valor"}
+                            />
+                          )}
+                          {campo.ayuda && <p className="text-xs text-muted-foreground">{campo.ayuda}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No hay campos personalizados registrados para este turno.</div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <Button variant="outline" onClick={() => actualizarTurno({ estado: "completado" })} disabled={actualizandoTurno || turnoSeleccionado.estado === "completado"}>
+                    {actualizandoTurno ? "Actualizando..." : "Marcar completado"}
+                  </Button>
+                  <Button variant="destructive" onClick={cancelarTurno} disabled={cancelandoTurno || turnoSeleccionado.estado === "cancelado"}>
+                    {cancelandoTurno ? "Cancelando..." : "Cancelar turno"}
+                  </Button>
                 </div>
               </div>
             </>

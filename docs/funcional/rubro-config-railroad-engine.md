@@ -13,7 +13,7 @@ El ERP es 100% configurable por rubro (gastronomía, veterinaria, salud, distrib
 ### Modelo de 3 capas de configuración
 
 ```
-┌─────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────
 │  Capa 1: FeatureRubro (catálogo global)         │
 │  → "¿Qué features EXISTEN para este rubro?"     │
 ├─────────────────────────────────────────────────┤

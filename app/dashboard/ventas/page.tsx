@@ -162,6 +162,14 @@ export default function VentasPage() {
     void cargarSeries()
   }, [puntoVentaId])
 
+  const clientesFiltrados = clientes.filter(
+    c => !buscadorCliente || c.nombre.toLowerCase().includes(buscadorCliente.toLowerCase()) || (c.cuit || "").includes(buscadorCliente)
+  )
+
+  const productosFiltrados = productos.filter(
+    p => !buscadorProducto || p.nombre.toLowerCase().includes(buscadorProducto.toLowerCase()) || p.codigo.toLowerCase().includes(buscadorProducto.toLowerCase())
+  )
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "F1") {
@@ -231,14 +239,6 @@ export default function VentasPage() {
     const el = productosListRef.current.querySelector(`[data-idx="${productoFocusIdx}"]`)
     el?.scrollIntoView({ block: "nearest" })
   }, [productoFocusIdx])
-
-  const clientesFiltrados = clientes.filter(
-    c => !buscadorCliente || c.nombre.toLowerCase().includes(buscadorCliente.toLowerCase()) || (c.cuit || "").includes(buscadorCliente)
-  )
-
-  const productosFiltrados = productos.filter(
-    p => !buscadorProducto || p.nombre.toLowerCase().includes(buscadorProducto.toLowerCase()) || p.codigo.toLowerCase().includes(buscadorProducto.toLowerCase())
-  )
 
   useEffect(() => {
     if (!tes || series.length === 0) {

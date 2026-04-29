@@ -78,16 +78,16 @@ export async function POST(request: NextRequest) {
       let result: any
       switch (action) {
         case "confirmar":
-          result = await ventasService.confirmarPedido(pedidoId)
+          result = await ventasService.confirmarPedido(pedidoId, ctx.auth.empresaId)
           break
         case "picking":
-          result = await ventasService.generarListaPicking(pedidoId)
+          result = await ventasService.generarListaPicking(pedidoId, ctx.auth.empresaId)
           break
         case "remito":
-          result = await ventasService.generarRemito(pedidoId, depositoId)
+          result = await ventasService.generarRemito(pedidoId, ctx.auth.empresaId, depositoId)
           break
         case "anular":
-          result = await ventasService.anularPedido(pedidoId)
+          result = await ventasService.anularPedido(pedidoId, ctx.auth.empresaId)
           break
         case "facturar": {
           const tipo = actionResult.data.tipo ?? "B"
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
             puntoVenta: actionResult.data.puntoVenta ?? 1,
             cae: actionResult.data.cae,
             condicionPagoId: actionResult.data.condicionPagoId,
+            depositoId: actionResult.data.depositoId ?? null,
           })
           break
         }

@@ -13,8 +13,10 @@
  *   const result = await engine.ejecutar("venta", { facturaId: 1, total: 50000 })
  */
 
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { isFeatureActiva, getFeatureParam } from "@/lib/config/rubro-config-service"
+import type { ERPEventType } from "@/lib/events/types"
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,19 @@ export interface StepResult {
   output?: Record<string, unknown>
   error?: string
   skipReason?: string
+}
+
+type WorkflowStepTemplate = {
+  id: number
+  stepKey: string
+  tipo: string
+  accion: string | null
+  orden: number
+  requiereFeature: string | null
+  timeoutSeg: number
+  parametros: unknown
+  condicion: unknown
+  transicionesSalida: Array<{ condicion: unknown; destinoId: number }>
 }
 
 /**
@@ -133,18 +148,22 @@ export class WorkflowEngine {
         version: workflow.version,
         estado: "en_curso",
         empresaId: this.empresaId,
-        contexto: contextoInicial,
-        entidadTipo: contextoInicial.entidadTipo as string ?? null,
-        entidadId: contextoInicial.entidadId as number ?? null,
+        contexto: contextoInicial as Prisma.InputJsonValue,
+        entidadTipo: (contextoInicial.entidadTipo as string) ?? null,
+        entidadId: (contextoInicial.entidadId as number) ?? null,
       },
     })
 
     // 4. Build step map for navigation
-    const stepMap = new Map(workflow.pasos.map((p) => [p.stepKey, p]))
+    const stepMap = new Map<string, WorkflowStepTemplate>(
+      workflow.pasos.map((p) => [p.stepKey, p as WorkflowStepTemplate]),
+    )
 
     // 5. Execute starting from first step
     let contexto = { ...contextoInicial }
-    let currentStep = workflow.pasos[0]!
+    let currentStep: WorkflowStepTemplate | null = workflow.pasos[0]
+      ? (workflow.pasos[0] as WorkflowStepTemplate)
+      : null
     let estado = "en_curso"
 
     while (currentStep) {
@@ -155,6 +174,7 @@ export class WorkflowEngine {
         const featureActiva = await isFeatureActiva(this.empresaId, currentStep.requiereFeature)
         if (!featureActiva) {
           await this.logPaso(instancia.id, currentStep.stepKey, "saltado", Date.now() - startTime, {
+            success: true,
             skipReason: `Feature '${currentStep.requiereFeature}' no activa`,
           })
           currentStep = await this.resolverSiguientePaso(currentStep, contexto, stepMap)
@@ -166,6 +186,7 @@ export class WorkflowEngine {
       if (currentStep.condicion) {
         if (!evaluarCondicionJSON(currentStep.condicion, contexto)) {
           await this.logPaso(instancia.id, currentStep.stepKey, "saltado", Date.now() - startTime, {
+            success: true,
             skipReason: "Condición no cumplida",
           })
           currentStep = await this.resolverSiguientePaso(currentStep, contexto, stepMap)
@@ -195,7 +216,12 @@ export class WorkflowEngine {
         estado = "error"
         await prisma.workflowInstancia.update({
           where: { id: instancia.id },
-          data: { estado: "error", error: resultado.error, stepActual: currentStep.stepKey, contexto },
+          data: {
+            estado: "error",
+            error: resultado.error,
+            stepActual: currentStep.stepKey,
+            contexto: contexto as Prisma.InputJsonValue,
+          },
         })
         break
       }
@@ -203,7 +229,7 @@ export class WorkflowEngine {
       // 5g. Update instance
       await prisma.workflowInstancia.update({
         where: { id: instancia.id },
-        data: { stepActual: currentStep.stepKey, contexto },
+        data: { stepActual: currentStep.stepKey, contexto: contexto as Prisma.InputJsonValue },
       })
 
       // 5h. Navigate to next step (railroad switch)
@@ -220,7 +246,7 @@ export class WorkflowEngine {
       where: { id: instancia.id },
       data: {
         estado,
-        contexto,
+        contexto: contexto as Prisma.InputJsonValue,
         stepActual: null,
         completedAt: estado === "completado" ? new Date() : undefined,
       },
@@ -235,24 +261,19 @@ export class WorkflowEngine {
    * Si ninguna matchea, sigue en orden secuencial.
    */
   private async resolverSiguientePaso(
-    currentStep: { stepKey: string; orden: number; transicionesSalida: { condicion: unknown; destinoId: number }[] },
+    currentStep: WorkflowStepTemplate,
     contexto: WorkflowContext,
-    stepMap: Map<string, { stepKey: string; orden: number; transicionesSalida: { condicion: unknown; destinoId: number }[] }>,
+    stepMap: Map<string, WorkflowStepTemplate>,
   ) {
     // Try transition conditions (railroad switch)
     for (const transicion of currentStep.transicionesSalida) {
       if (evaluarCondicionJSON(transicion.condicion, contexto)) {
-        // Find destination step by id
-        for (const [, step] of stepMap) {
-          // We need the step that matches the destinoId
-          // Since we have stepMap by key, find by scanning
-          const destStep = await prisma.workflowStep.findUnique({
-            where: { id: transicion.destinoId },
-            select: { stepKey: true },
-          })
-          if (destStep) {
-            return stepMap.get(destStep.stepKey) ?? null
-          }
+        const destStep = await prisma.workflowStep.findUnique({
+          where: { id: transicion.destinoId },
+          select: { stepKey: true },
+        })
+        if (destStep) {
+          return stepMap.get(destStep.stepKey) ?? null
         }
       }
     }
@@ -287,7 +308,7 @@ export class WorkflowEngine {
           // Emit event through event bus
           const { eventBus } = await import("@/lib/events/event-bus")
           await eventBus.emit({
-            type: step.accion ?? step.stepKey,
+            type: (step.accion ?? step.stepKey) as ERPEventType,
             payload: mergedCtx,
             timestamp: new Date(),
           })
@@ -331,8 +352,8 @@ export class WorkflowEngine {
         stepKey,
         resultado,
         duracionMs,
-        input: null,
-        output: data.output ?? null,
+        input: undefined,
+        output: data.output ? (data.output as Prisma.InputJsonValue) : undefined,
         error: data.error ?? data.skipReason ?? null,
       },
     })

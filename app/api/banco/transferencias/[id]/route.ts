@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const transferencia = await prisma.movimientoBancario.findFirst({
       where: {
         id: Number(id),
-        cuentaBancaria: { empresaId: ctx.auth.empresaId },
+        cuentaBancaria: { is: { empresaId: ctx.auth.empresaId } },
       },
       include: {
         cuentaBancaria: {
@@ -27,13 +27,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!transferencia) return NextResponse.json({ error: "Transferencia no encontrada" }, { status: 404 })
 
-    // Find paired movement (contra-asiento)
-    const par = transferencia.referenciaInterna
+    // Find paired movement by shared reference
+    const par = transferencia.referencia
       ? await prisma.movimientoBancario.findFirst({
           where: {
-            referenciaInterna: transferencia.referenciaInterna,
+            referencia: transferencia.referencia,
             id: { not: transferencia.id },
-            cuentaBancaria: { empresaId: ctx.auth.empresaId },
+            cuentaBancaria: { is: { empresaId: ctx.auth.empresaId } },
           },
           include: {
             cuentaBancaria: {

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
+import { useToast } from "@/hooks/use-toast"
 import {
   UtensilsCrossed, Users, Clock, Plus, Trash2,
   CheckCircle2, Receipt, Coffee,
@@ -83,7 +84,11 @@ export default function HospitalidadPage() {
   const [platos, setPlatos] = useState<PlatoProducto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteFacturarId, setClienteFacturarId] = useState("")
+  const [selectedSalonId, setSelectedSalonId] = useState<number | null>(null)
+  const [isSavingComanda, setIsSavingComanda] = useState(false)
+  const [isFacturando, setIsFacturando] = useState(false)
   const [nuevoItem, setNuevoItem] = useState({ productoId: "", nombre: "", precio: "", cantidad: "1" })
+  const { toast } = useToast()
 
   const authHeaders = useCallback((): HeadersInit => {
     const token = localStorage.getItem("token")
@@ -92,14 +97,15 @@ export default function HospitalidadPage() {
 
   const cargarDatos = useCallback(async () => {
     try {
-      const res = await fetch("/api/hospitalidad", { headers: authHeaders() })
+      const query = selectedSalonId ? `?salonId=${selectedSalonId}` : ""
+      const res = await fetch(`/api/hospitalidad${query}`, { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
       setMesas(data.mesas ?? [])
       setSalones(data.salones ?? [])
       setResumen(data.resumen ?? { totalMesas: 0, ocupadas: 0, libres: 0, comandasAbiertas: 0 })
     } catch { /* silently fail */ } finally { setLoading(false) }
-  }, [authHeaders])
+  }, [authHeaders, selectedSalonId])
 
   const cargarPlatos = useCallback(async () => {
     try {
@@ -115,9 +121,17 @@ export default function HospitalidadPage() {
       const res = await fetch("/api/clientes?soloActivos=true", { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
-      setClientes(Array.isArray(data) ? data : [])
+      if (Array.isArray(data)) {
+        setClientes(data)
+        const consumidorFinal = data.find((cliente) => /consumidor/i.test(cliente.nombre))
+        if (consumidorFinal && !clienteFacturarId) {
+          setClienteFacturarId(String(consumidorFinal.id))
+        }
+      } else {
+        setClientes([])
+      }
     } catch { /* silently fail */ }
-  }, [authHeaders])
+  }, [authHeaders, clienteFacturarId])
 
   useEffect(() => { cargarDatos(); cargarPlatos(); cargarClientes() }, [cargarDatos, cargarPlatos, cargarClientes])
 
@@ -130,6 +144,7 @@ export default function HospitalidadPage() {
 
   const crearComanda = async () => {
     if (!mesaSeleccionada || !nuevoItem.nombre || !nuevoItem.precio) return
+    setIsSavingComanda(true)
     try {
       const res = await fetch("/api/hospitalidad", {
         method: "POST",
@@ -146,18 +161,31 @@ export default function HospitalidadPage() {
         }),
       })
       if (res.ok) {
+        toast({ title: "Comanda registrada", description: `Mesa ${mesaSeleccionada.numero} actualizada.`, variant: "success" })
         setNuevoItem({ productoId: "", nombre: "", precio: "", cantidad: "1" })
-        cargarDatos()
+        await cargarDatos()
         setVistaComanda(false)
+      } else {
+        const error = await res.json().catch(() => ({}))
+        toast({ title: "Error al crear comanda", description: error.error ?? "Verificá los datos ingresados.", variant: "destructive" })
       }
-    } catch { /* silently fail */ }
+    } catch {
+      toast({ title: "Error", description: "No se pudo conectar al servidor.", variant: "destructive" })
+    } finally {
+      setIsSavingComanda(false)
+    }
   }
 
   const comandaActiva = mesaSeleccionada?.comandas?.[0]
   const totalMesa = comandaActiva?.lineas.reduce((s, i) => s + i.cantidad * Number(i.precio), 0) ?? 0
 
   const facturarComanda = async () => {
-    if (!comandaActiva || !clienteFacturarId) return
+    if (!comandaActiva || !clienteFacturarId) {
+      toast({ title: "Cliente requerido", description: "Seleccioná un cliente para facturar la comanda.", variant: "destructive" })
+      return
+    }
+
+    setIsFacturando(true)
     try {
       const res = await fetch("/api/hospitalidad/facturar", {
         method: "POST",
@@ -167,19 +195,27 @@ export default function HospitalidadPage() {
           clienteId: Number(clienteFacturarId),
         }),
       })
+      const data = await res.json()
       if (res.ok) {
+        toast({ title: "Comanda facturada", description: `Factura emitida con ID ${data.facturaId}.`, variant: "success" })
         setClienteFacturarId("")
         setVistaComanda(false)
-        cargarDatos()
+        await cargarDatos()
+      } else {
+        toast({ title: "Error al facturar", description: data.error ?? "No se pudo facturar la comanda.", variant: "destructive" })
       }
-    } catch { /* silently fail */ }
+    } catch {
+      toast({ title: "Error", description: "No se pudo conectar al servidor.", variant: "destructive" })
+    } finally {
+      setIsFacturando(false)
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:flex sm:items-end sm:justify-between sm:space-y-0">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <UtensilsCrossed className="h-7 w-7" />
@@ -187,7 +223,22 @@ export default function HospitalidadPage() {
           </h1>
           <p className="text-muted-foreground">Gestion de mesas, comandas y sala</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Label className="text-xs text-muted-foreground">Salon</Label>
+            <Select value={selectedSalonId ? String(selectedSalonId) : "__all__"} onValueChange={(value) => setSelectedSalonId(value === "__all__" ? null : Number(value))}>
+              <SelectTrigger className="h-8 text-xs min-w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos los salones</SelectItem>
+                {salones.map((salon) => (
+                  <SelectItem key={salon.id} value={String(salon.id)}>{salon.nombre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={cargarDatos} className="h-8">Actualizar</Button>
+          </div>
           <div className="text-right">
             <p className="text-sm font-medium">{resumen.ocupadas} mesas ocupadas</p>
             <p className="text-xs text-muted-foreground">{resumen.libres} libres de {resumen.totalMesas}</p>
@@ -284,8 +335,8 @@ export default function HospitalidadPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={facturarComanda} disabled={!clienteFacturarId} className="w-full">
-                    Facturar Comanda
+                  <Button onClick={facturarComanda} disabled={!clienteFacturarId || isFacturando} className="w-full">
+                    {isFacturando ? "Facturando..." : "Facturar Comanda"}
                   </Button>
                 </div>
               </div>
@@ -328,8 +379,8 @@ export default function HospitalidadPage() {
                     <div className="col-span-2" />
                     <Input type="number" placeholder="Cant" value={nuevoItem.cantidad} onChange={e => setNuevoItem({ ...nuevoItem, cantidad: e.target.value })} />
                   </div>
-                  <Button onClick={crearComanda} disabled={!nuevoItem.nombre || !nuevoItem.precio} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />Abrir Comanda
+                  <Button onClick={crearComanda} disabled={!nuevoItem.nombre || !nuevoItem.precio || isSavingComanda} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />{isSavingComanda ? "Guardando..." : "Abrir Comanda"}
                   </Button>
                 </div>
               </div>

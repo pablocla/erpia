@@ -38,15 +38,23 @@ export const campoPersonalizadoService = {
     opciones?: unknown
     orden?: number
     grupo?: string
-  }) {
+  }, empresaId: number) {
+    const campo = await prisma.campoPersonalizado.findFirst({ where: { id, empresaId } })
+    if (!campo) throw new Error("Campo no encontrado")
+
     return prisma.campoPersonalizado.update({
       where: { id },
       data: { ...data, opciones: data.opciones ? JSON.stringify(data.opciones) : undefined },
     })
   },
 
-  async eliminarCampo(id: number) {
-    return prisma.campoPersonalizado.update({ where: { id }, data: { activo: false } })
+  async eliminarCampo(id: number, empresaId: number) {
+    const result = await prisma.campoPersonalizado.updateMany({
+      where: { id, empresaId },
+      data: { activo: false },
+    })
+    if (result.count === 0) throw new Error("Campo no encontrado")
+    return result
   },
 
   // ─── VALORES ────────────────────────────────────────────────────────

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Compute totals
     const totalNC = factura.notasCredito
       .filter((nc) => nc.estado !== "anulada")
-      .reduce((s, nc) => s + nc.total, 0)
+      .reduce((s, nc) => s + Number(nc.total), 0)
     const saldoPendienteCC = factura.cuentasCobrar
       .reduce((s, cc) => s + Number(cc.saldo), 0)
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       resumen: {
         totalNC: Math.round(totalNC * 100) / 100,
         saldoPendienteCC: Math.round(saldoPendienteCC * 100) / 100,
-        netoCobrado: Math.round((factura.total - totalNC - saldoPendienteCC) * 100) / 100,
+        netoCobrado: Math.round((Number(factura.total) - totalNC - saldoPendienteCC) * 100) / 100,
       },
     })
   } catch (error) {

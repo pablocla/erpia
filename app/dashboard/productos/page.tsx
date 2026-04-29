@@ -209,6 +209,7 @@ export default function ProductosPage() {
   }
 
   const stockBajoCount = productos.filter((p) => p.stock <= p.stockMinimo).length
+  const valorInventario = productos.reduce((sum, p) => sum + (p.precioCompra ?? 0) * p.stock, 0)
 
   const filterFields: FilterField[] = [
     { key: "stockBajo", label: "Stock bajo", type: "boolean" },
@@ -258,6 +259,27 @@ export default function ProductosPage() {
           </AlertDescription>
         </Alert>
       )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Productos</p>
+            <p className="text-2xl font-semibold">{productos.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Stock total</p>
+            <p className="text-2xl font-semibold">{productos.reduce((sum, p) => sum + p.stock, 0)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Valor inventario</p>
+            <p className="text-2xl font-semibold">${valorInventario.toFixed(2)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Filtros */}
       <Card>

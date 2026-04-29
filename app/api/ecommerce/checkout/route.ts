@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
     let pedidoFinal = pedido
     if (autoConfirmar ?? true) {
       try {
-        await ventasService.confirmarPedido(pedido.id)
+        await ventasService.confirmarPedido(pedido.id, empresaId)
         pedidoFinal = { ...pedido, estado: "confirmado" }
       } catch (error: any) {
         const message = error?.message ?? "No se pudo confirmar el pedido"

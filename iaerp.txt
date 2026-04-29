@@ -1,0 +1,213 @@
+
+Buena pregunta. Te lo respondo desde el ángulo de alguien que conoce ERP en serio y sabe qué IA realmente agrega valor vs. qué es marketing.
+
+---
+
+## Qué modelos podés correr localmente hoy (2026)
+
+### Modelos open source viables para producción
+
+**Llama 3.3 70B** — el mejor balance calidad/costo. Corre en una PC con 2x RTX 4090 o un servidor con 80GB VRAM. Para servidor cloud: una A100 80GB alcanza.
+
+**Qwen 2.5 72B** — ligeramente mejor que Llama en razonamiento estructurado y código. Ideal para generar JSON, analizar datos tabulares, lógica de negocio.
+
+**Mistral 7B / Mixtral 8x7B** — si el servidor es más modesto (24GB VRAM). Menos capaz pero responde en milisegundos, ideal para notificaciones y clasificación rápida.
+
+**DeepSeek R1 70B** — excelente para razonamiento complejo: detectar anomalías, análisis de márgenes, predicciones. Más lento pero muy preciso.
+
+### Stack de infraestructura local
+
+```
+Ollama (gestor de modelos) → corre en Linux/Windows/Mac
++ Open WebUI (interfaz opcional)
++ LangChain o LlamaIndex (orquestación desde tu Next.js)
++ PostgreSQL (ya lo tenés con Supabase/Prisma)
++ Redis (cola de jobs para las IA tasks async)
+```
+
+---
+
+## Dónde una IA como motor central le da valor real a tu ERP
+
+Te lo separo por impacto real, no por hype.
+
+---
+
+### 🔴 Alto impacto — valor inmediato
+
+**1. Asistente de onboarding inteligente**
+
+En vez de tu wizard actual de preguntas fijas, el modelo conversa con el dueño del negocio:
+
+```
+Usuario: "Tengo una ferretería con 3 empleados y vendo por mayor y menor"
+IA → detecta: rubro=FERRETERIA, tiene_mayorista=true, tamaño=pequeño
+   → configura automáticamente: listas de precio (mayorista/minorista), 
+     percepciones IIBB, roles sugeridos, categorías de productos
+   → le explica qué módulos activar y por qué
+```
+
+Esto es donde SAP usa IA hoy: el "Joule" de SAP hace exactamente esto para reducir el tiempo de implementación.
+
+**2. Motor de alertas inteligentes (no reglas fijas)**
+
+En vez de alertas hardcodeadas ("stock < 10 → notificar"), la IA analiza patrones:
+
+```typescript
+// Job que corre cada noche con el modelo local
+const analisis = await ollama.chat({
+  model: 'qwen2.5:72b',
+  messages: [{
+    role: 'user',
+    content: `Analizá estos datos de ventas de los últimos 30 días:
+    ${JSON.stringify(ventasUltimos30Dias)}
+    
+    Detectá: productos con caída de demanda > 20%, 
+    clientes que no compran hace 15+ días vs su frecuencia habitual,
+    horarios pico no cubiertos con stock suficiente.
+    Respondé SOLO en JSON con estructura: { alertas: [...], prioridad: 'alta'|'media' }`
+  }]
+})
+// → WhatsApp automático al dueño con el análisis
+```
+
+Esto SAP lo llama "Predictive Analytics" y cobra una fortuna. Vos lo podés hacer con Ollama.
+
+**3. Clasificador automático de productos**
+
+El comerciante escribe "aceite para motor 20w40 1 litro" y la IA:
+- Asigna categoría correcta
+- Sugiere código de barras si no tiene
+- Detecta si ya existe un producto similar (evita duplicados)
+- Asigna alícuota IVA correcta (10.5% vs 21%)
+- Sugiere precio de venta basado en margen histórico de esa categoría
+
+**4. Análisis de cuenta corriente y cobranzas**
+
+```
+IA analiza el aging de cuentas a cobrar y genera:
+→ Lista priorizada de clientes a llamar hoy (mayor deuda + mayor riesgo de incobrabilidad)
+→ Texto personalizado del mensaje de WhatsApp para cada cliente
+→ Predicción de cuáles van a pagar si los contactás vs cuáles ya son incobrable
+```
+
+---
+
+### 🟠 Impacto medio — diferenciador competitivo
+
+**5. Generador de presupuestos en lenguaje natural**
+
+```
+Vendedor habla al ERP: "haceme un presupuesto para González 
+de 50 bolsas de cemento, 200 ladrillos y 10 metros de caño de 4 pulgadas"
+→ IA crea el presupuesto completo, busca los productos, aplica lista de precio correcta
+→ Genera PDF y manda por WhatsApp en 10 segundos
+```
+
+**6. Detección de anomalías en operaciones**
+
+La IA aprende el patrón normal del negocio y alerta cuando algo raro pasa:
+- Una venta a precio muy por debajo del habitual (posible error o fraude)
+- Un empleado que abrió caja fuera del horario habitual
+- Un proveedor cuya factura llegó con precio 30% mayor al histórico
+
+**7. Asistente de compras predictivo**
+
+Basado en ventas históricas + estacionalidad + días de entrega del proveedor:
+```
+"Esta semana necesitás reponer: 
+- Cemento Portland x 80 bolsas (se acaba en 4 días al ritmo actual)
+- Pintura latex blanca x 20 latas (viene el feriado y vendés 40% más)
+¿Genero la orden de compra a Distribuidora Rosario?"
+```
+
+---
+
+### 🟡 Valor diferenciador para venta del SaaS
+
+**8. Reportes en lenguaje natural**
+
+```
+Dueño: "cómo me fue este mes comparado con octubre del año pasado?"
+IA: "Vendiste $4.2M vs $3.1M del año pasado, un 35% más. 
+Los que más crecieron: pinturas (+60%) y herramientas eléctricas (+45%).
+Lo que cayó: adhesivos (-12%), probablemente por la competencia de precio de MercadoLibre.
+Tu margen bruto bajó 2 puntos (de 38% a 36%), principalmente porque compraste 
+a Distribuidora XYZ a precio mayor al habitual en 3 oportunidades."
+```
+
+Esto SAP lo tiene en S/4HANA con "Embedded Analytics + Joule". Vos lo podés hacer gratis.
+
+---
+
+## Cómo integrarlo con Claude Code / Copilot
+
+### Arquitectura sugerida
+
+```
+Tu ERP (Next.js)
+    ↓
+/lib/ai/ai-service.ts  ← capa de abstracción
+    ↓
+OllamaClient  (local, gratis)
+  o
+AnthropicClient  (API, para tasks complejas)
+```
+
+```typescript
+// /lib/ai/ai-service.ts
+export class AIService {
+  async analizar(prompt: string, contexto: object): Promise<string> {
+    if (process.env.AI_PROVIDER === 'local') {
+      return this.ollamaChat(prompt, contexto)  // servidor local
+    }
+    return this.anthropicChat(prompt, contexto)  // API Claude
+  }
+  
+  async ollamaChat(prompt: string, ctx: object) {
+    const res = await fetch('http://localhost:11434/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        model: 'qwen2.5:72b',
+        messages: [
+          { role: 'system', content: 'Sos un asistente ERP para PyMEs argentinas...' },
+          { role: 'user', content: `${prompt}\n\nContexto: ${JSON.stringify(ctx)}` }
+        ],
+        stream: false
+      })
+    })
+    return (await res.json()).message.content
+  }
+}
+```
+
+El prompt que le das a Copilot para que te construya esto sería algo como:
+
+> *"Implementá /lib/ai/ai-service.ts como servicio singleton con soporte dual: Ollama local (http://localhost:11434) y Anthropic API. Exponé métodos: analizarVentas(empresaId, periodo), generarAlertasStock(empresaId), clasificarProducto(descripcion), generarMensajeCobranza(clienteId). Cada método construye el prompt con datos reales de Prisma, llama al LLM, parsea el JSON de respuesta y retorna un tipo tipado. Usá el modelo 'qwen2.5:72b' para Ollama y 'claude-sonnet-4-20250514' para Anthropic."*
+
+---
+
+## Hardware mínimo para correr esto
+
+| Modelo | VRAM mínima | Velocidad | Costo servidor |
+|--------|------------|-----------|----------------|
+| Mistral 7B | 8GB | Rápido | RTX 3070 |
+| Llama 3.1 8B | 8GB | Rápido | RTX 3070 |
+| Qwen 2.5 14B | 16GB | Medio | RTX 3080/4080 |
+| Qwen 2.5 72B | 48GB+ | Lento | 2x RTX 4090 |
+| DeepSeek R1 70B | 48GB+ | Lento | A100 (cloud) |
+
+Para empezar: **Qwen 2.5 14B en una RTX 4080** es el sweet spot. Responde en 2-3 segundos para tasks de análisis, cuesta ~$700 la GPU de segunda mano.
+
+---
+
+## Por dónde empezar
+
+Dado que ya tenés el ERP construido, el orden de implementación con mayor ROI sería:
+
+1. **Primero:** Alertas inteligentes nocturnas (job con Ollama → WhatsApp). Bajo riesgo, alto valor percibido.
+2. **Segundo:** Clasificador de productos al cargar el catálogo. Reduce el tiempo de onboarding a la mitad.
+3. **Tercero:** Análisis de cuenta corriente + texto de cobranza personalizado.
+4. **Cuarto:** Reportes en lenguaje natural desde el dashboard.
+
+Con Claude Code podés scaffoldear todo esto en una semana si arrancás por el AIService y los jobs nocturnos. ¿Querés que te arme el prompt específico para implementar alguno de estos módulos?

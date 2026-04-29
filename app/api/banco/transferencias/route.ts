@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         tipo: { contains: "transf", mode: "insensitive" },
       },
       include: {
-        cuentaBancaria: { select: { id: true, numero: true, banco: { select: { nombre: true } } } },
+        cuentaBancaria: { select: { id: true, numeroCuenta: true, banco: { select: { nombre: true } } } },
       },
       orderBy: { fecha: "desc" },
       skip,

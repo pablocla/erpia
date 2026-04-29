@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest"
 
 // ─── Mock prisma ─────────────────────────────────────────────────────────────
 vi.mock("@/lib/prisma", () => ({
@@ -19,7 +19,13 @@ vi.mock("@/lib/events/event-bus", () => ({
 }))
 
 import { prisma } from "@/lib/prisma"
-const mockPrisma = vi.mocked(prisma)
+const mockPrisma = prisma as unknown as {
+  empresa: { findUnique: Mock }
+  workflowRubro: { findFirst: Mock }
+  workflowInstancia: { create: Mock; update: Mock }
+  workflowPasoLog: { create: Mock }
+  workflowStep: { findUnique: Mock }
+}
 
 import { WorkflowEngine, registrarAccionWorkflow } from "@/lib/config/workflow-engine"
 import { isFeatureActiva } from "@/lib/config/rubro-config-service"

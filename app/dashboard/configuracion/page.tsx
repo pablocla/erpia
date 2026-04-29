@@ -871,6 +871,12 @@ export default function ConfiguracionPage() {
                     <Toggle value={op.value} onChange={() => {}} />
                   </div>
                 ))}
+                <div className="pt-3 border-t border-border">
+                  <Link href="/dashboard/configuracion/reportes" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
+                    <span>Administrar layouts de reporte</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>

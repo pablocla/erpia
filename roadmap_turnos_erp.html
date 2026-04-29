@@ -1,0 +1,283 @@
+<style>
+.fase-header {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 0 10px;
+}
+.item-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.item-card:hover { border-color: var(--color-border-primary); }
+.item-card.done {
+  background: #EAF3DE;
+  border-color: #3B6D11;
+}
+.item-card.done .item-title { color: #27500A; }
+.item-card.done .item-sub { color: #3B6D11; }
+.item-check {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--color-border-secondary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+  font-size: 11px; color: transparent;
+  transition: all 0.15s;
+}
+.item-card.done .item-check {
+  background: #3B6D11; border-color: #3B6D11; color: #fff;
+}
+.item-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+.item-sub   { font-size: 12px; color: var(--color-text-secondary); margin: 0; line-height: 1.4; }
+.badge-pill {
+  display: inline-block; font-size: 10px; padding: 2px 7px;
+  border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+}
+.pill-red    { background:#FCEBEB; color:#791F1F; }
+.pill-amber  { background:#FAEEDA; color:#633806; }
+.pill-green  { background:#EAF3DE; color:#27500A; }
+.pill-blue   { background:#E6F1FB; color:#0C447C; }
+.pill-purple { background:#EEEDFE; color:#3C3489; }
+.stat-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; margin-bottom:20px; }
+.stat-card { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:12px 14px; }
+.stat-label { font-size:11px; color:var(--color-text-tertiary); margin:0 0 4px; }
+.stat-val   { font-size:22px; font-weight:500; color:var(--color-text-primary); margin:0; }
+.progress-bar-wrap { background:var(--color-background-secondary); border-radius:4px; height:6px; margin-top:12px; overflow:hidden; }
+.progress-bar { height:6px; border-radius:4px; background:#3B6D11; transition: width 0.4s; }
+.section-sep { border:none; border-top:0.5px solid var(--color-border-tertiary); margin:18px 0; }
+</style>
+
+<h2 class="sr-only">Roadmap interactivo del módulo de turnos: tachá ítems a medida que los completás</h2>
+
+<div class="stat-grid" id="stats-top">
+  <div class="stat-card">
+    <p class="stat-label">Completados</p>
+    <p class="stat-val" id="stat-done">0</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Total ítems</p>
+    <p class="stat-val" id="stat-total">0</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Listo para vender</p>
+    <p class="stat-val" id="stat-pct">0%</p>
+  </div>
+</div>
+<div class="progress-bar-wrap">
+  <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+</div>
+
+<hr class="section-sep">
+
+<p class="fase-header">Fase 1 — antes de vender el primero · semanas 1-2 · anti-churn crítico</p>
+
+<div class="item-card" onclick="toggle(this)" data-id="1">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Booking público mínimo viable</p>
+    <p class="item-sub">Link único por comercio. El cliente elige servicio, profesional y horario. Sin registro obligatorio.</p>
+  </div>
+  <span class="badge-pill pill-red">Crítico</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="2">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Recordatorio automático 24hs antes</p>
+    <p class="item-sub">WhatsApp o email. Sin esto el no-show es del 30-40% y el comerciante culpa al sistema.</p>
+  </div>
+  <span class="badge-pill pill-red">Crítico</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="3">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Confirmación automática al reservar</p>
+    <p class="item-sub">El cliente recibe confirmación inmediata con fecha, hora y nombre del profesional.</p>
+  </div>
+  <span class="badge-pill pill-red">Crítico</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="4">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Wizard de onboarding por rubro</p>
+    <p class="item-sub">3 pasos: rubro → profesionales → horarios. Presets para peluquería, veterinaria, taller.</p>
+  </div>
+  <span class="badge-pill pill-red">Crítico</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="5">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Vista de agenda diaria por profesional</p>
+    <p class="item-sub">El comerciante ve su día de un vistazo. Sin esto no lo mira todos los días.</p>
+  </div>
+  <span class="badge-pill pill-amber">Alta</span>
+</div>
+
+<hr class="section-sep">
+<p class="fase-header">Fase 2 — mientras vendés · semanas 3-6 · retención y diferenciación</p>
+
+<div class="item-card" onclick="toggle(this)" data-id="6">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Cancelación y reprogramación sin llamar</p>
+    <p class="item-sub">Link en la confirmación. El slot liberado entra a lista de espera automáticamente.</p>
+  </div>
+  <span class="badge-pill pill-amber">Alta</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="7">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Dashboard básico de ocupación</p>
+    <p class="item-sub">% ocupación semanal, turnos cancelados, ingresos estimados por turno. El comerciante ve el ROI.</p>
+  </div>
+  <span class="badge-pill pill-amber">Alta</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="8">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Historial del cliente + frecuencia</p>
+    <p class="item-sub">Cuántas veces vino, qué servicio, cuándo fue la última vez. Base para reactivación.</p>
+  </div>
+  <span class="badge-pill pill-amber">Alta</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="9">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Integración Google Calendar (lectura)</p>
+    <p class="item-sub">El profesional ve sus turnos en su Google Calendar sin entrar al ERP.</p>
+  </div>
+  <span class="badge-pill pill-blue">Media</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="10">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Registro de no-show automático</p>
+    <p class="item-sub">Si el cliente no vino, queda marcado. Después de 2 no-shows puede requerir seña.</p>
+  </div>
+  <span class="badge-pill pill-blue">Media</span>
+</div>
+
+<hr class="section-sep">
+<p class="fase-header">Fase 3 — con 10 clientes reales · semanas 7-12 · crecimiento y stickiness</p>
+
+<div class="item-card" onclick="toggle(this)" data-id="11">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Reactivación automática de clientes inactivos</p>
+    <p class="item-sub">"Hace 45 días que María no viene" → WhatsApp automático con link de turno.</p>
+  </div>
+  <span class="badge-pill pill-purple">Diferenciador</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="12">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Seña online con MercadoPago</p>
+    <p class="item-sub">El cliente paga $X al reservar. Elimina no-shows casi por completo. El comerciante lo pide solo.</p>
+  </div>
+  <span class="badge-pill pill-purple">Diferenciador</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="13">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Encuesta post-turno automática</p>
+    <p class="item-sub">1 pregunta por WhatsApp. Los datos alimentan el perfil del cliente y el NPS del comercio.</p>
+  </div>
+  <span class="badge-pill pill-blue">Media</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="14">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Multi-profesional con agenda independiente</p>
+    <p class="item-sub">Cada profesional tiene sus horarios, sus servicios, su disponibilidad. Escala el negocio.</p>
+  </div>
+  <span class="badge-pill pill-blue">Media</span>
+</div>
+
+<div class="item-card" onclick="toggle(this)" data-id="15">
+  <div class="item-check">✓</div>
+  <div style="flex:1">
+    <p class="item-title">Link de reserva en bio de Instagram</p>
+    <p class="item-sub">Un QR o link corto. El cliente reserva desde la red social sin llamar. Canal de adquisición nuevo.</p>
+  </div>
+  <span class="badge-pill pill-purple">Diferenciador</span>
+</div>
+
+<hr class="section-sep">
+
+<div style="display:flex; gap:8px; flex-wrap:wrap;">
+  <button onclick="sendPrompt('¿Cómo implemento el booking público mínimo viable en mi ERP existente?')">Cómo hacer el booking público ↗</button>
+  <button onclick="sendPrompt('¿Cómo integro WhatsApp Business API para los recordatorios automáticos?')">Recordatorios WhatsApp ↗</button>
+  <button onclick="sendPrompt('¿Cómo integro MercadoPago para cobrar seña al reservar un turno?')">Seña con MercadoPago ↗</button>
+  <button onclick="resetAll()">Reiniciar</button>
+</div>
+
+<script>
+const STORAGE_KEY = 'erp_turnos_roadmap_v1';
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch(e) { return {}; }
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function toggle(card) {
+  card.classList.toggle('done');
+  updateStats();
+  const state = loadState();
+  const id = card.dataset.id;
+  state[id] = card.classList.contains('done');
+  saveState(state);
+}
+
+function updateStats() {
+  const cards = document.querySelectorAll('.item-card');
+  const done = document.querySelectorAll('.item-card.done').length;
+  const total = cards.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pct').textContent = pct + '%';
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+function resetAll() {
+  document.querySelectorAll('.item-card.done').forEach(c => c.classList.remove('done'));
+  saveState({});
+  updateStats();
+}
+
+function init() {
+  const state = loadState();
+  document.querySelectorAll('.item-card').forEach(card => {
+    if (state[card.dataset.id]) card.classList.add('done');
+  });
+  updateStats();
+}
+
+init();
+</script>

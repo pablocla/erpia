@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
     const ADMIN_EMAIL = "admin@erp-argentina.com"
     const ADMIN_PASSWORD = "admin1234"
 
+    const body = await request.json().catch(() => ({}))
+    const requestedRubro = typeof body.rubro === "string" ? body.rubro : "salon_belleza"
+    const allowedRubros = ["salon_belleza", "bar_restaurant", "farmacia", "veterinaria"]
+    const demoRubro = allowedRubros.includes(requestedRubro) ? requestedRubro : "salon_belleza"
+
     // 1. Ensure demo empresa exists
     let empresa = await prisma.empresa.findFirst({
       where: { cuit: "20-00000000-0" },
@@ -32,7 +37,13 @@ export async function POST(request: NextRequest) {
           email: ADMIN_EMAIL,
           puntoVenta: 1,
           entorno: "homologacion",
+          rubro: demoRubro,
         },
+      })
+    } else if (empresa.rubro !== demoRubro) {
+      empresa = await prisma.empresa.update({
+        where: { id: empresa.id },
+        data: { rubro: demoRubro },
       })
     }
 

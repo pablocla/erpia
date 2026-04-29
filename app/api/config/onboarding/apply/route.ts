@@ -90,15 +90,16 @@ export async function POST(request: NextRequest) {
     } = validacion.data
 
     const empresaId = ctx.auth.empresaId
+    const condicionIva = condicionAfip === "responsable_inscripto" ? "Responsable Inscripto" : "Monotributista"
 
     const resultados: string[] = []
 
-    // 1. Update empresa rubro + condición
+    // 1. Update empresa rubro + condición IVA
     await prisma.empresa.update({
       where: { id: empresaId },
       data: {
         rubro,
-        condicionAfip,
+        condicionIva,
       },
     }).catch(() => {
       // Field may not exist yet — non-blocking

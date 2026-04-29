@@ -1,0 +1,111 @@
+## Introspección de brechas funcionales para hacer el ERP vendible
+
+### 1. Estado actual
+El sistema ya tiene una base firme para avanzar:
+- `ventas + POS`, `stock`, `clientes`, `facturación AFIP`, `caja`, `agenda`, `membresías`, `reportes`
+- Módulos verticales ya creados para `veterinaria`, `peluquería` y `ferretería`
+- Motor de rubros y configuración por industria para activar funcionalidades según el tipo de negocio
+- Onboarding con selección de rubro (`salon_belleza`, `veterinaria`, `ferreteria`, etc.)
+
+### 2. Faltantes clave por rubro
+
+#### Ferretería / Pinturería
+Funcionalidades existentes:
+- POS y ventas
+- stock
+- compras
+- clientes / cuenta corriente
+- listas de precio
+
+Faltantes más importantes:
+- Presupuesto por obra con detalle de materiales y cantidades
+- Calculadora de mezcla de color para pinturería
+- Precios por categoría y listas de precio avanzadas por sector
+- Catálogo de productos por familias: tornillería, herramientas, pinturas
+- Mejor soporte de productos largos y escaneo/barcode por pasillo
+
+#### Veterinaria
+Funcionalidades existentes:
+- clientes (propietarios)
+- pacientes (mascotas)
+- consultas / historia clínica básica
+- agenda de turnos
+- stock de medicamentos y facturación básica
+
+Faltantes más importantes:
+- Plan sanitario con vacunas y desparasitaciones programadas
+- Recordatorios automáticos de turnos y vacunas por WhatsApp/email
+- Facturación integrada al cerrar la consulta
+- Receta digital con medicamento, dosis y duración
+- Internación y seguimiento de evolución diaria
+- Control de medicamentos controlados, lotes y vencimientos
+- Foto de mascota y ficha clínica más profesional
+- Historial de compras vinculado al paciente además del propietario
+
+#### Peluquería / Barbería / Spa
+Funcionalidades existentes:
+- POS para servicios y productos
+- agenda de turnos
+- clientes
+- membresías y paquetes
+- caja básica
+
+Faltantes más importantes:
+- Comisión por servicio configurable por profesional
+- Duración de servicio en agenda para evitar solapamientos
+- Recordatorios de turno por WhatsApp o SMS
+- Agenda con profesionales y cupos por horario
+- Paquetes prepagos con canje dinámico por servicio
+- Reportes de productividad por profesional
+- Flujo móvil rápido para turnos desde la calle
+
+### 3. Faltantes transversales
+
+#### Plataforma y core
+- Onboarding de rubro real: activar y parametrizar flujos específicos por industria
+- Atributos dinámicos por categoría de producto (ej. especie/raza, mezcla de colores, medidas de corte)
+- Listas de precio avanzadas con escalones por cantidad y vigencia
+- Cierre de caja completo: cuadre por medio de pago, PDF, multi-turno/multi-caja
+- Notificaciones reales: WhatsApp, email, SMS
+- Reportes de margen y rentabilidad por rubro
+- Portal B2B para pedidos de distribuidores y clientes
+- Conciliación bancaria automática
+
+#### UX y go-to-market
+- Menús y experiencia adaptados por rubro, no un POS genérico con etiquetas distintas
+- Páginas verticales específicas: `/dashboard/veterinaria`, `/dashboard/peluqueria`, `/dashboard/ferreteria`
+- Documentación comercial y demos por industria
+- Plantillas de configuración por rubro con datos reales de ejemplo
+
+### 4. Qué falta para venderlo
+
+#### Para ferretería
+- Presupuesto por obra
+- Costeo por faena y listas de categoría
+- Stock de larga duración y precios por volumen
+
+#### Para veterinaria
+- Flujo completo `turno → consulta → receta → factura`
+- Plan sanitario y recordatorios
+- Módulo de internación y ficha clínica completa
+
+#### Para peluquería
+- Agenda profesional con duración y bloqueos
+- Comisiones y rendimiento por profesional
+- Recordatorios de turno y membresías como producto de servicio
+
+### 5. Prioridades de trabajo
+1. Completar los flujos verticales de `veterinaria` y `peluquería`
+2. Agregar notificaciones automáticas (WhatsApp/email)
+3. Mejorar la configuración por rubro y los campos dinámicos
+4. Cerrar la funcionalidad de caja y cierre de caja
+5. Crear demostraciones verticales para cada rubro clave
+
+### 6. Conclusión
+El ERP tiene una base sólida, pero aún es un producto más modular que vertical. Para venderlo en ferretería, veterinaria o peluquería necesita:
+- flujos concretos por industria
+- funcionalidades específicas faltantes
+- experiencia de usuario adaptada
+- notificaciones y cierre de caja profesionales
+
+Con estas mejoras, el sistema podrá pasar de una plataforma prometedora a un ERP vendible y competitivo en esos rubros.

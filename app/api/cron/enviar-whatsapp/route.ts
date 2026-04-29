@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { WhatsappService } from "@/lib/whatsapp/whatsapp-service"
 
-/**
- * GET /api/cron/enviar-whatsapp — Hourly WhatsApp sending job
- * Processes approved messages (estado = "aprobado") with prioridad >= 8.
- * Protected by CRON_SECRET header.
- *
- * NOTE: Actual WhatsApp sending via Twilio is a placeholder.
- * Replace sendWhatsApp() with your Twilio implementation.
- */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
@@ -17,7 +10,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get approved messages with high priority
+    const whatsappService = new WhatsappService()
+
     const mensajes = await prisma.mensajePendienteWhatsApp.findMany({
       where: {
         estado: "aprobado",
@@ -31,25 +25,19 @@ export async function GET(request: Request) {
 
     for (const msg of mensajes) {
       try {
-        // TODO: Replace with actual Twilio WhatsApp API integration
-        // const sent = await sendWhatsApp(msg.telefono, msg.mensaje)
-        const sent = await sendWhatsAppPlaceholder(msg.telefono, msg.mensaje)
-
-        if (sent) {
-          await prisma.mensajePendienteWhatsApp.update({
-            where: { id: msg.id },
-            data: { estado: "enviado", enviadoAt: new Date() },
-          })
-          resultados.push({ id: msg.id, enviado: true })
-        } else {
-          throw new Error("WhatsApp API no configurada")
-        }
-      } catch (err) {
+        await whatsappService.sendMessage(msg.telefono, msg.mensaje)
         await prisma.mensajePendienteWhatsApp.update({
           where: { id: msg.id },
-          data: { estado: "error", error: (err as Error).message },
+          data: { estado: "enviado", enviadoAt: new Date() },
         })
-        resultados.push({ id: msg.id, enviado: false, error: (err as Error).message })
+        resultados.push({ id: msg.id, enviado: true })
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        await prisma.mensajePendienteWhatsApp.update({
+          where: { id: msg.id },
+          data: { estado: "error", error: errorMessage },
+        })
+        resultados.push({ id: msg.id, enviado: false, error: errorMessage })
       }
     }
 
@@ -64,28 +52,4 @@ export async function GET(request: Request) {
     console.error("[Cron WhatsApp] Error:", error)
     return NextResponse.json({ error: "Error en cron WhatsApp" }, { status: 500 })
   }
-}
-
-/**
- * Placeholder for Twilio WhatsApp integration.
- * Replace with:
- *
- * import twilio from 'twilio'
- * const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN)
- *
- * async function sendWhatsApp(telefono: string, mensaje: string): Promise<boolean> {
- *   const msg = await client.messages.create({
- *     body: mensaje,
- *     from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
- *     to: `whatsapp:+54${telefono}`,
- *   })
- *   return msg.status !== 'failed'
- * }
- */
-async function sendWhatsAppPlaceholder(telefono: string, mensaje: string): Promise<boolean> {
-  if (!process.env.TWILIO_SID) {
-    console.log(`[WhatsApp Placeholder] → ${telefono}: ${mensaje.slice(0, 80)}...`)
-    return false
-  }
-  return false
 }

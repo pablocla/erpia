@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const { login, loginConToken } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [rubro, setRubro] = useState("salon_belleza")
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
   const [cargandoDemo, setCargandoDemo] = useState(false)
@@ -31,7 +33,11 @@ export default function LoginPage() {
     // Si falla con credenciales demo, auto-provisionar la cuenta admin
     if (!resultado.success && email === "admin@erp-argentina.com" && password === "admin1234") {
       try {
-        const res = await fetch("/api/auth/demo", { method: "POST" })
+        const res = await fetch("/api/auth/demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rubro }),
+        })
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
@@ -55,7 +61,11 @@ export default function LoginPage() {
     setError("")
     setCargandoDemo(true)
     try {
-      const res = await fetch("/api/auth/demo", { method: "POST" })
+      const res = await fetch("/api/auth/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rubro }),
+      })
       const data = await res.json()
       if (data.success && data.token) {
         loginConToken(data.token, data.usuario)
@@ -107,6 +117,21 @@ export default function LoginPage() {
                 required
                 placeholder="••••••••"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rubro">Rubro de la demo</Label>
+              <Select value={rubro} onValueChange={(value) => setRubro(value)}>
+                <SelectTrigger id="rubro">
+                  <SelectValue placeholder="Elegí un rubro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="salon_belleza">Salón de Belleza / Barbería</SelectItem>
+                  <SelectItem value="bar_restaurant">Bar / Restaurante</SelectItem>
+                  <SelectItem value="farmacia">Farmacia</SelectItem>
+                  <SelectItem value="veterinaria">Veterinaria</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button type="submit" className="w-full" disabled={cargando || cargandoDemo}>

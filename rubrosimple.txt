@@ -1,0 +1,317 @@
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib)
+
+Read memory [](file:///c%3A/Users/Pablo%20Clavero/AppData/Roaming/Code/User/workspaceStorage/4a57f8554e8338af215b10989d629625/GitHub.copilot-chat/memory-tool/memories/repo/sprint-15-complete.md)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/hospitalidad)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/ecommerce)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/agenda)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/membresias)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/veterinaria)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/historia-clinica)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/hospitalidad/route.ts#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/ecommerce/checkout/route.ts#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/agenda/route.ts#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/membresias/route.ts#1-1), lines 1 to 80
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#1-1), lines 1 to 150
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#150-150), lines 150 to 350
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/industria)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/iot)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/logistica)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/distribucion)
+
+Searched for regex `model Salon|model Mesa|model Comanda|model Turno|model Profesional|model Paciente|model PlanMembresia|model Membresia|model PedidoVenta|model CanalVenta` (`**/prisma/schema.prisma`), 10 results
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/portal)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/tienda)
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#2799-2799), lines 2799 to 2880
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#1904-1904), lines 1904 to 1970
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#2303-2303), lines 2303 to 2350
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/prisma/schema.prisma#2667-2667), lines 2667 to 2760
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/app/api/ecommerce/checkout/route.ts#70-70), lines 70 to 100
+
+Searched for regex `whatsapp|wsp|webhook|chatbot|delivery|takeaway|reserva|booking|suscripci|loyalty|fidelidad|puntos|rewards`, 20 results
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/introspeccion.md#1200-1200), lines 1200 to 1260
+
+Searched for regex `model.*\{` (`**/prisma/schema.prisma`), 100 results
+
+Searched for regex `rubro.*gastronomia|rubro.*servicios|rubro.*salud|rubro.*comercio|rubro.*industria|onboarding.*rubro`, 20 results
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/onboarding/onboarding-ia.ts#1-1), lines 1 to 50
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/onboarding/onboarding-ia.ts#50-50), lines 50 to 200
+
+Read [](file:///c%3A/Users/Pablo%20Clavero/Downloads/pos-system-argentina/lib/onboarding/onboarding-ia.ts#200-200), lines 200 to 400
+
+Now I have a thorough understanding of the current ERP. Let me compile the comprehensive analysis.
+
+---
+
+## Diagnóstico: Módulos existentes vs. Nichos retail ausentes
+
+### Lo que YA tiene el ERP (13 rubros onboarding + verticales)
+
+| Vertical | Modelos/API | Profundidad |
+|----------|------------|-------------|
+| Gastronomía | `Salon`, `Mesa`, `Comanda`, `LineaComanda`, KDS | Buena — mesas, comandas, facturación |
+| Veterinaria/Salud | `Paciente`, `Consulta`, `Profesional`, `Turno` | Media — HC + agenda |
+| Membresías (gym) | `PlanMembresia`, `Membresia` | Básica — planes + vencimiento |
+| Salón de belleza | Reutiliza `Turno` + `Profesional` | Básica — agenda + comisiones descritas |
+| Industria | `ListaMateriales`, `ComponenteBOM`, `OrdenProduccion` | Media |
+| Logística | `Transportista`, `Vehiculo`, `Chofer`, `HojaRuta`, `ParadaRuta`, `Envio` | Buena |
+| E-commerce | `/api/ecommerce/checkout`, `/api/portal`, tienda | Básica — catálogo + checkout |
+| IoT | `DispositivoIoT`, `LecturaIoT`, `AlertaIoT` | Media |
+
+### Lo que FALTA: Nichos retail de alta tendencia sin ingeniería funcional
+
+---
+
+## 1. HAMBURGUESERÍA / DARK KITCHEN / FAST FOOD (pedido web + WhatsApp)
+
+**Gap crítico:** Hoy la comanda exige `mesaId` obligatorio (ver route.ts). No existe flujo de pedido sin mesa (delivery/takeaway/web). No hay webhook WhatsApp. No hay tracking de estado para el cliente.
+
+**Ingeniería funcional necesaria:**
+
+| Componente | Descripción |
+|-----------|-------------|
+| `PedidoOnline` | Modelo nuevo: pedido sin mesa, canal (web/whatsapp/rappi), estado (recibido→confirmado→en_preparacion→listo→en_camino→entregado), dirección delivery, teléfono, pago |
+| `WebhookWhatsApp` | Endpoint receptor de mensajes de WhatsApp Business API (Baileys/Twilio/360dialog). Parsea texto natural → items del menú vía fuzzy match |
+| `ComandaAutoGenerator` | Service que al recibir PedidoOnline genera Comanda automática sin mesa (mesa virtual "DELIVERY" / "TAKEAWAY") y la envía al KDS |
+| `MenuDigital` | API pública (sin auth) que expone catálogo con fotos, precios, variantes (con cheddar, sin cebolla), horarios disponibilidad |
+| `EstimadorTiempo` | Calcula tiempo estimado basado en cola actual de comandas abiertas × tiempo promedio |
+| `NotificadorCliente` | Envía WhatsApp/SMS al cliente en cada cambio de estado: "Tu pedido está en preparación", "Tu hamburguesa está lista para retirar" |
+| `ZonaDelivery` | Polígonos/radios configurables con costo de envío variable |
+| `IntegracionRappi/PedidosYa` | Webhook receptor que normaliza pedidos de aggregators al formato PedidoOnline |
+
+**Flujos:**
+```
+Cliente → Web/WhatsApp → PedidoOnline (borrador)
+  → Confirmación pago (MP/efectivo) → ComandaAutoGenerator → Comanda (sin mesa)
+  → KDS cocina → Cambio estado → NotificadorCliente WhatsApp
+  → Entrega → Facturación automática (FC/B/C)
+```
+
+---
+
+## 2. PELUQUERÍA / BARBERÍA (ya tiene `salon_belleza` pero incompleto)
+
+**Gap:** No existe modelo de `Servicio` separado de `Producto`. El `Turno` no tiene duración por servicio. No hay programa de fidelidad real (sólo mencionado en particularidades). No hay booking online.
+
+| Componente | Descripción |
+|-----------|-------------|
+| `ServicioProfesional` | Modelo: nombre, duración_min, precio, categoría (corte/color/tratamiento), insumos consumidos |
+| `AgendaOnline` | Endpoint público: cliente ve disponibilidad y reserva sin llamar. Integra con Google Calendar |
+| `ComisionConfig` | Reglas: % fijo por servicio, escala por volumen mensual, diferenciación por seniority |
+| `ProgramaFidelidad` | Sellos digitales: cada N servicios → 1 gratis. Acumulación de puntos canjeables |
+| `PreferenciasCliente` | Historial: "siempre pide decoloración nivel 8, tono ceniza, alergia al amoníaco" |
+| `FotoAntes/Despues` | Galería por cliente para portfolio del profesional (marketing en Instagram) |
+
+---
+
+## 3. ESTUDIO DE TATUAJES / PIERCING
+
+**100% ausente, tendencia altísima en Argentina urbana.**
+
+| Componente | Descripción |
+|-----------|-------------|
+| `SesionTatuaje` | Modelo: cliente, artista, zona cuerpo, estilo (realismo/tradicional/blackwork), duración estimada, # sesiones planificadas, precio total, señas parciales |
+| `ConsentimientoFirmado` | Firma digital en tablet: alergias, condiciones médicas, aceptación riesgos |
+| `PortfolioArtista` | Galería pública por artista, estilos, disponibilidad |
+| `GestionSenas` | Pago parcial con seña (30-50%), saldo pendiente, política de cancelación con retención |
+| `InsumosPorSesion` | Agujas, tintas, guantes — descuento de stock por sesión |
+| `CuidadoPostTatuaje` | Mensaje automático por WhatsApp con instrucciones de cuidado día 1, 3, 7, 14 |
+
+---
+
+## 4. CONSULTORIO ODONTOLÓGICO / ESTÉTICO
+
+**El modelo `Paciente` está orientado a veterinaria (especie, raza). Falta odontograma, presupuesto de tratamiento, plan de cuotas.**
+
+| Componente | Descripción |
+|-----------|-------------|
+| `Odontograma` | Modelo visual: 32 piezas dentales, estado por pieza (sano/caries/ausente/tratado/corona) |
+| `PlanTratamiento` | Presupuesto: N sesiones con precios individuales, aprobación del paciente, seguimiento |
+| `FinanciacionInternal` | Plan de cuotas sin tarjeta: 3/6/12 cuotas, generación automática de CuentaCobrar |
+| `ObraSocial/Prepaga` | Nomenclador por práctica, copago, autorización previa, lote mensual |
+| `ConsentimientoDigital` | Por práctica: endodoncia, extracción, implante |
+| `LaboratorioExterno` | Seguimiento de prótesis/coronas enviadas a lab, fecha estimada retorno |
+
+---
+
+## 5. PET SHOP / TIENDA DE MASCOTAS (no es veterinaria)
+
+| Componente | Descripción |
+|-----------|-------------|
+| `FichaMascota` | Similar a Paciente pero sin HC: nombre, raza, tamaño, alergias alimentarias, preferencias |
+| `SuscripcionAlimento` | Entrega recurrente mensual de alimento balanceado (tipo suscripción) |
+| `BañoYPeluqueria` | Agenda de servicios de grooming con duración por tamaño de mascota |
+| `RecordatorioDesparasitacion` | WhatsApp automático cada 3 meses |
+| `ProgramaPuntos` | Compra acumula puntos → descuentos en servicios |
+
+---
+
+## 6. ÓPTICA
+
+**Totalmente ausente, rélev ante en retail salud.**
+
+| Componente | Descripción |
+|-----------|-------------|
+| `RecetaOftalmo` | Modelo: OD/OI, esfera, cilindro, eje, adición, DIP, tipo lente |
+| `PedidoLaboratorio` | Envío de receta a lab de lentes, tracking estado (pedido→fabricando→listo) |
+| `StockArmazones` | Variantes por marca, modelo, color, tamaño puente/varilla |
+| `ObraSocialOptica` | Cobertura parcial lentes+armazón según plan, bonificación anual |
+| `HistorialVisual` | Evolución de la receta del paciente en el tiempo |
+
+---
+
+## 7. LAVADERO DE AUTOS / DETAILING
+
+| Componente | Descripción |
+|-----------|-------------|
+| `VehiculoCliente` | Modelo, patente, color (no confundir con Vehiculo de logística que es de la empresa) |
+| `ServicioLavado` | Tipos: exterior, completo, premium, detailing, pulido, cerámico |
+| `TurnoLavado` | Agenda por bahía de lavado con estimación de tiempo por servicio |
+| `SuscripcionLavado` | Pase mensual: N lavados por mes, con QR de acceso |
+| `FotoPre/Post` | Evidencia del estado del vehículo antes/después |
+
+---
+
+## 8. ESTUDIO DE PILATES / YOGA / CROSSFIT (BOUTIQUE FITNESS)
+
+**Gimnasio existe pero para box gym. Faltan clases boutique.**
+
+| Componente | Descripción |
+|-----------|-------------|
+| `ClaseGrupal` | Modelo: disciplina, instructor, horario, cupo máximo, sala |
+| `ReservaCupo` | Cliente reserva lugar en clase (lista de espera si lleno) |
+| `PackClases` | N clases dentro de período (no membresía ilimitada). Expira si no se usan |
+| `InstructorDisponibilidad` | Agenda del instructor: horarios, sustituciones, feriados |
+| `WaitingList` | Lista de espera automática con notificación WhatsApp cuando se libera cupo |
+| `CheckInQR` | Validación de asistencia por QR al ingresar a la sala |
+
+---
+
+## 9. FLORISTERÍA / VIVERO
+
+| Componente | Descripción |
+|-----------|-------------|
+| `PedidoDedicatoria` | Texto dedicatoria + dirección destinatario (distinto al comprador) |
+| `EntregaProgramada` | Fecha/hora exacta de entrega (cumpleaños, aniversario) |
+| `CuidadoPlanta` | Instrucciones automáticas por WhatsApp según especie vendida |
+| `SuscripcionFloral` | Arreglo semanal/quincenal para empresas/oficinas |
+| `CatalogoEstacional` | Disponibilidad por temporada, flores importadas con lead time |
+
+---
+
+## 10. TALLER MECÁNICO / AUTOPARTES
+
+| Componente | Descripción |
+|-----------|-------------|
+| `OrdenReparacion` | Modelo: vehículo, desperfecto reportado, diagnóstico, presupuesto, aprobación, trabajos realizados, repuestos usados |
+| `VehiculoCliente` | Patente, marca, modelo, año, km, VIN |
+| `HistorialVehiculo` | Todas las OR anteriores + km en cada visita |
+| `PresupuestoReparacion` | Mano de obra + repuestos, aprobación por WhatsApp |
+| `AlertaService` | Recordatorio km/tiempo para próximo service |
+| `StockRepuestos` | Equivalencias de piezas (OEM, aftermarket), compatibilidad por vehículo |
+
+---
+
+## 11. INMOBILIARIA
+
+| Componente | Descripción |
+|-----------|-------------|
+| `Propiedad` | Tipo, m², ambientes, barrio, fotos, precio venta/alquiler, estado (disponible/reservada/vendida/alquilada) |
+| `ContratoAlquiler` | Fechas, monto, cláusula de ajuste (ICL/IPC), generación automática de CuentaCobrar mensual |
+| `Reserva` | Seña, condiciones, plazo de escrituración |
+| `ExpensasAdmin` | Si administra consorcios: liquidación mensual, fondo de reserva |
+| `PortalPropiedades` | Web pública con filtros, fotos, consulta por WhatsApp |
+
+---
+
+## 12. ESTUDIO CONTABLE / PROFESIONAL INDEPENDIENTE (abogado, arquitecto, etc.)
+
+| Componente | Descripción |
+|-----------|-------------|
+| `Honorario` | Presupuesto por tarea, horas estimadas, tasa horaria, ajuste por complejidad |
+| `TimeTracking` | Registro de horas por legajo/cliente/tarea |
+| `Legajo/Expediente` | Documentos adjuntos, estados procesales, vencimientos AFIP/ARBA |
+| `VencimientoFiscal` | Calendario de vencimientos por cliente con alertas automáticas |
+| `FacturacionRecurrente` | Generación automática mensual de factura por abono/fee |
+
+---
+
+## 13. CERVECERÍA ARTESANAL / VINOTECA
+
+| Componente | Descripción |
+|-----------|-------------|
+| `FichaCerveza/Vino` | IBU, ABV, estilo, notas de cata, maridaje sugerido, bodega/cervecera |
+| `GrowlerTracker` | Control de envases retornables por cliente |
+| `TapManager` | Control de canillas: barril activo, litros restantes estimados, costo por litro |
+| `Degustacion/Cata` | Eventos con cupo, reserva online, precio, ficha de cata |
+| `VentaPorLitro` | Unidad de venta fraccionada, integrada con descuento de barril |
+
+---
+
+## 14. CASA DE DEPORTES / CANCHAS DE FÚTBOL/PADDLE
+
+| Componente | Descripción |
+|-----------|-------------|
+| `Cancha` | Tipo (fútbol5/7/11, paddle, tenis), superficie, iluminación, precio por franja |
+| `ReservaCancha` | Turno fijo semanal o esporádico, seña online, grupo de WhatsApp auto |
+| `TorneosLigas` | Fixture automático, tabla de posiciones, goleadores |
+| `CantinDeportiva` | Mini-POS del buffet integrado, consumo atado a la reserva |
+| `AlquilerEquipamiento` | Pelotas, paletas, conos — con control de devolución |
+
+---
+
+## 15. COTILLÓN / ALQUILER DE EVENTOS
+
+| Componente | Descripción |
+|-----------|-------------|
+| `ItemAlquiler` | Stock disponible por fecha (no es stock tradicional, es por período) |
+| `ContratoAlquiler` | Fecha retiro, fecha devolución, seña, checklist de ítems |
+| `CalendarioDisponibilidad` | Vista por ítem: qué días está libre/reservado |
+| `ControlDevolucion` | Checklist de ítems devueltos, roturas, cobro de reposición |
+
+---
+
+## Resumen de gaps transversales que habilitan TODOS estos nichos
+
+| Servicio transversal | Estado actual | Impacto |
+|---------------------|---------------|---------|
+| **WhatsApp Business API** | Ausente | Bloquea notificaciones, booking, y canal de pedidos para TODOS los rubros |
+| **Booking/Reservas Online** (endpoint público sin auth) | Ausente | Peluquerías, canchas, clínicas, lavaderos, clases — todos lo necesitan |
+| **Programa de Fidelidad/Puntos** | Mencionado pero sin modelo ni API | Diferenciador competitivo para retail recurrente |
+| **Suscripciones/Recurrencia** | `Membresia` solo tiene fecha inicio/fin | Falta facturación recurrente automática, reintentos, congelamiento |
+| **Pedido sin mesa (delivery/take-away/web)** | `Comanda` exige `mesaId` Int obligatorio | Bloquea dark kitchens, delivery, fast food completo |
+| **Servicio como entidad separada de Producto** | Ausente — todo es `Producto` | Peluquerías, clínicas, talleres necesitan duración, insumos consumidos, comisión |
+| **Seña/Pago parcial anticipado** | Ausente | Tatuajes, alquileres, reservas de cancha, eventos |
+| **Consentimiento informado digital** | Ausente | Salud, estética, tatuajes — obligatorio legalmente |
+| **Calendario público por recurso** (cancha, profesional, bahía) | Solo `Turno` interno | Falta exposición pública para self-service del cliente |
+| **MercadoPago integración** | Mencionado pero ausente | Cobro online para todos los canales web/WhatsApp |
+| **Foto/Media por transacción** | Ausente | Tatuajes, lavaderos, veterinaria, peluquerías |
+
+Estos 15 nichos + los 6 servicios transversales son la hoja de ruta para que el ERP pase de "genérico con verticales cosméticos" a **plataforma multi-rubro real** que compite con Fresha (belleza), Toast (gastro), Mindbody (fitness), y Odoo (genérico) — pero con fiscalidad argentina nativa.

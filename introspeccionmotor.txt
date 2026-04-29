@@ -1,0 +1,476 @@
+motor erp ?????: 
+Estás pensando algo interesante, pero te corrijo una cosa de entrada:
+no es que “no exista un motor tipo Unity para ERP”… **sí existen piezas parecidas**, pero están fragmentadas (frameworks, ERPs modulares, low-code, etc.). Nadie las unificó bien con foco en **verticalización + velocidad + números claros** como vos lo planteás. Ahí hay oportunidad real.
+
+✅ Chequeo actual del schema ERP:
+- En `prisma/schema.prisma` hay un `model Profesional` y `model Turno` con `fecha`, `horaInicio`, `horaFin`, `estado`, `motivo`, `notas`, `profesionalId` y `clienteId`.
+- `Empresa` ya tiene `rubro` y `rubroId`, y la relación `rubroRef` con `model Rubro`.
+- El sistema usa `ConfiguracionRubro` / `FeatureRubro` / `FeatureEmpresa` para activar features por vertical.
+- Existe `MensajePendienteWhatsApp` para workflows de notificación, y `WorkflowInstancia` para motores de flujo personalizados.
+- El demo onboarding actual ya maneja rubros como `salon_belleza`, `bar_restaurant`, `farmacia` y `veterinaria`.
+
+Esto quiere decir que la propuesta debe aterrizar sobre los modelos existentes de agenda/turnos y configuración de rubro, no sobre un esquema inventado.
+
+## 🔎 Descripción funcional real del ERP actual
+
+### 1. Inicio y onboarding
+- El usuario puede iniciar sesión o entrar por demo.
+- En demo, `POST /api/auth/demo` crea/encuentra una `Empresa` demo con `cuit = 20-00000000-0` y actualiza su `rubro` a la opción elegida.
+- El demo también crea/actualiza un `Usuario` administrador y devuelve un JWT.
+- El onboarding guarda datos en localStorage y luego aplica configuración vía `/api/config/onboarding/apply`.
+
+### 2. Rubro y configuración
+- `Empresa` tiene `rubro` (string) y `rubroId` (FK a `Rubro`).
+- `Rubro` define categorías verticales como salón, bar, farmacia, veterinaria, etc.
+- `ConfiguracionRubro` y `FeatureRubro` describen qué características deben activarse por defecto para cada rubro.
+- `FeatureEmpresa` permite overrides por empresa y personalizar activación de módulos.
+- El flujo de `app/api/config/rubros/route.ts` y `app/api/config/features/route.ts` aplica estas reglas.
+
+### 3. Agenda y turnos
+- El ERP ya tiene `model Profesional` y `model Turno` para manejar citas.
+- `/api/agenda` ofrece GET y POST:
+  - GET filtra turnos por `fecha` y `profesionalId` para la empresa actual.
+  - POST crea un turno con `fecha`, `horaInicio`, `horaFin`, `profesionalId`, `clienteId`, `motivo` y `notas`.
+- `app/dashboard/peluqueria/page.tsx` consume esa API y ofrece una experiencia móvil para:
+  - ver turnos de hoy/mañana/pasado mañana
+  - agendar rápidamente un turno
+  - seleccionar profesional y hora
+  - abrir la agenda completa o enviar WhatsApp de cita
+
+### 4. Clientes y relacionamiento
+- `Cliente` está en el dominio y puede asociarse a un turno.
+- La agenda puede guardar `clienteId` opcional y en `notas` cita el teléfono del cliente.
+- El sistema no requiere un modelo nuevo para cliente en peluquería; usa el maestro existente.
+
+### 5. Caja, stock y contabilidad
+- Hay un módulo POS / caja ya existente con caja abierta/cerrada y `turno` de caja.
+- Las ventas generan impactan en caja, stock y contabilidad mediante rutas de `app/api/pos/venta/route.ts`.
+- El ERP usa `Caja`, `MovimientoStock`, `AsientoContable`, y documentos fiscales para trazar cada operación.
+
+### 6. Notificaciones y WhatsApp
+- Existe un módulo de mensajes pendientes WhatsApp (`MensajePendienteWhatsApp`) y cron jobs para envío.
+- El UX actual incluye botones de WhatsApp en el módulo de turnos y cobros.
+- Esto permite automatizar recordatorios de turno o cobranza sin inventar nueva infraestructura.
+
+### 7. UX y navegación móviles
+- El dashboard tiene un layout con sidebar desktop y overlay sidebar mobile.
+- Hay un `Topbar` con botón de menú mobile y `MobileBottomNav` con acceso directo a Peluquería.
+- La experiencia de peluquería es mobile-first: botones grandes, cards, y diálogo rápido para agendar.
+
+### 8. Qué debe saber la otra IA
+- La arquitectura no es teórica: ya hay rutas API funcionales y modelos Prisma concretos.
+- La solución debe usar estos componentes existentes, no crear nuevos conceptos fuera del schema.
+- El foco debe ser:
+  1. mapear casos de uso reales a `Turno`/`Profesional`/`Cliente`/`Empresa`/`Rubro`
+  2. usar `ConfiguracionRubro` y `FeatureEmpresa` como motor de verticalización
+  3. conectar `MensajePendienteWhatsApp` para notificaciones de turno
+  4. respetar el multitenant mediante `empresaId` en cada ruta
+
+### 9. Mapa funcional por módulo y rutas clave
+- `app/api/auth/demo/route.ts`: login demo + rubro demo. Crea o actualiza `Empresa` demo y devuelve JWT.
+- `app/api/agenda/route.ts`: listado y creación de turnos.
+- `app/api/agenda/[id]/route.ts`: obtención y actualización de un turno específico.
+- `app/dashboard/peluqueria/page.tsx`: front mobile-first para ver y crear turnos rápidos.
+- `app/dashboard/agenda`: agenda completa en la UI principal.
+- `app/api/config/rubros/route.ts` y `app/api/config/features/route.ts`: carga y aplica configuración por rubro.
+- `app/api/pos/venta/route.ts`: ventas que impactan caja, stock, documentos y contabilidad.
+- `prisma/schema.prisma`: modelos núcleo `Empresa`, `Rubro`, `Profesional`, `Turno`, `Cliente`, `ConfiguracionRubro`, `FeatureEmpresa`, `MensajePendienteWhatsApp`.
+
+### 10. Flujo funcional real que debe entender la otra IA
+1. Demo / login: el usuario elige rubro y entra con una empresa demo ya configurada.
+2. Onboarding: se guardan respuestas y se aplica config a la empresa mediante APIs de config.
+3. Agenda: se crean turnos con profesional, fecha y cliente; el sistema muestra turnos por día.
+4. Cliente: el cliente puede vincularse al turno, pero también es opcional si se quiere agendar rápido.
+5. Notificación: el turno puede generar un mensaje pendiente WhatsApp para recordar cita.
+6. Venta/caja: si se factura, la operación impacta caja/stock/contabilidad en el POS.
+7. Verticalización: el rubro controlará qué pantallas y funcionalidades están visibles en la UI.
+
+Con esto la otra IA tiene la visión funcional completa del ERP actual y la forma correcta de usar los componentes ya implementados.
+
+Ahora, vamos a lo concreto 👇
+
+---
+
+# 🧠 1. Prompt para introspección de tu ERP (nivel ingeniería)
+
+Usalo en ChatGPT / Claude / Copilot para “desarmar” tu idea desde adentro:
+
+Actuá como un arquitecto de software senior especializado en ERP, sistemas distribuidos y diseño de productos SaaS escalables.
+
+Quiero que hagas una introspección completa de un ERP que estoy diseñando. Este ERP está pensado para múltiples rubros (retail y servicios: kiosco, ferretería, bar, peluquería, spa, etc.) y debe venir preconfigurado por industria.
+
+Analizá el sistema DESDE ADENTRO HACIA AFUERA.
+
+1. Definí el "motor central" del ERP:
+
+* Qué entidades núcleo existen (ej: transacciones, movimientos, documentos, eventos)
+* Cómo se relacionan contabilidad, finanzas, stock, ventas y clientes
+* Qué modelo de datos unificado permite que todo sea “100% numérico y trazable”
+
+2. Diseñá la arquitectura interna:
+
+* Monolito modular vs microservicios vs event-driven
+* Cómo se comunican los módulos (event bus, CQRS, etc.)
+* Cómo garantizar consistencia entre áreas (ej: venta impacta stock + caja + contabilidad)
+
+3. Definí el sistema de eventos:
+
+* Qué eventos existen (venta realizada, turno reservado, producto actualizado, etc.)
+* Cómo estos eventos actualizan todos los módulos automáticamente
+
+4. Pensá en la verticalización:
+
+* Cómo el sistema permite “plantillas por rubro”
+* Qué partes son configurables vs hardcodeadas
+* Cómo evitar sobrecomplejidad
+
+5. Diseñá el “motor de reglas”:
+
+* Cómo se definen reglas de negocio (impuestos, comisiones, precios, combos)
+* Cómo hacerlas dinámicas sin romper el sistema
+
+6. Definí el “motor de métricas”:
+
+* Cómo todo termina en números claros para el cliente
+* Qué KPIs salen automáticamente sin configuración
+
+7. Identificá problemas clásicos de ERP:
+
+* Rigidez
+* Mala UX
+* Implementación lenta
+
+Y proponé soluciones concretas.
+
+8. Finalmente:
+
+* Dibujá una arquitectura conceptual del sistema (aunque sea en texto)
+* Explicá cuál sería el núcleo innovador de este ERP frente a los actuales
+
+No des respuestas genéricas. Pensá como si este sistema fuera a competir globalmente.
+
+---
+
+# ⚙️ 2. Ahora, lo que estás buscando realmente (el “motor tipo Unity”)
+
+Vos no querés un ERP…
+querés un **ERP Engine**.
+
+Algo así como:
+
+> “un núcleo que ya sabe cómo funciona cualquier negocio”
+
+Hoy eso está dividido en cosas como:
+
+* Odoo → modular pero pesado
+* SAP S/4HANA → potente pero rígido
+* Oracle NetSuite → cloud pero genérico
+
+Ninguno es realmente:
+👉 plug & play por rubro
+👉 rápido de implementar
+👉 centrado en “motor + plantillas inteligentes”
+
+---
+
+# 🚀 3. Qué motor “no existe bien resuelto” (tu oportunidad)
+
+Te tiro ideas de motores que serían NEXT LEVEL:
+
+### 🔹 1. Motor de Transacciones Universal
+
+Todo es:
+
+* ingreso
+* egreso
+* transformación
+
+No importa si es:
+
+* venta
+* turno
+* consumo en bar
+
+👉 todo impacta el mismo modelo contable + operativo
+
+---
+
+### 🔹 2. Motor de Eventos (Event-Driven ERP)
+
+En vez de módulos separados:
+
+> ocurre algo → todo reacciona
+
+Ej:
+
+* venta → baja stock → impacta caja → genera asiento → actualiza métricas
+
+---
+
+### 🔹 3. Motor de Plantillas por Industria
+
+Elegís:
+
+* “kiosco”
+* “peluquería”
+
+Y automáticamente:
+
+* datos
+* flujos
+* UI
+* métricas
+
+👉 listo para usar
+
+---
+
+### 🔹 4. Motor de Reglas Dinámicas (tipo “mini lenguaje”)
+
+Ej:
+
+* comisiones
+* promos
+* impuestos
+
+Sin tocar código.
+
+---
+
+### 🔹 5. Motor de Métricas en tiempo real
+
+No dashboards vacíos.
+
+Directo:
+
+* “ganaste X hoy”
+* “producto más rentable”
+* “hora pico”
+
+---
+
+# ⚠️ 4. La verdad incómoda
+
+La dificultad no está en programar esto.
+
+Está en:
+
+* definir bien el modelo base (si lo pifiás → todo se rompe)
+* no sobre-ingenierizar
+* mantener simple para el usuario final
+
+---
+
+# 💡 5. Bajada a tierra
+
+Tu idea, bien definida, sería:
+
+> “Un motor ERP basado en eventos + plantillas por industria + métricas automáticas”
+
+Eso SÍ es vendible.
+
+---
+
+Si querés, en el siguiente paso puedo:
+
+* diseñarte el **core exacto (tablas + eventos + flows)**
+* o bajarlo a stack concreto (Next.js + DB + arquitectura real para arrancar ya)
+
+Ahí pasás de idea a producto posta.
+
+---
+
+# 🧠 Respuesta de introspección
+
+## 1. Motor central del ERP
+
+El motor central debe ser un núcleo transaccional universal que trata cualquier operación como una **transacción de negocio** y la registra en un modelo unificado. Las entidades núcleo son:
+
+* Empresa / rubro / configuración
+* Usuario / rol / profesional
+* Cliente / contacto
+* Producto / servicio / categoría
+* Turno / reserva / agenda
+* Documento fiscal / comprobante
+* Movimiento de stock
+* Movimiento de caja / banco
+* Asiento contable / ledger
+* Evento de negocio
+* Métrica / indicador
+
+La relación entre contabilidad, finanzas, stock, ventas y clientes se hace a través de una **entidad transacción** y de **eventos** que normalizan cada impacto:
+
+* Una venta genera un documento fiscal, una entrada de caja, una salida de stock y un movimiento contable.
+* Un turno reservado genera una programación de agenda, una posible venta futura y un registro de cliente.
+* Un pago recibido actualiza caja y concilia con cuentas por cobrar.
+
+El modelo de datos debe ser **transaccional y referencial**:
+
+* `transaccion` con líneas (`transaction_lines`) que apuntan a stock, caja, cliente, servicio y asiento.
+* `stock_movement` con cantidad, lote, ubicación, tipo y referencia a la transacción origen.
+* `cash_movement` con método de pago, caja/banco y referencia documental.
+* `accounting_entry` con debit/credit, cuenta, cantidad y tag de rubro.
+* `event_log` con evento, entidad origen, timestamp, payload.
+
+Así todo es 100% numérico y trazable: cada cambio tiene un origen, un efecto y un rastro cruzable.
+
+## 2. Arquitectura interna
+
+Lo más adecuado es un **monolito modular con un bus de eventos interno** y lectura optimizada por CQRS cuando sea necesario.
+
+* Monolito modular: los módulos comparten la misma base de datos y librerías comunes, pero están desacoplados por capas de servicio.
+* Event-driven interno: cada módulo emite y consume eventos locales para actualizar estados secundarios.
+* CQRS ligero: comandos para escribir / consultas para leer, especialmente en dashboard y métricas.
+
+Comunicación entre módulos:
+
+* Bus interno de eventos (puede ser una cola en memoria o Redis/EventEmitter) para `venta_creada`, `turno_reservado`, `stock_actualizado`, `factura_emitida`, etc.
+* Outbox pattern para garantizar que los eventos se publiquen junto con la transacción de DB.
+* Servicios compartidos de validación, auth, config y reglas.
+
+Consistencia:
+
+* Consistencia fuerte en la operación principal (ej. crear venta y decrementar stock en la misma transacción de DB cuando sea posible).
+* Consistencia eventual para cálculos secundarios, métricas y notificaciones.
+* Reconciliación automática con procesos de verificación diaria para detectar desvíos.
+
+## 3. Sistema de eventos
+
+Eventos clave:
+
+* `venta_realizada`
+* `turno_reservado`
+* `turno_confirmado`
+* `producto_actualizado`
+* `stock_reducido`
+* `pago_recibido`
+* `factura_emitida`
+* `cliente_actualizado`
+* `recordatorio_generado`
+* `notificacion_whatsapp_enviada`
+* `asiento_generado`
+
+Cada evento actualiza módulos:
+
+* `venta_realizada` → stock, caja, contabilidad, métricas, cliente
+* `turno_reservado` → agenda, cliente, métricas de ocupación
+* `stock_reducido` → inventario, alertas de reposición
+* `factura_emitida` → fiscal, contable, ventas
+
+## 4. Verticalización
+
+El sistema debe permitir plantillas de rubro con tres capas:
+
+1. **Plantilla de rubro**: define qué módulos se habilitan y qué defaults trae.
+2. **Configuración de empresa**: overrides por cliente.
+3. **Contenido editable**: servicios, reglas, mensajes, combos.
+
+Parte configurable:
+
+* servicios y duraciones
+* políticas de precios
+* reglas de comisiones
+* workflows de agenda
+* mensajes de WhatsApp
+* KPIs mostrados
+
+Parte hardcodeada:
+
+* motor transaccional
+* esquema de eventos
+* seguridad y multitenancy
+* modelo de datos núcleo
+
+Para evitar sobrecomplejidad hay que mantener la verticalización en capas, no mezclar lógica de rubro con lógica de transporte. Solo la parte de experiencia y defaults cambia por rubro.
+
+## 5. Motor de reglas
+
+Debe existir un motor de reglas declarativas, no código, con estructuras como:
+
+* condición: `si rubro = salon_belleza y servicio = corte` 
+* acción: `aplicar comision 30%`, `crear recordatorio sms`, `generar combo 2x1`
+
+Reglas típicas:
+
+* impuestos específicos por servicio y rubro
+* comisiones por profesional
+* precios de lista y promociones temporales
+* combos y paquetes
+
+Para mantenerlo seguro se debe limitar a un mini-lenguaje con operadores simples (`y`, `o`, `>`, `==`, `contains`) y acciones predefinidas. El engine evalúa reglas cuando ocurre un evento y aplica efectos sobre la transacción.
+
+## 6. Motor de métricas
+
+Las métricas deben ser una consecuencia natural de los eventos.
+
+Cada evento escribe también:
+
+* `metric_event` con valores clave: ingreso, costo, cantidad, duración, cliente
+
+KPIs automáticos:
+
+* ventas diarias / semanales
+* ticket promedio
+* margen por servicio
+* ocupación por profesional
+* disponibilidad de turnos
+* rotación de stock y días de stock
+* clientes nuevos vs repetidos
+
+La UI no necesita configurar esos KPIs: se muestran por defecto según el rubro, con fichas relevantes.
+
+## 7. Problemas clásicos y soluciones
+
+**Rigidez**
+* Problema: ERP que obliga a seguir un solo proceso.
+* Solución: motor transaccional + plantillas + feature toggles. El usuario elige rubro y el sistema carga defaults, pero puede cambiar reglas.
+
+**Mala UX**
+* Problema: pantallas densas y difíciles.
+* Solución: mobile-first para servicios, onboarding rápido, menú slim, experiencia por rol.
+
+**Implementación lenta**
+* Problema: cada cliente requiere personalización enorme.
+* Solución: plantillas verticales, configuración de rubro y demo inmediato. Se vende como base lista para usar.
+
+## 8. Arquitectura conceptual
+
+1. `UI` (App/web/mobile) → 2. `API` → 3. `Core Engine`
+
+Core Engine:
+* Entrada de comandos / transacciones
+* Bus de eventos interno
+* Procesadores de eventos por módulo
+* Motor de reglas
+* Repositorios de datos
+* Servicio de métricas
+
+Flujo:
+
+`UI` → crea `venta`/`turno` → `Command Handler` → guarda `transacción` + `outbox` → publica `eventos` → módulos actualizan stock/caja/contabilidad/agenda/métricas → `UI` consume modelos de lectura.
+
+## Núcleo innovador frente a la competencia
+
+Lo innovador no es solo tener un ERP modular, sino tener un **motor** que ya sabe manejar:
+
+* servicios + retail como transformaciones del mismo modelo
+* eventos que disparan todos los impactos automáticamente
+* plantillas por industria con experiencia lista para usar
+* reglas declarativas que no requieren código
+* métricas automáticas sin configuración previa
+
+Eso es lo que diferencia tu propuesta de Odoo/SAP/NetSuite: no es un ERP genérico, es un motor verticalizado con arranque rápido y trazabilidad numérica.
+
+---
+
+# 🔧 Recomendación inmediata
+
+Para tu caso de peluquería, el primer paso concreto es construir:
+
+* agenda/turnos como un módulo editable
+* servicios con duración y precio
+* cliente con teléfono
+* evento `turno_reservado` + notificación WhatsApp
+* plantilla `salon_belleza` con defaults activados
+
+Después agregás reglas y métricas. Con eso ya tenés un MVP de motor de peluquería que puede escalar a otros rubros.

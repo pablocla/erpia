@@ -13,11 +13,14 @@ const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
+export const viewport = {
+  themeColor: '#2563eb',
+};
+
 export const metadata: Metadata = {
   title: 'ERP Argentina — Sistema de Gestión Integral',
   description: 'Sistema ERP integral para empresas argentinas: facturación electrónica AFIP, contabilidad, stock, ventas, compras, caja y banco.',
   manifest: '/manifest.json',
-  themeColor: '#2563eb',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -50,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="es-AR" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} font-sans antialiased`}>

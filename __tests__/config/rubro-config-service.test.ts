@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest"
 
 // ─── Mock prisma ─────────────────────────────────────────────────────────────
 vi.mock("@/lib/prisma", () => ({
@@ -26,7 +26,21 @@ vi.mock("@/lib/prisma", () => ({
 }))
 
 import { prisma } from "@/lib/prisma"
-const mockPrisma = vi.mocked(prisma)
+const mockPrisma = prisma as unknown as {
+  featureEmpresa: {
+    findUnique: Mock
+    findMany: Mock
+    upsert: Mock
+  }
+  empresa: { findUnique: Mock }
+  configuracionRubro: {
+    findUnique: Mock
+    findMany: Mock
+    upsert: Mock
+  }
+  featureRubro: { upsert: Mock }
+  rubro: { findMany: Mock }
+}
 
 import {
   isFeatureActiva,

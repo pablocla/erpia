@@ -60,7 +60,7 @@ const ventaPosSchema = z.object({
 // Helpers
 // ──────────────────────────────────────────────────────────────
 
-function calcularLinea(
+export function calcularLinea(
   precioUnitario: number,
   cantidad: number,
   porcentajeIva: number,
@@ -73,7 +73,7 @@ function calcularLinea(
   return { neto, iva, total }
 }
 
-function tipoCbteDesde(tipo: string): number {
+export function tipoCbteDesde(tipo: string): number {
   return { A: 1, B: 6, C: 11, ticket: 6 }[tipo] ?? 6
 }
 
@@ -118,6 +118,15 @@ export async function POST(request: NextRequest) {
       if (consumidorFinal) clienteId = consumidorFinal.id
     }
 
+    if (!clienteId) {
+      return NextResponse.json(
+        { error: "No se encontró un cliente válido para la venta POS. Verifique el cliente o cree un cliente Consumidor Final." },
+        { status: 400 },
+      )
+    }
+
+    const facturaClienteId = clienteId
+
     // ── 3. Siguiente número de factura ───────────────────────
     const ultimaFactura = await prisma.factura.findFirst({
       where: {
@@ -155,18 +164,16 @@ export async function POST(request: NextRequest) {
       const factura = await tx.factura.create({
         data: {
           empresaId,
-          clienteId: clienteId ?? undefined,
+          clienteId: facturaClienteId,
           tipo: data.tipoFactura === "ticket" ? "B" : data.tipoFactura,
           tipoCbte: tipoCbteDesde(data.tipoFactura),
           numero: siguienteNumero,
           puntoVenta: data.puntoVenta,
-          fecha: new Date(),
           subtotal: parseFloat(subtotal.toFixed(2)),
           iva: parseFloat(totalIva.toFixed(2)),
           total: totalVenta,
           estado: data.tipoFactura === "ticket" ? "pendiente_cae" : "emitida",
           observaciones: data.observaciones,
-          condicionPago: "contado",
           lineas: {
             create: lineasCalculadas.map((l) => ({
               productoId: l.productoId,
@@ -175,7 +182,9 @@ export async function POST(request: NextRequest) {
               precioUnitario: l.precioUnitario,
               porcentajeIva: l.porcentajeIva,
               descuento: l.descuento,
-              subtotal: l.total,
+              subtotal: l.neto,
+              iva: l.iva,
+              total: l.total,
             })),
           },
         },
@@ -201,11 +210,7 @@ export async function POST(request: NextRequest) {
             productoId: l.productoId,
             tipo: "salida",
             cantidad: l.cantidad,
-            stockAnterior: producto.stock,
-            stockNuevo,
             motivo: `Venta POS Factura ${data.tipoFactura}-${String(data.puntoVenta).padStart(5, "0")}-${String(siguienteNumero).padStart(8, "0")}`,
-            referenciaId: factura.id,
-            referenciaTipo: "factura",
           },
         })
       }
@@ -246,14 +251,15 @@ export async function POST(request: NextRequest) {
       if (pagoCtaCte && clienteId) {
         await tx.cuentaCobrar.create({
           data: {
-            empresaId,
             clienteId,
             facturaId: factura.id,
-            monto: pagoCtaCte.monto,
+            montoOriginal: pagoCtaCte.monto,
+            montoPagado: 0,
             saldo: pagoCtaCte.monto,
+            fechaEmision: new Date(),
             fechaVencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             estado: "pendiente",
-            descripcion: `Venta POS FAC-${data.tipoFactura}-${siguienteNumero}`,
+            observaciones: `Venta POS FAC-${data.tipoFactura}-${siguienteNumero}`,
           },
         })
       }
@@ -277,7 +283,7 @@ export async function POST(request: NextRequest) {
         totalPagado,
         vuelto,
         estado: result.estado,
-        lineas: result.lineas.length,
+        lineas: lineasCalculadas.length,
       },
       { status: 201 },
     )

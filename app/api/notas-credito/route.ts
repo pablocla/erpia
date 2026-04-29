@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { onNCEmitida } from "@/lib/contabilidad/factura-hooks"
@@ -16,10 +16,12 @@ const ncSchema = z.object({
   items: z
     .array(
       z.object({
-        descripcion: z.string(),
+        descripcion: z.string().optional(),
         cantidad: z.number().positive(),
-        precioUnitario: z.number().positive(),
-        porcentajeIva: z.number().min(0).max(100),
+        precioUnitario: z.number().positive().optional(),
+        porcentajeIva: z.number().min(0).max(100).optional(),
+        productoId: z.number().int().positive().optional(),
+        lineaFacturaId: z.number().int().positive().optional(),
       }),
     )
     .optional(),
@@ -80,8 +82,8 @@ export async function POST(request: NextRequest) {
 
     // Validate original invoice
     const factura = await prisma.factura.findUnique({
-      where: { id: facturaId },
-      include: { lineas: true, cliente: true, empresa: true },
+      where: { id: facturaId, empresaId: ctx.auth.empresaId },
+      include: { lineas: true, cliente: true },
     })
 
     if (!factura) {
@@ -96,41 +98,100 @@ export async function POST(request: NextRequest) {
     const tipoCbteMap: Record<string, number> = { A: 3, B: 8, C: 13 }
     const tipoCbte = tipoCbteMap[factura.tipo] ?? 8
 
-    // Calculate totals — use override items (partial NC) or full invoice
-    let subtotal: number
-    let iva: number
+    const items: Array<{
+      descripcion: string
+      cantidad: number
+      precioUnitario: number
+      porcentajeIva: number
+      productoId?: number
+      lineaFacturaId?: number
+    }> = []
 
     if (itemsOverride && itemsOverride.length > 0) {
-      subtotal = 0
-      iva = 0
       for (const item of itemsOverride) {
-        const lineaSub = item.cantidad * item.precioUnitario
-        subtotal += lineaSub
-        iva += (lineaSub * item.porcentajeIva) / 100
+        const originalLinea = item.lineaFacturaId
+          ? factura.lineas.find((linea) => linea.id === item.lineaFacturaId)
+          : undefined
+
+        if (item.lineaFacturaId && !originalLinea) {
+          return NextResponse.json(
+            { error: `Línea de factura ${item.lineaFacturaId} no encontrada en la factura` },
+            { status: 400 },
+          )
+        }
+
+        const precioUnitario = item.precioUnitario ?? Number(originalLinea?.precioUnitario ?? NaN)
+        const porcentajeIva = item.porcentajeIva ?? Number(originalLinea?.porcentajeIva ?? NaN)
+
+        if (Number.isNaN(precioUnitario) || Number.isNaN(porcentajeIva)) {
+          return NextResponse.json(
+            {
+              error:
+                "Cada línea de NC debe contener precioUnitario y porcentajeIva o referenciar una línea de factura existente",
+            },
+            { status: 400 },
+          )
+        }
+
+        if (originalLinea && item.cantidad > Number(originalLinea.cantidad)) {
+          return NextResponse.json(
+            {
+              error: `La cantidad de la línea de NC (${item.cantidad}) no puede superar la cantidad de la factura (${originalLinea.cantidad})`,
+            },
+            { status: 400 },
+          )
+        }
+
+        items.push({
+          descripcion: item.descripcion ?? originalLinea?.descripcion ?? "Item NC",
+          cantidad: item.cantidad,
+          precioUnitario,
+          porcentajeIva,
+          productoId: item.productoId ?? originalLinea?.productoId,
+          lineaFacturaId: item.lineaFacturaId,
+        })
       }
     } else {
-      subtotal = factura.subtotal
-      iva = factura.iva
+      for (const linea of factura.lineas) {
+        items.push({
+          descripcion: linea.descripcion,
+          cantidad: Number(linea.cantidad),
+          precioUnitario: Number(linea.precioUnitario),
+          porcentajeIva: Number(linea.porcentajeIva),
+          productoId: linea.productoId,
+          lineaFacturaId: linea.id,
+        })
+      }
+    }
+
+    let subtotal = 0
+    let iva = 0
+
+    for (const item of items) {
+      const lineaSub = item.cantidad * item.precioUnitario
+      subtotal += lineaSub
+      iva += (lineaSub * item.porcentajeIva) / 100
     }
 
     const total = Math.round((subtotal + iva) * 100) / 100
 
     // Check NC doesn't exceed remaining invoice balance
     const existingNCs = await prisma.notaCredito.aggregate({
-      where: { facturaId, estado: { not: "anulada" } },
+      where: { facturaId, estado: { not: "anulada" }, empresaId: ctx.auth.empresaId },
       _sum: { total: true },
     })
-    const totalNCPrevias = existingNCs._sum.total ?? 0
-    if (totalNCPrevias + total > factura.total) {
+    const totalNCPrevias = Number(existingNCs._sum.total ?? 0)
+    const facturaTotal = Number(factura.total)
+    if (totalNCPrevias + total > facturaTotal) {
       return NextResponse.json(
-        { error: `El total de NC ($${totalNCPrevias + total}) excede el total de la factura ($${factura.total})` },
+        { error: `El total de NC ($${totalNCPrevias + total}) excede el total de la factura ($${facturaTotal})` },
         { status: 400 },
       )
     }
 
     // Get next NC number
     const ultimaNC = await prisma.notaCredito.findFirst({
-      where: { tipoCbte, puntoVenta: factura.puntoVenta },
+      where: { tipoCbte, puntoVenta: factura.puntoVenta, empresaId: ctx.auth.empresaId },
       orderBy: { numero: "desc" },
     })
     const nuevoNumero = (ultimaNC?.numero ?? 0) + 1
@@ -149,6 +210,19 @@ export async function POST(request: NextRequest) {
         facturaId: factura.id,
         clienteId: factura.clienteId,
         empresaId: ctx.auth.empresaId,
+        lineas: {
+          create: items.map((item) => ({
+            descripcion: item.descripcion,
+            cantidad: item.cantidad,
+            precioUnitario: item.precioUnitario,
+            porcentajeIva: item.porcentajeIva,
+            subtotal: item.cantidad * item.precioUnitario,
+            iva: (item.cantidad * item.precioUnitario * item.porcentajeIva) / 100,
+            total: item.cantidad * item.precioUnitario * (1 + item.porcentajeIva / 100),
+            productoId: item.productoId ?? undefined,
+            lineaFacturaId: item.lineaFacturaId ?? undefined,
+          })),
+        },
       },
     })
 

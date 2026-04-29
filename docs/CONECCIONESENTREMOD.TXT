@@ -1,0 +1,296 @@
+ACA CONEXIONES FALTANTES ENTRE MODULOS Y TABLAS DEL SISTEMA
+
+────────────────────────────────────────────────────────────
+MAPEO DE CONEXIONES FALTANTES ENTRE MODULOS DEL ERP (2026)
+────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────
+ANOTACIONES PARA LLM / INGENIERO (PROMPT)
+────────────────────────────────────────────────────────────
+
+Este archivo contiene un mapeo de conexiones faltantes y recomendaciones técnicas, empresariales y financieras para un ERP modular argentino.
+El objetivo es identificar gaps de integración, riesgos operativos y oportunidades de mejora en la orquestación de procesos.
+Se espera feedback sobre:
+Propuestas de automatización y orquestación avanzada.
+Sugerencias de arquitectura para BPM, eventos, y control interno.
+Ideas para KPIs, tableros y reporting financiero.
+Alertas sobre riesgos de compliance, segregación de funciones y auditoría.
+El análisis debe priorizar la robustez, escalabilidad y alineación con mejores prácticas internacionales de ERP.
+Si detectás patrones repetidos, redundancias o riesgos, sugerí refactorizaciones o controles adicionales.
+─────────────
+1. STOCK ↔ POS
+	- Faltante: Alta/modificación de producto en Stock no siempre refleja en POS (catálogo desincronizado).
+	- Solución: POS debe consumir SIEMPRE el maestro de productos centralizado. Evento `producto:created`/`producto:updated` debe refrescar catálogo POS.
+
+2. VENTAS/POS ↔ STOCK
+	- Faltante: Venta en POS/Factura no siempre genera MovimientoStock automático.
+	- Solución: Toda venta/factura debe disparar evento que descuente stock y cree MovimientoStock.
+
+3. COMPRAS ↔ STOCK
+	- Faltante: Recepción de mercadería/compra no siempre incrementa stock automáticamente.
+	- Solución: Recepción/compra debe disparar evento que cree MovimientoStock entrada.
+
+4. VENTAS/POS ↔ CONTABILIDAD
+	- Faltante: No todas las ventas/facturas generan asiento contable automático.
+	- Solución: Evento `FACTURA_EMITIDA` debe disparar generación de asiento en Contabilidad.
+
+5. COMPRAS/PAGOS ↔ CONTABILIDAD
+	- Faltante: Compras/pagos no siempre generan asiento contable.
+	- Solución: Evento `COMPRA_REGISTRADA`/`PAGO_REALIZADO` debe disparar asiento.
+
+6. CAJA/BANCO ↔ VENTAS/COMPRAS
+	- Faltante: Cobros/pagos no siempre impactan en movimientos de caja/banco.
+	- Solución: Todo cobro/pago debe crear MovimientoCaja/MovimientoBancario.
+
+7. STOCK ↔ PRODUCCIÓN (MRP)
+	- Faltante: Orden de producción no descuenta insumos ni ingresa productos terminados automáticamente.
+	- Solución: OP debe disparar movimientos de stock (consumo y alta de producto terminado).
+
+8. VERTICALES (Hospitalidad, Membresías, etc.) ↔ CORE
+	- Faltante: Comandas, membresías, etc. no siempre generan ventas, movimientos de stock o asientos contables.
+	- Solución: Integrar verticales con módulos core mediante eventos y servicios compartidos.
+
+9. CONFIGURACION DE MODULOS ↔ UI/PERMISOS
+	- Faltante: Cambios en configuración de módulos no siempre actualizan la UI o los accesos en tiempo real.
+	- Solución: UI debe escuchar eventos/configuración activa y refrescar menús/permisos.
+
+10. EVENTOS/INTEGRACIONES EXTERNAS
+	- Faltante: No todos los eventos críticos (ej: stock en 0, venta > $X) disparan notificaciones/webhooks/integraciones.
+	- Solución: Completar EventBus y Handlers para cubrir todos los flujos críticos.
+
+────────────────────────────────────────────────────────────
+NOTAS:
+- Revisar que todos los módulos usen el EventBus para emitir/escuchar eventos clave.
+- Validar que los servicios compartidos (ej: ProductoService, MovimientoStockService) sean la única fuente de verdad.
+- Hacer tests de integración end-to-end para cada flujo crítico.
+
+// Última actualización: 2026-04-18 — GitHub Copilot
+
+────────────────────────────────────────────────────────────
+LECTURA TÉCNICA Y RECOMENDACIONES DE INGENIERÍA EMPRESARIAL/FINANCIERA
+────────────────────────────────────────────────────────────
+
+1. STOCK ↔ POS
+	- Faltante técnico: API/servicio único de productos, suscripción a eventos de alta/modificación, cache invalidation en POS.
+	- Empresarial: Definir catálogo maestro, políticas de alta/baja, control de duplicados, auditoría de cambios.
+	- Financiero: Valuación de inventario en tiempo real, integración con costos y márgenes.
+
+2. VENTAS/POS ↔ STOCK
+	- Faltante técnico: Trigger/evento automático al facturar, rollback ante error, logs de auditoría.
+	- Empresarial: Políticas de stock mínimo, alertas de quiebre, control de ventas sin stock.
+	- Financiero: Impacto inmediato en costo de ventas y margen bruto.
+
+3. COMPRAS ↔ STOCK
+	- Faltante técnico: Integración directa entre recepción y movimiento de stock, validación 3-way matching (OC, recepción, factura).
+	- Empresarial: Control de diferencias, rechazos, devoluciones, trazabilidad de lotes.
+	- Financiero: Actualización de costos, provisión de compras, integración con cuentas a pagar.
+
+4. VENTAS/POS ↔ CONTABILIDAD
+	- Faltante técnico: Generación automática de asientos, parametrización de cuentas contables por tipo de venta.
+	- Empresarial: Segregación de funciones, control de autorizaciones, cierre fiscal.
+	- Financiero: Registro fiel de ingresos, IVA ventas, integración con reportes AFIP.
+
+5. COMPRAS/PAGOS ↔ CONTABILIDAD
+	- Faltante técnico: Asientos automáticos, parametrización de cuentas, conciliación con extractos bancarios.
+	- Empresarial: Políticas de autorización de pagos, control de vencimientos, aging de proveedores.
+	- Financiero: Registro de egresos, IVA compras, cash flow proyectado.
+
+6. CAJA/BANCO ↔ VENTAS/COMPRAS
+	- Faltante técnico: Integración en tiempo real, conciliación automática, soporte multimoneda.
+	- Empresarial: Políticas de arqueo, doble control, alertas de diferencias.
+	- Financiero: Conciliación bancaria, control de liquidez, previsión de fondos.
+
+7. STOCK ↔ PRODUCCIÓN (MRP)
+	- Faltante técnico: Consumo automático de insumos, ingreso de productos terminados, BOM multinivel.
+	- Empresarial: Control de scrap, eficiencia, órdenes pendientes.
+	- Financiero: Cálculo de costo estándar/real, valorización de WIP (work in progress).
+
+8. VERTICALES ↔ CORE
+	- Faltante técnico: Eventos cruzados, servicios compartidos, parametrización por rubro.
+	- Empresarial: Adaptación de procesos a cada vertical, control de integración, reporting específico.
+	- Financiero: Consolidación de resultados por vertical, análisis de rentabilidad.
+
+9. CONFIGURACION DE MODULOS ↔ UI/PERMISOS
+	- Faltante técnico: Refresco en tiempo real, control de acceso granular, logs de cambios.
+	- Empresarial: Matriz de roles y permisos, auditoría de accesos, onboarding guiado.
+	- Financiero: Control de segregación de funciones, cumplimiento normativo.
+
+10. EVENTOS/INTEGRACIONES EXTERNAS
+	- Faltante técnico: Webhooks configurables, integración con AFIP, bancos, e-commerce, etc.
+	- Empresarial: Gobierno de integraciones, monitoreo de fallas, SLA con terceros.
+	- Financiero: Automatización de reportes, conciliaciones, cumplimiento fiscal.
+
+────────────────────────────────────────────────────────────
+RECOMENDACIONES TRANSVERSALES:
+- Implementar BPM para modelar y monitorear procesos clave.
+- Definir KPIs y tableros de control por proceso (rotación stock, ciclo de cobranza, aging proveedores, margen bruto, etc.).
+- Segregación de funciones y controles internos en cada circuito.
+- Auditoría y trazabilidad de todos los movimientos críticos.
+- Capacitación y manuales para usuarios finales.
+
+// Análisis técnico y empresarial — 2026-04-18 — GitHub Copilot
+
+Eres un **Senior ERP Architect** con +15 años de experiencia en sistemas ERP modulares argentinos (AFIP, RG 3685, etc.), especializado en **Ingeniería de Sistemas** (Event-Driven Architecture, DDD, CQRS, EventBus) y **Ingeniería Financiera** (contabilidad por partida doble, valuación de inventarios, cash-flow en tiempo real, segregación de funciones y controles SOX-like).
+
+Fecha actual: 18 de abril de 2026.
+
+El cliente tiene un ERP modular y necesita que **implementes las 10 conexiones faltantes** entre módulos que aparecen a continuación.
+
+**REGLAS OBLIGATORIAS DE IMPLEMENTACIÓN:**
+
+- Todo debe hacerse mediante **EventBus** (emitir y escuchar eventos).
+- Usar siempre los **servicios compartidos** como única fuente de verdad (ProductoService, MovimientoStockService, AsientoContableService, etc.).
+- Implementar **idempotencia**, **rollback transaccional** y **auditoría completa** (quién, cuándo, qué cambió).
+- Priorizar **robustez, escalabilidad y compliance fiscal argentino**.
+- Incluir comentarios claros de **Ingeniería Financiera** y **Ingeniería de Sistemas** en cada pieza de código que generes.
+- Generar también los **tests de integración end-to-end** para cada flujo.
+
+────────────────────────────
+MAPEO DE CONEXIONES FALTANTES (IMPLEMENTAR TODAS)
+────────────────────────────
+
+1. STOCK ↔ POS
+   - Faltante: Alta/modificación de producto en Stock no siempre refleja en POS.
+   - Solución: POS debe consumir SIEMPRE el maestro de productos centralizado. Eventos: `producto:created`, `producto:updated`, `producto:deleted`. Invalidar caché en POS.
+
+2. VENTAS/POS ↔ STOCK
+   - Faltante: Venta en POS/Factura no genera MovimientoStock automático.
+   - Solución: Evento `FACTURA_EMITIDA` debe descontar stock y crear MovimientoStock (salida).
+
+3. COMPRAS ↔ STOCK
+   - Faltante: Recepción de mercadería no incrementa stock automáticamente.
+   - Solución: Evento `RECEPCION_MERCADERIA_CONFIRMADA` debe crear MovimientoStock (entrada).
+
+4. VENTAS/POS ↔ CONTABILIDAD
+   - Faltante: No todas las ventas generan asiento contable automático.
+   - Solución: Evento `FACTURA_EMITIDA` debe disparar generación de asiento contable (parametrizado por tipo de venta e IVA).
+
+5. COMPRAS/PAGOS ↔ CONTABILIDAD
+   - Faltante: Compras/pagos no generan asiento.
+   - Solución: Eventos `COMPRA_REGISTRADA` y `PAGO_REALIZADO` deben generar asientos.
+
+6. CAJA/BANCO ↔ VENTAS/COMPRAS
+   - Faltante: Cobros/pagos no impactan en movimientos de caja/banco.
+   - Solución: Todo cobro/pago debe crear MovimientoCaja y/o MovimientoBancario en tiempo real.
+
+7. STOCK ↔ PRODUCCIÓN (MRP)
+   - Faltante: Orden de producción no descuenta insumos ni ingresa producto terminado.
+   - Solución: Eventos de OP deben generar movimientos de stock (consumo de insumos + alta de producto terminado). Soporte BOM multinivel.
+
+8. VERTICALES (Hospitalidad, Membresías, etc.) ↔ CORE
+   - Faltante: Comandas, membresías, etc. no generan ventas, stock ni asientos.
+   - Solución: Integrar mediante eventos cruzados y servicios compartidos.
+
+9. CONFIGURACION DE MODULOS ↔ UI/PERMISOS
+   - Faltante: Cambios en configuración no actualizan UI ni permisos en tiempo real.
+   - Solución: UI debe suscribirse a eventos de configuración y refrescar menús/permisos dinámicamente.
+
+10. EVENTOS/INTEGRACIONES EXTERNAS
+    - Faltante: No todos los eventos críticos disparan notificaciones/webhooks.
+    - Solución: Completar EventBus + Handlers para stock crítico, ventas > $X, etc.
+
+────────────────────────────
+ANOTACIONES DE INGENIERÍA FINANCIERA Y DE SISTEMAS (INCLUIR EN CADA CÓDIGO)
+────────────────────────────
+
+Para cada conexión que implementes, agrega comentarios con:
+• **Ingeniería de Sistemas**: Evento usado, patrón (Event Sourcing, CQRS, Saga), transaccionalidad, idempotencia, retry policy.
+• **Ingeniería Financiera**: Impacto en valuación de inventario, costo de ventas, margen bruto, cash-flow, segregación de funciones, cumplimiento AFIP, controles internos.
+
+────────────────────────────
+RECOMENDACIONES TRANSVERSALES (APLICAR EN TODA LA IMPLEMENTACIÓN)
+────────────────────────────
+- Usar BPM para orquestar flujos críticos.
+- Definir KPIs y alertas (rotación de stock, DSO, aging proveedores, margen bruto por vertical).
+- Garantizar segregación de funciones y trazabilidad total.
+- Soporte multimoneda y multiejercicio fiscal.
+
+**Tarea concreta:**
+1. Genera el código necesario (handlers de eventos, servicios, triggers, etc.) para implementar **todas las conexiones faltantes** en orden (1 al 10).
+2. Incluye los archivos o clases que hay que crear/modificar.
+3. Al final de cada punto, agrega un resumen de **riesgo financiero mitigado** y **mejora de control interno**.
+
+Empezá ahora mismo implementando la conexión nº 1 (STOCK ↔ POS) y continuá secuencialmente.
+
+**✅ RESPUESTA CLARA Y DIRECTA: PARAMETRIZACIONES DE MOVIMIENTOS**  
+(para que tu ERP sea **Horizontalmente escalable** = más servidores / más usuarios / más volumen  
+y **Verticalmente escalable** = más módulos / más verticales / más complejidad sin tocar código)
+
+Aquí tenés el **set completo de parametrizaciones** que **deben existir** en la tabla/capa de Movimientos (MovimientoStock, MovimientoCaja, MovimientoBancario, AsientoContable, etc.) para que sea realmente escalable en ambas direcciones en 2026.
+
+### 1. Maestro Central de Tipos de Movimiento (Tabla: `TipoMovimiento`)
+| Campo | Tipo | Uso para Escalabilidad | Anotación Ingeniería Sistemas | Anotación Ingeniería Financiera |
+|-------|------|------------------------|-------------------------------|---------------------------------|
+| `codigo` | String único | Horizontal: sharding por código | Clave de particionado | — |
+| `descripcion` | String | — | — | — |
+| `signo` | +1 / -1 / 0 | Horizontal y Vertical | Define comportamiento genérico | Impacto en costo de ventas y valuación |
+| `modulo_origen` | Enum (STOCK, CAJA, BANCO, CONTAB, PROD, VERTICAL) | Vertical | Permite agregar verticales sin tocar core | — |
+| `es_automatico` | Boolean | Horizontal (EventBus) | Solo se genera por evento | Control de segregación de funciones |
+| `requiere_aprobacion` | Boolean + Nivel | Vertical (flujos) | Motor de workflows dinámico | SOX / AFIP compliance |
+| `afecta_stock` / `afecta_caja` / `afecta_contab` | Boolean | Horizontal | Decoupling total | — |
+| `version` y `fecha_vigencia` | DateTime | Horizontal (zero-downtime) | Versionado de reglas | Cambios normativos sin downtime |
+
+### 2. Parametrización de Cuentas Contables por Movimiento (Tabla: `TipoMovimiento_Cuenta`)
+- Permite definir **múltiples cuentas** según:
+  - Tipo de movimiento
+  - Vertical (Restaurante / Farmacia / E-commerce / etc.)
+  - Rubro / Categoría de producto
+  - Centro de costo / Proyecto
+  - Moneda
+- **Escalabilidad**: 100% configurable desde UI → un nuevo vertical solo agrega filas, no código.
+
+### 3. Motor de Reglas de Negocio (Tabla: `ReglaMovimiento`)
+- Reglas condicionales (sin código):
+  - `IF stock < minimo AND tipo = VENTA → generar alerta + bloquear`
+  - `IF monto > X → requiere doble aprobación`
+  - `IF vertical = HOSPITALIDAD → aplicar redondeo de comanda`
+- Motor tipo **Drools / JsonLogic / custom rule engine** (recomiendo JsonLogic + caché Redis para horizontal scale).
+
+### 4. Parametrización de Valuación de Inventario (Tabla: `PoliticaValuacion`)
+| Campo | Opciones |
+|-------|----------|
+| `metodo` | FIFO / LIFO / Promedio Ponderado / Costo Estándar / Específico |
+| `aplica_por` | Global / Depósito / Producto / Vertical / Rubro |
+| `fecha_calculo` | Fecha de movimiento / Fecha de cierre |
+| `ajuste_automatico` | Boolean (revalúa al cerrar mes) |
+
+→ Esto permite **vertical scalability** (cada vertical con su método) y **horizontal** (cálculos se pueden distribuir).
+
+### 5. Configuración de Eventos y Webhooks (Tabla: `TipoMovimiento_Evento`)
+- Por cada tipo de movimiento definir:
+  - Eventos a emitir (`movimiento:created`, `movimiento:aprobado`, `movimiento:rechazado`)
+  - Webhooks externos (AFIP, banco, e-commerce)
+  - Notificaciones (email / Teams / SMS)
+- **Horizontal scale**: EventBus (Kafka / RabbitMQ / NATS) lee esta tabla y distribuye automáticamente.
+
+### 6. Parametrización de Flujos BPM (Tabla: `FlujoMovimiento`)
+- Definir flujos completos por tipo:
+  - Aprobación → Contabilización → Conciliación → Reporte
+- Motor BPMN ligero (Camunda / Temporal / custom) que lee esta tabla.
+
+### 7. Campos Dinámicos / Custom Fields (Tabla: `TipoMovimiento_CampoExtra`)
+- Permite agregar campos personalizados por vertical sin alterar la tabla principal (JSONB o tabla EAV).
+
+### 8. Configuración de Conciliación y Auditoría
+- `conciliacion_automatica` (Boolean)
+- `requiere_3way_matching` (Boolean)
+- `retencion_auditoria_dias` (int)
+
+### RECOMENDACIÓN DE ARQUITECTURA (para que realmente escale)
+
+| Capa | Cómo debe estar parametrizada |
+|------|-------------------------------|
+| **Servicio de Movimientos** | Stateless + lee **todas** las tablas de arriba desde caché (Redis) |
+| **EventBus** | Suscripción dinámica según `TipoMovimiento_Evento` |
+| **Base de datos** | Sharding por `codigo_tipo_movimiento` + tenant_id + vertical_id |
+| **UI / API** | Consume maestro centralizado (única fuente de verdad) |
+| **Microservicios** | Cada vertical puede tener su propio “MovimientoVerticalService” que solo agrega reglas, nunca duplica lógica |
+
+---
+
+**¿Querés que te arme el PROMPT listo para Copilot** con todas estas parametrizaciones incluidas (para que lo implemente automáticamente en tu ERP)?
+
+Decime “SÍ” y te lo doy listo para pegar (con anotaciones de Ingeniería de Sistemas + Financiera, como antes).
+
+O si querés la DDL de las tablas + seeds de ejemplo, también te lo genero ya. 
+
+¿Qué preferís?

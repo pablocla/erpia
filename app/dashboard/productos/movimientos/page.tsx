@@ -125,11 +125,11 @@ export default function MovimientosStockPage() {
             data={filtrados}
             columns={[
               { key: "createdAt", header: "Fecha", sortable: true, cell: (m) => <span className="text-muted-foreground text-xs">{new Date(m.createdAt).toLocaleDateString("es-AR")}</span> },
-              { key: "producto" as any, header: "Producto", cell: (m) => <><span className="font-medium">{m.producto.nombre}</span><span className="text-xs text-muted-foreground ml-2">{m.producto.codigo}</span></>, exportFn: (m) => m.producto.nombre },
+              { key: "productoNombre", header: "Producto", cell: (m) => <><span className="font-medium">{m.producto.nombre}</span><span className="text-xs text-muted-foreground ml-2">{m.producto.codigo}</span></>, exportFn: (m) => m.producto.nombre },
               { key: "tipo", header: "Tipo", cell: (m) => { const conf = TIPO_CONFIG[m.tipo] ?? { color: "", badge: "secondary" as const }; return <Badge variant={conf.badge} className="text-xs capitalize">{m.tipo.replace("_", " ")}</Badge> } },
               { key: "motivo", header: "Motivo", cell: (m) => <span className="text-xs text-muted-foreground">{m.motivo ?? "—"}</span> },
               { key: "cantidad", header: "Cantidad", align: "right", sortable: true, cell: (m) => { const conf = TIPO_CONFIG[m.tipo] ?? { color: "" }; return <span className={`font-bold tabular-nums ${conf.color}`}>{m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}</span> } },
-              { key: "producto" as any, header: "Stock actual", align: "right", cell: (m) => <span className="font-bold tabular-nums">{m.producto.stock}</span>, exportFn: (m) => String(m.producto.stock) },
+              { key: "productoStock", header: "Stock actual", align: "right", cell: (m) => <span className="font-bold tabular-nums">{m.producto.stock}</span>, exportFn: (m) => String(m.producto.stock) },
             ] as DataTableColumn<Movimiento>[]}
             rowKey="id"
             searchPlaceholder="Buscar producto..."

@@ -145,19 +145,25 @@ export async function POST(request: NextRequest) {
 
       // 1. Cerrar caja abierta si la hay
       if (caja) {
-        const ingresos = caja.movimientos.filter((m) => m.tipo === "ingreso").reduce((s, m) => s + m.monto, 0)
-        const egresos  = caja.movimientos.filter((m) => m.tipo === "egreso").reduce((s, m) => s + m.monto, 0)
-        const saldoFinal = caja.saldoInicial + ingresos - egresos
+        const montoA = (value: unknown) => Number(value ?? 0)
+
+        const ingresos = caja.movimientos
+          .filter((m) => m.tipo === "ingreso")
+          .reduce((s, m) => s + montoA(m.monto), 0)
+        const egresos = caja.movimientos
+          .filter((m) => m.tipo === "egreso")
+          .reduce((s, m) => s + montoA(m.monto), 0)
+        const saldoFinal = montoA(caja.saldoInicial) + ingresos - egresos
 
         const porMedio = (medio: string) =>
           caja!.movimientos.filter((m) => m.medioPago === medio)
-            .reduce((s, m) => s + (m.tipo === "ingreso" ? m.monto : -m.monto), 0)
+            .reduce((s, m) => s + (m.tipo === "ingreso" ? montoA(m.monto) : -montoA(m.monto)), 0)
 
-        const sistemaEfectivo = caja.saldoInicial + porMedio("efectivo")
-        const sistemaTarjeta  = porMedio("tarjeta_debito") + porMedio("tarjeta_credito")
-        const sistemaTransf   = porMedio("transferencia")
-        const sistemaQR       = porMedio("qr")
-        const sistemaCheque   = porMedio("cheque")
+        const sistemaEfectivo = montoA(caja.saldoInicial) + porMedio("efectivo")
+        const sistemaTarjeta = porMedio("tarjeta_debito") + porMedio("tarjeta_credito")
+        const sistemaTransf = porMedio("transferencia")
+        const sistemaQR = porMedio("qr")
+        const sistemaCheque = porMedio("cheque")
 
         const totalDeclarado =
           (data.arqueoEfectivo      ?? sistemaEfectivo) +

@@ -37,15 +37,19 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isHydrated: false,
 
-      login: (token, user) =>
-        set({ token, user, isAuthenticated: true }),
+      login: (token, user) => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", token)
+        }
+        set({ token, user, isAuthenticated: true })
+      },
 
       logout: () => {
         set({ token: null, user: null, isAuthenticated: false })
-        // Clean up any legacy keys
         if (typeof window !== "undefined") {
           localStorage.removeItem("token")
           localStorage.removeItem("user")
+          localStorage.removeItem("erp-auth")
         }
       },
 
@@ -73,7 +77,23 @@ export const useAuthStore = create<AuthState>()(
 
 /** Helper: get token for API calls (works in any component) */
 export function getToken(): string | null {
-  return useAuthStore.getState().token
+  const stateToken = useAuthStore.getState().token
+  if (stateToken) return stateToken
+
+  if (typeof window === "undefined") return null
+
+  const legacyToken = window.localStorage.getItem("token")
+  if (legacyToken) return legacyToken
+
+  const persisted = window.localStorage.getItem("erp-auth")
+  if (!persisted) return null
+
+  try {
+    const parsed = JSON.parse(persisted)
+    return typeof parsed?.token === "string" ? parsed.token : null
+  } catch {
+    return null
+  }
 }
 
 /** Helper: get auth headers for fetch */

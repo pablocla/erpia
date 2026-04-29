@@ -1,0 +1,53 @@
+Eres un arquitecto de sistemas ERP especializado en retail con más de 15 años de experiencia en implementaciones de sistemas multirubro (múltiples líneas de negocio, categorías de productos y sucursales).
+
+Realiza un **análisis funcional completo** y un **análisis detallado de conexiones e integraciones entre módulos** de un Sistema ERP Retail diseñado específicamente para **parametrización multirubro**.
+
+Requisitos obligatorios que debe cumplir el análisis:
+- Máxima coherencia, consistencia y herencia de campos en todo el sistema.
+- Parametrización multirubro con herencia jerárquica (Global → Empresa → Sucursal → Rubro/Categoría → Punto de Venta → Usuario).
+- Las Notas de Crédito DEBEN poder llamar/referenciar directamente a la Factura que se desea anular (o parcialmente anular), heredando automáticamente todos los campos relevantes (cliente, artículos, precios, impuestos, descuentos, etc.).
+- Todo el sistema debe garantizar integridad referencial, trazabilidad y consistencia de datos.
+
+Estructura exacta que quiero que sigas en tu respuesta:
+
+1. **Visión General del Sistema ERP Retail Multirubro**
+   - Objetivo del ERP
+   - Módulos principales (lista completa y justificada)
+
+2. **Módulos del Sistema** (para cada módulo incluye):
+   - Descripción funcional detallada
+   - Entidades/tablas principales
+   - Campos clave y su herencia multirubro
+   - Parametrización específica del módulo (nivel Global, Empresa, Sucursal, Rubro, etc.)
+
+3. **Matriz de Conexiones e Integraciones entre Módulos**
+   - Tabla o diagrama Mermaid que muestre cómo se comunican los módulos (flujos bidireccionales, triggers, eventos).
+   - Ejemplo: Ventas → Facturación → Contabilidad → Inventario → Caja, etc.
+
+4. **Parametrización Multirubro y Herencia de Campos**
+   - Modelo de herencia jerárquica completo (con niveles y reglas de sobrescritura).
+   - Ejemplos concretos de herencia de campos (cliente, artículo, impuestos, precios, descuentos, listas de precios, etc.).
+   - Tabla resumen de parámetros críticos y su nivel de aplicación.
+
+5. **Flujo Específico de Notas de Crédito y Anulación de Facturas**
+   - Diagrama detallado del proceso (desde la búsqueda de la factura hasta la generación de la NC).
+   - Reglas de negocio obligatorias:
+     - La NC debe poder seleccionar una o varias facturas (total o parcial).
+     - Herencia automática de todos los datos de la factura (artículos, cantidades, precios, impuestos, descuentos, cliente, sucursal, rubro, etc.).
+     - Control de stock, contabilidad y caja en tiempo real.
+     - Estados posibles (borrador, pendiente, aprobada, rechazada).
+   - Validaciones de coherencia y consistencia.
+
+6. **Reglas de Coherencia y Consistencia Globales del Sistema**
+   - Listado de reglas transversales (integridad referencial, auditoría, trazabilidad, bloqueos por rubro, etc.).
+
+7. **Diagramas Técnicos (usa Mermaid)**
+   - Diagrama de módulos y conexiones
+   - Diagrama de herencia multirubro
+   - Diagrama de flujo completo de Nota de Crédito vs Factura
+
+8. **Recomendaciones de Mejores Prácticas**
+   - Sugerencias de arquitectura (microservicios o monolito modular, base de datos, etc.).
+   - Posibles tablas maestras y tablas transaccionales.
+
+Genera todo el documento de forma profesional, clara, estructurada y lista para usar como especificación funcional para desarrolladores. Usa negritas, tablas Markdown y bloques de código Mermaid donde corresponda. Sé extremadamente detallado y no omitas nada.

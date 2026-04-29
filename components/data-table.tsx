@@ -383,7 +383,7 @@ export function DataTable<T>({
                 <TableHead className="w-10">
                   <Checkbox
                     checked={allSelected}
-                    indeterminate={someSelected && !allSelected}
+                    indeterminate={someSelected && !allSelected ? true : undefined}
                     onCheckedChange={toggleSelectAll}
                     aria-label="Seleccionar todo"
                   />

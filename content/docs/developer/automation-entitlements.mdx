@@ -1,0 +1,88 @@
+---
+title: "Entitlements Automation"
+description: "SKU comerciales, suscripciones por empresa y límites de uso mensual."
+sidebar_position: 6
+tags: ["developer", "platform", "automation", "billing"]
+audience: developer
+layer: 5-codigo
+last_verified: 2026-06-19
+status: completo
+---
+
+# Entitlements comerciales — Automation Hub
+
+NOP gobierna el acceso al Automation Hub con una cascada de **suscripción comercial → feature flag → deny**.
+
+---
+
+## Modelos Prisma
+
+| Modelo | Tabla | Rol |
+|--------|-------|-----|
+| `ProductoComercial` | `productos_comerciales` | Catálogo SKU, precio ARS, límite eventos/mes |
+| `SuscripcionModulo` | `suscripciones_modulo` | Contrato activo por `empresaId` + `sku` |
+| `UsageEvent` | `usage_events` | Contador mensual de eventos emitidos |
+
+SKU principal: `automation.n8n_hub` → feature técnica `automation_n8n`.
+
+---
+
+## Cascada de acceso
+
+```
+canUseSku(empresaId, sku)
+  ├─ SuscripcionModulo activa y vigente?
+  │    ├─ límite mensual excedido → deny (402 usage_limit_exceeded)
+  │    └─ OK → allow (source: subscription)
+  ├─ SKU sin feature mapeada → allow (unrestricted)
+  └─ isFeatureActiva(empresaId, featureKey)?
+       ├─ true → allow (source: feature)
+       └─ false → deny (module_not_entitled)
+```
+
+Implementación: `lib/platform/entitlements.ts`
+
+---
+
+## Registro de uso
+
+Cada `emitToN8n` exitoso invoca `trackAutomationUsage()` → incrementa `UsageEvent` del mes UTC (`YYYY-MM`).
+
+---
+
+## API administrativa
+
+### GET /api/platform/suscripciones
+
+Lista suscripciones del tenant autenticado (JWT) con uso del mes actual.
+
+### POST /api/platform/suscripciones
+
+Alta/actualización (roles admin). Body ejemplo:
+
+```json
+{
+  "sku": "automation.n8n_hub",
+  "activo": true,
+  "limiteEventosMes": 50000,
+  "vigenciaHasta": null
+}
+```
+
+---
+
+## Seed demo
+
+`POST /api/auth/demo` crea suscripción demo con límite ampliado vía `ensureDemoAutomationSubscription()`.
+
+Catálogo base: `seedCommercialCatalog()` en `lib/platform/commercial-service.ts`.
+
+---
+
+## Migración
+
+`prisma/migrations/20260619140000_platform_entitlements_poll/`
+
+```bash
+npx prisma migrate deploy
+```

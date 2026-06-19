@@ -29,6 +29,15 @@ interface CentroCosto {
   hijos?: CentroCosto[]
 }
 
+const PARENT_NONE = "__none__"
+
+function authHeaders(): HeadersInit {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+  return token
+    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" }
+}
+
 interface ReporteItem {
   id: number
   codigo: string
@@ -48,7 +57,7 @@ export default function CentrosCostoPage() {
 
   // Create
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [form, setForm] = useState({ codigo: "", nombre: "", descripcion: "", parentId: "" })
+  const [form, setForm] = useState({ codigo: "", nombre: "", descripcion: "", parentId: PARENT_NONE })
 
   // Report
   const [repMes, setRepMes] = useState(String(new Date().getMonth() + 1))
@@ -67,14 +76,25 @@ export default function CentrosCostoPage() {
 
   async function cargar() {
     setLoading(true)
+    setError("")
     try {
+      const headers = authHeaders()
       const [flatRes, treeRes] = await Promise.all([
-        fetch("/api/contabilidad/centros-costo"),
-        fetch("/api/contabilidad/centros-costo?vista=jerarquia"),
+        fetch("/api/contabilidad/centros-costo", { headers }),
+        fetch("/api/contabilidad/centros-costo?vista=jerarquia", { headers }),
       ])
-      setCentros(await flatRes.json())
-      setArbol(await treeRes.json())
-    } catch { setError("Error al cargar") }
+      const flat = await flatRes.json()
+      const tree = await treeRes.json()
+      setCentros(Array.isArray(flat) ? flat : [])
+      setArbol(Array.isArray(tree) ? tree : [])
+      if (!flatRes.ok || !treeRes.ok) {
+        setError(flat?.error ?? tree?.error ?? "No se pudieron cargar los centros de costo")
+      }
+    } catch {
+      setCentros([])
+      setArbol([])
+      setError("Error al cargar")
+    }
     setLoading(false)
   }
 
@@ -84,18 +104,22 @@ export default function CentrosCostoPage() {
     try {
       const res = await fetch("/api/contabilidad/centros-costo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(),
         body: JSON.stringify({
-          codigo: form.codigo,
-          nombre: form.nombre,
-          descripcion: form.descripcion || undefined,
-          parentId: form.parentId ? parseInt(form.parentId) : undefined,
+          codigo: form.codigo.trim(),
+          nombre: form.nombre.trim(),
+          descripcion: form.descripcion.trim() || undefined,
+          parentId:
+            form.parentId && form.parentId !== PARENT_NONE
+              ? parseInt(form.parentId, 10)
+              : undefined,
         }),
       })
-      if (!res.ok) throw new Error((await res.json()).error)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Error al crear")
       setSuccess("Centro de costos creado")
       setDialogOpen(false)
-      setForm({ codigo: "", nombre: "", descripcion: "", parentId: "" })
+      setForm({ codigo: "", nombre: "", descripcion: "", parentId: PARENT_NONE })
       cargar()
     } catch (e: any) { setError(e.message) }
   }
@@ -105,11 +129,12 @@ export default function CentrosCostoPage() {
     try {
       const res = await fetch("/api/contabilidad/centros-costo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reporte", mes: parseInt(repMes), anio: parseInt(repAnio) }),
+        headers: authHeaders(),
+        body: JSON.stringify({ action: "reporte", mes: parseInt(repMes, 10), anio: parseInt(repAnio, 10) }),
       })
-      if (!res.ok) throw new Error((await res.json()).error)
-      setReporte(await res.json())
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Error al generar reporte")
+      setReporte(Array.isArray(data) ? data : [])
     } catch (e: any) { setError(e.message) }
     setLoadingRep(false)
   }
@@ -124,6 +149,7 @@ export default function CentrosCostoPage() {
   const fmt = (n: number) => n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   function renderTree(nodes: CentroCosto[], depth = 0): React.ReactNode {
+    if (!Array.isArray(nodes)) return null
     return nodes.map(node => {
       const hasChildren = (node.hijos?.length ?? 0) > 0
       const isExpanded = expanded.has(node.id)
@@ -311,10 +337,13 @@ export default function CentrosCostoPage() {
             </div>
             <div>
               <Label>Centro padre (opcional)</Label>
-              <Select value={form.parentId} onValueChange={v => setForm({ ...form, parentId: v })}>
+              <Select
+                value={form.parentId || PARENT_NONE}
+                onValueChange={(v) => setForm({ ...form, parentId: v })}
+              >
                 <SelectTrigger><SelectValue placeholder="Ninguno (raíz)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ninguno (raíz)</SelectItem>
+                  <SelectItem value={PARENT_NONE}>Ninguno (raíz)</SelectItem>
                   {centros.map(cc => (
                     <SelectItem key={cc.id} value={String(cc.id)}>{cc.codigo} — {cc.nombre}</SelectItem>
                   ))}

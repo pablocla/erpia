@@ -1,0 +1,30 @@
+---
+title: "Monitoreo Health Checks"
+description: "Cómo funciona el script de monitoreo de microservicios y endpoints críticos."
+sidebar_position: 2
+tags: ["operaciones", "health-check", "scripts"]
+audience: operaciones
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Monitoreo y Health-Checks de APIs
+
+El ERP incluye un script de monitoreo automatizado de salud para validar que todos los microservicios locales estén respondiendo correctamente sin errores de tipo 500 (Internal Server Error).
+
+---
+
+## 🚀 Ejecución del Script de Salud
+
+Puedes correr el script manualmente en local o en tu servidor de staging:
+
+```bash
+npx tsx scripts/health-check.ts
+```
+
+### Endpoints Verificados:
+- `/api/health`: Verifica la lectura y escritura básica en la base de datos PostgreSQL.
+- `/api/afip/test-conexion`: Valida que el canal y la autenticación con la API de AFIP de homologación/producción responda.
+- `/api/auth/me`: Chequea que el middleware de sesión responda (retornará HTTP 401 si no está autenticado, lo cual es correcto).
+- `/api/config/empresa`: Valida el acceso a las variables globales del tenant.

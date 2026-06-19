@@ -1,0 +1,35 @@
+---
+title: "Política de Actualizaciones"
+description: "Roadmap para el control y ejecución de actualizaciones de schema y código sin downtime."
+sidebar_position: 4
+tags: ["roadmap", "upgrades", "migrations"]
+audience: all
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Estrategia de Upgrades y Parches SaaS
+
+A diferencia de los ERPs on-premise (como TOTVS Protheus), donde las actualizaciones requieren detener servicios, aplicar parches manuales a través de consolas como el AppBuilder, y migrar diccionarios de base de datos de manera exclusiva, este ERP sigue un flujo de **Despliegue Continuo con Cero Downtime (Zero-Downtime Blue-Green Deployment)**.
+
+## 🔄 El Flujo de Actualización del ERP
+
+El despliegue de una nueva versión del sistema se divide en tres niveles automatizados:
+
+```
+[Código Nuevo] ──> [Prisma Migration (Postgres)] ──> [Dynamic Schema Refresh]
+    (Vercel)            (Migraciones Concurrentes)        (Zustand / SWR Cache)
+```
+
+1. **Código Estático y APIs**: Actualizados inmediatamente en el edge mediante Vercel/Next.js.
+2. **Esquema de Base de Datos**: Administrado por **Prisma ORM**. Las migraciones se aplican en la base de datos PostgreSQL de Supabase en caliente durante el despliegue del pipeline.
+3. **Diccionario de Configuración**: Las tablas de Features y Workflows del multi-tenant se recargan automáticamente en memoria sin reiniciar el servidor.
+
+---
+
+## 🛠️ Rollback y Mitigación de Errores
+
+En caso de fallo en una actualización de esquema de base de datos o lógica de API:
+- **Prisma Migrations**: Todas las migraciones deben ser *aditivas* (no eliminar columnas viejas inmediatamente). La columna vieja se depreca pero permanece en la DB hasta que la versión anterior del código termine de cerrarse.
+- **Rollback instantáneo**: Vercel redirige el 100% de la carga de tráfico al release anterior en menos de 5 segundos si los health-checks de la nueva versión comienzan a fallar.

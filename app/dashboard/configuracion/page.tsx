@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,6 +50,9 @@ import {
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useAuthStore } from "@/lib/stores"
+import { ROLES_SISTEMA, type RolSistema, tienePermiso } from "@/lib/auth/roles"
+import { MipymeFceConfig } from "@/components/fiscal/mipyme-fce-config"
 
 type SectionKey =
   | "empresa"
@@ -82,6 +86,7 @@ const SECCIONES: { key: SectionKey; label: string; icon: React.ElementType; desc
 ]
 
 type ToggleParam = { label: string; key: string; descripcion: string; value: boolean }
+type AfipEntorno = "homologacion" | "produccion"
 
 const defaultModulos: ToggleParam[] = [
   { label: "Compras", key: "compras", descripcion: "Facturas de compra y proveedores", value: true },
@@ -106,13 +111,32 @@ const defaultNotificaciones: ToggleParam[] = [
   { label: "WhatsApp confirmación turno", key: "wp_turno", descripcion: "Enviar confirmación automática de turnos", value: false },
 ]
 
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+const ROLE_ALIASES: Record<string, RolSistema> = {
+  admin: "dueno",
+  administrador: "dueno",
+  owner: "dueno",
+  vendedor: "cajero",
+  vendedora: "cajero",
+}
+
+function normalizeRol(rol?: string | null): RolSistema | null {
+  if (!rol) return null
+  const lower = rol.toLowerCase()
+  if (ROLE_ALIASES[lower]) return ROLE_ALIASES[lower]
+  return (ROLES_SISTEMA.find((r) => r.codigo === lower)?.codigo as RolSistema | undefined) ?? null
+}
+
+function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
-      onClick={() => onChange(!value)}
+      onClick={() => {
+        if (disabled) return
+        onChange(!value)
+      }}
       className={cn(
         "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-        value ? "bg-primary" : "bg-muted-foreground/30"
+        value ? "bg-primary" : "bg-muted-foreground/30",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       )}
     >
       <span className={cn(
@@ -130,18 +154,97 @@ export default function ConfiguracionPage() {
   const [guardando, setGuardando] = useState(false)
   const [modulos, setModulos] = useState(defaultModulos)
   const [notificaciones, setNotificaciones] = useState(defaultNotificaciones)
-  const [certificadoSubido, setCertificadoSubido] = useState(false)
+  const [cargandoEmpresa, setCargandoEmpresa] = useState(false)
+  const [empresaCuit, setEmpresaCuit] = useState("")
+  const [empresaForm, setEmpresaForm] = useState({
+    nombre: "",
+    razonSocial: "",
+    cuit: "",
+    direccion: "",
+    telefono: "",
+    email: "",
+    condicionIva: "",
+    rubro: "otro",
+  })
+  const [afipConfig, setAfipConfig] = useState({ puntoVenta: "1", entorno: "homologacion" as AfipEntorno })
+  const [tieneCertificado, setTieneCertificado] = useState(false)
+  const [crtFile, setCrtFile] = useState<File | null>(null)
+  const [keyFile, setKeyFile] = useState<File | null>(null)
+  const [subiendoCert, setSubiendoCert] = useState(false)
+
+  // ─── Fiscal config state ──────────────────────────────────────────
+  const [umbralMipyme, setUmbralMipyme] = useState("5468127")
+  const [arbaCotPesoMinimo, setArbaCotPesoMinimo] = useState("4500")
+  const [arbaCotValorMinimo, setArbaCotValorMinimo] = useState("45000")
+  const [cargandoFiscal, setCargandoFiscal] = useState(false)
 
   // ─── Usuarios state ────────────────────────────────────────────────
   interface UsuarioRow { id: number; nombre: string; email: string; rol: string; activo: boolean }
   const [usuarios, setUsuarios] = useState<UsuarioRow[]>([])
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false)
-  const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", email: "", password: "", rol: "vendedor" })
+  const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", email: "", password: "", rol: "cajero" })
+  const user = useAuthStore((s) => s.user)
+  const rolNormalizado = normalizeRol(user?.rol)
+  const puedeEditarConfig = rolNormalizado ? tienePermiso(rolNormalizado, "configuracion", "editar") : false
+  const puedeVerUsuarios = rolNormalizado ? tienePermiso(rolNormalizado, "usuarios", "ver") : false
+  const puedeCrearUsuarios = rolNormalizado ? tienePermiso(rolNormalizado, "usuarios", "crear") : false
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
+
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (seccionActiva) return
+    const sec = searchParams.get("section") || searchParams.get("seccion")
+    if (!sec) return
+    const normalized = sec.toLowerCase() as SectionKey
+    if (SECCIONES.some((s) => s.key === normalized)) {
+      setSeccionActiva(normalized)
+    }
+  }, [searchParams, seccionActiva])
+
+  const cargarEmpresaConfig = useCallback(async () => {
+    setCargandoEmpresa(true)
+    try {
+      const res = await fetch("/api/config/empresa", { headers: authHeaders() })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast({ title: "Error al cargar empresa", description: data.error || `Error ${res.status}`, variant: "destructive" })
+        return
+      }
+      const data = await res.json()
+      const cuit = data.cuit ?? ""
+      setEmpresaCuit(cuit)
+      setEmpresaForm({
+        nombre: data.nombre ?? "",
+        razonSocial: data.razonSocial ?? "",
+        cuit,
+        direccion: data.direccion ?? "",
+        telefono: data.telefono ?? "",
+        email: data.email ?? "",
+        condicionIva: data.condicionIva ?? "",
+        rubro: data.rubro ?? "otro",
+      })
+      setAfipConfig({
+        puntoVenta: String(data.puntoVenta ?? 1),
+        entorno: (data.entorno ?? "homologacion") as AfipEntorno,
+      })
+      const hasCert = Boolean(data.certificadoCRT && data.certificadoKEY)
+      setTieneCertificado(hasCert)
+    } catch {
+      toast({ title: "Error de conexión", description: "No se pudo cargar la empresa", variant: "destructive" })
+    } finally {
+      setCargandoEmpresa(false)
+    }
+  }, [authHeaders, toast])
+
+  useEffect(() => {
+    if (seccionActiva === "afip" || seccionActiva === "empresa") {
+      cargarEmpresaConfig()
+    }
+  }, [seccionActiva, cargarEmpresaConfig])
 
   // Load module config from API on mount
   useEffect(() => {
@@ -161,35 +264,77 @@ export default function ConfiguracionPage() {
 
   // ─── Cargar usuarios ────────────────────────────────────────────────
   const cargarUsuarios = useCallback(async () => {
+    if (!puedeVerUsuarios) {
+      setUsuarios([])
+      return
+    }
     setCargandoUsuarios(true)
     try {
-      const res = await fetch("/api/auth/me", { headers: authHeaders() })
-      if (!res.ok) return
-      // The /api/auth/me only returns current user. Use a list endpoint if available.
-      // For now, we'll use a dedicated usuarios endpoint
-      const resUsuarios = await fetch("/api/config/usuarios", { headers: authHeaders() })
+      const resUsuarios = await fetch("/api/usuarios", { headers: authHeaders() })
       if (resUsuarios.ok) {
         const data = await resUsuarios.json()
         setUsuarios(data.usuarios || [])
+      } else {
+        setUsuarios([])
       }
     } catch {} finally { setCargandoUsuarios(false) }
-  }, [authHeaders])
+  }, [authHeaders, puedeVerUsuarios])
 
   useEffect(() => {
     if (seccionActiva === "usuarios") cargarUsuarios()
   }, [seccionActiva, cargarUsuarios])
 
+  const cargarFiscalConfig = useCallback(async () => {
+    setCargandoFiscal(true)
+    try {
+      const res = await fetch("/api/config/parametros-fiscales", { headers: authHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          const mipyme = data.find((p: any) => p.clave === "umbral_mipyme")
+          const peso = data.find((p: any) => p.clave === "arba_cot_peso_minimo")
+          const valor = data.find((p: any) => p.clave === "arba_cot_valor_minimo")
+          if (mipyme) setUmbralMipyme(String(Number(mipyme.valor)))
+          if (peso) setArbaCotPesoMinimo(String(Number(peso.valor)))
+          if (valor) setArbaCotValorMinimo(String(Number(valor.valor)))
+        }
+      }
+    } catch (e) {
+      console.error("Error al cargar config fiscal:", e)
+    } finally {
+      setCargandoFiscal(false)
+    }
+  }, [authHeaders])
+
+  useEffect(() => {
+    if (seccionActiva === "fiscal") {
+      cargarFiscalConfig()
+    }
+  }, [seccionActiva, cargarFiscalConfig])
+
   useKeyboardShortcuts(erpShortcuts({
-    onRefresh: cargarUsuarios,
+    onRefresh: () => {
+      if (seccionActiva === "usuarios") cargarUsuarios()
+      if (seccionActiva === "fiscal") cargarFiscalConfig()
+    },
   }))
 
+  const updateCuit = (value: string) => {
+    setEmpresaCuit(value)
+    setEmpresaForm((prev) => ({ ...prev, cuit: value }))
+  }
+
   async function crearUsuario() {
+    if (!puedeCrearUsuarios) {
+      toast({ title: "No autorizado", description: "No tenés permisos para crear usuarios", variant: "destructive" })
+      return
+    }
     if (!nuevoUsuario.nombre || !nuevoUsuario.email || !nuevoUsuario.password) {
       toast({ title: "Completá todos los campos", variant: "destructive" })
       return
     }
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(nuevoUsuario),
@@ -197,7 +342,7 @@ export default function ConfiguracionPage() {
       const data = await res.json()
       if (res.ok && data.success) {
         toast({ title: "Usuario creado", description: `${data.usuario?.nombre || nuevoUsuario.nombre} registrado` })
-        setNuevoUsuario({ nombre: "", email: "", password: "", rol: "vendedor" })
+        setNuevoUsuario({ nombre: "", email: "", password: "", rol: "cajero" })
         cargarUsuarios()
       } else {
         toast({ title: "Error al crear usuario", description: data.error || "Error desconocido", variant: "destructive" })
@@ -208,32 +353,192 @@ export default function ConfiguracionPage() {
   }
 
   function toggleParam(list: ToggleParam[], setList: React.Dispatch<React.SetStateAction<ToggleParam[]>>, key: string) {
+    if (!puedeEditarConfig) return
     setList(list.map(p => p.key === key ? { ...p, value: !p.value } : p))
   }
 
+  async function guardarModulos() {
+    // Persist active modules config
+    const modulosMap: Record<string, boolean> = {}
+    for (const m of modulos) {
+      modulosMap[m.key] = m.value
+    }
+    const res = await fetch("/api/config/modulos", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ modulos: modulosMap }),
+    })
+    if (res.ok) {
+      setGuardado(true)
+      // Dispatch storage event so sidebar picks up the change
+      window.dispatchEvent(new Event("modulos-updated"))
+      toast({ title: "Configuración guardada", description: "Los módulos se actualizaron correctamente" })
+      setTimeout(() => setGuardado(false), 2000)
+      return true
+    }
+    const data = await res.json().catch(() => ({}))
+    toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
+    return false
+  }
+
+  async function guardarEmpresaConfig() {
+    const cuit = empresaForm.cuit.trim()
+    if (cuit && (cuit.length < 11 || cuit.length > 13)) {
+      toast({ title: "CUIT inválido", description: "Usá un CUIT válido (11 a 13 caracteres)", variant: "destructive" })
+      return false
+    }
+
+    const payload = {
+      nombre: empresaForm.nombre.trim() || undefined,
+      razonSocial: empresaForm.razonSocial.trim() || undefined,
+      cuit: cuit || undefined,
+      direccion: empresaForm.direccion.trim() || undefined,
+      telefono: empresaForm.telefono.trim() || undefined,
+      email: empresaForm.email.trim() || undefined,
+      condicionIva: empresaForm.condicionIva || undefined,
+      rubro: empresaForm.rubro || undefined,
+    }
+
+    const res = await fetch("/api/config/empresa", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    })
+    if (res.ok) {
+      setGuardado(true)
+      toast({ title: "Empresa actualizada", description: "Los datos de la empresa se guardaron" })
+      setTimeout(() => setGuardado(false), 2000)
+      return true
+    }
+    const data = await res.json().catch(() => ({}))
+    toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
+    return false
+  }
+
+  async function guardarAfipConfig() {
+    const puntoVenta = parseInt(afipConfig.puntoVenta, 10)
+    if (!puntoVenta || puntoVenta < 1 || puntoVenta > 9999) {
+      toast({ title: "Punto de venta inválido", description: "Usá un valor entre 1 y 9999", variant: "destructive" })
+      return false
+    }
+    const res = await fetch("/api/config/empresa", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ puntoVenta, entorno: afipConfig.entorno, cuit: empresaCuit || undefined }),
+    })
+    if (res.ok) {
+      setGuardado(true)
+      toast({ title: "Configuración AFIP guardada", description: "Entorno y punto de venta actualizados" })
+      setTimeout(() => setGuardado(false), 2000)
+      return true
+    }
+    const data = await res.json().catch(() => ({}))
+    toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
+    return false
+  }
+
+  async function guardarFiscalConfig() {
+    const payload = [
+      { clave: "umbral_mipyme", valor: Number(umbralMipyme), descripcion: "Monto umbral para Factura de Crédito Electrónica MiPyMEs" },
+      { clave: "arba_cot_peso_minimo", valor: Number(arbaCotPesoMinimo), descripcion: "Peso mínimo en kg para requerir COT ARBA" },
+      { clave: "arba_cot_valor_minimo", valor: Number(arbaCotValorMinimo), descripcion: "Valor mínimo en pesos para requerir COT ARBA" },
+    ]
+
+    const res = await fetch("/api/config/parametros-fiscales", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload),
+    })
+
+    if (res.ok) {
+      setGuardado(true)
+      toast({ title: "Parámetros fiscales guardados", description: "Umbrales impositivos actualizados correctamente" })
+      setTimeout(() => setGuardado(false), 2000)
+      return true
+    }
+    const data = await res.json().catch(() => ({}))
+    toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
+    return false
+  }
+
+  function readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result ?? ""))
+      reader.onerror = () => reject(new Error("No se pudo leer el archivo"))
+      reader.readAsText(file)
+    })
+  }
+
+  async function subirCertificados() {
+    if (!puedeEditarConfig) {
+      toast({ title: "Solo lectura", description: "No tenés permisos para subir certificados", variant: "destructive" })
+      return
+    }
+    if (!empresaCuit) {
+      toast({ title: "CUIT faltante", description: "Configurá el CUIT de la empresa primero", variant: "destructive" })
+      return
+    }
+    if (!crtFile || !keyFile) {
+      toast({ title: "Archivos incompletos", description: "Seleccioná el .crt y el .key", variant: "destructive" })
+      return
+    }
+    setSubiendoCert(true)
+    try {
+      const [crtText, keyText] = await Promise.all([
+        readFileAsText(crtFile),
+        readFileAsText(keyFile),
+      ])
+      const formData = new FormData()
+      formData.append("cuit", empresaCuit)
+      formData.append("certificadoCRT", crtText)
+      formData.append("certificadoKEY", keyText)
+      const res = await fetch("/api/afip/subir-certificados", {
+        method: "POST",
+        headers: authHeaders(),
+        body: formData,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast({ title: "Error al subir", description: data.error || `Error ${res.status}`, variant: "destructive" })
+        return
+      }
+      setTieneCertificado(true)
+      toast({ title: "Certificados cargados", description: "AFIP quedó habilitado para emitir" })
+      setCrtFile(null)
+      setKeyFile(null)
+      await cargarEmpresaConfig()
+    } catch (err) {
+      toast({ title: "Error", description: "No se pudieron subir los certificados", variant: "destructive" })
+    } finally {
+      setSubiendoCert(false)
+    }
+  }
+
   async function handleGuardar() {
+    if (!puedeEditarConfig) {
+      toast({ title: "Solo lectura", description: "No tenés permisos para modificar configuración", variant: "destructive" })
+      return
+    }
     setGuardando(true)
     try {
-      // Persist active modules config
-      const modulosMap: Record<string, boolean> = {}
-      for (const m of modulos) {
-        modulosMap[m.key] = m.value
+      if (seccionActiva === "modulos") {
+        await guardarModulos()
+        return
       }
-      const res = await fetch("/api/config/modulos", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ modulos: modulosMap }),
-      })
-      if (res.ok) {
-        setGuardado(true)
-        // Dispatch storage event so sidebar picks up the change
-        window.dispatchEvent(new Event("modulos-updated"))
-        toast({ title: "Configuración guardada", description: "Los módulos se actualizaron correctamente" })
-        setTimeout(() => setGuardado(false), 2000)
-      } else {
-        const data = await res.json().catch(() => ({}))
-        toast({ title: "Error al guardar", description: data.error || `Error ${res.status}`, variant: "destructive" })
+      if (seccionActiva === "empresa") {
+        await guardarEmpresaConfig()
+        return
       }
+      if (seccionActiva === "afip") {
+        await guardarAfipConfig()
+        return
+      }
+      if (seccionActiva === "fiscal") {
+        await guardarFiscalConfig()
+        return
+      }
+      toast({ title: "Sin cambios", description: "Esta sección aún no tiene guardado automático" })
     } catch (err) {
       toast({ title: "Error de conexión", description: "No se pudo guardar la configuración", variant: "destructive" })
     } finally {
@@ -261,7 +566,7 @@ export default function ConfiguracionPage() {
               <ChevronLeft className="h-3.5 w-3.5" />
               Volver al panel
             </Button>
-            <Button onClick={handleGuardar} disabled={guardando} className="gap-2">
+            <Button onClick={handleGuardar} disabled={guardando || !puedeEditarConfig} className="gap-2">
               {guardado ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
               {guardando ? "Guardando..." : guardado ? "¡Guardado!" : "Guardar cambios"}
             </Button>
@@ -393,42 +698,69 @@ export default function ConfiguracionPage() {
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
                   <Label>Razón Social</Label>
-                  <Input defaultValue="Mi Empresa SRL" />
+                  <Input
+                    value={empresaForm.razonSocial}
+                    onChange={(e) => setEmpresaForm((prev) => ({ ...prev, razonSocial: e.target.value }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>CUIT</Label>
-                  <Input defaultValue="20-12345678-9" />
+                  <Input
+                    value={empresaForm.cuit}
+                    onChange={(e) => updateCuit(e.target.value)}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                    placeholder="20-12345678-9"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Condición IVA</Label>
-                  <Select defaultValue="ri">
+                  <Select
+                    value={empresaForm.condicionIva || "Consumidor Final"}
+                    onValueChange={(v) => setEmpresaForm((prev) => ({ ...prev, condicionIva: v }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ri">Responsable Inscripto</SelectItem>
-                      <SelectItem value="mono">Monotributista</SelectItem>
-                      <SelectItem value="exento">Exento</SelectItem>
+                      <SelectItem value="Responsable Inscripto">Responsable Inscripto</SelectItem>
+                      <SelectItem value="Monotributista">Monotributista</SelectItem>
+                      <SelectItem value="Exento">Exento</SelectItem>
+                      <SelectItem value="Consumidor Final">Consumidor Final</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-2 space-y-1.5">
                   <Label>Domicilio Fiscal</Label>
-                  <Input defaultValue="Av. Corrientes 1234, CABA" />
+                  <Input
+                    value={empresaForm.direccion}
+                    onChange={(e) => setEmpresaForm((prev) => ({ ...prev, direccion: e.target.value }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Email de contacto</Label>
-                  <Input type="email" defaultValue="contacto@miempresa.com" />
+                  <Input
+                    type="email"
+                    value={empresaForm.email}
+                    onChange={(e) => setEmpresaForm((prev) => ({ ...prev, email: e.target.value }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Teléfono</Label>
-                  <Input defaultValue="011-4567-8900" />
+                  <Input
+                    value={empresaForm.telefono}
+                    onChange={(e) => setEmpresaForm((prev) => ({ ...prev, telefono: e.target.value }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Ingresos Brutos</Label>
-                  <Input placeholder="123-456789-0" />
+                  <Input placeholder="123-456789-0" disabled />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Inicio de actividades</Label>
-                  <Input type="date" />
+                  <Input type="date" disabled />
                 </div>
               </CardContent>
             </Card>
@@ -438,7 +770,11 @@ export default function ConfiguracionPage() {
                 <CardDescription>Afecta qué módulos y configuraciones se muestran por defecto</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select defaultValue="otro">
+                <Select
+                  value={empresaForm.rubro || "otro"}
+                  onValueChange={(v) => setEmpresaForm((prev) => ({ ...prev, rubro: v }))}
+                  disabled={!puedeEditarConfig || cargandoEmpresa}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ferreteria">🔧 Ferretería</SelectItem>
@@ -449,6 +785,7 @@ export default function ConfiguracionPage() {
                     <SelectItem value="farmacia">💊 Farmacia</SelectItem>
                     <SelectItem value="ropa">👕 Indumentaria</SelectItem>
                     <SelectItem value="supermercado">🛒 Supermercado / Autoservicio</SelectItem>
+                    <SelectItem value="estacion_servicio">⛽ Estación de Servicio</SelectItem>
                     <SelectItem value="distribuidora">🚛 Distribuidora</SelectItem>
                     <SelectItem value="salon_belleza">💅 Salón de Belleza</SelectItem>
                     <SelectItem value="gimnasio">🏋️ Gimnasio / Fitness</SelectItem>
@@ -470,11 +807,20 @@ export default function ConfiguracionPage() {
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Punto de venta N°</Label>
-                  <Input type="number" defaultValue="1" />
+                  <Input
+                    type="number"
+                    value={afipConfig.puntoVenta}
+                    onChange={(e) => setAfipConfig((prev) => ({ ...prev, puntoVenta: e.target.value }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Entorno</Label>
-                  <Select defaultValue="homologacion">
+                  <Select
+                    value={afipConfig.entorno}
+                    onValueChange={(v) => setAfipConfig((prev) => ({ ...prev, entorno: v as AfipEntorno }))}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                  >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="homologacion">🧪 Homologación (pruebas)</SelectItem>
@@ -498,24 +844,34 @@ export default function ConfiguracionPage() {
                 <CardDescription>Certificado .crt y clave privada .key generados en el portal AFIP</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>CUIT empresa</Label>
+                  <Input
+                    value={empresaCuit}
+                    onChange={(e) => updateCuit(e.target.value)}
+                    disabled={!puedeEditarConfig || cargandoEmpresa}
+                    placeholder="20-12345678-9"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Certificado (.crt)</Label>
-                    <Input type="file" accept=".crt" />
+                    <Input type="file" accept=".crt" onChange={(e) => setCrtFile(e.target.files?.[0] ?? null)} disabled={!puedeEditarConfig} />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Clave privada (.key)</Label>
-                    <Input type="file" accept=".key" />
+                    <Input type="file" accept=".key" onChange={(e) => setKeyFile(e.target.files?.[0] ?? null)} disabled={!puedeEditarConfig} />
                   </div>
                 </div>
                 <Button
-                  onClick={() => setCertificadoSubido(true)}
+                  onClick={subirCertificados}
                   className="gap-2"
+                  disabled={!puedeEditarConfig || subiendoCert}
                 >
                   <Upload className="h-4 w-4" />
-                  Subir certificados
+                  {subiendoCert ? "Subiendo..." : "Subir certificados"}
                 </Button>
-                {certificadoSubido && (
+                {tieneCertificado && (
                   <div className="flex items-center gap-2 text-green-600 text-sm">
                     <Check className="h-4 w-4" />
                     Certificados cargados correctamente
@@ -524,8 +880,10 @@ export default function ConfiguracionPage() {
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-xs font-medium mb-1">Estado actual</p>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500" />
-                    <p className="text-xs text-muted-foreground">Sin certificados — facturación deshabilitada</p>
+                    <div className={cn("h-2 w-2 rounded-full", tieneCertificado ? "bg-green-500" : "bg-red-500")} />
+                    <p className="text-xs text-muted-foreground">
+                      {tieneCertificado ? "Certificados activos" : "Sin certificados — facturación deshabilitada"}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -547,7 +905,7 @@ export default function ConfiguracionPage() {
                     <p className="text-sm font-medium">{mod.label}</p>
                     <p className="text-xs text-muted-foreground">{mod.descripcion}</p>
                   </div>
-                  <Toggle value={mod.value} onChange={(v) => toggleParam(modulos, setModulos, mod.key)} />
+                  <Toggle value={mod.value} onChange={() => toggleParam(modulos, setModulos, mod.key)} disabled={!puedeEditarConfig} />
                 </div>
               ))}
             </CardContent>
@@ -557,94 +915,152 @@ export default function ConfiguracionPage() {
         {/* ── USUARIOS ── */}
         {seccionActiva === "usuarios" && (
           <div className="space-y-4">
-            {/* Crear nuevo usuario */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Crear nuevo usuario
-                </CardTitle>
-                <CardDescription>Registrá empleados, vendedores o contadores en el sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Nombre completo</Label>
-                    <Input placeholder="Juan Pérez" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario(p => ({ ...p, nombre: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Email</Label>
-                    <Input type="email" placeholder="juan@empresa.com" value={nuevoUsuario.email} onChange={e => setNuevoUsuario(p => ({ ...p, email: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Contraseña</Label>
-                    <Input type="password" placeholder="Mínimo 8 caracteres" value={nuevoUsuario.password} onChange={e => setNuevoUsuario(p => ({ ...p, password: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Rol</Label>
-                    <Select value={nuevoUsuario.rol} onValueChange={v => setNuevoUsuario(p => ({ ...p, rol: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="administrador">Administrador</SelectItem>
-                        <SelectItem value="contador">Contador</SelectItem>
-                        <SelectItem value="vendedor">Vendedor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Button onClick={crearUsuario} className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Crear usuario
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Lista de usuarios */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Usuarios registrados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {cargandoUsuarios ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">Cargando...</p>
-                ) : usuarios.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">No se encontraron usuarios. Creá el primero arriba.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {usuarios.map(u => (
-                      <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                            {u.nombre.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{u.nombre}</p>
-                            <p className="text-xs text-muted-foreground">{u.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={u.activo ? "default" : "secondary"} className="text-xs">
-                            {u.rol}
-                          </Badge>
-                          <Badge variant={u.activo ? "outline" : "destructive"} className="text-xs">
-                            {u.activo ? "Activo" : "Inactivo"}
-                          </Badge>
-                        </div>
+            {!puedeVerUsuarios ? (
+              <Card>
+                <CardContent className="py-6">
+                  <p className="text-sm text-muted-foreground text-center">No tenés permisos para ver usuarios.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Crear nuevo usuario */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Crear nuevo usuario
+                    </CardTitle>
+                    <CardDescription>Registrá empleados, vendedores o contadores en el sistema</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Nombre completo</Label>
+                        <Input placeholder="Juan Pérez" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario(p => ({ ...p, nombre: e.target.value }))} />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      <div className="space-y-1.5">
+                        <Label>Email</Label>
+                        <Input type="email" placeholder="juan@empresa.com" value={nuevoUsuario.email} onChange={e => setNuevoUsuario(p => ({ ...p, email: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Contraseña</Label>
+                        <Input type="password" placeholder="Mínimo 8 caracteres" value={nuevoUsuario.password} onChange={e => setNuevoUsuario(p => ({ ...p, password: e.target.value }))} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Rol</Label>
+                        <Select value={nuevoUsuario.rol} onValueChange={v => setNuevoUsuario(p => ({ ...p, rol: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ROLES_SISTEMA.map((rol) => (
+                              <SelectItem key={rol.codigo} value={rol.codigo}>
+                                {rol.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Button onClick={crearUsuario} className="gap-2" disabled={!puedeCrearUsuarios}>
+                      <UserPlus className="h-4 w-4" />
+                      Crear usuario
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Lista de usuarios */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Usuarios registrados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {cargandoUsuarios ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">Cargando...</p>
+                    ) : usuarios.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">No se encontraron usuarios. Creá el primero arriba.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {usuarios.map(u => (
+                          <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                {u.nombre.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">{u.nombre}</p>
+                                <p className="text-xs text-muted-foreground">{u.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={u.activo ? "default" : "secondary"} className="text-xs">
+                                {u.rol}
+                              </Badge>
+                              <Badge variant={u.activo ? "outline" : "destructive"} className="text-xs">
+                                {u.activo ? "Activo" : "Inactivo"}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
         )}
 
         {/* ── FISCAL ── */}
         {seccionActiva === "fiscal" && (
           <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Umbrales y Límites Especiales</CardTitle>
+                <CardDescription>Configure los valores oficiales para el ruteo de comprobantes FCE y la tramitación del COT ARBA.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="umbralMipyme">Umbral FCE MiPyME ($)</Label>
+                    <Input
+                      id="umbralMipyme"
+                      type="number"
+                      value={umbralMipyme}
+                      disabled={cargandoFiscal || !puedeEditarConfig}
+                      onChange={(e) => setUmbralMipyme(e.target.value)}
+                      placeholder="5468127"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Facturas mayores a este valor para Grandes Empresas se emitirán como FCE.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="arbaCotPesoMinimo">Peso Mínimo COT ARBA (kg)</Label>
+                    <Input
+                      id="arbaCotPesoMinimo"
+                      type="number"
+                      value={arbaCotPesoMinimo}
+                      disabled={cargandoFiscal || !puedeEditarConfig}
+                      onChange={(e) => setArbaCotPesoMinimo(e.target.value)}
+                      placeholder="4500"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Umbral de peso del remito para solicitar el COT electrónico.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="arbaCotValorMinimo">Valor Mínimo COT ARBA ($)</Label>
+                    <Input
+                      id="arbaCotValorMinimo"
+                      type="number"
+                      value={arbaCotValorMinimo}
+                      disabled={cargandoFiscal || !puedeEditarConfig}
+                      onChange={(e) => setArbaCotValorMinimo(e.target.value)}
+                      placeholder="45000"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Umbral de valor de la mercadería para solicitar el COT electrónico.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Alícuotas de IVA</CardTitle>
@@ -686,11 +1102,12 @@ export default function ConfiguracionPage() {
                       <p className="text-sm font-medium">{ret.label}</p>
                       <p className="text-xs text-muted-foreground">Alícuota: {ret.alicuota}</p>
                     </div>
-                    <Toggle value={ret.activo} onChange={() => {}} />
+                    <Toggle value={ret.activo} onChange={() => {}} disabled={!puedeEditarConfig} />
                   </div>
                 ))}
               </CardContent>
             </Card>
+            <MipymeFceConfig puedeEditar={puedeEditarConfig} />
           </div>
         )}
 
@@ -755,7 +1172,7 @@ export default function ConfiguracionPage() {
                 ].map(fp => (
                   <div key={fp.key} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
                     <span className="text-sm">{fp.label}</span>
-                    <Toggle value={fp.activo} onChange={() => {}} />
+                    <Toggle value={fp.activo} onChange={() => {}} disabled={!puedeEditarConfig} />
                   </div>
                 ))}
               </CardContent>
@@ -779,7 +1196,7 @@ export default function ConfiguracionPage() {
                       <p className="text-sm font-medium">Notificar al gerente para aprobar descuentos</p>
                       <p className="text-xs text-muted-foreground">Envía push notification para descuentos mayores al máximo</p>
                     </div>
-                    <Toggle value={true} onChange={() => {}} />
+                    <Toggle value={true} onChange={() => {}} disabled={!puedeEditarConfig} />
                   </div>
                 </div>
               </CardContent>
@@ -801,7 +1218,7 @@ export default function ConfiguracionPage() {
                       <p className="text-sm font-medium">{not.label}</p>
                       <p className="text-xs text-muted-foreground">{not.descripcion}</p>
                     </div>
-                    <Toggle value={not.value} onChange={() => toggleParam(notificaciones, setNotificaciones, not.key)} />
+                    <Toggle value={not.value} onChange={() => toggleParam(notificaciones, setNotificaciones, not.key)} disabled={!puedeEditarConfig} />
                   </div>
                 ))}
               </CardContent>
@@ -868,7 +1285,7 @@ export default function ConfiguracionPage() {
                 ].map((op, i) => (
                   <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
                     <span className="text-sm">{op.label}</span>
-                    <Toggle value={op.value} onChange={() => {}} />
+                    <Toggle value={op.value} onChange={() => {}} disabled={!puedeEditarConfig} />
                   </div>
                 ))}
                 <div className="pt-3 border-t border-border">
@@ -1004,7 +1421,7 @@ export default function ConfiguracionPage() {
                     <p className="text-sm font-medium">Backup diario automático</p>
                     <p className="text-xs text-muted-foreground">Cada noche a las 02:00 AM</p>
                   </div>
-                  <Toggle value={true} onChange={() => {}} />
+                  <Toggle value={true} onChange={() => {}} disabled={!puedeEditarConfig} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Destino del backup</Label>
@@ -1052,7 +1469,7 @@ export default function ConfiguracionPage() {
                 ].map((op, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50">
                     <span className="text-sm">{op.label}</span>
-                    <Toggle value={op.value} onChange={() => {}} />
+                    <Toggle value={op.value} onChange={() => {}} disabled={!puedeEditarConfig} />
                   </div>
                 ))}
               </CardContent>

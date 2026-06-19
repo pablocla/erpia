@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
 import { VentasService } from "@/lib/ventas/ventas-service"
+import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 
 export interface PresupuestoInput {
   clienteId: number
@@ -22,28 +23,46 @@ export interface PresupuestoInput {
     productoId?: number
     descripcion: string
     cantidad: number
-    precioUnitario: number
+    precioUnitario?: number
     descuentoPct?: number
   }[]
+  usarListaPrecios?: boolean
 }
 
 export class PresupuestoService {
   private ventasService = new VentasService()
 
   async crear(input: PresupuestoInput) {
+    const usarLista = input.usarListaPrecios !== false
+    const lineasConPrecio = usarLista
+      ? await resolverPreciosLineas(
+          input.lineas.map((l) => ({
+            productoId: l.productoId,
+            cantidad: l.cantidad,
+            precioUnitario: l.precioUnitario,
+          })),
+          { empresaId: input.empresaId, clienteId: input.clienteId }
+        )
+      : input.lineas.map((l) => ({
+          productoId: l.productoId,
+          cantidad: l.cantidad,
+          precioUnitario: l.precioUnitario ?? 0,
+        }))
+
     const ultimo = await prisma.presupuesto.findFirst({ orderBy: { id: "desc" } })
     const numero = `PRES-${String((ultimo?.id ?? 0) + 1).padStart(6, "0")}`
 
     let subtotal = 0
     const lineasData = input.lineas.map((l, i) => {
       const descPct = l.descuentoPct ?? 0
-      const lineaSub = Number(l.cantidad) * Number(l.precioUnitario) * (1 - descPct / 100)
+      const precioUnitario = lineasConPrecio[i].precioUnitario
+      const lineaSub = Number(l.cantidad) * Number(precioUnitario) * (1 - descPct / 100)
       subtotal += lineaSub
       return {
         productoId: l.productoId ?? null,
         descripcion: l.descripcion,
         cantidad: l.cantidad,
-        precioUnitario: l.precioUnitario,
+        precioUnitario,
         descuentoPct: descPct,
         subtotal: lineaSub,
         orden: i + 1,

@@ -22,9 +22,11 @@ export type Rubro =
   | "libreria"
   | "ropa"
   | "supermercado"
+  | "estacion_servicio"
   | "distribuidora"
   | "salon_belleza"
   | "gimnasio"
+  | "agro_acopio"
   | "otro"
 
 export interface RespuestasOnboarding {
@@ -252,6 +254,19 @@ const CONFIG_POR_RUBRO: Record<Rubro, {
     argumentoVenta: "Múltiples cajas trabajando al mismo tiempo, el stock se descuenta solo, y al final del día tenés el cierre de cada caja con las diferencias.",
     rolesSugeridos: ["dueno", "gerente", "cajero", "deposito", "contador"],
   },
+  estacion_servicio: {
+    modulos: ["pos", "ventas", "clientes", "compras", "proveedores", "productos", "stock", "caja", "contabilidad", "impuestos", "tes", "rrhh", "usuarios", "reportes", "logistica", "listas_precio"],
+    particularidades: [
+      "Venta mixta de combustible y productos de conveniencia",
+      "Control de surtidores por litros y monto",
+      "Gestión de la tienda de conveniencia con stock separado",
+      "Cierres de caja por turno y control de tickets de despacho",
+      "Alertas de stock de combustible y productos críticos",
+      "Listas de precios flexibles para combustibles y promociones",
+    ],
+    argumentoVenta: "Con este ERP la estación ya funciona como comercio y despacho de combustible a la vez: se facturan litros y productos en un mismo ticket, y el cierre de caja por turno queda controlado.",
+    rolesSugeridos: ["dueno", "gerente", "cajero", "contador"],
+  },
   distribuidora: {
     modulos: ["pos", "ventas", "clientes", "compras", "proveedores", "productos", "stock", "caja", "contabilidad", "impuestos", "tes", "rrhh", "usuarios", "reportes"],
     particularidades: [
@@ -291,6 +306,29 @@ const CONFIG_POR_RUBRO: Record<Rubro, {
     ],
     argumentoVenta: "¿Sabés cuántos socios tenés que no vinieron en el último mes? El sistema te lo dice y te deja mandarles un WhatsApp personalizado para que vuelvan. La retención de socios se hace sola.",
     rolesSugeridos: ["dueno", "cajero", "personal_servicio"],
+  },
+  agro_acopio: {
+    modulos: ["ventas", "clientes", "compras", "proveedores", "productos", "stock", "caja", "banco", "contabilidad", "impuestos", "tes", "logistica", "usuarios", "reportes"],
+    particularidades: [
+      "Balanza digital: pesaje de camiones con cálculo automático de tara, humedad e impureza",
+      "Tickets de balanza correlativados con impresión y envío al productor",
+      "Contratos de cereales: compra a fijar precio, entrega parcial, liquidación automática",
+      "Pizarra de precios BCR/MATBA-ROFEX en tiempo real (scraping + caché)",
+      "Precios Chicago (CME) via Alpha Vantage con conversión USD/tn",
+      "Liquidaciones a productores con retenciones AFIP Res. 2300/07 (Ganancias rural)",
+      "Percepción de IVA en compra al productor según condición AFIP del acopio",
+      "Carta de Porte Electrónica (CPE) — AFIP Res. 5017/21 — obligatoria para transporte",
+      "Mapa de lotes/silos con polígonos GeoJSON y cálculo automático de hectáreas (Mapbox)",
+      "NDVI satelital por lote (Sentinel Hub / NASA GIBS) para monitoreo de salud de cultivos",
+      "Clima por campo (Open-Meteo: precipitaciones, temperatura suelo, alertas de helada)",
+      "Portal del productor: saldo en silo, liquidaciones pendientes, historial contratos",
+      "RENSPA del productor validado en ficha (Registro Nacional Sanitario SENASA)",
+      "Multi-depósito: silos múltiples con capacidad, tipo de grano y % ocupación",
+      "Posición de mercado: tn contratadas vs depositadas vs sin fijar precio",
+      "Costo de producción por lote: insumos + labores + arrendamiento ($/ha, $/tn)",
+    ],
+    argumentoVenta: "¿Todavía liquidás a tus productores en Excel? Con este sistema el ticket de balanza actualiza el stock solo, el contrato calcula la liquidación con las retenciones de AFIP correctas, y el productor puede ver su saldo desde el celular. La pizarra BCR aparece en el dashboard para que puedas decidir cuándo vender.",
+    rolesSugeridos: ["dueno", "gerente", "cajero", "deposito", "contador"],
   },
   otro: {
     modulos: ["pos", "ventas", "clientes", "productos", "stock", "caja", "impuestos", "tes", "usuarios", "reportes"],
@@ -394,9 +432,11 @@ function getMensajeBienvenida(rubro: Rubro): string {
     libreria: "¡Tu librería está lista! Catálogo con ISBN, IVA correcto para útiles y gestión de pedidos a editoriales.",
     ropa: "Sistema de indumentaria activo: variantes por talle/color, temporadas, sincronización con Tienda Nube y control de sucursales.",
     supermercado: "Supermercado listo: múltiples cajas, listas de precios, perecederos y cierre diario automatizado.",
+    estacion_servicio: "Estación de servicio lista: despacho de combustible, tienda de conveniencia y caja por turno integrados en un mismo sistema.",
     distribuidora: "Distribuidora configurada: rutas de vendedores, listas de precios, cobranza y depósitos múltiples.",
     salon_belleza: "¡Tu salón está listo! Agenda por profesional, fidelidad con sellos, comisiones automáticas y recordatorio de turnos.",
     gimnasio: "Gimnasio configurado: membresías con vencimiento, control de acceso, clases con cupo y retención automática de socios.",
+    agro_acopio: "¡Tu acopio ya está listo! Pizarra BCR en el dashboard, balanza digital, contratos de cereales y liquidaciones con retenciones AFIP correctas. El productor puede ver su saldo desde el celular.",
     otro: "¡Sistema configurado! Empezá a vender, controlar el stock y tener la facturación al día.",
   }
   return mensajes[rubro]
@@ -456,6 +496,12 @@ function getProductosEjemploByRubro(rubro: Rubro): { nombre: string; codigo: str
       { nombre: "Arroz largo fino 1kg", codigo: "ARR001", precio: 980, iva: 10.5 },
       { nombre: "Yerba Taragüí 1kg", codigo: "YER001", precio: 2800, iva: 10.5 },
     ],
+    estacion_servicio: [
+      { nombre: "Nafta Súper 1L", codigo: "NAF001", precio: 450, iva: 21 },
+      { nombre: "Gasoil Infinia 1L", codigo: "GAS001", precio: 520, iva: 21 },
+      { nombre: "Sándwich de miga", codigo: "CON001", precio: 2800, iva: 21 },
+      { nombre: "Agua mineral 500ml", codigo: "AGU001", precio: 420, iva: 10.5 },
+    ],
     distribuidora: [
       { nombre: "Producto A (unidad)", codigo: "PDA001", precio: 1000, iva: 21 },
       { nombre: "Producto B (caja x12)", codigo: "PDB001", precio: 8400, iva: 21 },
@@ -470,6 +516,14 @@ function getProductosEjemploByRubro(rubro: Rubro): { nombre: string; codigo: str
       { nombre: "Membresía mensual", codigo: "MEM-MES", precio: 12000, iva: 21 },
       { nombre: "Membresía trimestral", codigo: "MEM-TRI", precio: 30000, iva: 21 },
       { nombre: "Clase suelta", codigo: "CLA001", precio: 2500, iva: 21 },
+    ],
+    agro_acopio: [
+      { nombre: "Soja - por tonelada", codigo: "GRN-SOJ", precio: 285000, iva: 10.5 },
+      { nombre: "Maíz - por tonelada", codigo: "GRN-MAI", precio: 155000, iva: 10.5 },
+      { nombre: "Trigo pan - por tonelada", codigo: "GRN-TRI", precio: 175000, iva: 10.5 },
+      { nombre: "Girasol - por tonelada", codigo: "GRN-GIR", precio: 320000, iva: 10.5 },
+      { nombre: "Almacenaje soja (por tn/mes)", codigo: "ALM-SOJ", precio: 2800, iva: 21 },
+      { nombre: "Secado soja (por punto de humedad/tn)", codigo: "SEC-SOJ", precio: 1200, iva: 21 },
     ],
     otro: [
       { nombre: "Producto genérico 1", codigo: "PRD001", precio: 1000, iva: 21 },
@@ -490,8 +544,13 @@ const RUBRO_ALIASES: Record<string, Rubro> = {
   servicios: "otro",
   industria: "otro",
   educacion: "otro",
-  agro: "otro",
+  agro: "agro_acopio",
+  acopio: "agro_acopio",
+  agropecuario: "agro_acopio",
+  cereales: "agro_acopio",
   construccion: "ferreteria",
+  gasolinera: "estacion_servicio",
+  estacion_servicio: "estacion_servicio",
 }
 
 const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
@@ -657,6 +716,24 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
     ],
     flujosCriticos: ["Venta por caja -> cierre", "Compra -> ingreso -> stock"],
   },
+  estacion_servicio: {
+    nombre: "Estación de Servicio",
+    foco: ["Ventas de combustible", "Venta de conveniencia", "Caja por turno", "Stock de surtidores"],
+    alertas: ["Surtidor sin stock", "Caja sin cierre", "Productos por vencer", "Litros por debajo del mínimo"],
+    quickActions: [
+      { label: "Venta rápida", href: "/dashboard/ventas" },
+      { label: "Control de stock", href: "/dashboard/productos/movimientos" },
+      { label: "Caja", href: "/dashboard/caja" },
+    ],
+    sidebarPrioridad: ["ventas", "caja", "stock", "compras", "reportes"],
+    maestrosCriticos: [
+      { tabla: "formas-pago", label: "Formas de pago", descripcion: "Efectivo, QR, tarjetas, vales." },
+      { tabla: "listas-precio", label: "Listas de precio", descripcion: "Precios por combustible y promos." },
+      { tabla: "condiciones-pago", label: "Condiciones de pago", descripcion: "Contado y cuentas corrientes." },
+      { tabla: "depositos", label: "Depositos", descripcion: "Stock por local y despensa." },
+    ],
+    flujosCriticos: ["Venta combustible -> factura -> caja", "Venta tienda -> stock -> caja"],
+  },
   distribuidora: {
     nombre: "Distribuidora",
     foco: ["Pedidos por vendedor", "Cobranza vencida", "Rotacion deposito", "Ventas por cliente"],
@@ -729,6 +806,32 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
       { tabla: "depositos", label: "Depositos", descripcion: "Stock por local." },
     ],
     flujosCriticos: ["Venta -> factura -> caja", "Compra -> ingreso -> stock"],
+  },
+  agro_acopio: {
+    nombre: "Acopio / Agro",
+    foco: ["Pizarra BCR hoy", "Posición de mercado (tn sin contratar)", "Camiones del día", "Liquidaciones pendientes"],
+    alertas: ["Silo al 90% de capacidad", "Contratos vencidos sin liquidar", "Camión sin carta de porte", "Productor con saldo sin liquidar >30 días", "Precio Chicago +5% hoy"],
+    quickActions: [
+      { label: "Pesar camión", href: "/dashboard/agro/balanza/nuevo" },
+      { label: "Ver pizarra", href: "/dashboard/agro/pizarra" },
+      { label: "Nuevo contrato", href: "/dashboard/agro/contratos/nuevo" },
+      { label: "Liquidar productor", href: "/dashboard/agro/liquidaciones/nuevo" },
+    ],
+    sidebarPrioridad: ["agro", "ventas", "compras", "stock", "logistica", "caja", "contabilidad", "impuestos", "reportes"],
+    maestrosCriticos: [
+      { tabla: "agro/granos", label: "Granos", descripcion: "Catálogo de granos (soja, maíz, trigo, girasol, cebada)." },
+      { tabla: "agro/silos", label: "Silos / Depósitos", descripcion: "Capacidad, ubicación, tipo de grano por silo." },
+      { tabla: "proveedores", label: "Productores", descripcion: "CUIT, RENSPA, condición AFIP del productor." },
+      { tabla: "agro/transportistas", label: "Transportistas", descripcion: "CUIT, patentes, para carta de porte." },
+      { tabla: "impuestos", label: "Retenciones rurales", descripcion: "Escala Ganancias Res. 2300/07 y Percepciones IVA." },
+    ],
+    flujosCriticos: [
+      "Camión entra → balanza (bruto) → calidad (humedad/impureza) → tara → stock silo",
+      "Contrato firmado → entrega parcial tickets → liquidación → pago productor",
+      "Compra grano → retención Ganancias rural → percepción IVA → asiento contable",
+      "Carta de porte CPE: generar antes de salir el camión → AFIP → confirmar",
+      "Pizarra BCR actualizada → alerta a productor cuando supera precio target",
+    ],
   },
 }
 

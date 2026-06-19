@@ -56,6 +56,20 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const { emitAutomationEvent } = await import("@/lib/automation/emit-event")
+    void emitAutomationEvent(
+      ctx.auth.empresaId,
+      "USUARIO_CREADO",
+      { usuarioId: usuario.id, nombre, email, rol, via: "invite" },
+      `usr-${usuario.id}`
+    )
+    const { runPlaybook } = await import("@/lib/automation/playbook-runner")
+    void runPlaybook(ctx.auth.empresaId, "nuevo_empleado_onboarding", {
+      usuarioId: usuario.id,
+      nombre,
+      rolAsignar: "administrador",
+    })
+
     // Store invitation token
     await prisma.logActividad.create({
       data: {

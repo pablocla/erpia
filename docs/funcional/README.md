@@ -1,22 +1,17 @@
-# Documentacion Funcional ERP
+# Documentación Funcional ERP (Migrada)
 
-## Alcance
-Esta carpeta describe flujos funcionales, reglas de negocio, datos clave, pantallas y APIs.
-El objetivo es habilitar implementacion, soporte y control operativo.
+> [!NOTE]
+> Toda la documentación funcional de esta carpeta ha sido migrada a la **Wiki Central Embebida** del ERP, accesible a través de la interfaz en:
+> `/dashboard/documentacion`
 
-## Indice
-- Tesoreria y Cuentas Corrientes (docs/funcional/tesoreria-cuentas-corrientes.md) — COMPLETO
-- Maestros (clientes, proveedores) (docs/funcional/maestros-clientes-proveedores.md) — EN PROCESO
-- Maestros (productos) — PENDIENTE
-- Remitos y Logistica — PENDIENTE
-- Logistica, Distribucion y Ecommerce (docs/funcional/logistica-distribucion-ecommerce.md) — EN PROCESO
-- Ventas y Facturacion — PENDIENTE
-- Compras y Abastecimiento — PENDIENTE
-- Contabilidad y Asientos — PENDIENTE
-- Impuestos (IVA/IIBB/SICORE) — PENDIENTE
-- Configuracion, Seguridad y Roles — PENDIENTE
+Las rutas correspondientes al contenido migrado en `content/docs/` son:
+- **Tesoreria y Cuentas Corrientes**: `/dashboard/documentacion/funcional/tesoreria`
+- **Maestros (Clientes / Proveedores)**: `/dashboard/documentacion/funcional/maestros-clientes`
+- **Logística, Distribución y E-commerce**: `/dashboard/documentacion/funcional/logistica`
+- **Railroad Config / Flujos**: `/dashboard/documentacion/funcional/railroad-engine`
+- **Especificación POS**: `/dashboard/documentacion/funcional/sistema-pos`
+- **Mapeo de APIs**: `/dashboard/documentacion/developer/api-overview`
+- **Guía del Analista (upgrades / parches)**: `/dashboard/documentacion/analista/guia-implementacion`
+- **Comparativa Protheus vs SaaS**: `/dashboard/documentacion/analista/protheus-vs-saas`
 
-## Convenciones
-- Estado: COMPLETO / EN PROCESO / PENDIENTE
-- Fechas en formato YYYY-MM-DD
-- Montos en ARS por defecto, indicar moneda cuando aplique
+Consulta la wiki embebida directamente desde el dashboard de la aplicación en ejecución.

@@ -1,0 +1,62 @@
+---
+title: "Guía Comercial Automatización"
+description: "Pitch de venta, casos de uso por rubro y pricing del módulo de Automatización NOP."
+sidebar_position: 5
+tags: ["roadmap", "comercial", "ventas"]
+audience: all
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Guía Comercial: Automatizaciones con n8n
+
+Este documento sirve como material de referencia para que el equipo comercial de NOP presente el módulo de **Automatización Hub** a potenciales clientes y PyMEs.
+
+---
+
+## ⚡ El Pitch de Venta (1-Pager)
+
+> **"Tu sistema de gestión actual es reactivo: espera que vayas a cargar los datos. NOP es proactivo: trabaja por vos en segundo plano."**
+
+Con el módulo de Automatizaciones de NOP, la empresa no necesita contratar personal administrativo adicional para tareas repetitivas. Al conectar nuestro motor con **n8n**, se habilitan *"empleados virtuales"* que monitorean el stock de los depósitos, gestionan la cobranza con clientes morosos por WhatsApp, y resuelven incidencias fiscales de forma inmediata, 24 horas al día, 7 días a la semana.
+
+---
+
+## 🏬 Casos de Uso por Vertical de Negocio
+
+### 🌾 Agro & Acopios
+*   **Problema**: El productor necesita saber el precio de pizarra de la Bolsa de Cereales al instante.
+*   **Solución**: Un workflow semanal consulta la pizarra y envía un boletín informativo personalizado a toda la base de contactos del agro vía WhatsApp.
+
+### 🍔 Gastronomía & Bar
+*   **Problema**: Se pierden comandas abiertas que los mozos olvidan cobrar o cerrar.
+*   **Solución**: El bot de conciliación nocturno audita las mesas activas a las 23:59 y alerta al encargado del salón.
+
+### 📦 Retail & Distribuidoras
+*   **Problema**: El tiempo que se tarda en transcribir pedidos de clientes a órdenes de armado (picking).
+*   **Solución**: Al confirmarse el pedido B2B, n8n genera la hoja de picking, asigna al transportista por zona geográfica y actualiza el stock en la sucursal de destino.
+
+---
+
+## 💰 Tabla de precios (ProductoComercial — 2026)
+
+| SKU | Producto | Precio ARS/mes | Eventos/mes incluidos |
+|-----|----------|----------------|------------------------|
+| `automation.n8n_hub` | NOP Automation Hub | $29.900 | 10.000 |
+| `channel.whatsapp` | Canal WhatsApp Business | $7.900 | 5.000 |
+| `channel.mercadopago` | Canal Mercado Pago | $9.900 | Sin límite |
+| `channel.mercadolibre` | Canal Mercado Libre | $14.900 | Sin límite |
+| `ops.morning_commander` | Morning Commander IA | $19.900 | 2.000 |
+
+**Demo:** el login demo activa `automation.n8n_hub` con cupo ampliado (50.000 eventos/mes).
+
+**Modos de conexión incluidos:** webhook saliente, inbound API, poll (modo C) y empleados virtuales locales.
+
+---
+
+## 📎 Material de apoyo
+
+*   OpenAPI: `docs/automation/OPENAPI_AUTOMATION.yaml` v1.1.0
+*   Plantillas n8n: `docs/automation/n8n-templates/` (01–09)
+*   Wiki técnica: [Automation Hub](/dashboard/documentacion/funcional/automation-hub)

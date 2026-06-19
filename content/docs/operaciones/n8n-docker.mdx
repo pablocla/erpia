@@ -1,0 +1,72 @@
+---
+title: "Self-Hosted n8n (Docker)"
+description: "Runbook de instalación, docker-compose y variables de entorno para n8n autohospedado."
+sidebar_position: 5
+tags: ["operaciones", "n8n", "docker", "deploy"]
+audience: operaciones
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Despliegue Autohospedado (Self-Hosted) de n8n
+
+Para garantizar la privacidad de los datos empresariales de los clientes y evitar sobrecostos por volumen de ejecuciones en la nube de n8n cloud, recomendamos aprovisionar instancias independientes de n8n usando **Docker**.
+
+---
+
+## 🐋 Archivo `docker-compose.yml` de Producción
+
+A continuación, se detalla la configuración recomendada para levantar n8n con persistencia de datos en una base de datos PostgreSQL dedicada para la ejecución de flujos:
+
+```yaml
+version: '3.8'
+
+services:
+  n8n_db:
+    image: postgres:16-alpine
+    container_name: n8n_db
+    environment:
+      - POSTGRES_DB=n8n_workflows
+      - POSTGRES_USER=n8n_admin
+      - POSTGRES_PASSWORD=cambiame_por_algo_seguro
+    volumes:
+      - n8n_db_data:/var/lib/postgresql/data
+    restart: always
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n_app
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=n8n.tuempresa.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=n8n_db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_workflows
+      - DB_POSTGRESDB_USER=n8n_admin
+      - DB_POSTGRESDB_PASSWORD=cambiame_por_algo_seguro
+      - NOP_BASE_URL=https://tu-erp-instancia.com
+    volumes:
+      - n8n_app_data:/home/node/.n8n
+    depends_on:
+      - n8n_db
+    restart: always
+
+volumes:
+  n8n_db_data:
+  n8n_app_data:
+```
+
+---
+
+## 🔒 Variables de Entorno Adicionales para n8n
+
+Al configurar los flujos en n8n, se deben crear dos variables globales en el entorno (`Settings -> Variables` de n8n) o inyectarlas en el docker-compose:
+
+1.  `NOP_BASE_URL`: URL del ERP (ej: `https://erp.tuempresa.com`).
+2.  `NOP_API_KEY`: Clave de autenticación generada en NOP bajo el rol del empleado virtual correspondiente para que n8n pueda enviar callbacks.

@@ -325,6 +325,19 @@ export class WorkflowEngine {
           return { success: true, output: { approvalPending: true } }
         }
 
+        case "webhook":
+        case "n8n": {
+          const { executeN8nWorkflowStep } = await import(
+            "@/lib/automation/n8n-step-executor"
+          )
+          const result = await executeN8nWorkflowStep(this.empresaId, step, contexto)
+          return {
+            success: result.success,
+            output: result.output,
+            error: result.error,
+          }
+        }
+
         default:
           return { success: true }
       }

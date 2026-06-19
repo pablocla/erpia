@@ -1,0 +1,44 @@
+---
+title: "Esquema Metadata IA (RAG)"
+description: "Contrato de metadatos YAML frontmatter diseñado para indexadores semánticos y asistentes IA."
+sidebar_position: 1
+tags: ["ia", "rag", "metadata"]
+audience: ia
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Esquema de Metadatos para Inteligencia Artificial (RAG)
+
+Para permitir que los agentes de IA (como Cursor o asistentes embebidos del ERP) lean y utilicen la documentación de manera estructurada en su contexto, definimos el siguiente contrato obligatorio de frontmatter en cada archivo `.mdx`.
+
+---
+
+## 📄 Estructura del Contrato YAML
+
+Todo archivo de documentación en `content/docs/` debe iniciar obligatoriamente con el bloque frontmatter:
+
+```yaml
+---
+title: "Título descriptivo corto"
+description: "Resumen de una sola línea usado en búsquedas semánticas"
+sidebar_position: 10
+tags: ["etiqueta1", "etiqueta2"]
+audience: analista | developer | operaciones | ia
+layer: 1-config | 2-campos | 3-features | 4-workflow | 5-codigo
+related_apis: ["/api/endpoint1", "/api/endpoint2"]
+related_code: ["lib/servicio/archivo.ts"]
+last_verified: 2026-06-19
+status: completo | borrador | deprecado
+---
+```
+
+---
+
+## 🎯 Caso de Uso del Asistente
+Cuando el usuario abra la pantalla `/dashboard/pos` y consulte al Asistente IA *"¿Cómo configuro la balanza de pesaje?"*, el motor de RAG:
+1. Buscará en el índice de metadatos por los tags `["pos", "configuracion"]` y `audience: "analista"`.
+2. Recuperará el archivo `content/docs/funcional/sistema-pos.mdx`.
+3. Ofrecerá una respuesta contextualizada directamente basada en la documentación oficial parametrizada.
+4. Mapeará las APIs recomendadas listadas en `related_apis` para que el desarrollador interactúe.

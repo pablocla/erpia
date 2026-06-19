@@ -1,179 +1,236 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from "react"
+import { useTheme } from "next-themes"
+import { authFetch } from "@/lib/stores"
+import { applyThemeToDocument } from "@/lib/theme/apply-theme"
+import {
+  DEFAULT_TEMA_CONFIG,
+  mergeTemaConfig,
+  type EmpresaTemaConfig,
+  type Palette,
+  type Density,
+  type SidebarStyle,
+  type SidebarPosition,
+  type RadiusPreset,
+  type Surface,
+  type ThemeMode,
+  type FontFamily,
+  type DisplayFont,
+  type FontScale,
+  type BlurIntensity,
+  type CanvasStyle,
+  type TopbarStyle,
+  type TableStyle,
+  type CardStyle,
+  type IconStyle,
+  type IconSize,
+  type SidebarColor,
+  type ChartPalette,
+  type ThemeLocale,
+} from "@/lib/theme/types"
 
-export type Palette =
-  | "neutral"
-  | "porcelain"
-  | "sand"
-  | "sage"
-  | "mist"
-  | "blue"
-  | "green"
-  | "orange"
-  | "rose"
-  | "violet"
-  | "amber"
-  | "teal"
-export type Density = "compact" | "default" | "comfortable"
-export type SidebarStyle = "default" | "floating" | "inset"
-export type RadiusPreset = "none" | "sm" | "md" | "lg" | "xl"
-export type Surface = "soft" | "clean" | "glow"
-
-const RADIUS_MAP: Record<RadiusPreset, string> = {
-  none: "0rem",
-  sm: "0.3rem",
-  md: "0.5rem",
-  lg: "0.625rem",
-  xl: "1rem",
-}
-
-export const PALETTE_COLORS: Record<Palette, { label: string; swatch: string }> = {
-  neutral: { label: "Neutral", swatch: "#737373" },
-  porcelain: { label: "Porcelana", swatch: "#c9b6a4" },
-  sand: { label: "Arena", swatch: "#d7a46a" },
-  sage: { label: "Salvia", swatch: "#7aa28d" },
-  mist: { label: "Niebla", swatch: "#7b93b5" },
-  blue: { label: "Azul", swatch: "#3b82f6" },
-  green: { label: "Verde", swatch: "#22c55e" },
-  orange: { label: "Naranja", swatch: "#f97316" },
-  rose: { label: "Rosa", swatch: "#f43f5e" },
-  violet: { label: "Violeta", swatch: "#8b5cf6" },
-  amber: { label: "Ámbar", swatch: "#f59e0b" },
-  teal: { label: "Teal", swatch: "#14b8a6" },
-}
-
-export interface ThemeConfig {
-  palette: Palette
-  density: Density
-  sidebarStyle: SidebarStyle
-  radius: RadiusPreset
-  surface: Surface
-}
-
-const DEFAULT_CONFIG: ThemeConfig = {
-  palette: "porcelain",
-  density: "default",
-  sidebarStyle: "default",
-  radius: "lg",
-  surface: "soft",
-}
-
-const STORAGE_KEY = "erp-theme-config"
+export type { EmpresaTemaConfig as ThemeConfig, Palette, Density, SidebarStyle, RadiusPreset, Surface }
+export { PALETTE_COLORS, THEME_PRESETS, DEFAULT_TEMA_CONFIG } from "@/lib/theme/types"
 
 interface ThemeConfigContextValue {
-  config: ThemeConfig
+  config: EmpresaTemaConfig
+  canEdit: boolean
+  loading: boolean
+  saving: boolean
+  setMode: (m: ThemeMode) => void
   setPalette: (p: Palette) => void
   setDensity: (d: Density) => void
   setSidebarStyle: (s: SidebarStyle) => void
+  setSidebarPosition: (s: SidebarPosition) => void
   setRadius: (r: RadiusPreset) => void
   setSurface: (s: Surface) => void
-  applyConfig: (c: ThemeConfig) => void
+  setBlurIntensity: (b: BlurIntensity) => void
+  setCanvasStyle: (c: CanvasStyle) => void
+  setFontFamily: (f: FontFamily) => void
+  setDisplayFont: (f: DisplayFont) => void
+  setFontScale: (f: FontScale) => void
+  setHighContrast: (v: boolean) => void
+  setReducedMotion: (v: boolean) => void
+  setAnimationsEnabled: (v: boolean) => void
+  setTopbarStyle: (s: TopbarStyle) => void
+  setTableStyle: (s: TableStyle) => void
+  setCardStyle: (s: CardStyle) => void
+  setIconStyle: (s: IconStyle) => void
+  setIconSize: (s: IconSize) => void
+  setSidebarColor: (s: SidebarColor) => void
+  setChartPalette: (c: ChartPalette) => void
+  setBrandColor: (c: string | null) => void
+  setAppName: (n: string | null) => void
+  setLogoUrl: (u: string | null) => void
+  setLocale: (l: ThemeLocale) => void
+  setTouchMode: (v: boolean) => void
+  applyConfig: (c: Partial<EmpresaTemaConfig>) => void
   resetConfig: () => void
+  saveNow: () => Promise<void>
 }
 
 const ThemeConfigContext = createContext<ThemeConfigContextValue | null>(null)
 
-function loadConfig(): ThemeConfig {
-  if (typeof window === "undefined") return DEFAULT_CONFIG
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return DEFAULT_CONFIG
-    const parsed = JSON.parse(raw)
-    return { ...DEFAULT_CONFIG, ...parsed }
-  } catch {
-    return DEFAULT_CONFIG
-  }
-}
-
-function applyToDocument(config: ThemeConfig) {
-  const root = document.documentElement
-  // Palette
-  if (config.palette === "neutral") {
-    root.removeAttribute("data-palette")
-  } else {
-    root.setAttribute("data-palette", config.palette)
-  }
-  // Density
-  if (config.density === "default") {
-    root.removeAttribute("data-density")
-  } else {
-    root.setAttribute("data-density", config.density)
-  }
-  // Sidebar style
-  if (config.sidebarStyle === "default") {
-    root.removeAttribute("data-sidebar-style")
-  } else {
-    root.setAttribute("data-sidebar-style", config.sidebarStyle)
-  }
-  // Surface
-  if (config.surface === "soft") {
-    root.removeAttribute("data-surface")
-  } else {
-    root.setAttribute("data-surface", config.surface)
-  }
-  // Radius
-  root.style.setProperty("--radius", RADIUS_MAP[config.radius])
-}
-
 export function ThemeConfigProvider({ children }: { children: React.ReactNode }) {
-  const [config, setConfig] = useState<ThemeConfig>(DEFAULT_CONFIG)
-  const [mounted, setMounted] = useState(false)
+  const { setTheme } = useTheme()
+  const [config, setConfig] = useState<EmpresaTemaConfig>(DEFAULT_TEMA_CONFIG)
+  const [canEdit, setCanEdit] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const configRef = useRef(config)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const skipSave = useRef(false)
+
+  configRef.current = config
+
+  const applyLocal = useCallback(
+    (next: EmpresaTemaConfig) => {
+      setConfig(next)
+      applyThemeToDocument(next)
+      try {
+        localStorage.removeItem("theme")
+      } catch {
+        /* ignore */
+      }
+      setTheme(next.mode)
+    },
+    [setTheme]
+  )
+
+  const persistToServer = useCallback(async (next: EmpresaTemaConfig) => {
+    if (!canEdit) return
+    setSaving(true)
+    try {
+      const { version: _v, ...payload } = next
+      const res = await authFetch("/api/config/tema", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.config) applyLocal(mergeTemaConfig(data.config))
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false)
+    }
+  }, [applyLocal, canEdit])
+
+  const scheduleSave = useCallback(
+    (next: EmpresaTemaConfig) => {
+      if (!canEdit || skipSave.current) return
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(() => persistToServer(next), 600)
+    },
+    [canEdit, persistToServer]
+  )
+
+  const update = useCallback(
+    (partial: Partial<EmpresaTemaConfig>) => {
+      if (!canEdit) return
+      const next = mergeTemaConfig({ ...configRef.current, ...partial })
+      applyLocal(next)
+      scheduleSave(next)
+    },
+    [applyLocal, canEdit, scheduleSave]
+  )
 
   useEffect(() => {
-    const loaded = loadConfig()
-    setConfig(loaded)
-    applyToDocument(loaded)
-    setMounted(true)
-  }, [])
+    applyThemeToDocument(DEFAULT_TEMA_CONFIG)
 
-  const persist = useCallback((next: ThemeConfig) => {
-    setConfig(next)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    applyToDocument(next)
-  }, [])
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) {
+      setLoading(false)
+      return
+    }
 
-  const setPalette = useCallback((palette: Palette) => {
-    persist({ ...config, palette })
-  }, [config, persist])
+    authFetch("/api/config/tema")
+      .then(async (res) => {
+        if (!res.ok) return
+        const data = await res.json()
+        skipSave.current = true
+        applyLocal(mergeTemaConfig(data.config))
+        setCanEdit(Boolean(data.canEdit))
+        skipSave.current = false
+      })
+      .finally(() => setLoading(false))
+  }, [applyLocal])
 
-  const setDensity = useCallback((density: Density) => {
-    persist({ ...config, density })
-  }, [config, persist])
+  const makeSetter = <K extends keyof EmpresaTemaConfig>(key: K) =>
+    (value: EmpresaTemaConfig[K]) => update({ [key]: value } as Partial<EmpresaTemaConfig>)
 
-  const setSidebarStyle = useCallback((sidebarStyle: SidebarStyle) => {
-    persist({ ...config, sidebarStyle })
-  }, [config, persist])
+  const applyConfig = useCallback(
+    (partial: Partial<EmpresaTemaConfig>) => update(partial),
+    [update]
+  )
 
-  const setRadius = useCallback((radius: RadiusPreset) => {
-    persist({ ...config, radius })
-  }, [config, persist])
+  const resetConfig = useCallback(async () => {
+    if (!canEdit) return
+    setSaving(true)
+    try {
+      const res = await authFetch("/api/config/tema", { method: "DELETE" })
+      if (res.ok) {
+        const data = await res.json()
+        skipSave.current = true
+        applyLocal(mergeTemaConfig(data.config))
+        skipSave.current = false
+      }
+    } finally {
+      setSaving(false)
+    }
+  }, [applyLocal, canEdit])
 
-  const setSurface = useCallback((surface: Surface) => {
-    persist({ ...config, surface })
-  }, [config, persist])
-
-  const applyConfig = useCallback((next: ThemeConfig) => {
-    persist({ ...DEFAULT_CONFIG, ...next })
-  }, [persist])
-
-  const resetConfig = useCallback(() => {
-    persist(DEFAULT_CONFIG)
-  }, [persist])
-
-  if (!mounted) return null
+  const saveNow = useCallback(async () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    await persistToServer(configRef.current)
+  }, [persistToServer])
 
   return (
     <ThemeConfigContext.Provider
       value={{
         config,
-        setPalette,
-        setDensity,
-        setSidebarStyle,
-        setRadius,
-        setSurface,
+        canEdit,
+        loading,
+        saving,
+        setMode: makeSetter("mode"),
+        setPalette: makeSetter("palette"),
+        setDensity: makeSetter("density"),
+        setSidebarStyle: makeSetter("sidebarStyle"),
+        setSidebarPosition: makeSetter("sidebarPosition"),
+        setRadius: makeSetter("radius"),
+        setSurface: makeSetter("surface"),
+        setBlurIntensity: makeSetter("blurIntensity"),
+        setCanvasStyle: makeSetter("canvasStyle"),
+        setFontFamily: makeSetter("fontFamily"),
+        setDisplayFont: makeSetter("displayFont"),
+        setFontScale: makeSetter("fontScale"),
+        setHighContrast: makeSetter("highContrast"),
+        setReducedMotion: makeSetter("reducedMotion"),
+        setAnimationsEnabled: makeSetter("animationsEnabled"),
+        setTopbarStyle: makeSetter("topbarStyle"),
+        setTableStyle: makeSetter("tableStyle"),
+        setCardStyle: makeSetter("cardStyle"),
+        setIconStyle: makeSetter("iconStyle"),
+        setIconSize: makeSetter("iconSize"),
+        setSidebarColor: makeSetter("sidebarColor"),
+        setChartPalette: makeSetter("chartPalette"),
+        setBrandColor: makeSetter("brandColor"),
+        setAppName: makeSetter("appName"),
+        setLogoUrl: makeSetter("logoUrl"),
+        setLocale: makeSetter("locale"),
+        setTouchMode: makeSetter("touchMode"),
         applyConfig,
         resetConfig,
+        saveNow,
       }}
     >
       {children}

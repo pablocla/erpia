@@ -32,4 +32,8 @@ import "@/lib/producto/producto-event-handlers"
 // CC/CP handlers (self-registering)
 import "@/lib/cc-cp/cuentas-service"
 
+// NOP Automation Hub → n8n bridge
+import { registerAutomationEventHandlers } from "@/lib/automation/event-subscriber"
+registerAutomationEventHandlers()
+
 export { eventBus }

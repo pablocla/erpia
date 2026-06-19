@@ -1,0 +1,58 @@
+---
+title: "Getting Started"
+description: "Instrucciones de configuración del entorno de desarrollo local paso a paso."
+sidebar_position: 1
+tags: ["developer", "setup", "git"]
+audience: developer
+layer: 5-codigo
+last_verified: 2026-06-19
+status: completo
+---
+
+# Guía de Inicio para Desarrolladores
+
+Para comenzar a desarrollar en el ERP, sigue los siguientes pasos para configurar tu entorno de desarrollo en local.
+
+---
+
+## 🛠️ Requisitos Previos
+
+- **Node.js**: Versión 20 o superior.
+- **Base de Datos**: PostgreSQL instalado localmente (o usando una instancia remota de Supabase).
+- **Gestor de Paquetes**: `npm` v10+.
+
+---
+
+## ⚙️ Configuración del Proyecto
+
+1. **Clonar el Repositorio e Instalar Dependencias**:
+   ```bash
+   git clone <repo-url> pos-system-argentina
+   cd pos-system-argentina
+   npm install
+   ```
+
+2. **Variables de Entorno**:
+   Copia el archivo de plantilla `.env.example` a `.env.local` o `.env` y configura tus variables de conexión impositivas y de base de datos:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Generar el Cliente de Prisma**:
+   ```bash
+   npx prisma generate
+   ```
+
+4. **Correr en Modo Desarrollo**:
+   ```bash
+   npm run dev
+   ```
+   *El servidor estará disponible en [http://localhost:3000](http://localhost:3000).*
+
+---
+
+## 🧪 Comandos Útiles
+
+- **Correr Tests**: `npm test`
+- **Verificación de Tipos y Build**: `npm run verify`
+- **Correr Tests E2E**: `npm run test:e2e`

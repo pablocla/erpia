@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 import { z } from "zod"
 
 const crearPedidoSchema = z.object({
@@ -9,8 +10,9 @@ const crearPedidoSchema = z.object({
   lineas: z.array(z.object({
     productoId: z.number().int().positive(),
     cantidad: z.number().positive(),
-    precioUnitario: z.number().nonnegative(),
+    precioUnitario: z.number().nonnegative().optional(),
   })).min(1),
+  usarListaPrecios: z.boolean().default(true),
 })
 
 /**
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Datos inválidos", detalles: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { empresaId, clienteId, observaciones, lineas } = parsed.data
+    const { empresaId, clienteId, observaciones, lineas, usarListaPrecios } = parsed.data
 
     // Validate cliente belongs to empresa
     const cliente = await prisma.cliente.findFirst({
@@ -82,7 +84,32 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const total = lineas.reduce((s, l) => s + l.cantidad * l.precioUnitario, 0)
+    const lineasConPrecio = usarListaPrecios
+      ? await resolverPreciosLineas(
+          lineas.map((l) => ({
+            productoId: l.productoId,
+            cantidad: l.cantidad,
+            precioUnitario: l.precioUnitario,
+          })),
+          { empresaId, clienteId, forzarLista: true }
+        )
+      : lineas.map((l) => ({
+          productoId: l.productoId,
+          cantidad: l.cantidad,
+          precioUnitario: l.precioUnitario ?? 0,
+        }))
+
+    if (lineasConPrecio.some((l) => l.precioUnitario <= 0)) {
+      return NextResponse.json({ error: "No se pudo resolver el precio de un producto" }, { status: 400 })
+    }
+
+    const productos = await prisma.producto.findMany({
+      where: { empresaId, id: { in: lineas.map((l) => l.productoId) } },
+      select: { id: true, nombre: true },
+    })
+    const nombrePorId = new Map(productos.map((p) => [p.id, p.nombre]))
+
+    const total = lineasConPrecio.reduce((s, l) => s + l.cantidad * l.precioUnitario, 0)
 
     // Generate numero
     const count = await prisma.pedidoVenta.count({ where: { empresaId } })
@@ -98,12 +125,12 @@ export async function POST(request: NextRequest) {
         observaciones,
         total,
         lineas: {
-          create: lineas.map((l) => ({
+          create: lineas.map((l, i) => ({
             productoId: l.productoId,
-            descripcion: "",   // Se llena en la vista admin
+            descripcion: nombrePorId.get(l.productoId) ?? `Producto ${l.productoId}`,
             cantidad: l.cantidad,
-            precioUnitario: l.precioUnitario,
-            total: l.cantidad * l.precioUnitario,
+            precioUnitario: lineasConPrecio[i].precioUnitario,
+            total: l.cantidad * lineasConPrecio[i].precioUnitario,
           })),
         },
       },

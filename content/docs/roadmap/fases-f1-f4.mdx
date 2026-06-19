@@ -1,0 +1,210 @@
+---
+title: "Plan de Fases del Proyecto"
+description: "Documento sobre plan de fases del proyecto."
+sidebar_position: 10
+tags: ["roadmap", "fases"]
+audience: all
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+══════════════════════════════════════════════════════════════════════════════
+DIVISIÓN DE TAREAS — CURSOR (Grok) vs GEMINI ANTIGRAVITY
+ERP Argentina | Actualizado: 2026-06-18
+══════════════════════════════════════════════════════════════════════════════
+
+CONTEXTO
+--------
+- Repo: pos-system-argentina (Next.js 15, Prisma, Vitest)
+- Estado: 268 tests OK, build OK, motor precios cableado en ventas/POS
+- Comando verificación: npm run verify
+- Prompt Gemini: PROMPT_GEMINI_TESTING_ERP.md
+
+REGLA DE ORO
+------------
+- Gemini AUDITA y REPORTA (no refactoriza sin pedido)
+- Cursor IMPLEMENTA fixes quirúrgicos según reporte de Gemini
+- Handoff: Gemini deja issues numerados → Cursor los cierra uno a uno → Gemini re-verifica
+
+══════════════════════════════════════════════════════════════════════════════
+FASE 1 — AUDITORÍA (GEMINI PRIMERO, 1 sesión)
+══════════════════════════════════════════════════════════════════════════════
+
+GEMINI ANTIGRAVITY — dueño
+  [G1] Ejecutar npm run verify y guardar log completo
+  [G2] Correr suite por módulo:
+       npm run test:smoke
+       npm run test:erp
+       npm run test:auth
+       npm run test:precios
+       npm test
+  [G3] Inventariar módulos SIN tests (prioridad P1/P2/P3):
+       - P1: agro-service, compras-service, membresias, arqueo-caja
+       - P2: mercadopago, cotizacion-service, portal pedidos
+       - P3: hospitalidad completo, logística, IoT
+  [G4] Listar rutas API sin test de route (grep app/api/**/route.ts vs __tests__)
+  [G5] Entregar reporte en DIVISION_TAREAS_CURSOR_GEMINI.txt sección "REPORTE GEMINI"
+       Formato: ID | severidad | archivo | descripción | fix sugerido
+
+CURSOR — solo lectura
+  [C0] Esperar reporte G1-G5 antes de tocar código
+
+══════════════════════════════════════════════════════════════════════════════
+FASE 2 — IMPLEMENTACIÓN (CURSOR PRIMERO)
+══════════════════════════════════════════════════════════════════════════════
+
+CURSOR (Grok) — dueño
+  [C1] Tests P1 faltantes (crear __tests__/ siguiendo setup.ts mock)
+       - __tests__/agro/agro-service.test.ts
+       - __tests__/compras/compras-service.test.ts
+       - __tests__/caja/arqueo-service.test.ts
+  [C2] Cablear precios en portal B2B (/api/portal/pedidos) con resolver-precios-lineas
+  [C3] WhatsApp sender Twilio (lib/whatsapp/ + cron enviar-whatsapp)
+  [C4] API /api/pendientes por rol (bandeja funcional.txt)
+  [C5] Redirect post-login por rol (cajero→POS, contador→impuestos)
+  [C6] Fixes de bugs que Gemini marque como P0/P1 en su reporte
+
+GEMINI — soporte
+  [G6] Después de cada C1-C6: correr npx vitest run <archivo> y npm run verify
+  [G7] Confirmar PASS/FAIL y actualizar reporte
+
+══════════════════════════════════════════════════════════════════════════════
+FASE 3 — E2E Y PRODUCCIÓN (PARALELO)
+══════════════════════════════════════════════════════════════════════════════
+
+GEMINI ANTIGRAVITY — dueño
+  [G8] Scaffold Playwright: playwright.config.ts + 3 tests E2E
+       - login demo → dashboard
+       - abrir POS → ver semáforos
+       - crear pedido con precio auto-resuelto (mock API)
+  [G9] Script scripts/health-check.ts → curl /api/health endpoints
+  [G10] Matriz manual: 40 módulos dashboard → existe página + carga sin 500
+
+CURSOR — dueño
+  [C7] Redis + BullMQ para cron agentes (S1 introspección)
+  [C8] Integrar CajasAbiertasAlert, DraftAlert en layout/POS (funcional.txt)
+  [C9] Mercado Libre sync stub o route base si no existe
+
+══════════════════════════════════════════════════════════════════════════════
+FASE 4 — CIERRE PRE-VENTA (AMBOS)
+══════════════════════════════════════════════════════════════════════════════
+
+GEMINI
+  [G11] Correr verify final + generar score /100
+  [G12] Checklist pre-demo (TESTING_GEMINI.md) marcado ✅/❌
+  [G13] Auditoría documentación + tecnología faltante → docs/G13_DOCUMENTACION_Y_TECNOLOGIA.md
+  [G15] Wiki embebida estilo Docusaurus → PROMPT_GEMINI_DOCUSAURUS_EMBED.md
+
+CURSOR
+  [C10] Cerrar todos los P0/P1 del reporte Gemini
+  [C11] Actualizar TESTING_GEMINI.md con conteo tests final
+  [C12] README.md raíz + deploy runbook (ver G13-01, G13-03)
+  [C13] Post-G15: RAG /api/ai/docs-context + E2E doc nav (NO hacer antes de G15)
+
+CRITERIO DE ÉXITO FASE 4
+  - npm run verify → 0 fallos
+  - ≥ 300 tests unitarios
+  - ≥ 3 tests E2E Playwright pasando
+  - Motor precios en: ventas, POS, presupuestos, portal B2B
+  - WhatsApp sender conectado (aunque sea sandbox Twilio)
+
+══════════════════════════════════════════════════════════════════════════════
+HANDOFF — CÓMO PASARSE TRABAJO
+══════════════════════════════════════════════════════════════════════════════
+
+Gemini → Cursor:
+  "Encontré BUG-007: ventas-service no valida stock en confirmarPedido cuando..."
+  + path + test que falla + expected behavior
+
+Cursor → Gemini:
+  "Cerré BUG-007 en commit/working tree. Corré: npx vitest run __tests__/ventas/ventas-service.test.ts"
+
+══════════════════════════════════════════════════════════════════════════════
+REPORTE GEMINI — FASE 4 CIERRE (G11-G13)
+══════════════════════════════════════════════════════════════════════════════
+
+Fecha: 2026-06-19
+Ejecutado por: Cursor (G11-G12) + auditoría G13
+
+[G11] VERIFICACIÓN FINAL
+  npm test (vitest)     → 302/302 PASS (53 archivos)
+  npm run build         → OK (328 rutas)
+  npm run test:e2e      → 3/3 PASS (Chromium, mocks auth)
+  API routes            → 264
+  Dashboard pages       → 103
+
+[G11] SCORE /100
+  Demo / piloto 1-5 clientes     → 85/100
+  Producción masiva LATAM        → 68/100
+
+Desglose demo (85):
+  +25 build + tests estables (302 unit + 3 E2E)
+  +20 módulos core funcionales (ventas, POS, caja, AFIP stub)
+  +15 motor precios cableado (ventas/POS/presupuestos/portal)
+  +10 UX rol (redirect, pendientes, alertas POS C8)
+  +10 integraciones parciales (WhatsApp dev, MP, ML stub)
+  +5  documentación testing actualizada
+  -10 sin CI/CD ni runbook deploy
+  -5  E2E con mocks (no DB real)
+  -5  WhatsApp/Twilio no validado en sandbox prod
+
+Desglose producción (68):
+  +20 multi-tenant + auth JWT
+  +15 cobertura tests servicios críticos
+  +10 health-check + /api/health
+  +8  AFIP homologación (con cert)
+  +5  observabilidad básica (error-logger JSON)
+  -15 sin Redis/BullMQ
+  -10 sin Sentry/APM
+  -8  sin CI/CD
+  -7  docs operativas incompletas (G13)
+  -5  Supabase storage + workflow colas (BUG-003/004)
+
+[G12] CHECKLIST PRE-DEMO — ver TESTING_GEMINI.md (tabla ✅/❌)
+
+[G13] DOCUMENTACIÓN Y TECNOLOGÍA FALTANTE
+  Ver archivo completo: docs/G13_DOCUMENTACION_Y_TECNOLOGIA.md
+  Guía analista (Protheus vs SaaS, upgrades): docs/analista/GUIA_ANALISTA_IMPLEMENTACION.md
+
+  Doc crítica ausente (P0):
+  - README.md raíz (setup dev)
+  - docs/deploy/RUNBOOK.md
+  - docs/fiscal/AFIP-GUIA.md (homologación paso a paso)
+
+  Doc funcional desactualizada (P1):
+  - docs/funcional/README.md (mayoría PENDIENTE pero código existe)
+  - sistema-pos.md (falta suspendidas, pendientes C8)
+  - pendientes-por-rol.md (existe solo funcional.txt en raíz)
+  - API OpenAPI (264 routes sin contrato)
+
+  Tecnología ausente (P0 prod):
+  - Redis/Upstash (rate limit, cache)
+  - BullMQ o pg-boss (colas agentes, WhatsApp cron, aprobaciones)
+  - Sentry (@sentry/nextjs)
+  - GitHub Actions (verify + e2e en PR)
+
+  Tecnología ausente (P1-P2):
+  - Supabase Storage cableado (BUG-003)
+  - Mercado Libre OAuth real (hoy stub)
+  - Impresoras Epson/Hasar TCP/USB
+  - Tests integración PostgreSQL (DATABASE_URL_TEST)
+
+══════════════════════════════════════════════════════════════════════════════
+HISTORIAL BUGS
+══════════════════════════════════════════════════════════════════════════════
+
+BUGS CERRADOS:
+BUG-001 | RESUELTO | portal/pedidos | resolver-precios-lineas
+BUG-002 | PARCIAL  | whatsapp-service | Twilio + dev mode
+C4      | NUEVO    | /api/pendientes | Bandeja por rol
+C5      | NUEVO    | home-redirect   | Login por rol
+C8      | NUEVO    | alertas POS     | CajasAbiertasAlert, DraftAlert, panel suspendidas
+C9      | NUEVO    | /api/mercadolibre | Stub sync
+
+BUGS ABIERTOS:
+BUG-003 | P2 | documentos-service | Supabase storageKey
+BUG-004 | P2 | workflow-engine    | Colas aprobación
+
+MÓDULOS SIN TEST (P2 restante):
+- cotizacion-service, portal route test dedicado, hospitalidad E2E

@@ -44,6 +44,7 @@ const EMPTY_FORM: Record<string, any> = {
   nroIIBB: "", situacionIIBB: "__none__",
   esAgenteRetencionIVA: false, esAgenteRetencionGanancias: false,
   esAgentePercepcionIVA: false, esAgentePercepcionIIBB: false,
+  esGranEmpresa: false, esExportacion: false,
   nroCertificadoExclusion: "", vigenciaCertificadoExclusion: "",
   direccion: "", direccionComplemento: "", codigoPostal: "",
   provinciaId: "__none__", localidadId: "__none__", paisId: "__none__", zonaGeograficaId: "__none__",
@@ -75,6 +76,8 @@ function clienteToForm(c: any): Record<string, any> {
     esAgenteRetencionGanancias: c.esAgenteRetencionGanancias ?? false,
     esAgentePercepcionIVA: c.esAgentePercepcionIVA ?? false,
     esAgentePercepcionIIBB: c.esAgentePercepcionIIBB ?? false,
+    esGranEmpresa: c.esGranEmpresa ?? false,
+    esExportacion: c.esExportacion ?? false,
     nroCertificadoExclusion: c.nroCertificadoExclusion ?? "",
     vigenciaCertificadoExclusion: c.vigenciaCertificadoExclusion ? c.vigenciaCertificadoExclusion.slice(0, 10) : "",
     direccion: c.direccion ?? "",
@@ -430,11 +433,13 @@ export default function ClientesPage() {
                 <DatoRO label="Nro. IIBB" value={vistaDetalle.nroIIBB} />
                 <DatoRO label="Situación IIBB" value={vistaDetalle.situacionIIBB?.replace(/_/g, " ")} />
                 <Separator />
-                <p className="text-sm font-semibold">Retenciones / Percepciones</p>
+                <p className="text-sm font-semibold">Retenciones / Percepciones / Regímenes Especiales</p>
                 <DatoRO label="Agente Ret. IVA" value={vistaDetalle.esAgenteRetencionIVA ? "Sí" : "No"} />
                 <DatoRO label="Agente Ret. Ganancias" value={vistaDetalle.esAgenteRetencionGanancias ? "Sí" : "No"} />
                 <DatoRO label="Agente Perc. IVA" value={vistaDetalle.esAgentePercepcionIVA ? "Sí" : "No"} />
                 <DatoRO label="Agente Perc. IIBB" value={vistaDetalle.esAgentePercepcionIIBB ? "Sí" : "No"} />
+                <DatoRO label="Es Gran Empresa (FCE)" value={vistaDetalle.esGranEmpresa ? "Sí" : "No"} />
+                <DatoRO label="Cliente Exportación" value={vistaDetalle.esExportacion ? "Sí" : "No"} />
                 <DatoRO label="Cert. Exclusión" value={vistaDetalle.nroCertificadoExclusion} />
                 <DatoRO label="Vigencia Cert." value={vistaDetalle.vigenciaCertificadoExclusion?.slice(0, 10)} />
               </TabsContent>
@@ -583,7 +588,7 @@ export default function ClientesPage() {
                 </div>
               </div>
               <Separator />
-              <p className="text-sm font-semibold">Retenciones / Percepciones</p>
+              <p className="text-sm font-semibold">Retenciones / Percepciones / Regímenes Especiales</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
                   <Switch checked={formData.esAgenteRetencionIVA} onCheckedChange={v => set("esAgenteRetencionIVA", v)} />
@@ -600,6 +605,14 @@ export default function ClientesPage() {
                 <div className="flex items-center gap-3">
                   <Switch checked={formData.esAgentePercepcionIIBB} onCheckedChange={v => set("esAgentePercepcionIIBB", v)} />
                   <Label>Agente Percepción IIBB</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch checked={formData.esGranEmpresa} onCheckedChange={v => set("esGranEmpresa", v)} />
+                  <Label>Es Gran Empresa (Sujeto a FCE)</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch checked={formData.esExportacion} onCheckedChange={v => set("esExportacion", v)} />
+                  <Label>Cliente Exportación (Comprobante E)</Label>
                 </div>
               </div>
               <Separator />

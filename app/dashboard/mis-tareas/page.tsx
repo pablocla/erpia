@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,8 @@ import {
   Clock, AlertTriangle, Flame, CheckSquare, RefreshCw, Filter,
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import Link from "next/link"
 
 interface Tarea {
   id: number
@@ -50,7 +52,41 @@ function diasParaVencer(fecha?: string | null): number | null {
   return Math.round(diff / 86400000)
 }
 
+function SystemPendienteCard({ p }: { p: any }) {
+  const priColor = {
+    bloqueante: "bg-red-500/10 text-red-700 border-red-300 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50",
+    alta: "bg-orange-500/10 text-orange-700 border-orange-300 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/50",
+    media: "bg-blue-500/10 text-blue-700 border-blue-300 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
+    baja: "bg-slate-500/10 text-slate-600 border-slate-300 dark:bg-slate-950/20 dark:text-slate-400 dark:border-slate-800"
+  }
+
+  return (
+    <div className="flex items-start justify-between gap-3 p-3 rounded-lg border bg-card hover:shadow-sm transition-all">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className={`text-[10px] h-4 px-1.5 ${priColor[p.prioridad as keyof typeof priColor] || ""}`}>
+            {p.prioridad}
+          </Badge>
+          <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Sistema · {p.tipo}</span>
+        </div>
+        <p className="text-sm font-semibold mt-1 leading-snug">{p.titulo}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{p.descripcion}</p>
+      </div>
+      {p.href && (
+        <Link href={p.href} className="shrink-0 mt-0.5">
+          <Button size="sm" variant="outline" className="h-8 text-xs font-semibold">
+            {p.accion ?? "Ir"}
+          </Button>
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export default function MisTareasPage() {
+  const user = useAuthStore((s) => s.user)
+  const rol = user?.rol
+
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [cargando, setCargando] = useState(true)
   const [mostrarCompletadas, setMostrarCompletadas] = useState(false)
@@ -58,6 +94,11 @@ export default function MisTareasPage() {
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [editando, setEditando] = useState<Tarea | null>(null)
   const [guardando, setGuardando] = useState(false)
+
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<"sistema" | "manual">("sistema")
+  const [pendientes, setPendientes] = useState<any[]>([])
+  const [cargandoPendientes, setCargandoPendientes] = useState(true)
 
   // Form state
   const [titulo, setTitulo] = useState("")
@@ -87,9 +128,28 @@ export default function MisTareasPage() {
     }
   }
 
+  const cargarPendientes = useCallback(async () => {
+    setCargandoPendientes(true)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) return
+    try {
+      const rolParam = rol ?? "cajero"
+      const res = await fetch(`/api/pendientes?rol=${rolParam}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      setPendientes(Array.isArray(data.pendientes) ? data.pendientes : [])
+    } catch {
+      setPendientes([])
+    } finally {
+      setCargandoPendientes(false)
+    }
+  }, [rol])
+
   useEffect(() => {
     void cargarTareas()
-  }, [mostrarCompletadas])
+    void cargarPendientes()
+  }, [mostrarCompletadas, cargarPendientes])
 
   useKeyboardShortcuts(erpShortcuts({
     onNew: () => abrirDialogo(),
@@ -188,9 +248,11 @@ export default function MisTareasPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <CheckSquare className="h-8 w-8 text-primary" />
-            Mis Tareas
+            Bandeja de Pendientes
           </h1>
-          <p className="text-muted-foreground mt-1">Organizá tu jornada. Las tareas privadas solo las ves vos.</p>
+          <p className="text-muted-foreground mt-1">
+            Gestión de tareas de tu jornada. Las tareas del sistema son operativas y las manuales son personales.
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">Alt+N nueva tarea · Alt+R refrescar</p>
         </div>
         <Button onClick={() => abrirDialogo()} className="shrink-0">
@@ -199,144 +261,193 @@ export default function MisTareasPage() {
         </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-0 bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-              <Clock className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{pendientes.length}</p>
-              <p className="text-xs text-muted-foreground">Pendientes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
-              <Flame className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{urgentes.length}</p>
-              <p className="text-xs text-muted-foreground">Urgentes/Altas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{vencidas.length}</p>
-              <p className="text-xs text-muted-foreground">Vencidas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 bg-muted/40">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{completadas.length}</p>
-              <p className="text-xs text-muted-foreground">Completadas hoy</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tabs Switcher */}
+      <div className="flex border-b border-border/60">
+        <button
+          onClick={() => setActiveTab("sistema")}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === "sistema"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Pendientes del Sistema ({pendientes.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("manual")}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === "manual"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Mis Tareas Privadas ({tareas.filter(t => !t.completada).length})
+        </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={filtroPrioridad} onValueChange={setFiltroPrioridad}>
-            <SelectTrigger className="h-8 w-40 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas las prioridades</SelectItem>
-              <SelectItem value="urgente">Urgente</SelectItem>
-              <SelectItem value="alta">Alta</SelectItem>
-              <SelectItem value="media">Media</SelectItem>
-              <SelectItem value="baja">Baja</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <Switch
-            id="mostrar-completadas"
-            checked={mostrarCompletadas}
-            onCheckedChange={setMostrarCompletadas}
-          />
-          <Label htmlFor="mostrar-completadas" className="text-xs cursor-pointer">
-            Mostrar completadas
-          </Label>
-        </div>
-        <Button variant="ghost" size="sm" className="h-8" onClick={cargarTareas}>
-          <RefreshCw className={`h-3.5 w-3.5 ${cargando ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-
-      {/* Lista de tareas pendientes */}
-      {cargando ? (
+      {activeTab === "sistema" ? (
+        // ─── PESTAÑA: PENDIENTES DEL SISTEMA ─────────────────────────────────
         <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />
-          ))}
+          {cargandoPendientes ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />
+              ))}
+            </div>
+          ) : pendientes.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500 opacity-50" />
+                <p className="font-medium text-muted-foreground">Sin pendientes del sistema</p>
+                <p className="text-sm text-muted-foreground mt-1">¡Buen trabajo! No hay alertas pendientes para tu rol.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {pendientes.map(p => (
+                <SystemPendienteCard key={p.id} p={p} />
+              ))}
+            </div>
+          )}
         </div>
-      ) : pendientes.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="py-16 text-center">
-            <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500 opacity-50" />
-            <p className="font-medium text-muted-foreground">No hay tareas pendientes</p>
-            <p className="text-sm text-muted-foreground mt-1">Agregá una nueva tarea para empezar</p>
-            <Button className="mt-4" onClick={() => abrirDialogo()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Tarea
-            </Button>
-          </CardContent>
-        </Card>
       ) : (
-        <div className="space-y-2">
-          {pendientes
-            .sort((a, b) => {
-              // Vencidas primero
-              const aVenc = estaVencida(a.fechaVencimiento) ? -1 : 0
-              const bVenc = estaVencida(b.fechaVencimiento) ? -1 : 0
-              if (aVenc !== bVenc) return aVenc - bVenc
-              // Luego por prioridad
-              return PRIORIDAD_ORDEN[a.prioridad] - PRIORIDAD_ORDEN[b.prioridad]
-            })
-            .map(tarea => (
-              <TareaCard
-                key={tarea.id}
-                tarea={tarea}
-                onToggle={toggleCompletada}
-                onEditar={abrirDialogo}
-                onEliminar={eliminarTarea}
-              />
-            ))}
-        </div>
-      )}
+        // ─── PESTAÑA: TAREAS MANUALES ────────────────────────────────────────
+        <div className="space-y-6">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="border-0 bg-muted/40">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{tareas.filter(t => !t.completada).length}</p>
+                  <p className="text-xs text-muted-foreground">Pendientes</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-muted/40">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                  <Flame className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{urgentes.length}</p>
+                  <p className="text-xs text-muted-foreground">Urgentes/Altas</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-muted/40">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{vencidas.length}</p>
+                  <p className="text-xs text-muted-foreground">Vencidas</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 bg-muted/40">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{completadas.length}</p>
+                  <p className="text-xs text-muted-foreground">Completadas hoy</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Completadas */}
-      {mostrarCompletadas && completadas.length > 0 && (
-        <div className="space-y-2">
-          <Separator />
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">
-            Completadas ({completadas.length})
-          </p>
-          {completadas.map(tarea => (
-            <TareaCard
-              key={tarea.id}
-              tarea={tarea}
-              onToggle={toggleCompletada}
-              onEditar={abrirDialogo}
-              onEliminar={eliminarTarea}
-            />
-          ))}
+          {/* Filtros */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={filtroPrioridad} onValueChange={setFiltroPrioridad}>
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las prioridades</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="baja">Baja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <Switch
+                id="mostrar-completadas"
+                checked={mostrarCompletadas}
+                onCheckedChange={setMostrarCompletadas}
+              />
+              <Label htmlFor="mostrar-completadas" className="text-xs cursor-pointer">
+                Mostrar completadas
+              </Label>
+            </div>
+            <Button variant="ghost" size="sm" className="h-8" onClick={cargarTareas}>
+              <RefreshCw className={`h-3.5 w-3.5 ${cargando ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+
+          {/* Lista de tareas manuales pendientes */}
+          {cargando ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 rounded-lg bg-muted/40 animate-pulse" />
+              ))}
+            </div>
+          ) : tareasFiltradas.filter(t => !t.completada).length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500 opacity-50" />
+                <p className="font-medium text-muted-foreground">No hay tareas privadas pendientes</p>
+                <p className="text-sm text-muted-foreground mt-1">Creá un recordatorio personal para organizarte.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {tareasFiltradas
+                .filter(t => !t.completada)
+                .sort((a, b) => {
+                  const aVenc = estaVencida(a.fechaVencimiento) ? -1 : 0
+                  const bVenc = estaVencida(b.fechaVencimiento) ? -1 : 0
+                  if (aVenc !== bVenc) return aVenc - bVenc
+                  return PRIORIDAD_ORDEN[a.prioridad] - PRIORIDAD_ORDEN[b.prioridad]
+                })
+                .map(tarea => (
+                  <TareaCard
+                    key={tarea.id}
+                    tarea={tarea}
+                    onToggle={toggleCompletada}
+                    onEditar={abrirDialogo}
+                    onEliminar={eliminarTarea}
+                  />
+                ))}
+            </div>
+          )}
+
+          {/* Completadas */}
+          {mostrarCompletadas && completadas.length > 0 && (
+            <div className="space-y-2">
+              <Separator />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">
+                Completadas ({completadas.length})
+              </p>
+              {completadas.map(tarea => (
+                <TareaCard
+                  key={tarea.id}
+                  tarea={tarea}
+                  onToggle={toggleCompletada}
+                  onEditar={abrirDialogo}
+                  onEliminar={eliminarTarea}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

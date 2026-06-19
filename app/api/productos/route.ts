@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { nombre: { contains: search, mode: "insensitive" } },
         { codigo: { contains: search, mode: "insensitive" } },
+        { codigoBarras: { contains: search, mode: "insensitive" } },
         { descripcion: { contains: search, mode: "insensitive" } },
       ]
     }

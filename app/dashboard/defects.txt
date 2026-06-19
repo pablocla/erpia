@@ -1,0 +1,244 @@
+DEFECTOS Y MEJORAS POSIBLES — ERP MULTIRUBRO
+
+Estado del documento:
+- Ultima actualizacion: 2026-05-18
+- Enfoque: ejecucion (no solo diagnostico)
+- Nota: ya se implemento una mejora tecnica concreta en AGRO (atomicidad en crear ticket con transaccion Prisma).
+
+Objetivo:
+Convertir este documento en backlog accionable para mejorar producto, reducir riesgo operativo y monetizar rapido.
+
+Escala usada:
+- Prioridad: P0 (critico), P1 (alto), P2 (medio)
+- Esfuerzo: S (1-3 dias), M (1-2 semanas), L (3+ semanas)
+- Impacto negocio: Alto / Medio / Bajo
+
+====================================================================
+1) DEFECTOS CRITICOS (P0)
+====================================================================
+
+1.1 Seguridad multi-tenant inconsistente en endpoints publicos
+- Problema: algunos flujos publicos/integraciones pueden operar sin aislamiento estricto por empresa.
+- Riesgo: fuga de datos o acciones cruzadas entre empresas.
+- Mejora: estandar unico de auth + scoping por empresaId + firma de webhooks.
+- Esfuerzo: M
+- Impacto negocio: Alto
+
+1.2 Flujos sin atomicidad transaccional en operaciones sensibles
+- Problema: operaciones compuestas (crear comprobante + mover stock + actualizar estado) pueden quedar parciales.
+- Riesgo: diferencias contables y operativas dificiles de auditar.
+- Mejora: envolver flujos core en transacciones Prisma y pruebas de rollback.
+- Esfuerzo: M
+- Impacto negocio: Alto
+- Estado: EN PROGRESO
+- Avance real aplicado:
+	- AGRO `crearTicket`: ticket + update silo + update contrato ahora corren dentro de una unica transaccion Prisma.
+	- Pendiente: replicar patron transaccional en otros flujos compuestos (ventas/stock/caja).
+
+1.3 Capas nuevas con validaciones de entrada desparejas
+- Problema: en modulos recientes hay rutas sin validacion robusta de payload.
+- Riesgo: datos inconsistentes y errores en produccion.
+- Mejora: contrato estandar con Zod por endpoint (request/response/error).
+- Esfuerzo: S-M
+- Impacto negocio: Alto
+- Estado: EN PROGRESO
+- Avance real aplicado:
+	- AGRO IoT: rutas POST/PUT ahora validan payload con Zod y retornan error uniforme.
+
+====================================================================
+2) DEFECTOS IMPORTANTES (P1)
+====================================================================
+
+2.1 Feature flags y menu no siempre alineados
+- Problema: lo visible en menu no siempre coincide con activacion real por feature/rubro.
+- Riesgo: confusion comercial y soporte.
+- Mejora: test automatico de consistencia menu-ruta-feature.
+- Esfuerzo: S
+- Impacto negocio: Medio-Alto
+- Estado: PENDIENTE
+
+2.2 Cobertura de tests insuficiente en modulos nuevos
+- Problema: funcionalidades nuevas sin suite minima de regresion.
+- Riesgo: degradacion despues de deploy.
+- Mejora: pack minimo de pruebas por modulo (CRUD + permisos + errores + concurrencia basica).
+- Esfuerzo: M
+- Impacto negocio: Alto
+- Estado: PENDIENTE
+
+2.3 Observabilidad parcial
+- Problema: existe logger estructurado, pero no esta aplicado de forma uniforme.
+- Riesgo: troubleshooting lento, mayor MTTR.
+- Mejora: estandar de logging, request-id, auditoria por usuario/empresa y alertas.
+- Esfuerzo: M
+- Impacto negocio: Medio-Alto
+- Estado: PENDIENTE
+
+====================================================================
+3) MEJORAS DE PRODUCTO DE ALTO RETORNO (P1/P2)
+====================================================================
+
+3.1 Servicios con turnos (salud/estetica/veterinaria/taller)
+- Base existente: agenda + clientes + caja + cobros.
+- Quick wins:
+	- recordatorios WhatsApp automatizados
+	- no-show score
+	- reprogramacion en 1 click
+- Monetizacion:
+	- mensual por sede
+	- add-on recordatorios
+	- add-on historia/ficha avanzada
+- Esfuerzo: M
+- Impacto negocio: Alto
+
+3.2 Gastronomia/Hospitalidad
+- Base existente: POS + mesas + KDS + recetas.
+- Quick wins:
+	- QR menu + comanda movil
+	- tiempos de cocina y merma
+	- tablero de rentabilidad por plato
+- Monetizacion:
+	- setup inicial
+	- mensual por caja/sucursal
+	- add-on delivery
+- Esfuerzo: M
+- Impacto negocio: Alto
+
+3.3 Distribucion y vendedor en ruta
+- Base existente: rutas + choferes + vehiculos + picking + cobranzas.
+- Quick wins:
+	- app de ruta offline-first
+	- geocercas y ETA
+	- cobro en calle + recibo digital
+- Monetizacion:
+	- precio por usuario movil activo
+	- add-on optimizacion de rutas
+- Esfuerzo: M-L
+- Impacto negocio: Alto
+
+3.4 Finanzas Pro (cross-rubro)
+- Base existente: cuentas a cobrar/pagar + tesoreria + alertas.
+- Quick wins:
+	- score de mora
+	- promesas de pago
+	- semaforo de riesgo de caja
+- Monetizacion:
+	- add-on mensual premium
+	- consultoria de implementacion
+- Esfuerzo: M
+- Impacto negocio: Alto
+
+3.5 Portal B2B/Ecommerce liviano
+- Base existente: catalogo + precios + pedidos + portal.
+- Quick wins:
+	- listas de precio por cliente
+	- pedido recurrente
+	- estado de cuenta y pagos
+- Monetizacion:
+	- add-on canal digital
+	- fee por volumen gestionado
+- Esfuerzo: M
+- Impacto negocio: Medio-Alto
+
+====================================================================
+4) PRIORIZACION 90 DIAS (RECOMENDADA)
+====================================================================
+
+Fase 1 (Semanas 1-3) — Hardening para vender sin riesgo
+1. Seguridad multi-tenant y webhooks
+2. Transacciones en flujos criticos
+3. Validacion estandar de endpoints
+4. Tests minimos de regresion
+
+Fase 2 (Semanas 4-7) — Producto monetizable rapido
+1. Vertical Servicios con turnos
+2. Vertical Gastronomia
+3. Pack Finanzas Pro
+
+Fase 3 (Semanas 8-12) — Escala comercial
+1. Distribucion/ruta
+2. Portal B2B
+3. Instrumentacion de KPIs de uso y churn
+
+====================================================================
+5) KPIS PARA MEDIR SI LAS MEJORAS FUNCIONAN
+====================================================================
+
+- Tiempo de implementacion por cliente (target: -30%)
+- Incidentes criticos por mes (target: -50%)
+- MRR por add-ons (target: +25%)
+- Tasa de uso semanal por modulo activo (target: +20%)
+- Churn trimestral (target: -15%)
+
+====================================================================
+6) DECISION EJECUTIVA SUGERIDA
+====================================================================
+
+No abrir mas modulos nuevos hasta cerrar P0/P1 de robustez.
+Luego escalar 3 verticales de venta rapida:
+1) Servicios con turnos
+2) Gastronomia
+3) Finanzas Pro cross-rubro
+
+====================================================================
+7) BACKLOG EJECUTABLE (SPRINT-READY)
+====================================================================
+
+Sprint A (Hardening inmediato, 7-10 dias)
+- A1. Webhooks seguros por firma/secreto y scoping por empresa
+	- Prioridad: P0
+	- Defecto asociado: 1.1
+	- Criterio de aceptacion:
+		- request sin firma/secreto valido => 401
+		- evento nunca modifica registros de otra empresa
+
+- A2. Estandar Zod en rutas nuevas de AGRO IoT
+	- Prioridad: P0
+	- Defecto asociado: 1.3
+	- Criterio de aceptacion:
+		- todas las rutas AGRO IoT POST/PUT validan con schema
+		- errores 400 devuelven estructura uniforme
+		- validación de loteId y propiedad de lote para sensores/zonas
+		- deviceEUI único por empresa y detención de riego sin evento abierto
+  - Estado: IMPLEMENTADO (AGRO IoT)
+
+- A3. Pruebas de rollback para flujos transaccionales
+	- Prioridad: P1
+	- Defecto asociado: 1.2
+	- Criterio de aceptacion:
+		- si falla update de stock/contrato, no queda ticket parcial
+
+Sprint B (Confiabilidad y operacion, 10 dias)
+- B1. Test de consistencia menu-feature-ruta
+	- Prioridad: P1
+	- Defecto asociado: 2.1
+	- Criterio de aceptacion:
+		- cada item de menu con featureKey tiene ruta existente y feature coherente
+
+- B2. Cobertura minima por modulo nuevo
+	- Prioridad: P1
+	- Defecto asociado: 2.2
+	- Criterio de aceptacion:
+		- CRUD + permisos + error-path por modulo
+
+- B3. Logging estructurado obligatorio en APIs criticas
+	- Prioridad: P1
+	- Defecto asociado: 2.3
+	- Criterio de aceptacion:
+		- requestId + userId + empresaId + contexto en errores criticos
+
+Sprint C (Monetizacion 30-60 dias)
+- C1. Servicios con turnos (pack comercial)
+- C2. Gastronomia (pack operativo + BI basico)
+- C3. Finanzas Pro (cobranzas inteligentes)
+
+====================================================================
+8) DEFINICION DE HECHO (DoD) PARA NUEVO MODULO/RUTA
+====================================================================
+
+Un item se considera "listo" solo si cumple todo:
+- Auth + scoping tenant por empresaId
+- Validacion de entrada con Zod
+- Manejo de errores uniforme
+- Prueba automatizada minima
+- Logging estructurado en errores
+- Flag/menus/documentacion alineados

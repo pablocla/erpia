@@ -45,6 +45,20 @@ export interface FacturaPayload {
   moneda?: string
   /** RG 5616/2024: tipo de cambio vendedor BNA (obligatorio si moneda != PES) */
   tipoCambio?: number
+  /** FCE MiPyME: override CBU / tipo transferencia (si no usa config fiscal) */
+  fce?: {
+    cbu?: string
+    tipoTransferencia?: "SCA" | "ADC"
+  }
+  /** NC/ND FCE: comprobante original asociado */
+  facturaAsociada?: {
+    tipoCbte: number
+    puntoVenta: number
+    numero: number
+    fecha?: Date
+  }
+  /** Atajo: cargar asociado desde factura emitida en NOP */
+  facturaAsociadaId?: number
 }
 
 export interface AFIPResponse {

@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
+import { getHomePathForRol } from "@/lib/auth/home-redirect"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,7 +33,7 @@ export default function LoginPage() {
     let resultado = await login(email, password)
 
     // Si falla con credenciales demo, auto-provisionar la cuenta admin
-    if (!resultado.success && email === "admin@erp-argentina.com" && password === "admin1234") {
+    if (!resultado.success && email === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD) {
       try {
         const res = await fetch("/api/auth/demo", {
           method: "POST",
@@ -41,7 +43,7 @@ export default function LoginPage() {
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
-          router.push("/dashboard")
+          router.push(getHomePathForRol(data.usuario.rol))
           return
         }
       } catch {
@@ -49,8 +51,8 @@ export default function LoginPage() {
       }
     }
 
-    if (resultado.success) {
-      router.push("/dashboard")
+    if (resultado.success && resultado.usuario) {
+      router.push(getHomePathForRol(resultado.usuario.rol))
     } else {
       setError(resultado.error || "Error al iniciar sesión")
       setCargando(false)
@@ -69,7 +71,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (data.success && data.token) {
         loginConToken(data.token, data.usuario)
-        router.push("/dashboard")
+        router.push(getHomePathForRol(data.usuario.rol))
       } else {
         setError(data.error || "Error al iniciar sesión demo")
       }
@@ -84,8 +86,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Iniciar Sesión</CardTitle>
-          <CardDescription>Ingresa tus credenciales para acceder al sistema</CardDescription>
+          <CardTitle>{BRAND_NAME}</CardTitle>
+          <CardDescription>Ingresa tus credenciales para acceder a la plataforma</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,6 +130,7 @@ export default function LoginPage() {
                 <SelectContent>
                   <SelectItem value="salon_belleza">Salón de Belleza / Barbería</SelectItem>
                   <SelectItem value="bar_restaurant">Bar / Restaurante</SelectItem>
+                  <SelectItem value="estacion_servicio">Estación de Servicio</SelectItem>
                   <SelectItem value="farmacia">Farmacia</SelectItem>
                   <SelectItem value="veterinaria">Veterinaria</SelectItem>
                 </SelectContent>
@@ -165,8 +168,8 @@ export default function LoginPage() {
             </Button>
             <div className="rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Credenciales de prueba:</p>
-              <p>Email: <span className="font-mono select-all">admin@erp-argentina.com</span></p>
-              <p>Contraseña: <span className="font-mono select-all">admin1234</span></p>
+              <p>Email: <span className="font-mono select-all">{DEMO_ADMIN_EMAIL}</span></p>
+              <p>Contraseña: <span className="font-mono select-all">{DEMO_ADMIN_PASSWORD}</span></p>
             </div>
           </div>
         </CardContent>

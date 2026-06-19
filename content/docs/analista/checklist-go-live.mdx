@@ -1,0 +1,22 @@
+---
+title: "Checklist Go-Live"
+description: "Puntos clave a validar antes de poner en marcha una instancia de producción."
+sidebar_position: 8
+tags: ["analista", "go-live", "produccion"]
+audience: analista
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Checklist Go-Live — Puesta en Marcha
+
+Antes de entregar una instancia del ERP para su uso operativo real por parte del cliente, el analista técnico y el administrador de sistemas deben completar y firmar el siguiente checklist:
+
+- [ ] **Aprovisionamiento Impositivo**: Certificado de homologación AFIP reemplazado por el certificado de producción real.
+- [ ] **Configuración del Tenant**: Nombre de fantasía, CUIT impositivo, dirección física, Ingresos Brutos (IIBB) y alícuotas base parametrizadas correctamente.
+- [ ] **Puntos de Venta (POS)**: Cajas abiertas parametrizadas, impresoras fiscales Hasar/Epson asignadas (o comandas de red IP en su defecto).
+- [ ] **Base de Datos / Catálogo**: Importación inicial de productos completada con códigos de barra de fábrica correctos y stock físico inicial conciliado.
+- [ ] **Cuentas de Usuarios & Roles**: Permisos de usuario asignados según el perfil (ej. Cajero, Administrador, Vendedor en ruta) con contraseñas seguras cambiadas en el primer inicio de sesión.
+- [ ] **Integraciones de Cobro**: Credenciales de producción de MercadoPago linkeadas (Access Token y PublicKey) para cobros QR en el mostrador del POS.
+- [ ] **WhatsApp Sender**: Conexión del canal corporativo de Twilio activada para el envío automatizado de comprobantes digitales de venta.

@@ -8,7 +8,7 @@ const lineaSchema = z.object({
   productoId: z.number().int().positive().optional(),
   descripcion: z.string().min(1),
   cantidad: z.number().positive(),
-  precioUnitario: z.number().positive(),
+  precioUnitario: z.number().positive().optional(),
   descuentoPct: z.number().min(0).max(100).optional(),
 })
 

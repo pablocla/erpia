@@ -17,8 +17,13 @@ export async function GET(request: NextRequest) {
     const desde = searchParams.get("desde")
     const hasta = searchParams.get("hasta")
     const search = searchParams.get("search")
-    const skip = parseInt(searchParams.get("skip") ?? "0", 10)
-    const take = Math.min(parseInt(searchParams.get("take") ?? "50", 10), 200)
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
+    const pageSize = Math.min(
+      parseInt(searchParams.get("pageSize") ?? searchParams.get("take") ?? "25", 10),
+      200,
+    )
+    const skip = parseInt(searchParams.get("skip") ?? String((page - 1) * pageSize), 10)
+    const take = Math.min(parseInt(searchParams.get("take") ?? String(pageSize), 10), 200)
 
     const where: Record<string, unknown> = whereEmpresa(ctx.auth.empresaId)
     if (clienteId) where.clienteId = parseInt(clienteId, 10)
@@ -58,16 +63,21 @@ export async function GET(request: NextRequest) {
     const totalFacturado = emitidas.reduce((s, f) => s + f.total, 0)
     const totalIVA = emitidas.reduce((s, f) => s + f.iva, 0)
 
+    const summary = {
+      totalFacturado: Math.round(totalFacturado * 100) / 100,
+      totalIVA: Math.round(totalIVA * 100) / 100,
+      cantidadEmitidas: emitidas.length,
+    }
+
     return NextResponse.json({
       data,
       total,
+      page,
+      pageSize,
       skip,
       take,
-      resumen: {
-        totalFacturado: Math.round(totalFacturado * 100) / 100,
-        totalIVA: Math.round(totalIVA * 100) / 100,
-        cantidadEmitidas: emitidas.length,
-      },
+      summary,
+      resumen: summary,
     })
   } catch (error) {
     console.error("Error en GET facturas:", error)

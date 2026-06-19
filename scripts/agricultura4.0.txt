@@ -1,0 +1,738 @@
+# COPILOT PROMPT — FASE 2 IoT + RIEGO DE PRECISIÓN
+# ERP Argentina · Next.js 15 · App Router · TypeScript strict
+# ─────────────────────────────────────────────────────────────
+
+## ROL
+Actuá como arquitecto senior de sistemas agro-IoT sobre un ERP Next.js 15
+ya en producción. El objetivo es extender el módulo AGRO existente con
+capacidades IoT de precisión (sensores, riego, maquinaria, mapas satelitales)
+SIN romper lo que ya funciona.
+
+---
+
+## ESTADO ACTUAL DEL REPO (ya existe — no tocar)
+
+### Modelos Prisma existentes:
+- `Lote` — con geoJson, superficie, cultivoActual, campana, empresaId
+- `TicketBalanza` — pesaje de camiones, calidad de grano
+- `ContratoCereales` — compra/venta, toneladas, precio pactado
+- `PrecioPizarra` — BCR / MATBA-ROFEX / CME con caché
+
+### Rutas existentes:
+- `/dashboard/agro/` — dashboard con pizarra, stock, camiones del día
+- `/dashboard/agro/balanza/` — gestión tickets
+- `/dashboard/agro/contratos/` — contratos cereales
+- `/dashboard/agro/liquidaciones/` — liquidaciones productores
+- `/dashboard/agro/lotes/` — mapa de lotes (Mapbox, polígono GeoJSON)
+- `/dashboard/agro/carta-porte/` — CPE stub
+- `/dashboard/agro/pizarra/` — pizarra BCR/Chicago
+
+### APIs existentes:
+- `/api/agro/balanza/` · `/api/agro/contratos/`
+- `/api/agro/pizarra/` · `/api/agro/liquidaciones/`
+
+### Stack confirmado:
+- Next.js 15 App Router · TypeScript strict
+- shadcn/ui · Tailwind v4 · Zustand
+- Prisma + PostgreSQL + PostGIS (Supabase)
+- Service layer pattern (lib/services/)
+- Multi-tenant con empresaId en todos los modelos
+
+---
+
+## OBJETIVO: EXTENSIÓN IOT + AGRICULTURA DE PRECISIÓN
+
+Implementar todo lo siguiente como extensión del módulo AGRO existente.
+
+---
+
+## FASE A — MODELOS PRISMA NUEVOS
+
+Agregá estos modelos al schema.prisma existente.
+Todos deben incluir `empresaId Int` para multi-tenant.
+
+```prisma
+// ── SENSORES DE CAMPO ──────────────────────────────────────────
+
+model Sensor {
+  id          Int      @id @default(autoincrement())
+  nombre      String   // "Sensor Lote Norte A"
+  tipo        SensorTipo
+  deviceEUI   String   @unique  // LoRaWAN device identifier
+  loteId      Int
+  lote        Lote     @relation(fields: [loteId], references: [id])
+  activo      Boolean  @default(true)
+  lat         Float?
+  lon         Float?
+  empresaId   Int
+  lecturas    SensorLectura[]
+  createdAt   DateTime @default(now())
+}
+
+enum SensorTipo {
+  HUMEDAD_SUELO
+  TEMPERATURA_SUELO
+  TEMPERATURA_AIRE
+  CAUDAL_RIEGO
+  PRESION_AGUA
+  LLUVIA
+  VIENTO
+}
+
+model SensorLectura {
+  id        BigInt   @id @default(autoincrement())
+  sensorId  Int
+  sensor    Sensor   @relation(fields: [sensorId], references: [id])
+  valor     Float
+  unidad    String   // "%" | "°C" | "mm" | "L/min" | "hPa"
+  timestamp DateTime @default(now())
+  empresaId Int
+  // Para TimescaleDB: convertir en hypertable por timestamp
+  @@index([sensorId, timestamp])
+}
+
+// ── RIEGO DE PRECISIÓN ─────────────────────────────────────────
+
+model ZonaRiego {
+  id          Int      @id @default(autoincrement())
+  nombre      String   // "Zona A — Pivote 1"
+  loteId      Int
+  lote        Lote     @relation(fields: [loteId], references: [id])
+  geoJson     Json?    // polígono de la zona dentro del lote
+  valvulaId   String?  // ID físico del actuador/válvula IoT
+  tipoRiego   String   // "GOTEO" | "ASPERSION" | "PIVOTE"
+  caudal      Float?   // L/hora de diseño
+  activa      Boolean  @default(false)
+  empresaId   Int
+  eventos     EventoRiego[]
+  programas   ProgramaRiego[]
+}
+
+model EventoRiego {
+  id           Int       @id @default(autoincrement())
+  zonaId       Int
+  zona         ZonaRiego @relation(fields: [zonaId], references: [id])
+  inicio       DateTime
+  fin          DateTime?
+  duracionMin  Int?      // calculado al cerrar
+  volumenLitros Float?
+  trigger      RiegoTrigger @default(MANUAL)
+  operadorId   Int?
+  etoCultivo   Float?    // mm/día de referencia
+  observaciones String?
+  empresaId    Int
+}
+
+enum RiegoTrigger {
+  MANUAL
+  PROGRAMADO
+  SENSOR       // activado por umbral de humedad de suelo
+  IA           // recomendado por modelo AquaCrop/Claude
+}
+
+model ProgramaRiego {
+  id          Int       @id @default(autoincrement())
+  zonaId      Int
+  zona        ZonaRiego @relation(fields: [zonaId], references: [id])
+  nombre      String
+  diaSemana   Int[]     // 0=Dom, 1=Lun...6=Sab
+  horaInicio  String    // "06:00"
+  duracionMin Int
+  activo      Boolean   @default(true)
+  empresaId   Int
+}
+
+// ── TELEMETRÍA DE MAQUINARIA ───────────────────────────────────
+
+model Maquina {
+  id           Int      @id @default(autoincrement())
+  nombre       String   // "John Deere 8R 310"
+  marca        MaquinaMarca
+  modeloNombre String?
+  serialNumber String?
+  apiMachineId String?  // ID en John Deere Ops Center o AGCO Connect
+  empresaId    Int
+  logs         MaquinaLog[]
+}
+
+enum MaquinaMarca {
+  JOHN_DEERE
+  AGCO
+  CASE_IH
+  NEW_HOLLAND
+  PAUNY        // fabricante argentino
+  APACHE       // fabricante argentino
+  OTRO
+}
+
+model MaquinaLog {
+  id          BigInt   @id @default(autoincrement())
+  maquinaId   Int
+  maquina     Maquina  @relation(fields: [maquinaId], references: [id])
+  timestamp   DateTime @default(now())
+  lat         Float?
+  lon         Float?
+  velocidad   Float?   // km/h
+  operacion   String?  // "SIEMBRA" | "COSECHA" | "PULVERIZACION" | "TRANSPORTE"
+  loteId      Int?
+  horasMotor  Float?
+  combustible Float?   // litros consumidos
+  empresaId   Int
+  @@index([maquinaId, timestamp])
+}
+
+// ── NDVI Y DATOS SATELITALES ───────────────────────────────────
+
+model NdviRegistro {
+  id         Int      @id @default(autoincrement())
+  loteId     Int
+  lote       Lote     @relation(fields: [loteId], references: [id])
+  fecha      DateTime @db.Date
+  ndviMin    Float
+  ndviMax    Float
+  ndviMedio  Float
+  fuente     String   @default("SENTINEL2") // "SENTINEL2" | "MODIS" | "ESTIMADO"
+  imageUrl   String?  // URL de la imagen procesada
+  empresaId  Int
+  @@unique([loteId, fecha])
+}
+
+// ── RECOMENDACIONES IA ─────────────────────────────────────────
+
+model RecomendacionIA {
+  id                 Int      @id @default(autoincrement())
+  loteId             Int
+  zonaRiegoId        Int?
+  debeRegar          Boolean
+  volumenRecomendado Float?   // litros
+  razon              String   // texto del modelo
+  proximoCheckHoras  Int      @default(6)
+  inputData          Json     // snapshot de lo que se mandó a Claude
+  createdAt          DateTime @default(now())
+  empresaId          Int
+}
+```
+
+---
+
+## FASE B — API ROUTES NUEVAS
+
+Creá estas rutas siguiendo el patrón existente de `/api/agro/`.
+
+### `/api/agro/sensores/ingest/route.ts`
+```
+POST — recibe payload de Node-RED/MQTT bridge:
+{
+  deviceEUI: string,
+  valor: number,
+  unidad: string,
+  timestamp: string (ISO)
+}
+→ busca el Sensor por deviceEUI
+→ inserta SensorLectura en Prisma
+→ si tipo es HUMEDAD_SUELO y valor < umbral configurado → disparar lógica de alerta
+→ responde 200 OK { sensorId, lecturaId }
+```
+
+### `/api/agro/sensores/[sensorId]/lecturas/route.ts`
+```
+GET — últimas N lecturas de un sensor
+Query params: hours=24 (default), limit=100
+→ consulta SensorLectura con índice timestamp DESC
+→ responde array para Recharts LineChart
+```
+
+### `/api/agro/riego/[zonaId]/trigger/route.ts`
+```
+POST — dispara o detiene riego manual
+Body: { accion: "INICIAR" | "DETENER", operadorId: number }
+→ si INICIAR: crea EventoRiego con inicio=now(), trigger=MANUAL, actualiza ZonaRiego.activa=true
+→ si DETENER: cierra el EventoRiego abierto, calcula duracionMin y volumenLitros estimado
+→ aquí irá la llamada al actuador IoT real (stub por ahora — log + HTTP call al gateway)
+```
+
+### `/api/agro/riego/[zonaId]/programa/route.ts`
+```
+GET — lista programas de riego de la zona
+POST — crea nuevo programa
+PUT — actualiza programa (cambiar días/hora/duración/activo)
+DELETE — elimina programa
+```
+
+### `/api/agro/maquinas/sync/route.ts`
+```
+POST — sincroniza telemetría de maquinaria externa
+Lógica:
+  1. Para cada Maquina con marca=JOHN_DEERE y apiMachineId:
+     → GET https://sandboxapi.deere.com/platform/machines/{id}/locations
+       (John Deere Operations Center API — OAuth 2.0)
+     → insertar MaquinaLog con coordenadas, operacion, horasMotor
+  2. Para cada Maquina con marca=AGCO:
+     → GET https://api.agconet.com/v1/assets/{id}/telemetry
+     → mismo proceso
+  3. Para fabricantes argentinos (PAUNY, APACHE):
+     → stub: loguear "Sin API disponible — integración manual"
+  Retorna: { sincronizadas: N, errores: [] }
+```
+
+### `/api/agro/ndvi/[loteId]/route.ts`
+```
+GET — obtiene NDVI actual del lote
+Lógica:
+  1. Buscar Lote por id, extraer geoJson (polígono)
+  2. Si existe NdviRegistro reciente (< 5 días) → retornar del cache
+  3. Si no: llamar Sentinel Hub EvalScript API:
+     POST https://services.sentinel-hub.com/api/v1/process
+     evalscript: NDVI = (B08 - B04) / (B08 + B04)
+     bbox: bounding box del geoJson del lote
+  4. Guardar NdviRegistro → retornar { ndviMedio, ndviMin, ndviMax, fecha, imageUrl }
+  5. Fallback: si Sentinel falla → retornar último NdviRegistro conocido con flag "cached"
+```
+
+### `/api/agro/clima/[loteId]/route.ts`
+```
+GET — pronóstico 16 días para el lote
+Lógica:
+  1. Buscar coordenadas centroide del lote (de geoJson o de campos lat/lon)
+  2. Llamar Open-Meteo (gratis, sin API key):
+     GET https://api.open-meteo.com/v1/forecast
+       ?latitude={lat}&longitude={lon}
+       &daily=precipitation_sum,et0_fao_evapotranspiration,
+              temperature_2m_max,temperature_2m_min,soil_temperature_0cm
+       &timezone=America/Argentina/Buenos_Aires
+       &forecast_days=16
+  3. Detectar alertas: helada si temp_min < 0, lluvia > 30mm, viento > 60km/h
+  4. Cachear 1h en memory cache (no llamar en cada render)
+  5. Retornar { forecast: [], alertas: [], etoDiario: number }
+```
+
+### `/api/agro/ia/recomendar-riego/route.ts`
+```
+POST — recomendación de riego con Claude
+Body: { loteId, zonaRiegoId }
+Lógica:
+  1. Fetch últimas 24h de SensorLectura tipo HUMEDAD_SUELO de la zona
+  2. Fetch pronóstico Open-Meteo (reusar /api/agro/clima/[loteId])
+  3. Fetch NdviRegistro más reciente del lote
+  4. Buscar Lote.cultivoActual para ajustar parámetros
+  5. Llamar Anthropic API (claude-sonnet-4-20250514):
+     System: "Sos un agrónomo experto en riego de precisión para cultivos argentinos..."
+     User: JSON con { humedadSuelo: [], pronostico: {}, ndvi: {}, cultivo: string }
+     → Respuesta estructurada JSON:
+       { debeRegar: boolean, volumenLitros: number, razon: string, 
+         proximoCheckHoras: number, riesgoHelada: boolean, alertas: string[] }
+  6. Guardar RecomendacionIA en Prisma
+  7. Retornar la recomendación al cliente
+```
+
+---
+
+## FASE C — COMPONENTES REACT
+
+Usá shadcn/ui + Tailwind v4. Seguí el estilo de los componentes existentes del repo.
+
+### `components/agro/iot/SensorDashboard.tsx`
+```
+Props: { loteId: number }
+- Fetch SWR → /api/agro/sensores?loteId={id} (lista sensores del lote)
+- Para cada sensor: tarjeta con último valor + badge de estado
+- Recharts LineChart con últimas 24h de lecturas (refreshInterval: 30000)
+- Color coding: verde=normal, amarillo=alerta, rojo=crítico según umbrales por tipo
+- Skeleton loading mientras carga
+- Botón "Actualizar" con timestamp última lectura
+```
+
+### `components/agro/iot/RiegoPanel.tsx`
+```
+Props: { loteId: number }
+- Lista de ZonaRiego del lote
+- Para cada zona:
+  - Toggle switch: Riego ON/OFF → llama /api/agro/riego/[id]/trigger
+  - Badge estado: ACTIVO (verde) / INACTIVO (gris) / PROGRAMADO (azul)
+  - Último EventoRiego: hace cuánto regó, cuántos minutos, litros estimados
+  - Botón "Ver programas" → expande ProgramaRiego con horarios de la semana
+  - Botón "Recomendación IA" → llama /api/agro/ia/recomendar-riego y muestra modal
+- Modal de recomendación IA:
+  - Spinner mientras llama Claude
+  - Muestra: debeRegar (chip verde/rojo), volumenLitros, razon (texto), alertas
+  - Botón "Ejecutar recomendación" si debeRegar=true
+```
+
+### `components/agro/iot/FieldMapIoT.tsx`
+```
+Props: { loteId: number }
+Extiende el mapa de lotes existente con capas IoT:
+- Layer 1: polígono del lote (ya existe)
+- Layer 2: pins de sensores (color por tipo y estado)
+  → click en pin → popup con última lectura + mini chart sparkline
+- Layer 3: polígonos de zonas de riego
+  → color fill: azul claro=inactiva, azul intenso=regando, gris=sin programa
+- Layer 4: track GPS de maquinaria (si hay MaquinaLog reciente del lote)
+- Layer 5: overlay NDVI (imagen satelital si hay NdviRegistro reciente)
+  → toggle checkbox "Ver NDVI" / "Ver sensores" / "Ver riego" / "Ver maquinaria"
+- Usar MapLibre GL JS (open source) — reemplazar Mapbox si el repo usa Mapbox Draw
+- Tiles: OpenMapTiles o Maptiler Free (sin costo para desarrollo)
+```
+
+### `components/agro/iot/MaquinaCard.tsx`
+```
+Props: { maquinaId: number }
+- Nombre, marca (badge), modelo
+- Última posición: mini mapa estático o coordenadas
+- Operación actual: chip "COSECHANDO" / "EN TRÁNSITO" / "DETENIDA"
+- Horas motor hoy vs total
+- Botón "Sincronizar" → llama /api/agro/maquinas/sync (solo esa máquina)
+- Historial: últimas 5 operaciones con fecha y lote
+```
+
+### `components/agro/iot/NdviWidget.tsx`
+```
+Props: { loteId: number }
+- Fetch SWR → /api/agro/ndvi/[loteId]
+- Muestra: NDVI medio con color scale (0.0-0.3 rojo, 0.3-0.6 amarillo, 0.6-1.0 verde)
+- Barra de progreso visual del rango min-max
+- Fecha del último dato satelital + fuente (Sentinel-2 / estimado)
+- Botón "Actualizar imagen" (fuerza re-fetch, no usa cache)
+- Si ndvi < 0.3: badge rojo "Cultivo en estrés" con tooltip explicativo
+```
+
+### `components/agro/iot/ClimaLote.tsx`
+```
+Props: { loteId: number }
+- Fetch SWR → /api/agro/clima/[loteId] (refreshInterval: 3600000 — 1h)
+- Próximos 7 días: fila con ícono, temp max/min, precipitación, ETo
+- Alertas destacadas: chip rojo "HELADA en 48hs", chip naranja "LLUVIA > 30mm"
+- ETo acumulado próximos 7 días (referencia para decisión de riego)
+- Footer: "Datos: Open-Meteo · actualizado hace N minutos"
+```
+
+---
+
+## FASE D — RUTAS NUEVAS
+
+Creá estas páginas en el App Router con el layout existente de AGRO:
+
+### `app/dashboard/agro/iot/page.tsx`
+```
+Dashboard IoT principal del módulo agro.
+Layout: 2 columnas en desktop, 1 en mobile.
+
+Columna izquierda:
+  → Selector de lote (dropdown con todos los lotes de la empresa)
+  → FieldMapIoT — mapa interactivo del lote seleccionado
+  → NdviWidget — salud del cultivo
+  → ClimaLote — pronóstico + alertas
+
+Columna derecha:
+  → SensorDashboard — lecturas en tiempo real
+  → RiegoPanel — control de zonas de riego
+  → Lista de MaquinaCard de máquinas activas hoy
+
+Breadcrumb: Agro → IoT & Precisión
+```
+
+### `app/dashboard/agro/iot/sensores/page.tsx`
+```
+ABM completo de sensores.
+- Tabla con todos los sensores de la empresa (lote, tipo, deviceEUI, estado, última lectura)
+- Botón "Agregar sensor" → form: nombre, tipo, deviceEUI, lote, lat/lon
+- Click en fila → /dashboard/agro/iot/sensores/[id] → detalle + chart histórico
+- Botón "Test conexión" → ping al deviceEUI para verificar que está enviando datos
+```
+
+### `app/dashboard/agro/iot/riego/page.tsx`
+```
+Vista consolidada de riego de toda la empresa.
+- Mapa con todas las zonas de riego de todos los lotes (coloreadas por estado)
+- Timeline del día: qué zonas regaron, cuánto tiempo, cuántos litros
+- Tabla de programas activos esta semana
+- Consumo total de agua del mes (m³)
+- Botón "Nueva zona de riego" → form con selector de lote + dibujado de polígono en mapa
+```
+
+### `app/dashboard/agro/iot/maquinaria/page.tsx`
+```
+Gestión de maquinaria.
+- Lista de máquinas con estado actual
+- Mapa con posición GPS en tiempo real de todas las máquinas activas
+- Historial de operaciones por máquina y por lote
+- Botón "Registrar máquina" → form: nombre, marca, serial, apiMachineId
+- Botón "Sincronizar todas" → llama /api/agro/maquinas/sync
+- Solo habilitar sincronización API para JOHN_DEERE y AGCO (resto: carga manual)
+```
+
+---
+
+## FASE E — INTEGRACIÓN EN MENÚ AGRO EXISTENTE
+
+Extendé la configuración UX del rubro AGRO (sin romper la estructura existente).
+Agregá este grupo al sidebar de AGRO:
+
+```typescript
+// En lib/config/configuracion-feature-service.ts
+// Dentro del bloque de configuración AGRO, agregar grupo:
+
+{
+  grupo: "IoT & Precisión",
+  icono: "Satellite",  // Lucide icon
+  items: [
+    {
+      id: "agro-iot-dashboard",
+      label: "Dashboard IoT",
+      href: "/dashboard/agro/iot",
+      icono: "Activity",
+      moduloRequerido: "AGRO_IOT",
+      prioridad: 5,
+      siempreVisible: false,
+      justificacion: "Centro de comando sensores, riego y maquinaria en tiempo real"
+    },
+    {
+      id: "agro-sensores",
+      label: "Sensores",
+      href: "/dashboard/agro/iot/sensores",
+      icono: "Wifi",
+      moduloRequerido: "AGRO_IOT",
+      prioridad: 6,
+      siempreVisible: false,
+      justificacion: "ABM de sensores de campo — suelo, temperatura, caudal"
+    },
+    {
+      id: "agro-riego",
+      label: "Riego de precisión",
+      href: "/dashboard/agro/iot/riego",
+      icono: "Droplets",
+      moduloRequerido: "AGRO_RIEGO",
+      prioridad: 7,
+      siempreVisible: false,
+      justificacion: "Control de zonas y programas de riego con IA"
+    },
+    {
+      id: "agro-maquinaria",
+      label: "Maquinaria",
+      href: "/dashboard/agro/iot/maquinaria",
+      icono: "Tractor",
+      moduloRequerido: "AGRO_IOT",
+      prioridad: 8,
+      siempreVisible: false,
+      justificacion: "Telemetría GPS y operaciones — John Deere + AGCO"
+    }
+  ]
+}
+```
+
+Agregá también a los quick actions del dashboard AGRO:
+```typescript
+{
+  id: "agro-qa-iot",
+  label: "Ver sensores",
+  href: "/dashboard/agro/iot",
+  icono: "Activity",
+  color: "teal"
+}
+```
+
+---
+
+## FASE F — BRIDGE IOT (Node-RED → Next.js)
+
+Generá el JSON de un flujo Node-RED que:
+1. Se subscribe a MQTT topic: `erp/sensores/{empresaId}/{loteId}/{sensorId}`
+2. Parsea payload: `{ valor: number, unidad: string, timestamp: string }`
+3. Enriquece con deviceEUI del mensaje MQTT
+4. POST a `https://{ERP_HOST}/api/agro/sensores/ingest` con Bearer token
+5. En caso de error HTTP: reintenta 3 veces con backoff exponencial
+6. Log de cada ingesta en debug node
+
+Para sensores LoRaWAN en Argentina:
+- Red disponible: WND Argentina (LoRaWAN público), IOT Factory, Grandata
+- Alternativa campo sin cobertura: LoRa punto a punto con gateway propio
+- Gateway recomendado open source: RAK7244 o Dragino LG308
+
+---
+
+## FASE G — INTEGRACIONES OPEN DATA ARGENTINA
+
+Implementá estos adapters en `lib/agro/adapters/`:
+
+### `lib/agro/adapters/inta-geointa.ts`
+```typescript
+// INTA Geointa — datos de suelos y uso del suelo
+// WMS público: https://geointa.inta.gov.ar/geoserver/wms
+
+export async function getLoteSueloInfo(geoJson: GeoJSON): Promise<SueloInfo> {
+  // Usar WMS GetFeatureInfo sobre el centroide del lote
+  // Layers disponibles: INTA:series_suelos, INTA:capacidad_uso
+  // Retorna: tipo de suelo, capacidad de uso, limitaciones
+}
+
+export function getWMSLayerUrl(layer: 'suelos' | 'uso_tierra' | 'riesgo_hidrico'): string {
+  // Retorna URL del tile WMS para usar directamente en MapLibre
+  // MapLibre soporta WMS como source type "raster"
+}
+```
+
+### `lib/agro/adapters/smn-argentina.ts`
+```typescript
+// Servicio Meteorológico Nacional Argentina
+// API open data: https://opendata.smn.gob.ar/api/
+
+export async function getAlertas(provincia: string): Promise<AlertaSMN[]> {
+  // GET https://opendata.smn.gob.ar/api/v1/alertas/?provincia={provincia}
+  // Retorna alertas de helada, granizo, viento fuerte activas
+  // Cachear 30 minutos
+}
+```
+
+### `lib/agro/adapters/magyp-datos.ts`
+```typescript
+// Ministerio de Agricultura Argentina — estadísticas oficiales
+// API: https://datos.magyp.gob.ar/api/
+
+export async function getSuperficieImplantada(
+  cultivo: string, campana: string
+): Promise<EstadisticaMagyp> {
+  // GET https://datos.magyp.gob.ar/api/records?...
+  // Retorna: hectáreas implantadas nacional + por provincia
+  // Útil para: mostrar contexto de mercado en pizarra
+}
+```
+
+---
+
+## FASE H — VARIABLES DE ENTORNO NUEVAS
+
+Agregá al `.env.local` y documentá en `.env.example`:
+
+```bash
+# ── IoT / MQTT ────────────────────────────────────────────────
+MQTT_BROKER_URL=mqtt://your-broker:1883
+MQTT_USERNAME=erp_user
+MQTT_PASSWORD=secret
+MQTT_TOPIC_PREFIX=erp/sensores
+
+# ── Imágenes satelitales ──────────────────────────────────────
+SENTINEL_HUB_CLIENT_ID=xxx
+SENTINEL_HUB_CLIENT_SECRET=xxx
+# Alternativa gratuita sin key:
+NASA_GIBS_BASE_URL=https://gibs.earthdata.nasa.gov/wms/epsg4326/best
+
+# ── John Deere Operations Center ─────────────────────────────
+JOHN_DEERE_CLIENT_ID=xxx
+JOHN_DEERE_CLIENT_SECRET=xxx
+JOHN_DEERE_BASE_URL=https://sandboxapi.deere.com/platform
+# Para producción: https://api.deere.com/platform
+
+# ── AGCO Connect ─────────────────────────────────────────────
+AGCO_API_KEY=xxx
+AGCO_BASE_URL=https://api.agconet.com/v1
+
+# ── IA / Claude ───────────────────────────────────────────────
+ANTHROPIC_API_KEY=xxx          # ya debería existir en el repo
+
+# ── Mapas ─────────────────────────────────────────────────────
+MAPTILER_API_KEY=xxx           # free tier: 100k tiles/mes
+# O usar: NEXT_PUBLIC_OPENSTREETMAP_TILES=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+```
+
+---
+
+## ENTREGABLES ESPERADOS
+
+Al finalizar, entregame:
+
+1. **Lista de archivos creados/modificados** con descripción de cada uno
+2. **Schema Prisma diff** — solo los modelos nuevos, listos para `prisma migrate dev`
+3. **Checklist de integraciones externas** con estado: listo / requiere credencial / stub
+4. **Riesgos explícitos**:
+   - John Deere API requiere aprobación de Deere para producción (sandbox gratis)
+   - Sentinel Hub tiene cuota gratuita limitada — estimar requests/mes del cliente
+   - LoRaWAN en campo depende de cobertura de red (WND Argentina no cubre todo el país)
+   - TimescaleDB requiere extensión en Supabase (disponible en plan Pro)
+5. **Próximos pasos recomendados** en orden de valor/esfuerzo
+
+---
+
+## REGLAS INAMOVIBLES
+
+- No romper ningún módulo existente (balanza, contratos, pizarra, liquidaciones)
+- Todos los modelos nuevos con `empresaId` para multi-tenant
+- Todas las API routes con validación de sesión/tenant existente en el repo
+- No usar Google Maps — usar MapLibre GL JS (open source)
+- Reusar el service layer pattern de `lib/services/`
+- Si algo requiere credencial externa aún no disponible → stub con mock data y TODO claro
+- Mantener TypeScript strict — sin `any`
+- Antes de implementar: mostrar mini plan de 5 a 8 pasos
+
+---
+
+## ESTADO REAL IMPLEMENTADO (alineado al repo)
+
+Esta seccion refleja lo que hoy esta implementado en codigo, para evitar drift con este prompt.
+
+### Backend IoT implementado (stub funcional)
+
+- Store en memoria para IoT:
+  - `lib/agro/iot-stub-store.ts`
+  - Seeds por empresa/lote, sensores, lecturas, zonas, programas, eventos y maquinas.
+
+- Sensores:
+  - `GET/POST /api/agro/sensores`
+  - `POST /api/agro/sensores/ingest`
+  - `GET /api/agro/sensores/[sensorId]/lecturas`
+
+- Riego:
+  - `GET/POST /api/agro/riego/zonas`
+  - `POST /api/agro/riego/[zonaId]/trigger` (INICIAR/DETENER)
+  - `GET/POST/PUT/DELETE /api/agro/riego/[zonaId]/programa`
+
+- Maquinaria:
+  - `GET/POST /api/agro/maquinas`
+  - `POST /api/agro/maquinas/sync` (stub, sincroniza solo marcas soportadas)
+
+- Clima / NDVI / IA:
+  - `GET /api/agro/clima/[loteId]` (Open-Meteo + cache simple)
+  - `GET /api/agro/ndvi/[loteId]` (estimacion NDVI)
+  - `POST /api/agro/ia/recomendar-riego` (heuristica local)
+
+Todas las rutas nuevas usan guard multi-tenant (`getAuthContext`) y scope por empresa.
+
+### Frontend IoT implementado
+
+- Componentes:
+  - `components/agro/iot/SensorDashboard.tsx`
+  - `components/agro/iot/RiegoPanel.tsx`
+  - `components/agro/iot/NdviWidget.tsx`
+  - `components/agro/iot/ClimaLote.tsx`
+  - `components/agro/iot/MaquinaCard.tsx`
+  - `components/agro/iot/FieldMapIoT.tsx` (placeholder de capas)
+
+- Paginas dashboard:
+  - `app/dashboard/agro/iot/page.tsx`
+  - `app/dashboard/agro/iot/sensores/page.tsx`
+  - `app/dashboard/agro/iot/riego/page.tsx`
+  - `app/dashboard/agro/iot/maquinaria/page.tsx`
+
+- Navegacion AGRO:
+  - Se agregaron accesos IoT en `app/dashboard/layout.tsx`.
+
+- Features:
+  - `IOT_SENSORES` activado para AGRO en `lib/config/configuracion-feature-service.ts`.
+
+### Diferencias entre prompt y realidad actual
+
+- El prompt habla de modelos Prisma nuevos (`Sensor`, `ZonaRiego`, etc.).
+  - Estado actual: backend IoT en memoria (stub), sin migracion Prisma adicional en esta fase.
+
+- El prompt propone ABM completo con detalle por sensor y mapas productivos avanzados.
+  - Estado actual: base funcional UI/API para operar, con placeholders en mapa/capas.
+
+- El prompt propone bridge Node-RED/MQTT listo.
+  - Estado actual: endpoint de ingesta disponible (`/api/agro/sensores/ingest`), bridge externo pendiente.
+
+### Pendientes recomendados (proxima fase)
+
+1. Persistir IoT en Prisma (sensores, lecturas, zonas, programas, eventos, maquinaria).
+2. Implementar bridge Node-RED completo (MQTT -> API con retry y observabilidad).
+3. Agregar pagina de detalle por sensor con serie temporal real.
+4. Reemplazar `FieldMapIoT` placeholder por MapLibre con capas reales.
+5. Conectar recomendacion de riego a forecast + ET0 + humedad por lote/sensor.

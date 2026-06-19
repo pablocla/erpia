@@ -1,53 +1,179 @@
-Eres un arquitecto de sistemas ERP especializado en retail con más de 15 años de experiencia en implementaciones de sistemas multirubro (múltiples líneas de negocio, categorías de productos y sucursales).
+Bandeja de pendientes por rol (lo más importante)
+Una sola idea: “Pendientes” = todo lo que el ERP detecta y te compete a vos, no solo lo que anotaste en Mis Tareas.
 
-Realiza un **análisis funcional completo** y un **análisis detallado de conexiones e integraciones entre módulos** de un Sistema ERP Retail diseñado específicamente para **parametrización multirubro**.
+Cajero / POS (cajero, vendedor en mostrador)
+Debería verse al entrar (home o barra lateral del POS):
 
-Requisitos obligatorios que debe cumplir el análisis:
-- Máxima coherencia, consistencia y herencia de campos en todo el sistema.
-- Parametrización multirubro con herencia jerárquica (Global → Empresa → Sucursal → Rubro/Categoría → Punto de Venta → Usuario).
-- Las Notas de Crédito DEBEN poder llamar/referenciar directamente a la Factura que se desea anular (o parcialmente anular), heredando automáticamente todos los campos relevantes (cliente, artículos, precios, impuestos, descuentos, etc.).
-- Todo el sistema debe garantizar integridad referencial, trazabilidad y consistencia de datos.
+Pendiente	Origen	Acción
+Caja cerrada
+estadoOperativo / POS status
+Ir a abrir caja
+N ventas suspendidas
+pos_ventas_suspendidas (local) + futuro servidor
+Lista con monto/hora, recuperar
+Certificado AFIP vencido / sin cert
+pos/status
+Configuración
+Comprobantes sin CAE / error AFIP
+afip-monitor
+Reintentar / corregir
+Arqueo / cierre Z pendiente
+caja del día
+Cierre de turno
+Impresora no configurada
+POS status
+Config impresión
+Visual en POS (ejemplo): columna o drawer derecho “Pendientes del turno” (siempre visible en desktop; chip expandible en tablet), no solo modal F7.
 
-Estructura exacta que quiero que sigas en tu respuesta:
+┌─────────────────────────────────────────────────────────┐
+│ POS                          │ Pendientes (3)          │
+│ [caja OK] [AFIP OK]          │ ● 2 ventas suspendidas  │
+│                              │ ● 1 CAE rechazado       │
+│  catálogo + carrito          │ ● Cierre Z sugerido     │
+└─────────────────────────────────────────────────────────┘
+Hoy las suspendidas están bien como badge + modal; falta que sea parte del flujo diario, no un atajo oculto (F7).
 
-1. **Visión General del Sistema ERP Retail Multirubro**
-   - Objetivo del ERP
-   - Módulos principales (lista completa y justificada)
+Vendedor / vendedor ruta
+Pendiente	Dónde debería aparecer
+Presupuestos por vencer / sin respuesta
+Home vendedor
+Pedidos sin facturar
+Home + link a pedidos
+Clientes sobre límite de crédito
+Alerta + autorización supervisor (ya tenés hook, falta en bandeja)
+Borrador de factura
+Ya en dashboard continuarItems; falta en home vendedor
+Visitas / ruta del día (si aplica)
+Módulo ruta
+Home vendedor (no el ejecutivo): ventas del día, meta, 5 pendientes, botón grande Nueva venta / POS.
 
-2. **Módulos del Sistema** (para cada módulo incluye):
-   - Descripción funcional detallada
-   - Entidades/tablas principales
-   - Campos clave y su herencia multirubro
-   - Parametrización específica del módulo (nivel Global, Empresa, Sucursal, Rubro, etc.)
+Depósito / picking (deposito)
+Pendiente
+Órdenes de picking abiertas
+Stock bajo (alertas)
+Transferencias entre depósitos pendientes
+Recepciones de compra sin confirmar
+Mobile bottom nav hoy es genérico (Ventas, Caja…); para depósito debería ser: Picking · Stock · Transferencias · Más.
 
-3. **Matriz de Conexiones e Integraciones entre Módulos**
-   - Tabla o diagrama Mermaid que muestre cómo se comunican los módulos (flujos bidireccionales, triggers, eventos).
-   - Ejemplo: Ventas → Facturación → Contabilidad → Inventario → Caja, etc.
+Contador (contador)
+Pendiente
+Período fiscal abierto / sin cerrar
+Presentación IVA del mes
+Libros IVA sin exportar
+Asientos en borrador
+Certificado AFIP por vencer
+Home contador: semáforo fiscal + calendario de vencimientos, no gráfico de ventas.
 
-4. **Parametrización Multirubro y Herencia de Campos**
-   - Modelo de herencia jerárquica completo (con niveles y reglas de sobrescritura).
-   - Ejemplos concretos de herencia de campos (cliente, artículo, impuestos, precios, descuentos, listas de precios, etc.).
-   - Tabla resumen de parámetros críticos y su nivel de aplicación.
+Dueño / gerente (dueno, gerente)
+Pendiente
+Aprobaciones (compras, descuentos, NC) — hoy hay badge en móvil, poco en desktop
+Cajas abiertas > 12 h (CajasAbiertasAlert existe pero no está en layout/caja)
+Stock crítico, morosos, IVA estimado
+Alertas IA (widget existe; podría ser fila de pendientes)
+El dashboard ejecutivo actual sirve aquí; para otros roles es ruido.
 
-5. **Flujo Específico de Notas de Crédito y Anulación de Facturas**
-   - Diagrama detallado del proceso (desde la búsqueda de la factura hasta la generación de la NC).
-   - Reglas de negocio obligatorias:
-     - La NC debe poder seleccionar una o varias facturas (total o parcial).
-     - Herencia automática de todos los datos de la factura (artículos, cantidades, precios, impuestos, descuentos, cliente, sucursal, rubro, etc.).
-     - Control de stock, contabilidad y caja en tiempo real.
-     - Estados posibles (borrador, pendiente, aprobada, rechazada).
-   - Validaciones de coherencia y consistencia.
+Mozo / hospitalidad (mozo)
+Pendiente
+Mesas abiertas sin cerrar
+Comandas en cocina (KDS) — hoy polling 5 s; bandeja “pedidos demorados”
+Turnos agenda del día
+2. Home por rol (funcional + visual)
+Hoy todos entran al mismo “Centro de control operativo”. Lo sano:
 
-6. **Reglas de Coherencia y Consistencia Globales del Sistema**
-   - Listado de reglas transversales (integridad referencial, auditoría, trazabilidad, bloqueos por rubro, etc.).
+Rol	Pantalla de inicio ideal	Contenido principal
+Cajero
+/dashboard/pos o mini-home caja
+Pendientes turno + abrir POS
+Vendedor
+Home ventas
+Pendientes comerciales + acciones rápidas
+Depósito
+Picking o stock
+Cola de trabajo
+Contador
+Impuestos / dashboard fiscal
+Vencimientos + checklist
+Dueño
+Dashboard actual
+KPIs + salud operativa
+Mozo
+Mesas / hospitalidad
+Mesas abiertas
+Funcional: redirect post-login según user.rol.
+Visual: mismo shell (topbar + sidebar), distinto cuerpo — no solo ocultar menú.
 
-7. **Diagramas Técnicos (usa Mermaid)**
-   - Diagrama de módulos y conexiones
-   - Diagrama de herencia multirubro
-   - Diagrama de flujo completo de Nota de Crédito vs Factura
+3. POS — checklist de experiencia sana
+Lo que ya está bien: semáforos, modo foco, suspendidas con contador, atajos F-keys.
 
-8. **Recomendaciones de Mejores Prácticas**
-   - Sugerencias de arquitectura (microservicios o monolito modular, base de datos, etc.).
-   - Posibles tablas maestras y tablas transaccionales.
+Lo que falta para “experiencia sana”:
 
-Genera todo el documento de forma profesional, clara, estructurada y lista para usar como especificación funcional para desarrolladores. Usa negritas, tablas Markdown y bloques de código Mermaid donde corresponda. Sé extremadamente detallado y no omitas nada.
+Pre-vuelo al abrir POS
+Si caja cerrada o AFIP mal → pantalla o banner bloqueante con un solo CTA (no carrito usable a medias).
+
+Panel de suspendidas persistente
+Lista con hora, ítems, total; click = recuperar (hoy solo modal).
+
+Pendientes fiscales del turno
+CAE pendiente / rechazado con link a comprobante.
+
+Resumen de cierre visible
+“Al cerrar turno: X ventas, Y en efectivo, Z pendiente de sincronizar”.
+
+Modo cajero por defecto
+modoVendedor + sidebar reducido ya existen; falta que cajero no caiga en dashboard ejecutivo al loguearse.
+
+Integración visual Sprint 30 en ventas/POS
+PreviewFactura, DraftAlert, CajasAbiertasAlert — creados, no cableados en app/; el cajero no los ve.
+
+4. Unificar “Mis tareas” vs “Pendientes del sistema”
+Hoy mezcla conceptos:
+
+Mis tareas → lista manual del usuario (bien para recordatorios).
+Pendientes reales → repartidos entre dashboard, topbar, POS, localStorage.
+Propuesta visual (una pantalla o dos pestañas):
+
+[ Pendientes del sistema (12) ] [ Mis tareas (3) ]
+Sistema: generado por API (/api/pendientes?rol=cajero agregando caja, AFIP, aprobaciones, stock…).
+Mis tareas: lo actual.
+En topbar: un solo icono con total (sistema + manual), no tres (tareas, tickets fake, campana).
+
+5. Navegación y mobile por rol
+Hoy	Mejor
+Bottom nav igual para todos
+4 ítems según ROLE_FOCUS (cajero: Inicio·POS·Caja·Más)
+Sidebar largo aunque filtrado
+Modo “solo mi trabajo” por defecto para no-admin
+Paleta Cmd+K global
+Acciones rápidas priorizadas por rol arriba del listado
+6. Coherencia visual transversal
+Para que no se sienta “ERP de muchos módulos pegados”:
+
+Elemento	Estándar
+Encabezado de módulo
+.page-header + título + subtítulo + CTA
+Estado vacío
+CTA + link ayuda (falta en ~50 % módulos)
+Bloque pendientes
+Misma card en home, POS, impuestos
+Semáforos
+Mismos colores: verde OK / ámbar atención / rojo bloqueante
+Toasts destructivos
+Confirmación; el resto undo 5 s
+7. Ejemplo concreto: día del cajero (experiencia sana)
+Login → Home cajero (no dashboard ejecutivo).
+Ve: “Caja cerrada” + “2 ventas suspendidas de ayer” + “AFIP OK”.
+Abre caja → pendiente desaparece.
+Entra POS → panel derecho con suspendidas; semáforos en verde.
+Durante el día: CAE fallido aparece en pendientes con “Reintentar”.
+Antes de irse: banner “Cierre Z pendiente” con checklist.
+Topbar: un número total de pendientes, no tres iconos sueltos.
+Eso no requiere features nuevas de negocio; requiere agregar API de pendientes por rol + vistas por rol + integrar componentes ya escritos.
+
+Prioridad sugerida (solo funcional/visual)
+API + UI “Pendientes por rol” (home + topbar + pestaña en mis-tareas).
+Redirect y home por rol (cajero → POS/caja).
+POS: panel suspendidas + pre-vuelo caja/AFIP.
+Integrar CajasAbiertasAlert, DraftAlert, PreviewFactura en flujos reales.
+Bottom nav por rol.
+Bandeja gerente: aprobaciones + cajas viejas + stock bajo.55555555555555555555555555555555
+Si querés que lo bajemos a implementación, el primer entregable más visible sería: /api/pendientes por rol + home cajero con lista + panel lateral en POS — decime si arrancamos por cajero o por gerente.

@@ -1,0 +1,124 @@
+---
+title: "Guía de Testing QA"
+description: "Documento sobre guía de testing qa."
+sidebar_position: 10
+tags: ["developer", "testing", "qa"]
+audience: developer
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Guía de Testing para Gemini
+
+> **Objetivo:** que Gemini (u otro agente IA) pueda verificar el ERP después de cada cambio.
+
+## Estado funcional del sistema (Jun 2026 — Fase 4 cerrada)
+
+| Área | Estado | Notas |
+|------|--------|-------|
+| **Build** | ✅ | `npm run build` — 328 rutas |
+| **Tests unitarios** | ✅ **302 tests** | 53 archivos Vitest + Prisma mockeado |
+| **Tests E2E** | ✅ **3/3** | Playwright Chromium + mocks (`e2e/helpers/auth.ts`) |
+| **Health-check** | ✅ | `npx tsx scripts/health-check.ts` (requiere `npm run dev`) |
+| **Demo / desarrollo** | ✅ | Login demo, dashboard, POS, AFIP (con cert) |
+| **Motor precios** | ✅ | ventas, POS, presupuestos, portal B2B (`resolver-precios-lineas`) |
+| **WhatsApp sender** | 🟡 | Twilio real si hay env; dev mode sin crash |
+| **Producción multi-cliente** | 🟡 | Falta Redis, colas, Sentry, CI/CD |
+| **Tests con DB real** | ❌ | Solo mocks (unit + E2E smoke) |
+
+**Score Fase 4:** **85/100 demo** | **68/100 producción masiva**
+
+---
+
+## Comandos para Gemini
+
+### Verificación completa (G11)
+
+```bash
+npm run verify          # 302 tests + build
+npm run test:e2e        # 3 E2E Playwright (levanta dev server)
+npm run test:smoke      # readiness + gaps
+npm run test:erp        # cobertura módulos
+npm run test:auth
+npm run test:precios
+```
+
+```powershell
+# Windows — script todo-en-uno
+powershell -ExecutionPolicy Bypass -File scripts/run-tests-gemini.ps1
+```
+
+### Health-check (G9)
+
+```bash
+npm run dev   # terminal 1
+npx tsx scripts/health-check.ts   # terminal 2
+```
+
+### Requisitos
+
+- Node.js 20+
+- Unit tests: **no** requieren `DATABASE_URL` (Prisma mockeado en `__tests__/setup.ts`)
+- E2E smoke: mocks en `e2e/helpers/auth.ts` — no requiere DB
+- E2E integración real / demo login: sí requiere `DATABASE_URL` + seed
+- Build: `.env` mínimo para `prisma generate`
+
+---
+
+## Estructura de tests
+
+```
+__tests__/          # 53 archivos, 302 tests
+e2e/
+├── helpers/auth.ts # login demo + mocks POS
+├── login.spec.ts
+├── pos.spec.ts
+└── pedidos.spec.ts
+scripts/health-check.ts
+playwright.config.ts  # webServer: npm run dev
+```
+
+---
+
+## Checklist pre-demo / pre-venta (G12)
+
+| Ítem | Estado |
+|------|--------|
+| `npm run verify` pasa (302 + build) | ✅ |
+| `npm run test:e2e` 3/3 | ✅ |
+| Login demo (`admin@erp-argentina.com` / `admin1234`) | ✅ |
+| Redirect post-login por rol | ✅ |
+| Motor precios en ventas/POS/presupuestos/portal | ✅ |
+| `/api/pendientes` por rol | ✅ |
+| Alertas POS (suspendidas, caja cerrada) | ✅ |
+| POS abre y muestra semáforo caja | ✅ |
+| AFIP: certificado en config (piloto real) | 🟡 manual |
+| WhatsApp Twilio en sandbox | 🟡 requiere env |
+| Redis + colas agentes | ❌ |
+| CI/CD GitHub Actions | ❌ |
+| Documentación deploy (README) | ❌ ver G13 |
+
+---
+
+## Qué debe hacer Gemini al corregir código
+
+1. `npm run test:smoke` → módulos críticos
+2. `npm test` → suite completa
+3. `npm run build` → compila
+4. Si tocó auth: `npm run test:auth`
+5. Si tocó precios/ventas: `npm run test:precios`
+6. Si agregó servicio: `__tests__/<modulo>/<servicio>.test.ts`
+7. Si tocó UI flujos: `npm run test:e2e`
+
+---
+
+## Gaps conocidos (activos)
+
+- BUG-003: Supabase storage en `documentos-service` (P2)
+- BUG-004: Colas aprobación en `workflow-engine` (P2)
+- E2E con DB real (además de mocks)
+- Tests integración PostgreSQL
+- Duplicate routes `.js` + `.ts` en `app/api/productos` (warning build)
+
+Ver **G13** en `DIVISION_TAREAS_CURSOR_GEMINI.txt` para documentación y tecnología faltante.

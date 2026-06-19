@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Topbar } from "@/components/topbar"
+import { CajasAbiertasAlert } from "@/components/caja/cajas-abiertas-alert"
+import { DraftAlert } from "@/components/ventas/draft-alert"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
 import { MotionPage, MotionPresence } from "@/components/ui/motion"
 import {
@@ -89,6 +91,7 @@ import {
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
 import { useUIStore } from "@/lib/stores/ui-store"
+import { useThemeConfig } from "@/lib/theme-config"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -114,6 +117,25 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
       { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas" },
+    ],
+  },
+  {
+    label: "AGRO / Acopio",
+    color: "text-emerald-600",
+    moduloKey: "agro",
+    items: [
+      { href: "/dashboard/agro", icon: Layers, label: "Dashboard AGRO", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/balanza", icon: Truck, label: "Balanza Camiones", featureKey: "agro_balanza_digital", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/contratos", icon: FileText, label: "Contratos Cereales", featureKey: "agro_pizarra_precios", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/liquidaciones", icon: DollarSign, label: "Liquidaciones", featureKey: "retenciones", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/pizarra", icon: BarChart3, label: "Pizarra BCR/Chicago", featureKey: "agro_pizarra_precios", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/lotes", icon: MapPin, label: "Lotes y Mapas", featureKey: "agro_ndvi_mapas", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/iot", icon: Cpu, label: "Agro IoT Center", featureKey: "iot_sensores", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/iot/sensores", icon: Activity, label: "Sensores", featureKey: "iot_sensores", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/iot/riego", icon: TriangleAlert, label: "Riego Inteligente", featureKey: "iot_sensores", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/iot/maquinaria", icon: Wrench, label: "Maquinaria", featureKey: "iot_sensores", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/carta-porte", icon: ClipboardList, label: "Carta de Porte (CPE)", featureKey: "agro_carta_porte", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/productor", icon: Users, label: "Portal Productor", featureKey: "agro_portal_productor", allowedRubros: ["agro_acopio"] },
     ],
   },
   {
@@ -307,6 +329,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/capacitacion/parametrizacion", icon: Settings, label: "Parametrización" },
       { href: "/dashboard/capacitacion/manual-usuario", icon: BookOpen, label: "Manual de Usuario" },
       { href: "/dashboard/capacitacion/diagnostico", icon: Target, label: "Diagnóstico Gaps" },
+      { href: "/dashboard/documentacion", icon: BookOpen, label: "Documentación Técnica" },
     ],
   },
   {
@@ -314,6 +337,8 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     color: "text-slate-400",
     items: [
       { href: "/dashboard/configuracion", icon: Settings, label: "Parámetros", permisoModulo: "configuracion" },
+      { href: "/dashboard/configuracion/apariencia", icon: Sparkles, label: "Apariencia", permisoModulo: "configuracion" },
+      { href: "/dashboard/automatizacion", icon: Bot, label: "Automatización NOP", permisoModulo: "configuracion", featureKey: "automation_n8n" },
       { href: "/dashboard/cotizaciones", icon: DollarSign, label: "Cotizaciones", permisoModulo: "configuracion" },
       { href: "/dashboard/soporte", icon: Bug, label: "Soporte / Tickets", permisoModulo: "configuracion" },
       { href: "/dashboard/usuarios", icon: Shield, label: "Usuarios y Permisos", permisoModulo: "usuarios" },
@@ -508,6 +533,27 @@ function canRenderMenuItem(
   return true
 }
 
+function SidebarBrand({ appName, logoUrl }: { appName: string; logoUrl: string | null }) {
+  return (
+    <div className="flex items-center gap-2">
+      {logoUrl ? (
+        <img src={logoUrl} alt="" className="h-7 w-7 rounded-lg object-cover shrink-0 border border-border/50" />
+      ) : (
+        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Store className="h-4 w-4 text-primary" />
+        </div>
+      )}
+      <div className="min-w-0">
+        <h2 className="text-sm font-bold text-primary truncate leading-tight">{appName}</h2>
+        <p className="text-[9px] text-muted-foreground leading-tight flex items-center gap-1">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Operación en tiempo real
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -523,6 +569,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userId = user?.id ?? null
   const pathname = usePathname()
   const router = useRouter()
+  const { config: temaConfig } = useThemeConfig()
+  const empresaDisplayName = temaConfig.appName ?? "ERP Argentina"
 
   useEffect(() => setMounted(true), [])
 
@@ -650,10 +698,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [modulosOrdenados, sidebarSearch])
 
   return (
-    <div className="dashboard-canvas flex min-h-screen relative overflow-hidden bg-background">
+    <div className="dashboard-canvas dashboard-shell flex min-h-screen relative overflow-hidden bg-background">
       {/* Ambient background glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-blue-500/5 blur-[100px] pointer-events-none" />
+      <div className="theme-canvas-decor absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+      <div className="theme-canvas-decor absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-blue-500/5 blur-[100px] pointer-events-none" />
 
       {/* Sidebar */}
       <aside
@@ -668,18 +716,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-3 border-b flex items-center gap-2">
           {sidebarOpen && (
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Store className="h-4 w-4 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-bold text-primary truncate leading-tight">ERP Argentina</h2>
-                  <p className="text-[9px] text-muted-foreground leading-tight flex items-center gap-1">
-                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Operación en tiempo real
-                  </p>
-                </div>
-              </div>
+              <SidebarBrand appName={empresaDisplayName} logoUrl={temaConfig.logoUrl} />
             </div>
           )}
           <Button
@@ -750,9 +787,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full rounded-tl-xl border-t border-l border-border/30 bg-background/40 backdrop-blur-sm sm:mt-1.5 sm:ml-1.5 shadow-[-4px_-4px_24px_rgba(0,0,0,0.02)]">
-        <Topbar onMenuClick={() => setMobileSidebarOpen(true)} onMenuClick={() => setMobileSidebarOpen(true)} />
+        <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
         <main className="flex-1 overflow-auto bg-surface/30">
           <div className="p-4 sm:p-6 pb-20 md:pb-6">
+            <div className="mx-auto w-full max-w-[1400px] space-y-2 mb-4">
+              <CajasAbiertasAlert />
+              <DraftAlert />
+            </div>
             <Breadcrumbs className="mb-4" />
             <div className="mx-auto w-full max-w-[1400px]">
               <MotionPresence mode="wait">
@@ -774,18 +815,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex h-full flex-col">
               <div className="p-3 border-b flex items-center gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Store className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-sm font-bold text-primary truncate leading-tight">ERP Argentina</h2>
-                      <p className="text-[9px] text-muted-foreground leading-tight flex items-center gap-1">
-                        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Operación en tiempo real
-                      </p>
-                    </div>
-                  </div>
+                  <SidebarBrand appName={empresaDisplayName} logoUrl={temaConfig.logoUrl} />
                 </div>
                 <Button
                   variant="ghost"

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Manrope, Fraunces, Geist_Mono } from 'next/font/google'
+import { Manrope, Fraunces, Geist_Mono, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeConfigProvider } from '@/lib/theme-config'
@@ -12,6 +12,7 @@ import './globals.css'
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const viewport = {
   themeColor: '#2563eb',
@@ -56,7 +57,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} ${inter.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ThemeConfigProvider>
             {children}

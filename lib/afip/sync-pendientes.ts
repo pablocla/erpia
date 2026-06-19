@@ -14,8 +14,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
-import { AFIPSoapClient } from "./soap-client"
-import QRCode from "qrcode"
+import { solicitarCaeFactura } from "./solicitar-cae-factura"
 
 const HORAS_LIMITE_REINTENTO = 24
 const HORAS_AFIP_MANTENIMIENTO_INICIO = 0   // 00:00 ART
@@ -26,38 +25,6 @@ function enVentanaMantenimientoAFIP(): boolean {
   // Argentina es UTC-3, así que 00:00 ART = 03:00 UTC
   const horaART = (horaUTC + 21) % 24  // UTC - 3 = UTC + 21
   return horaART >= HORAS_AFIP_MANTENIMIENTO_INICIO && horaART < HORAS_AFIP_MANTENIMIENTO_FIN
-}
-
-function generarUrlQR(
-  cuit: string,
-  tipoCbte: number,
-  puntoVenta: number,
-  nroComprobante: number,
-  cae: string,
-  fechaVto: string,
-  importe: number,
-  moneda: string,
-  tipoCambio: number,
-  tipoDocRec: number,
-  nroDocRec: number,
-): string {
-  const payload = {
-    ver: 1,
-    fecha: new Date().toISOString().split("T")[0],
-    cuit: Number(cuit.replace(/\D/g, "")),
-    ptoVta: puntoVenta,
-    tipoCmp: tipoCbte,
-    nroCmp: nroComprobante,
-    importe: Math.round(importe * 100) / 100,
-    moneda,
-    ctz: tipoCambio,
-    tipoDocRec,
-    nroDocRec,
-    tipoCodAut: "E",
-    codAut: Number(cae),
-  }
-  const base64 = Buffer.from(JSON.stringify(payload)).toString("base64url")
-  return `https://www.afip.gob.ar/fe/qr/?p=${base64}`
 }
 
 export interface SyncResult {
@@ -108,100 +75,37 @@ export async function syncFacturasPendientes(empresaId?: number): Promise<SyncRe
       createdAt: { lt: limiteAntigüedad },
       ...(empresaId ? { empresaId } : {}),
     },
-    select: { id: true },
+    select: { id: true, empresaId: true },
   })
   if (vencidas.length > 0) {
     await prisma.factura.updateMany({
-      where: { id: { in: vencidas.map(f => f.id) } },
+      where: { id: { in: vencidas.map((f) => f.id) } },
       data: { estado: "error_cae" },
     })
+    const { emitAutomationEvent } = await import("@/lib/automation/emit-event")
+    for (const f of vencidas) {
+      void emitAutomationEvent(
+        f.empresaId,
+        "CAE_RECHAZADO",
+        { facturaId: f.id, motivo: "timeout_24h" },
+        `fac-timeout-${f.id}`
+      )
+    }
   }
 
   result.procesadas = pendientes.length
 
   for (const factura of pendientes) {
-    const { empresa, cliente } = factura
-    if (!empresa.certificadoCRT || !empresa.certificadoKEY) {
-      result.errores++
-      result.detalles.push({ facturaId: factura.id, resultado: "error", mensaje: "Sin certificados AFIP" })
-      continue
-    }
-
-    try {
-      const soapClient = new AFIPSoapClient(empresa.entorno as "homologacion" | "produccion")
-      const auth = await soapClient.authenticate(empresa.cuit, empresa.certificadoCRT, empresa.certificadoKEY)
-
-      // Reconstruir el comprobante mínimo para reenviar
-      // AFIP permite reenviar con el mismo número si no emitió CAE antes
-      const comprobante = {
-        Concepto: 1,
-        DocTipo: cliente?.cuit ? 80 : (cliente?.dni ? 96 : 99),
-        DocNro: cliente?.cuit || cliente?.dni || 0,
-        CbteDesde: factura.numero,
-        CbteHasta: factura.numero,
-        CbteFch: factura.createdAt.toISOString().slice(0, 10).replace(/-/g, ""),
-        ImpTotal: factura.total + factura.totalPercepciones,
-        ImpTotConc: 0,
-        ImpNeto: factura.subtotal,
-        ImpOpEx: 0,
-        ImpIVA: factura.iva,
-        ImpTrib: factura.totalPercepciones,
-        MonId: factura.monedaOrigen,
-        MonCotiz: factura.tipoCambio,
-        // IVA detail is not stored per factura, use total as single alícuota 21%
-        // Para un sync correcto deberías guardar el desglose de IVA en otra tabla
-        Iva: [{ Id: 5, BaseImp: factura.subtotal, Importe: factura.iva }],
-      }
-
-      const resultado = await soapClient.emitirComprobante(auth, empresa.cuit, factura.puntoVenta, comprobante)
-
-      if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
-        throw new Error(`AFIP rechazó: ${JSON.stringify(resultado.FeDetResp?.FECAEDetResponse?.Observaciones)}`)
-      }
-
-      const cae      = resultado.FeDetResp.FECAEDetResponse.CAE
-      const fechaVto = resultado.FeDetResp.FECAEDetResponse.CAEFchVto
-
-      const tipoDocRec = cliente?.cuit ? 80 : (cliente?.dni ? 96 : 99)
-      const nroDocRec  = Number(String(cliente?.cuit || cliente?.dni || "0").replace(/\D/g, "")) || 0
-
-      const qrUrl = generarUrlQR(
-        empresa.cuit,
-        factura.tipoCbte,
-        factura.puntoVenta,
-        factura.numero,
-        cae,
-        fechaVto,
-        factura.total + factura.totalPercepciones,
-        factura.monedaOrigen,
-        factura.tipoCambio,
-        tipoDocRec,
-        nroDocRec,
-      )
-      const qrBase64 = await QRCode.toDataURL(qrUrl)
-
-      const [year, month, day] = [fechaVto.slice(0, 4), fechaVto.slice(4, 6), fechaVto.slice(6, 8)]
-      const vencimientoCAE = new Date(`${year}-${month}-${day}`)
-
-      await prisma.factura.update({
-        where: { id: factura.id },
-        data: {
-          cae,
-          fechaCAE: new Date(),
-          vencimientoCAE,
-          qrBase64,
-          estado: "emitida",
-        },
-      })
-
+    const afip = await solicitarCaeFactura(factura.id)
+    if (afip.ok) {
       result.sincronizadas++
       result.detalles.push({ facturaId: factura.id, resultado: "ok" })
-    } catch (err) {
+    } else {
       result.errores++
       result.detalles.push({
         facturaId: factura.id,
         resultado: "error",
-        mensaje: err instanceof Error ? err.message : "Error desconocido",
+        mensaje: afip.error ?? "Error desconocido",
       })
     }
   }

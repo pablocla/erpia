@@ -250,12 +250,19 @@ export const FEATURES = {
   IOT_SENSORES: "iot_sensores",
   PORTAL_B2B: "portal_b2b",
   TIENDA_ONLINE: "tienda_online",
+  AGRO_BALANZA_DIGITAL: "agro_balanza_digital",
+  AGRO_PIZARRA_PRECIOS: "agro_pizarra_precios",
+  AGRO_CARTA_PORTE: "agro_carta_porte",
+  AGRO_PORTAL_PRODUCTOR: "agro_portal_productor",
+  AGRO_CLIMA: "agro_clima",
+  AGRO_NDVI_MAPAS: "agro_ndvi_mapas",
 
   // Integraciones
   WHATSAPP_BUSINESS: "whatsapp_business",
   MERCADO_LIBRE: "mercado_libre",
   EMAIL_NOTIFICACIONES: "email_notificaciones",
   WEBHOOKS_SALIENTES: "webhooks_salientes",
+  AUTOMATION_N8N: "automation_n8n",
   SSE_REALTIME: "sse_realtime",
   IMPRESORA_FISCAL: "impresora_fiscal",
 

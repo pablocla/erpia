@@ -1,0 +1,23 @@
+---
+title: "Actualizaciones de Versión"
+description: "Manual operativo de actualizaciones semanales y parches hotfix en caliente."
+sidebar_position: 3
+tags: ["operaciones", "actualizaciones", "hotfix"]
+audience: operaciones
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Gestión de Actualizaciones y Hotfixes
+
+Las actualizaciones del sistema son empujadas directamente a la rama `main` del repositorio Git y disparan de manera automática un pipeline CI/CD en el hosting Edge.
+
+---
+
+## 🛠️ Procedimiento de Upgrade Semanal
+
+1. **Revisión del Changelog**: Validar las nuevas características introducidas en `CHANGELOG.md`.
+2. **Ejecutar Pruebas Locales**: Correr `npm run verify` antes de empujar cambios al repositorio de producción.
+3. **Monitoreo de Deploy**: Entrar a la consola de Vercel y monitorear que la fase `next build` compile todas las rutas estáticas y dinámicas sin errores.
+4. **Validación post-deploy**: Correr el script `health-check` sobre el dominio de producción para asegurar que el canal impositivo (AFIP) y el pool de conexiones de base de datos no presenten regresiones.

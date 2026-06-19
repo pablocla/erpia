@@ -17,6 +17,7 @@ const RUBROS: { value: Rubro; emoji: string; label: string }[] = [
   { value: "libreria", emoji: "📚", label: "Librería" },
   { value: "ropa", emoji: "👕", label: "Indumentaria" },
   { value: "supermercado", emoji: "🛍️", label: "Supermercado" },
+  { value: "estacion_servicio", emoji: "⛽", label: "Estación de Servicio" },
   { value: "distribuidora", emoji: "🚚", label: "Distribuidora" },
   { value: "salon_belleza", emoji: "💅", label: "Salón de Belleza" },
   { value: "gimnasio", emoji: "🏋️", label: "Gimnasio" },

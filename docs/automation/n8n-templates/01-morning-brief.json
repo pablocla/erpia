@@ -1,0 +1,57 @@
+{
+  "name": "NOP Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1-5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "id": "schedule-morning",
+      "name": "Lun-Vie 06:00"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/actions/trigger-playbook",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-NOP-Api-Key", "value": "={{$env.NOP_API_KEY}}" },
+            { "name": "X-NOP-Empresa-Id", "value": "={{$env.NOP_EMPRESA_ID}}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"playbookKey\": \"morning_brief_tasks\",\n  \"parametros\": {}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "id": "trigger-brief",
+      "name": "POST Morning Brief Playbook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Lun-Vie 06:00": {
+      "main": [[{ "node": "POST Morning Brief Playbook", "type": "main", "index": 0 }]]
+    }
+  }
+}

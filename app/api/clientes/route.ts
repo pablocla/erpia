@@ -20,6 +20,8 @@ const clienteSchema = z.object({
   esAgenteRetencionGanancias: z.boolean().default(false),
   esAgentePercepcionIVA: z.boolean().default(false),
   esAgentePercepcionIIBB: z.boolean().default(false),
+  esGranEmpresa: z.boolean().default(false),
+  esExportacion: z.boolean().default(false),
   nroCertificadoExclusion: z.string().optional().nullable(),
   vigenciaCertificadoExclusion: z.string().optional().nullable(),
   // ─── Contacto ─────────────────────────────────────────────────────────

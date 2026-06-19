@@ -1,0 +1,62 @@
+---
+title: "Empleados Virtuales NOP"
+description: "Catálogo de virtual workers, playbooks y cron de ejecución automática."
+sidebar_position: 2
+tags: ["funcional", "automation", "workers"]
+audience: all
+layer: 3-features
+last_verified: 2026-06-19
+status: completo
+---
+
+# Empleados Virtuales (Virtual Workers)
+
+Los **empleados virtuales** son perfiles lógicos que ejecutan playbooks NOP en horarios programados, sin intervención humana. Complementan n8n cuando no hay conectividad saliente o como fallback local.
+
+---
+
+## Catálogo incluido
+
+| Worker | Rol | Cron | Playbooks |
+|--------|-----|------|-----------|
+| Ana Reposición | `deposito` | `0 8 * * 1-5` | `stock_guardian`, `procurement_guardian_n8n` |
+| Bot Caja Noche | `cajero` | `0 23 * * *` | `caja_noche_auditor` |
+| Leo Cobranzas | `vendedor` | `0 9 * * 1-5` | `cobranza_whatsapp_n8n` |
+| Sofía Onboarding | `administrador` | — | `onboarding_empleado_n8n` |
+| Max AFIP | `administrador` | `0 */2 * * 1-5` | `afip_cae_retry` |
+| Rita ML | `vendedor` | `0 */4 * * *` | `mercadolibre_sync` |
+
+Ver el catálogo completo en `/dashboard/automatizacion` o `GET /api/automation/catalog`.
+
+---
+
+## Ejecución
+
+1. El cron `GET /api/cron/automation-virtual-workers` (protegido con `CRON_SECRET`) recorre workers activos.
+2. Cada worker dispara sus playbooks vía `lib/automation/playbook-runner.ts`.
+3. Los playbooks pueden emitir eventos NOP (`emitToN8n`) o crear tareas/usuarios virtuales.
+
+---
+
+## Parametrización
+
+Desde la UI o `PUT /api/automation/config`:
+
+```json
+{
+  "activo": true,
+  "metadata": {
+    "modoConexion": "webhook"
+  }
+}
+```
+
+Valores de `modoConexion`: `webhook` (default), `poll`, `both`.
+
+---
+
+## Relacionado
+
+- [Automation Hub](/dashboard/documentacion/funcional/automation-hub)
+- [API Poll modo C](/dashboard/documentacion/funcional/automation-api-poll)
+- [Entitlements comerciales](/dashboard/documentacion/developer/automation-entitlements)

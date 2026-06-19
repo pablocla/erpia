@@ -1,0 +1,408 @@
+Lo que ya suma (no reinventar)
+Capacidad	Valor
+Cmd+K + recientes
+Navegación rápida en 40+ módulos
+Modo guiado / experto / vendedor
+Onboarding vs power users
+Ayuda contextual por ruta
+Reduce soporte
+POS con F-keys
+Productividad en mostrador
+Temas + paletas OKLCH
+Identidad por rubro/empresa
+El gap no es “falta de features”, sino consistencia, descubribilidad y feedback en el resto del producto.
+
+1. Capa global de productividad
+A. Paleta de comandos 2.0
+Hoy navega; podría también:
+
+Crear: “Nueva factura”, “Abrir caja”, “Alta cliente”
+Buscar entidades: cliente por CUIT/nombre, producto por código
+Acciones recientes del usuario (últimas 5 operaciones)
+B. Atajos unificados
+Existe useKeyboardShortcuts / erpShortcuts, pero no en todos los listados. Estándar en toda pantalla CRUD:
+
+Atajo	Acción
+Alt+N
+Nuevo
+Alt+R
+Refrescar
+Ctrl+F
+Foco en búsqueda
+Alt+E
+Exportar
+?
+Panel de atajos
+C. Barra de estado operativa (topbar)
+Chip persistente: caja abierta/cerrada, certificado AFIP OK/vence, PV activo, período contable. Un vistazo evita errores costosos.
+
+D. “Continuar donde quedaste”
+En el home: borrador de venta, compra a medio cargar, presentación IVA pendiente — no solo “páginas recientes”.
+
+2. Listados y tablas (impacto masivo)
+Muchos módulos usan DataTable; otros tablas ad hoc. Propuesta: patrón único de listado.
+
+[Filtros guardados ▼] [Búsqueda] [+ Nuevo]     · 12 seleccionados [Acciones ▼]
+┌─────────────────────────────────────────────────────────────┐
+│ □  Fecha    Cliente      Total      Estado    ⋮             │
+└─────────────────────────────────────────────────────────────┘
+Valor agregado:
+
+Filtros guardados por usuario (“Mis facturas del mes”, “Stock bajo depósito X”)
+Vistas de columna (mostrar/ocultar, orden, ancho) persistidas
+Bulk actions homogéneas: exportar, anular (con motivo), cambiar estado, asignar vendedor
+Empty states accionables (ya hay componente; falta en ~50% de pantallas): CTA primario + link a tutorial
+Skeleton → contenido con loading.tsx en todos los módulos pesados (hoy es parcial)
+Hover preview: fila de factura → mini preview CAE/importe sin abrir modal
+3. Formularios y flujos críticos
+A. Wizard para procesos largos
+Compras, asientos, presentación IVA, cierre de caja: pasos claros + validación por paso + resumen final.
+
+B. Validación inline Argentina
+
+CUIT con máscara + dígito verificador en vivo
+CBU/alias con feedback
+Tipo comprobante según condición IVA del cliente (sugerencia, no solo error al guardar)
+C. Autosave + recuperación
+Borradores locales (venta, compra, nota) con banner: “Recuperar borrador de hace 2 h”.
+
+D. Formularios densos → modo compacto
+Toggle “Vista compacta” en pantallas con 20+ campos (contabilidad, configuración).
+
+E. Confirmaciones inteligentes
+Solo para destructivas/anulaciones; el resto con undo toast (5 s) en lugar de modal.
+
+4. POS y caja (donde más se gana plata)
+Ya tenés F-keys; sumaría:
+
+Mejora	Valor
+Layout “solo cobro”
+Pantalla táctil grande, botones 48px+
+Cola de tickets suspendidos visual
+Tarjetas con hora/monto, no solo modal
+Split payment UX
+Barras de progreso por medio (efectivo/MP/tarjeta)
+Feedback háptico/sonoro opcional
+Confirmación de escaneo
+Modo offline visible
+Banner + cola de sync cuando vuelve red
+Cierre de caja guiado
+Checklist: arqueo, diferencias, imprimir Z
+Micro-UX: total siempre visible (sticky footer), contraste alto en monto a cobrar, vuelto calculado automático.
+
+5. Dashboard e inteligencia visual
+A. Home por rol
+Admin → finanzas/impuestos; vendedor → ventas del día; depósito → stock/picking. Mismo shell, widgets distintos.
+
+B. KPIs accionables
+Cada tarjeta con CTA: “Stock bajo (12)” → filtro preaplicado en productos.
+
+C. Timeline de actividad
+Últimas ventas, aprobaciones, alertas AFIP en una línea de tiempo (reduce saltos entre módulos).
+
+D. Semáforo fiscal
+Widget único: IVA del mes, IIBB, vencimientos, certificado — colores + días restantes.
+
+6. Argentina / AFIP (diferenciador UX)
+Propuesta	Por qué suma
+Estado CAE en toda la UI
+Badge + tooltip con vencimiento en listados
+Simulador “¿qué comprobante emitir?”
+3 preguntas → A/B/C/M
+Checklist pre-presentación
+IVA, libro IVA, alícuotas antes de exportar
+Historial de rechazos AFIP
+Motivo + “reintentar con corrección”
+Formato moneda consistente
+Intl + alineación tabular en tablas (clase .kpi-number ya existe; extender)
+7. Mobile y campo
+Propuesta	Módulos
+Bottom nav por rol
+Vendedor ruta, picking, aprobaciones
+Gestos: swipe en fila
+Aprobar / ver detalle
+Cámara → OCR factura proveedor
+Compras
+Firma en pantalla
+Remitos, entregas
+PWA instalable + splash
+Uso en depósito sin app nativa
+modoVendedor y MobileBottomNav son base; falta paridad de acciones (no solo lectura en móvil).
+
+8. IA como capa UX (no solo chat)
+Uso	Ejemplo
+Copiloto en formulario
+“Completar desde factura PDF”
+Sugerencia de cuenta contable
+Al cargar gasto
+Detección de anomalías
+“Este precio está 40% bajo el promedio”
+Resumen en lenguaje natural
+“Tu mes: +12% ventas, 3 clientes morosos”
+Onboarding in-app
+Checklist dinámico según rubro (extender onboarding IA)
+El asistente debería poder ejecutar (“abrí caja”, “mostrame facturas pendientes”) vía paleta, no solo responder.
+
+9. Consistencia visual (rápido, alto ROI)
+Headers de módulo con .page-header en todas las pantallas (hoy mezclado).
+Misma jerarquía: título → subtítulo → acciones primarias a la derecha.
+Estados semánticos (.status-pendiente, etc.) en todos los badges de estado.
+Diálogos: mismo ancho max, mismo footer (Cancelar / Guardar).
+Toasts unificados: éxito con acción “Deshacer” donde aplique.
+Impresión: preview antes de imprimir ticket/A4 en todos los comprobantes.
+10. Accesibilidad y inclusión
+Contraste WCAG en modo claro (algunos muted-foreground en tablas son justos).
+Focus visible en tablas y menús (ya hay :focus-visible global; falta en celdas editables).
+aria-live en totales POS y montos de cobro.
+Reducir animaciones (prefers-reduced-motion) — Framer Motion en muchas pantallas.
+Tamaño de fuente configurable (además de zoom del browser).
+11. Confianza y errores
+Patrón	Implementación
+Error boundaries por módulo
+“Falló stock” sin tumbar todo el dashboard
+Mensajes humanos
+“AFIP rechazó: código 10016” + link a ayuda
+Reportar error
+Ya existe botón; integrar con contexto (ruta, usuario, payload sanitizado)
+Modo mantenimiento / degradado
+Banner si Supabase/AFIP lento
+Priorización sugerida
+⚠️
+Mermaid Syntax Error
+Fase 1 (2–3 sprints, mucho valor): atajos en CRUD, headers/empty states, topbar operativa, filtros guardados en 5 módulos top (ventas, clientes, productos, facturas, caja).
+
+Fase 2: paleta con acciones + búsqueda entidades, wizards fiscales, POS sticky/offline, home por rol.
+
+Fase 3: IA ejecutable, OCR compras, PWA campo, vistas columnas avanzadas.
+
+Resumen ejecutivo
+El ERP ya tiene buena arquitectura UX (navegación, modos, ayuda, POS). El valor agregado está en:
+
+Misma experiencia en los 40 módulos (listados, formularios, feedback).
+Menos clics en lo repetitivo (atajos, paleta, filtros, bulk).
+Menos errores fiscales (estado AFIP visible, validación AR, guías).
+Operación real (móvil, offline, rol, continuidad de trabajo).
+Si querés bajar esto a implementación, los tres con mejor relación impacto/esfuerzo para empezar serían: topbar de estado operativo, atajos + panel ? en todos los DataTable, y paleta con “crear + buscar cliente/producto”. Decime por cuál arrancamos y lo bajamos a tickets concretos en el repo.
+Acá va lo complementario a lo que ya le pasaste a Copilot (UX visible). Esto sale del repo: ~263 rutas API, ~110+ pantallas "use client", 40 tests de servicios, y varias piezas “anunciadas” pero no cerradas.
+
+1. Arquitectura Next.js 15 — infraestructura sin explotar
+Deficiencia	Qué hay hoy	Tecnología no aplicada / poco usada
+Todo el dashboard es cliente
+Casi todas las page.tsx son "use client" + fetch/SWR
+RSC + Server Components para listados iniciales, Server Actions para mutaciones (están en next.config pero casi no se usan)
+Cero cache de datos en servidor
+No hay unstable_cache, revalidateTag, revalidatePath
+Next.js Data Cache + tags por empresaId
+Build “a ciegas”
+ignoreBuildErrors: true y eslint.ignoreDuringBuilds: true
+CI estricto con typecheck + lint como gate de deploy
+View Transitions / React Compiler
+Activados (bien)
+Falta medir si compensan el peso de Framer Motion en casi todo
+Impacto: TTFB alto, bundles grandes, hidratación pesada en cada módulo. Copilot mejora pantallas; esto mejora velocidad y costo de hosting.
+
+2. API y contratos — escala y consistencia
+Deficiencia	Evidencia	Qué falta
+~263 endpoints, validación irregular
+Zod en muchas rutas, no en todas
+Esquema Zod compartido lib/schemas/* + middleware validateBody()
+Sin documentación de API
+No OpenAPI/Swagger
+openapi-typescript o next-swagger-doc → SDK para portal/mobile
+Sin API tipada end-to-end
+Cliente hace fetch + casts
+tRPC o Hono + Zod con tipos inferidos
+Rate limit débil
+Solo auth; in-memory (lib/auth/rate-limiter.ts)
+Upstash Redis / Vercel KV en todas las rutas sensibles (AFIP, export, IA)
+Event bus local
+lib/events/event-bus.ts in-process
+Cola distribuida (Inngest, BullMQ, Trigger.dev) para factura→stock→contabilidad→email
+AFIP / jobs síncronos
+Cron en /api/cron/*
+Workers con retry, DLQ y idempotencia (mismo evento 2 veces no duplica CAE)
+La documentación interna ya lo dice (introspeccionfinal1.txt, sistema-pos.md): sin Redis, sin queues, single-instance.
+
+3. Tiempo real y colaboración — Supabase infrautilizado
+Tenés @supabase/supabase-js pero no hay canales Realtime para:
+
+KDS / cocina (pedidos nuevos sin polling)
+Caja (turno, arqueo compartido)
+Aprobaciones (notificación instantánea)
+Stock (reserva concurrente en POS multi-terminal)
+Tecnologías no aplicadas: Supabase Realtime, o SSE desde API Next, o Pusher/Ably si querés desacoplado.
+
+Hoy el KDS y notificaciones seguramente poll o refresco manual → latencia y carga DB.
+
+4. Offline / PWA — mitad hecho (deficiencia fuerte en POS)
+Pieza	Estado
+manifest.json + registro sw.js
+Sí
+Página /offline
+Sí
+Cola de ventas + IndexedDB
+No (sw.js explícitamente no cachea /api/)
+Mensaje “se sincronizarán automáticamente”
+Engañoso — no hay sync queue
+Tecnologías no aplicadas: Dexie/IndexedDB, Background Sync API, patrón outbox en POS, conflict resolution al reconectar.
+
+Para un ERP argentino en mostrador, esto es P0 técnico, no solo UX.
+
+5. Estado y datos en cliente
+Deficiencia	Detalle
+SWR sin foco en frescura
+revalidateOnFocus: false global en useAuthFetch — datos stale en pestañas largas
+Optimistic UI casi ausente
+useOptimistic visto en clientes; el resto espera round-trip
+react-hook-form poco adoptado
+Solo el primitivo components/ui/form.tsx; muchos forms manuales con useState
+Tablas sin virtualización
+DataTable custom; @tanstack/react-virtual no instalado (está en notas internas)
+Duplicación auth fetch
+Mezcla localStorage.getItem("token") y useAuthFetch
+Tecnologías no aplicadas: TanStack Query (mutations + optimistic + infinite scroll), React Hook Form + Zod resolver en masivo.
+
+6. Seguridad y multi-tenant (más allá de UX)
+Tema	Riesgo / gap
+JWT en localStorage
+Vulnerable a XSS; no hay refresh rotation visible en todo el flujo
+Middleware JWT
+Bien en /api/*; en dev sin JWT_SECRET deja pasar al handler
+getAuthContext + whereEmpresa
+Muy extendido (~190 rutas); hay que auditar las ~70 restantes que no importan empresa-guard
+CSRF
+Mucho POST desde cliente con Bearer; si migrás a cookies, falta CSRF token
+CSP
+unsafe-inline en scripts — limita SRI y endurecimiento
+Cron / webhooks
+Rutas /api/cron/* — verificar secret fuerte y no expuesto
+Copilot no suele tocar esto; es deuda de producción.
+
+7. Testing y calidad — hueco grande
+Capa	Cobertura aproximada
+Servicios (__tests__/)
+~40 archivos — buen inicio en ventas, contabilidad, AFIP
+Rutas API
+Pocas (pos-venta, recibos, etc.)
+UI / E2E
+Cero Playwright/Cypress
+Visual regression
+No
+Contract tests API
+No
+No aplicado: Playwright (flujos caja→venta→CAE), MSW para componentes, coverage gate en CI (solo script test:coverage local).
+
+Con ignoreBuildErrors, los tests son el único freno real — y están incompletos.
+
+8. Observabilidad y operaciones
+Ausente	Para qué sirve
+Sentry / OpenTelemetry
+Errores en POS/AFIP con contexto empresaId, facturaId
+Structured logging
+Correlación con x-request-id (middleware ya lo menciona)
+Healthchecks ricos
+/api/health + AFIP, DB, cola, Ollama
+Feature flags
+config/features existe; falta LaunchDarkly/Unleash o flags en runtime sin deploy
+Audit UI unificado
+Auditoría en config; no trazabilidad visual en cada comprobante
+Solo Vercel Analytics → métricas de marketing, no de operación ERP.
+
+9. Dominio Argentina — lógica sí, producto fiscal no cerrado
+La lógica AFIP está (SOAP, certificados, tests). Deficiencias de producto/tecnología:
+
+Gap	Tecnología / patrón faltante
+Reintentos CAE masivos
+Job queue + estado PENDIENTE_AFIP visible en UI
+Contingencia CAEA / offline fiscal
+Flujo legal + UI de “modo contingencia”
+Libros IVA / presentación
+Wizard + validación pre-export (más reglas que pantallas)
+Integración Mercado Pago / bancos
+Webhooks firmados + reconciliación automática (hay rutas, falta cerrar el loop UX)
+Firma digital / PDF/A para legal
+No evaluado en UI
+10. IA — arquitectura avanzada, integración superficial
+Bien: tiers realtime|batch|nightly, agentes, Zod en respuestas IA.
+
+Deficiente / no aplicado:
+
+RAG sobre docs del ERP / normativa AFIP (vector DB: pgvector en Supabase)
+Tool calling que ejecute acciones (abrir caja, listar morosos) — hoy chat + APIs sueltas
+Evals (prompt regression) antes de deploy de prompts
+Coste/límites por empresa en UI
+Cola para batch nocturno (cron ia-diaria sin UI de estado de jobs)
+11. Código y mantenibilidad
+Problema	Ejemplo
+God components
+app/dashboard/pos/page.tsx ~2500 líneas
+263 rutas = 263 superficies de bug
+Sin capa lib/api-handlers común
+Workflow engine incompleto
+TODO: approval queue en workflow-engine.ts
+i18n
+Solo lang="es-AR"; sin next-intl → imposible PT-BR/ES-MX sin rewrite
+Accesibilidad técnica
+Sin auditoría axe en CI; prefers-reduced-motion vs Framer Motion
+Impresión
+PDF/email por API; falta print driver unificado (QZ Tray / ESC-POS WebUSB) como capa opcional
+12. Matriz: qué le conviene a Copilot vs qué es otra capa
+⚠️
+Mermaid Syntax Error
+quadrantChart
+    title Copilot UX vs deuda técnica
+    x-axis Menos técnico --> Más técnico
+    y-axis Menor impacto --> Mayor impacto
+    quadrant-1 Copilot puede solo
+    quadrant-2 Ambos
+    quadrant-3 Nice to have
+    quadrant-4 Vos / arquitectura
+    Paleta y atajos: [0.2, 0.7]
+    Empty states: [0.15, 0.6]
+    Topbar fiscal UX: [0.25, 0.75]
+    Offline POS queue: [0.85, 0.95]
+    Redis y colas: [0.9, 0.9]
+    RSC y cache: [0.8, 0.85]
+    Playwright E2E: [0.7, 0.88]
+    Realtime KDS: [0.75, 0.8]
+    OpenAPI SDK: [0.65, 0.7]
+    Virtual tables: [0.5, 0.75]
+    httpOnly auth: [0.85, 0.82]
+Top 10 deficiencias técnicas (si Copilot ya hace UX)
+Offline POS real (IndexedDB + outbox + sync) — hoy es fachada.
+Colas y workers (AFIP, emails, agentes IA, event bus distribuido).
+Quitar ignoreBuildErrors y CI con lint + types + tests mínimos por módulo crítico.
+Realtime en KDS, caja, aprobaciones (Supabase o SSE).
+Redis para rate limit, locks de stock, sesiones POS concurrentes.
+RSC / cache en listados pesados (productos, movimientos, libro mayor).
+E2E Playwright del flujo venta → CAE → cierre Z.
+OpenAPI o tRPC para dejar de mantener 263 contratos a mano.
+Virtualización de tablas + paginación server-side uniforme.
+Auth hardened (httpOnly + refresh rotation + auditoría de sesiones).
+Tecnologías “del stack moderno ERP” que no están en package.json
+Tecnología	Uso típico en ERP
+Upstash Redis
+Rate limit, cache, locks
+Inngest / BullMQ
+Jobs AFIP, recurrentes, IA
+@tanstack/react-query
+Mutations + cache cliente
+@tanstack/react-virtual
+Tablas 10k+ filas
+next-intl
+i18n
+Playwright
+E2E
+Sentry + OTEL
+Ops
+pgvector
+RAG IA / búsqueda semántica productos
+Turborepo
+Si separan portal / POS / admin
+Zodios / tRPC
+API tipada
+Electric SQL / PowerSync
+Offline sync serio (alternativa a hand-roll)
+En resumen: Copilot puede pulir la capa visible; las deficiencias que yo vería como “otra liga” son arquitectura de datos (RSC/cache), confiabilidad fiscal (colas + offline), tiempo real, observabilidad y calidad de build/test. El proyecto ya tiene buenas piezas (Zod parcial, event bus, middleware JWT, tests de dominio, PWA shell) pero varias están a medias o documentadas como TODO.
+
+Si querés, el siguiente paso puede ser un audit de 1 página por prioridad (solo POS + AFIP + caja) con checklist archivo por archivo — o un doc TECH_DEBT.md para que Copilot y vos no se pisen el trabajo.

@@ -1,0 +1,32 @@
+---
+title: "Visión del Producto"
+description: "Visión estratégica para la expansión del ERP en Argentina y LATAM."
+sidebar_position: 2
+tags: ["roadmap", "vision", "latam"]
+audience: all
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Visión del Producto — Expansión LATAM
+
+El ERP Argentina está diseñado bajo un paradigma modular SaaS de alta densidad, permitiendo a PyMEs operar en verticales complejas (Agro, Retail, Gastronomía, Veterinaria) con localización impositiva integrada de fábrica.
+
+## 📌 Objetivos Estratégicos
+
+1. **Localización Impositiva Autogestionada**: Automatizar la facturación electrónica con AFIP (Argentina) y sentar las bases para adaptadores de facturación en Chile (SII), México (SAT) y Uruguay (DGI).
+2. **Personalización sin Código (Zero-Code Customization)**: Permitir que los analistas implementadores puedan configurar el 90% de las necesidades del cliente (campos, workflows, reglas de negocio) mediante paneles interactivos sin compilar fuentes.
+3. **Resiliencia Operativa (Offline-First)**: El Punto de Venta (POS) y los módulos de logística deben operar sin conexión estable a Internet utilizando bases de datos locales indexadas (IndexedDB) y sincronización diferida automática.
+
+## 🗺️ Roadmap de Corto y Mediano Plazo
+
+### 🚀 Q3 2026: Consolidación y Estabilidad (Fase Actual)
+- Cobertura de tests unitarios robusta (>300 tests unitarios).
+- Scaffolding de tests E2E automáticos para flujos críticos (Login, POS, Pedidos).
+- Implementación de motor de resolución de precios dependientes del perfil de cliente (Listas de Precios, Descuentos por volumen).
+
+### 📈 Q4 2026: Multi-Tenant & Escala
+- Incorporación de colas de mensajería Redis + BullMQ para procesamiento asíncrono de facturación electrónica y reportes masivos.
+- Módulo de Observabilidad avanzado (captura de logs centralizada).
+- Integración nativa bidireccional con MercadoLibre API para sincronización de stock y pedidos automáticos.

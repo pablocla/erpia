@@ -1,0 +1,113 @@
+---
+title: "API Poll — Modo C"
+description: "Integración n8n por polling cuando no hay webhooks salientes."
+sidebar_position: 3
+tags: ["funcional", "automation", "api", "n8n"]
+audience: developer
+layer: 3-features
+last_verified: 2026-06-19
+status: completo
+---
+
+# API Poll (Modo C)
+
+Cuando el firewall del cliente **bloquea POST salientes** desde NOP hacia n8n, use el **modo poll**: n8n consulta eventos pendientes periódicamente.
+
+---
+
+## Configuración
+
+En `AutomationConfig.metadata`:
+
+```json
+{
+  "modoConexion": "poll"
+}
+```
+
+Valores: `webhook` (default), `poll`, `both` (cola poll + webhook simultáneo).
+
+---
+
+## Autenticación
+
+| Header | Descripción |
+|--------|-------------|
+| `X-NOP-Api-Key` | API Key configurada en Automatización NOP |
+| `X-NOP-Empresa-Id` | ID numérico del tenant |
+
+Requiere suscripción activa al SKU `automation.n8n_hub`.
+
+---
+
+## GET /api/automation/poll
+
+Consulta eventos pendientes.
+
+**Query:** `limit` (1–100, default 50)
+
+**Respuesta:**
+
+```json
+{
+  "ok": true,
+  "empresaId": 1,
+  "count": 2,
+  "hasMore": false,
+  "events": [
+    {
+      "id": "42",
+      "eventKey": "VENTA_EMITIDA",
+      "envelope": {
+        "eventId": "uuid",
+        "event": "VENTA_EMITIDA",
+        "empresaId": 1,
+        "timestamp": "2026-06-19T12:00:00.000Z",
+        "data": { "total": 15000 },
+        "signature": "hmac-hex"
+      },
+      "createdAt": "2026-06-19T12:00:01.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## POST /api/automation/poll
+
+Confirma recepción y marca eventos como entregados.
+
+**Body:**
+
+```json
+{
+  "ids": ["42", "43"]
+}
+```
+
+**Respuesta:**
+
+```json
+{
+  "ok": true,
+  "acknowledged": 2
+}
+```
+
+---
+
+## Workflow n8n sugerido
+
+1. **Schedule Trigger** cada 2–5 minutos.
+2. **HTTP Request** `GET` → `/api/automation/poll?limit=50` con headers de auth.
+3. **Split In Batches** sobre `events`.
+4. Procesar cada `envelope` (misma lógica que webhook inbound).
+5. **HTTP Request** `POST` → `/api/automation/poll` con `ids` recolectados.
+
+---
+
+## Relacionado
+
+- [Automation Hub](/dashboard/documentacion/funcional/automation-hub)
+- [Entitlements](/dashboard/documentacion/developer/automation-entitlements)

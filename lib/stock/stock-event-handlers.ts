@@ -3,13 +3,13 @@ import { prisma } from "@/lib/prisma";
 import type { FacturaEmitidaPayload } from "@/lib/events/types";
 
 // Handler for FACTURA_EMITIDA
-eventBus.on<FacturaEmitidaPayload>("FACTURA_EMITIDA", async (event) => {
+eventBus.on<FacturaEmitidaPayload>("FACTURA_EMITIDA", "audit_stock_por_venta", async (event) => {
   console.info(`[EVENT] FACTURA_EMITIDA -> facturaId=${event.payload.facturaId}`);
 
   try {
     const factura = await prisma.factura.findUnique({
       where: { id: event.payload.facturaId },
-      include: { items: true },
+      include: { lineas: true },
     });
 
     if (!factura) {
@@ -17,7 +17,8 @@ eventBus.on<FacturaEmitidaPayload>("FACTURA_EMITIDA", async (event) => {
       return;
     }
 
-    for (const item of factura.items) {
+    for (const item of factura.lineas) {
+      if (!item.productoId) continue;
       await prisma.movimientoStock.create({
         data: {
           productoId: item.productoId,

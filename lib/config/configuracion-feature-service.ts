@@ -80,7 +80,7 @@ const RUBRO_FEATURES: Record<string, FeatureSeed[]> = {
     { featureKey: FEATURES.BOM_PRODUCCION, activado: true, grupo: "vertical", label: "BOM / Producción", orden: 20, icono: "Factory" },
     { featureKey: FEATURES.ORDENES_PRODUCCION, activado: true, grupo: "vertical", label: "Órdenes de Producción", orden: 21, icono: "ClipboardCheck" },
     { featureKey: FEATURES.STOCK_MULTI_DEPOSITO, activado: true, grupo: "core", label: "Stock Multi-Depósito", orden: 22, icono: "Warehouse" },
-    { featureKey: FEATURES.IOT_SENSORES, activado: false, grupo: "integracion", label: "IoT / Sensores", orden: 50, icono: "Cpu" },
+    { featureKey: FEATURES.IOT_SENSORES, activado: true, grupo: "integracion", label: "IoT / Sensores", orden: 50, icono: "Cpu" },
   ],
   COM: [
     { featureKey: FEATURES.PEDIDOS_VENTA, activado: true, grupo: "core", label: "Pedidos de Venta", orden: 20, icono: "ShoppingBag" },
@@ -105,9 +105,15 @@ const RUBRO_FEATURES: Record<string, FeatureSeed[]> = {
   AGRO: [
     { featureKey: FEATURES.STOCK_MULTI_DEPOSITO, activado: true, grupo: "core", label: "Stock Multi-Depósito", orden: 20, icono: "Warehouse" },
     { featureKey: FEATURES.LOGISTICA, activado: true, grupo: "vertical", label: "Logística", orden: 21, icono: "Route" },
-    { featureKey: FEATURES.IOT_SENSORES, activado: false, grupo: "integracion", label: "IoT / Sensores", orden: 50, icono: "Cpu" },
     { featureKey: FEATURES.PERCEPCIONES, activado: true, grupo: "fiscal", label: "Percepciones", orden: 22, icono: "Percent" },
     { featureKey: FEATURES.RETENCIONES, activado: true, grupo: "fiscal", label: "Retenciones", orden: 23, icono: "Percent" },
+    { featureKey: FEATURES.AGRO_BALANZA_DIGITAL, activado: true, grupo: "vertical", label: "Balanza Digital", orden: 24, icono: "Scale" },
+    { featureKey: FEATURES.AGRO_PIZARRA_PRECIOS, activado: true, grupo: "vertical", label: "Pizarra de Precios", orden: 25, icono: "BarChart3" },
+    { featureKey: FEATURES.AGRO_CARTA_PORTE, activado: true, grupo: "fiscal", label: "Carta de Porte (CPE)", orden: 26, icono: "FileText" },
+    { featureKey: FEATURES.AGRO_PORTAL_PRODUCTOR, activado: true, grupo: "vertical", label: "Portal Productor", orden: 27, icono: "Users" },
+    { featureKey: FEATURES.AGRO_CLIMA, activado: true, grupo: "integracion", label: "Clima Open-Meteo", orden: 28, icono: "CloudSun" },
+    { featureKey: FEATURES.AGRO_NDVI_MAPAS, activado: true, grupo: "integracion", label: "NDVI / Mapas", orden: 29, icono: "Map" },
+    { featureKey: FEATURES.IOT_SENSORES, activado: false, grupo: "integracion", label: "IoT / Sensores", orden: 50, icono: "Cpu" },
   ],
   TECH: [
     { featureKey: FEATURES.ACTIVOS_FIJOS, activado: true, grupo: "core", label: "Activos Fijos", orden: 20, icono: "HardDrive" },

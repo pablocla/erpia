@@ -65,6 +65,28 @@ const prismaModels = [
   "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion",
   "reglaAlerta", "empleado", "generacionCITI", "cotizacionAutomatica",
   "planMantenimiento", "ordenTrabajo",
+  // Agro
+  "agroGrano", "agroSilo", "agroPrecioPizarra", "agroTicketBalanza", "agroContrato", "agroLiquidacion", "agroLote",
+  // Caja arqueo
+  "arqueoCaja",
+  // WhatsApp
+  "mensajePendienteWhatsApp",
+  // Pendientes manuales
+  "tareaPendiente",
+  // Aprobaciones pendientes
+  "solicitudAprobacion",
+  // Jornadas fiscales
+  "jornadaFiscal",
+  // Automation Hub
+  "automationConfig",
+  "automationEventMap",
+  "automationPlaybook",
+  "automationVirtualWorker",
+  "automationExecution",
+  "automationPollQueue",
+  "productoComercial",
+  "suscripcionModulo",
+  "usageEvent",
 ]
 
 for (const model of prismaModels) {
@@ -95,6 +117,7 @@ mockPrismaClient.$transaction = vi.fn(async (fn: any) => {
 
 vi.mock("@/lib/prisma", () => ({
   prisma: mockPrismaClient,
+  default: mockPrismaClient,
 }))
 
 export { mockPrismaClient }

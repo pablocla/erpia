@@ -1,0 +1,68 @@
+---
+title: "Comparativa: Protheus vs Modern SaaS"
+description: "Análisis técnico de personalización, diccionarios de base de datos y lenguajes para analistas ex-Totvs."
+sidebar_position: 5
+tags: ["analista", "protheus", "comparativa"]
+audience: analista
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Paradigmas: TOTVS Protheus vs. Arquitectura SaaS Moderna
+
+Para los analistas que vienen del mundo tradicional de **TOTVS Protheus (ADVPL)**, entender cómo el ERP Argentina escala y se personaliza es crucial. Este documento detalla la diferencia de filosofías entre compilar fuentes y registrar diccionarios en base de datos.
+
+---
+
+## 🆚 Tabla Comparativa Rápida
+
+| Concepto | TOTVS Protheus (ADVPL) | ERP Argentina (Modern SaaS) |
+|---|---|---|
+| **Lenguaje Core** | ADVPL (compilado privativo a bytecode) | TypeScript / React (compilado a JS web nativo) |
+| **Diccionario de Datos** | Almacenado en archivos locales (`sx1`, `sx3`, `six`) o base de datos relacional. Configurado mediante **SIGACFG**. | Tablas relacionales en PostgreSQL (Prisma ORM) + JSON flexible en columnas de configuración. |
+| **Personalización de Campos** | Se dan de alta campos en SIGACFG y se regenera la tabla. | Se agregan dinámicamente en UI (Campos Personalizados) guardados como pares clave/valor en JSON. |
+| **Punto de Entrada (User Functions)** | `U_USERFUNCTION()` llamadas por el motor central. | Arquitectura orientada a Eventos (`lib/events/event-bus.ts`) y Hooks React. |
+| **Escalabilidad** | Escalable horizontalmente agregando hilos de APPSERVER (configuraciones pesadas de balance de carga). | Horizontalmente escalable sin estado (Stateless Serverless) sobre Vercel Edge Networks. |
+| **Actualizaciones / Upgrades** | Parche manual (`.ptm`, `.upd`), compilación remota y detención de servidores de aplicaciones. | Deploy continuo automatizado vía Git (Blue-Green) con cero downtime. |
+
+---
+
+## 🛠️ Personalización e Impacto de Campos (Diccionarios)
+
+### El Enfoque de Protheus (SIGACFG)
+En Protheus, cuando deseas agregar un campo como `cuit_cliente` a la tabla de clientes:
+1. Abres el módulo **SIGACFG**.
+2. Modificas la estructura en el diccionario de datos (`SX3`).
+3. El sistema realiza un proceso exclusivo de reestructuración de la base de datos física SQL (ej. `ALTER TABLE SA1010 ADD A1_CUIT ...`).
+4. Si hay múltiples hilos o conexiones activas, el proceso puede colisionar o requerir modo exclusivo.
+
+### El Enfoque del ERP (SaaS)
+En el ERP Argentina, las personalizaciones no alteran la tabla física SQL principal para cada tenant. Las personalizaciones siguen la estrategia de **Esquema Híbrido Relacional-NoSQL**:
+1. Las tablas principales tienen una columna de tipo JSONB en PostgreSQL llamada `metadata` o `camposPersonalizados`.
+2. El analista o el cliente ingresa a `/dashboard/campos-personalizados` y define: *Campo "CUIT" de tipo String para el módulo Clientes*.
+3. El sistema registra esta definición en una tabla de metadatos (`CampoDefinicion`).
+4. Cuando un cliente guarda un dato, el valor se almacena como `{"cuit": "20-12345678-9"}` dentro del campo JSONB de la fila de ese cliente.
+5. **Impacto:** Cero downtime, cero bloqueos exclusivos de tablas, y 100% aislado entre empresas multi-tenant.
+
+---
+
+## ⚙️ Compilación de Fuentes vs. Inyección de Reglas (ADVPL vs TS)
+
+En Protheus, para cambiar un flujo de facturación, se escribe código ADVPL en archivos `.prw`, se compila en el repositorio de objetos (`apo`) usando el TDS (Totvs Developer Studio), y se reinicia el Appserver para refrescar la memoria caché de hilos de ejecución.
+
+En nuestro ERP, los cambios específicos se abordan en **4 niveles de decisión**:
+1. **Configuración Funcional**: El analista activa flags por rubro (en `/dashboard/capacitacion/parametrizacion`).
+2. **Workflows Declarativos (Railroad Engine)**: Permite re-ordenar el flujo (ej. *Venta requiere Facturación antes del Cobro* o *Cobro directo*) modificando la secuencia visual.
+3. **Event Bus (Desarrollo)**: Para código a medida, el developer suscribe un handler a un evento global (ej. `EVENT_PEDIDO_CONFIRMADO`) sin tocar el núcleo de facturación.
+4. **Middleware e Interceptores API**: El código corre de inmediato en el servidor Next.js tras compilar en el pipeline CI/CD.
+
+---
+
+## 🔄 Política de Upgrades: Parches vs Despliegue SaaS
+
+| Tipo de Upgrade | Protheus | ERP Argentina (SaaS) |
+|---|---|---|
+| **Estrategia** | Aplicar archivo `.upd` / `.ptm` mediante asistente del Appserver. | Deploy git hook que ejecuta migraciones Prisma `prisma migrate deploy` en caliente. |
+| **Tiempo de Inactividad** | Requiere mantenimiento programado nocturno con usuarios desconectados. | **Cero downtime**. El tráfico se redirige progresivamente (Canary deployments). |
+| **Base de Datos** | Cambios estructurales pesados con riesgo de pérdida de consistencia si se interrumpe. | Las transacciones de migración son atómicas y controladas por Prisma ORM. |

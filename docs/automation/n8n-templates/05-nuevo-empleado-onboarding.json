@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "usuario-creado-trigger",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        360
+      ],
+      "id": "trigger-id",
+      "name": "Webhook Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/actions/create-task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-NOP-Api-Key", "value": "={{$env.NOP_API_KEY}}" },
+            { "name": "X-NOP-Empresa-Id", "value": "={{$env.NOP_EMPRESA_ID}}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"descripcion\": \"Checklist Onboarding Nuevo Empleado (Día 1-7)\",\n  \"rolAsignado\": \"administrador\",\n  \"prioridad\": \"media\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        360
+      ],
+      "id": "onboarding-id",
+      "name": "Tareas Checklist 7 Días",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Tareas Checklist 7 Días",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

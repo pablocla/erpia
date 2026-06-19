@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download } from "lucide-react"
+import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { authFetch } from "@/lib/stores"
+import { useToast } from "@/hooks/use-toast"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -19,7 +21,8 @@ interface Factura {
   tipo: string
   numero: number
   puntoVenta: number
-  fecha: string
+  fecha?: string
+  createdAt: string
   total: number
   iva: number
   estado: string
@@ -39,11 +42,16 @@ interface FacturasResponse {
 
 const estadoColors: Record<string, string> = {
   emitida: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  pendiente_cae: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
+  error_cae: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  ticket: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
   anulada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   borrador: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
 }
 
 export default function FacturasPage() {
+  const { toast } = useToast()
+  const [reintentando, setReintentando] = useState(false)
   const [search, setSearch] = useState("")
   const [tipo, setTipo] = useState("")
   const [estado, setEstado] = useState("")
@@ -67,6 +75,26 @@ export default function FacturasPage() {
   const formatComprobante = (f: Factura) =>
     `${f.tipo} ${String(f.puntoVenta).padStart(5, "0")}-${String(f.numero).padStart(8, "0")}`
 
+  const fechaFactura = (f: Factura) => f.fecha ?? f.createdAt
+
+  const reintentarCae = async () => {
+    setReintentando(true)
+    try {
+      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        return
+      }
+      toast({ title: "Sincronización AFIP", description: json.mensaje })
+      mutate()
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" })
+    } finally {
+      setReintentando(false)
+    }
+  }
+
   const filterFields: FilterField[] = [
     { key: "tipoComprobante", label: "Tipo", type: "select", options: [
       { value: "A", label: "Factura A" },
@@ -78,6 +106,9 @@ export default function FacturasPage() {
     ]},
     { key: "estado", label: "Estado", type: "select", options: [
       { value: "emitida", label: "Emitida" },
+      { value: "pendiente_cae", label: "Sin CAE" },
+      { value: "error_cae", label: "Error CAE" },
+      { value: "ticket", label: "Ticket" },
       { value: "anulada", label: "Anulada" },
       { value: "borrador", label: "Borrador" },
     ]},
@@ -91,7 +122,7 @@ export default function FacturasPage() {
       if (filters.estado && f.estado !== filters.estado) return false
       if (filters.fecha) {
         const range = filters.fecha as { from?: string; to?: string }
-        const fecha = f.fecha.slice(0, 10)
+        const fecha = fechaFactura(f).slice(0, 10)
         if (range.from && fecha < range.from) return false
         if (range.to && fecha > range.to) return false
       }
@@ -101,11 +132,24 @@ export default function FacturasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Facturas</h1>
-          <p className="text-muted-foreground">Todas las facturas emitidas</p>
+          <p className="text-muted-foreground">Comprobantes emitidos y pendientes de CAE</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void reintentarCae()}
+          disabled={reintentando}
+        >
+          {reintentando ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          Reintentar CAE pendientes
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -172,6 +216,9 @@ export default function FacturasPage() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="emitida">Emitida</SelectItem>
+                <SelectItem value="pendiente_cae">Sin CAE</SelectItem>
+                <SelectItem value="error_cae">Error CAE</SelectItem>
+                <SelectItem value="ticket">Ticket</SelectItem>
                 <SelectItem value="anulada">Anulada</SelectItem>
               </SelectContent>
             </Select>
@@ -188,11 +235,11 @@ export default function FacturasPage() {
             data={facturasFiltradas}
             columns={[
               { key: "numero", header: "Comprobante", sortable: true, cell: (f) => <span className="font-mono text-xs">{formatComprobante(f)}</span> },
-              { key: "fecha", header: "Fecha", sortable: true, cell: (f) => new Date(f.fecha).toLocaleDateString("es-AR") },
+              { key: "fecha", header: "Fecha", sortable: true, cell: (f) => new Date(fechaFactura(f)).toLocaleDateString("es-AR") },
               { key: "cliente" as any, header: "Cliente", cell: (f) => (<div>{f.cliente?.nombre ?? "—"}{f.cliente?.cuit && <div className="text-xs text-muted-foreground">{f.cliente.cuit}</div>}</div>), exportFn: (f) => f.cliente?.nombre ?? "" },
               { key: "total", header: "Total", align: "right", sortable: true, cell: (f) => <span className="font-medium">{formatCurrency(f.total)}</span> },
-              { key: "estado", header: "Estado", cell: (f) => <Badge variant="outline" className={estadoColors[f.estado] ?? ""}>{f.estado}</Badge> },
-              { key: "cae" as any, header: "CAE", cell: (f) => <span className="font-mono text-xs">{f.cae ?? "—"}</span> },
+              { key: "estado", header: "Estado", cell: (f) => <Badge variant="outline" className={estadoColors[f.estado] ?? ""}>{f.estado.replace(/_/g, " ")}</Badge> },
+              { key: "cae" as any, header: "CAE", cell: (f) => f.cae ? <span className="font-mono text-xs">{f.cae}</span> : f.estado === "pendiente_cae" ? <Badge variant="outline" className="text-amber-700 text-[10px]">Pendiente</Badge> : <span className="text-muted-foreground text-xs">—</span> },
               { key: "_count" as any, header: "NC", cell: (f) => f._count?.notasCredito ?? 0, exportFn: (f) => String(f._count?.notasCredito ?? 0) },
               { key: "acciones" as any, header: "", cell: (f) => <Link href={`/dashboard/facturas/${f.id}`}><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></Link> },
             ] as DataTableColumn<Factura>[]}

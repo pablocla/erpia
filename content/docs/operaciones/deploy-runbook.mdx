@@ -1,0 +1,37 @@
+---
+title: "Runbook de Despliegue"
+description: "Paso a paso para el despliegue del ERP en entornos Cloud (Vercel + Supabase)."
+sidebar_position: 1
+tags: ["operaciones", "deploy", "vercel"]
+audience: operaciones
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Runbook de Despliegue en Producción
+
+Este runbook detalla los pasos para realizar el despliegue inicial y de producción del ERP.
+
+---
+
+## ☁️ Aprovisionamiento de Infraestructura
+
+1. **Base de Datos (Supabase)**:
+   - Crear una base de datos PostgreSQL.
+   - Guardar la URL de conexión en formato `postgresql://...` (tanto para `DATABASE_URL` como para `DIRECT_URL`).
+2. **Hospedaje (Vercel / Render)**:
+   - Importar el repositorio Git.
+   - Asignar el comando de build: `npm run build`.
+   - Asignar las variables de entorno mínimas.
+
+---
+
+## 🔐 Variables de Entorno Clave
+
+Las siguientes variables de entorno deben estar configuradas en la interfaz de Vercel/Render:
+
+- `DATABASE_URL`: Connection string para transacciones de PostgreSQL.
+- `JWT_SECRET`: Llave simétrica de firma para tokens JWT.
+- `TWILIO_ACCOUNT_SID` & `TWILIO_AUTH_TOKEN`: Credenciales para el envío de WhatsApp.
+- `NEXT_PUBLIC_APP_URL`: URL base pública de tu aplicación (ej: `https://mi-erp.com`).

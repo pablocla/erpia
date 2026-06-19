@@ -17,6 +17,8 @@ const clienteUpdateSchema = z.object({
   esAgenteRetencionGanancias: z.boolean().optional(),
   esAgentePercepcionIVA: z.boolean().optional(),
   esAgentePercepcionIIBB: z.boolean().optional(),
+  esGranEmpresa: z.boolean().optional(),
+  esExportacion: z.boolean().optional(),
   nroCertificadoExclusion: z.string().optional().nullable(),
   vigenciaCertificadoExclusion: z.string().optional().nullable(),
   direccion: z.string().optional().nullable(),

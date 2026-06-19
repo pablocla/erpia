@@ -48,6 +48,8 @@ model Empresa {
   paisFiscal       String    @default("AR")
   /// Condición IVA de la empresa: "Responsable Inscripto" | "Monotributista" | "Exento"
   condicionIva     String    @default("Responsable Inscripto")
+  /// Apariencia global del ERP (definida por dueño/admin, aplica a todos los usuarios)
+  temaConfig       Json?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
@@ -210,6 +212,10 @@ model Cliente {
   diasGraciaExtra Int  @default(0)
   /// "pesos" | "dolares" | "euros"
   monedaHabitual  String @default("pesos")
+  /// Si es catalogado como Gran Empresa ante AFIP (sujeto a FCE MiPyME)
+  esGranEmpresa Boolean   @default(false)
+  /// Si es un cliente del exterior (sujeto a Factura de Exportación)
+  esExportacion Boolean   @default(false)
   /// Si el cliente está activo para operar
   activo       Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -3073,6 +3079,10 @@ model ConfigFiscalEmpresa {
   jurisdiccionesIIBB        Json?
   /// Número de inscripción en convenio multilateral
   numConvenioMultilateral   String?
+  /// CBU emisor obligatorio para FCE MiPyME (Ley 27.440) — 22 dígitos
+  cbuFce                    String?
+  /// Tipo transferencia FCE: SCA (circulación abierta) o ADC (agente depósito)
+  tipoTransferenciaFce      String   @default("SCA")
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
 

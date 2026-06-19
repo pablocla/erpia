@@ -47,8 +47,9 @@ export class TransferenciaDepositoService {
       const transferencia = await tx.transferenciaDeposito.create({
         data: {
           numero,
-          depositoOrigenId,
-          depositoDestinoId,
+          origenId: depositoOrigenId,
+          destinoId: depositoDestinoId,
+          empresaId,
           estado: "completada",
           observaciones,
           lineas: {
@@ -116,8 +117,8 @@ export class TransferenciaDepositoService {
     return prisma.transferenciaDeposito.findMany({
       where: {
         OR: [
-          { depositoOrigenId: { in: depositoIds } },
-          { depositoDestinoId: { in: depositoIds } },
+          { origenId: { in: depositoIds } },
+          { destinoId: { in: depositoIds } },
         ],
       },
       include: {

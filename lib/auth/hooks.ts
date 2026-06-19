@@ -92,7 +92,7 @@ export function useAuth() {
       localStorage.setItem("token", data.token)
       setToken(data.token)
       setUsuario(data.usuario)
-      return { success: true }
+      return { success: true, usuario: data.usuario }
     }
 
     return { success: false, error: data.error }

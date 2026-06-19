@@ -12,12 +12,23 @@ export interface CentroCostoInput {
   nombre: string
   descripcion?: string
   parentId?: number
+  empresaId: number
 }
 
 export class CentroCostoService {
   async crear(input: CentroCostoInput) {
+    if (input.parentId) {
+      const parent = await prisma.centroCosto.findFirst({
+        where: { id: input.parentId, empresaId: input.empresaId, activo: true },
+      })
+      if (!parent) {
+        throw new Error("Centro padre no encontrado en su empresa")
+      }
+    }
+
     return prisma.centroCosto.create({
       data: {
+        empresaId: input.empresaId,
         codigo: input.codigo,
         nombre: input.nombre,
         descripcion: input.descripcion ?? null,
@@ -26,7 +37,12 @@ export class CentroCostoService {
     })
   }
 
-  async actualizar(id: number, data: Partial<CentroCostoInput>) {
+  async actualizar(empresaId: number, id: number, data: Partial<CentroCostoInput>) {
+    const existing = await prisma.centroCosto.findFirst({
+      where: { id, empresaId },
+    })
+    if (!existing) throw new Error("Centro de costo no encontrado")
+
     return prisma.centroCosto.update({
       where: { id },
       data: {
@@ -38,9 +54,9 @@ export class CentroCostoService {
     })
   }
 
-  async listarJerarquia() {
+  async listarJerarquia(empresaId: number) {
     const all = await prisma.centroCosto.findMany({
-      where: { activo: true },
+      where: { activo: true, empresaId },
       orderBy: { codigo: "asc" },
       include: {
         _count: { select: { movimientos: true } },
@@ -67,9 +83,9 @@ export class CentroCostoService {
     return roots
   }
 
-  async listarPlano() {
+  async listarPlano(empresaId: number) {
     return prisma.centroCosto.findMany({
-      where: { activo: true },
+      where: { activo: true, empresaId },
       orderBy: { codigo: "asc" },
       include: {
         parent: true,
@@ -81,12 +97,12 @@ export class CentroCostoService {
   /**
    * Get accumulated debe/haber totals for each centro de costo in a period
    */
-  async reportePorPeriodo(mes: number, anio: number) {
+  async reportePorPeriodo(empresaId: number, mes: number, anio: number) {
     const desde = new Date(anio, mes - 1, 1)
     const hasta = new Date(anio, mes, 0, 23, 59, 59)
 
     const centros = await prisma.centroCosto.findMany({
-      where: { activo: true },
+      where: { activo: true, empresaId },
       orderBy: { codigo: "asc" },
     })
 
@@ -103,8 +119,8 @@ export class CentroCostoService {
         select: { debe: true, haber: true },
       })
 
-      const totalDebe = movs.reduce((s, m) => s + m.debe, 0)
-      const totalHaber = movs.reduce((s, m) => s + m.haber, 0)
+      const totalDebe = movs.reduce((s, m) => s + Number(m.debe), 0)
+      const totalHaber = movs.reduce((s, m) => s + Number(m.haber), 0)
 
       resultado.push({
         id: cc.id,
@@ -120,7 +136,12 @@ export class CentroCostoService {
     return resultado
   }
 
-  async desactivar(id: number) {
+  async desactivar(empresaId: number, id: number) {
+    const existing = await prisma.centroCosto.findFirst({
+      where: { id, empresaId },
+    })
+    if (!existing) throw new Error("Centro de costo no encontrado")
+
     return prisma.centroCosto.update({
       where: { id },
       data: { activo: false },

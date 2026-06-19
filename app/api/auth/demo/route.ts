@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
+import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
+import { setFeature, FEATURES } from "@/lib/config/rubro-config-service"
 
 /**
  * POST /api/auth/demo
@@ -13,8 +15,8 @@ export async function POST(request: NextRequest) {
   try {
     const blocked = checkRateLimit(request, "demo", 10, 15 * 60 * 1000)
     if (blocked) return blocked
-    const ADMIN_EMAIL = "admin@erp-argentina.com"
-    const ADMIN_PASSWORD = "admin1234"
+    const ADMIN_EMAIL = DEMO_ADMIN_EMAIL
+    const ADMIN_PASSWORD = DEMO_ADMIN_PASSWORD
 
     const body = await request.json().catch(() => ({}))
     const requestedRubro = typeof body.rubro === "string" ? body.rubro : "salon_belleza"
@@ -47,13 +49,14 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 2. Ensure admin user exists
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10)
+
+    // 2. Ensure admin user exists and keep demo credentials in sync
     let usuario = await prisma.usuario.findUnique({
       where: { email: ADMIN_EMAIL },
     })
 
     if (!usuario) {
-      const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10)
       usuario = await prisma.usuario.create({
         data: {
           nombre: "Administrador",
@@ -64,6 +67,27 @@ export async function POST(request: NextRequest) {
           activo: true,
         },
       })
+    } else {
+      usuario = await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: {
+          password: hashedPassword,
+          activo: true,
+          empresaId: empresa.id,
+        },
+      })
+    }
+
+    // 2b. Habilitar Automation Hub en demo (no bloquea login si Prisma aún no tiene esos modelos)
+    try {
+      await setFeature(empresa.id, FEATURES.AUTOMATION_N8N, { activado: true })
+      await setFeature(empresa.id, FEATURES.FACTURA_MIPYMES, { activado: true })
+      const { seedAutomationDefaults } = await import("@/lib/automation/automation-service")
+      await seedAutomationDefaults(empresa.id)
+      const { ensureDemoAutomationSubscription } = await import("@/lib/platform/commercial-service")
+      await ensureDemoAutomationSubscription(empresa.id)
+    } catch (automationError) {
+      console.warn("Demo: automation seed omitido:", automationError)
     }
 
     // 3. Generate real JWT

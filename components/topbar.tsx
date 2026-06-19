@@ -1,6 +1,5 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ThemeCustomizer } from "@/components/theme-customizer"
@@ -22,21 +21,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  Bell,
   Search,
   TicketCheck,
-  ChevronRight,
   Wallet,
   LogOut,
   Settings,
   User,
-  Sun,
-  Moon,
   Sparkles,
   CheckSquare,
   Menu,
 } from "lucide-react"
-
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
@@ -47,12 +41,48 @@ interface TopbarProps {
 }
 
 export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
-  const [bellShake, setBellShake] = useState(false)
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+
   const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
   const toggleChatWidget = useUIStore((s) => s.toggleChatWidget)
   const [tareasPendientes, setTareasPendientes] = useState(0)
+  const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null)
+
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: "1", title: "Stock bajo en Producto A", description: "Solo quedan 3 unidades disponibles", type: "alerta", module: "stock", timestamp: new Date(Date.now() - 300_000), read: false, href: "/dashboard/productos" },
+    { id: "2", title: "Venta #1042 completada", description: "Total: $54.200,00", type: "exito", module: "ventas", timestamp: new Date(Date.now() - 1_800_000), read: false },
+    { id: "3", title: "Factura #B-0012 vence mañana", type: "vencimiento", module: "ventas", timestamp: new Date(Date.now() - 3_600_000), read: false, href: "/dashboard/cuentas-cobrar" },
+    { id: "4", title: "Backup completado", description: "Respaldo automático exitoso", type: "sistema", timestamp: new Date(Date.now() - 7_200_000), read: true },
+    { id: "5", title: "Nueva versión disponible", description: "v2.1.0 incluye mejoras de facturación", type: "info", timestamp: new Date(Date.now() - 86_400_000), read: true },
+  ])
+
+  const handleMarkRead = (id: string) =>
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const handleMarkAllRead = () =>
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const handleDismiss = (id: string) =>
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const handleClearAll = () => setNotifications([])
+
+  useEffect(() => {
+    const cargarCaja = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      try {
+        const res = await fetch("/api/pos/venta", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setCajaAbierta(Boolean(data.cajaAbierta))
+        }
+      } catch {
+        /* silencioso */
+      }
+    }
+    void cargarCaja()
+    const interval = setInterval(() => void cargarCaja(), 60_000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const cargarTareas = async () => {
@@ -66,49 +96,19 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           const data = await res.json()
           setTareasPendientes(Array.isArray(data) ? data.length : 0)
         }
-      } catch { /* silencioso */ }
+      } catch {
+        /* silencioso */
+      }
     }
     void cargarTareas()
     const interval = setInterval(() => void cargarTareas(), 60_000)
     return () => clearInterval(interval)
   }, [])
 
-  // Notification state
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: "1", title: "Stock bajo en Producto A", description: "Solo quedan 3 unidades disponibles", type: "alerta", module: "stock", timestamp: new Date(Date.now() - 300_000), read: false, href: "/dashboard/productos" },
-    { id: "2", title: "Venta #1042 completada", description: "Total: $54.200,00", type: "exito", module: "ventas", timestamp: new Date(Date.now() - 1_800_000), read: false },
-    { id: "3", title: "Factura #B-0012 vence mañana", type: "vencimiento", module: "ventas", timestamp: new Date(Date.now() - 3_600_000), read: false, href: "/dashboard/cuentas-cobrar" },
-    { id: "4", title: "Backup completado", description: "Respaldo automático exitoso", type: "sistema", timestamp: new Date(Date.now() - 7_200_000), read: true },
-    { id: "5", title: "Nueva versión disponible", description: "v2.1.0 incluye mejoras de facturación", type: "info", timestamp: new Date(Date.now() - 86_400_000), read: true },
-  ])
-
-  const handleMarkRead = (id: string) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
-  const handleMarkAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  const handleDismiss = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id))
-  const handleClearAll = () => setNotifications([])
-
-  useEffect(() => setMounted(true), [])
-
-  // Trigger bell shake on mount and periodically
-  useEffect(() => {
-    const timer = setTimeout(() => setBellShake(true), 1200)
-    const interval = setInterval(() => {
-      setBellShake(true)
-      setTimeout(() => setBellShake(false), 700)
-    }, 30000)
-    return () => { clearTimeout(timer); clearInterval(interval) }
-  }, [])
-
-  const toggleDarkMode = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
-
   return (
-    <header className="h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
-      {/* Subtle top glare */}
+    <header className="app-topbar h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
 
-      {/* Left: Mobile menu + Breadcrumbs */}
       <div className="flex items-center gap-2">
         {onMenuClick && (
           <Button
@@ -124,14 +124,15 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
         <Breadcrumbs />
       </div>
 
-      {/* Right: Actions */}
       <div className="flex items-center gap-1">
-        {/* Search trigger */}
         <Button
           variant="ghost"
           size="sm"
           className="h-8 gap-2 text-muted-foreground hover:text-foreground text-xs"
-          onClick={() => { onSearchClick?.(); toggleCommandPalette() }}
+          onClick={() => {
+            onSearchClick?.()
+            toggleCommandPalette()
+          }}
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden md:inline">Buscar</span>
@@ -142,17 +143,25 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
-        {/* Caja status */}
         <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
           <Link href="/dashboard/caja">
             <Wallet className="h-3.5 w-3.5" />
-            <Badge variant="outline" className="h-4 text-[10px] px-1 bg-emerald-500/10 text-emerald-600 border-emerald-200">
-              Abierta
-            </Badge>
+            {cajaAbierta === null ? (
+              <Badge variant="outline" className="h-4 text-[10px] px-1">
+                Caja…
+              </Badge>
+            ) : cajaAbierta ? (
+              <Badge variant="outline" className="h-4 text-[10px] px-1 bg-emerald-500/10 text-emerald-600 border-emerald-200">
+                Abierta
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="h-4 text-[10px] px-1 bg-red-500/10 text-red-600 border-red-200">
+                Cerrada
+              </Badge>
+            )}
           </Link>
         </Button>
 
-        {/* Mis Tareas — indicador */}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -168,12 +177,14 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p className="text-xs">{tareasPendientes} tarea{tareasPendientes !== 1 ? "s" : ""} pendiente{tareasPendientes !== 1 ? "s" : ""}</p>
+              <p className="text-xs">
+                {tareasPendientes} tarea{tareasPendientes !== 1 ? "s" : ""} pendiente
+                {tareasPendientes !== 1 ? "s" : ""}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
-        {/* Tickets — actionable */}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -192,7 +203,6 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           </Tooltip>
         </TooltipProvider>
 
-        {/* Notifications — interactive center */}
         <NotificationCenter
           notifications={notifications}
           onMarkRead={handleMarkRead}
@@ -201,7 +211,6 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           onClearAll={handleClearAll}
         />
 
-        {/* AI Assistant */}
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -221,53 +230,28 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           </Tooltip>
         </TooltipProvider>
 
-        <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-        {mounted && (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={toggleDarkMode}
-                >
-                  {theme === "dark" ? (
-                    <Sun className="h-4 w-4 text-amber-400 transition-transform hover:rotate-45" />
-                  ) : (
-                    <Moon className="h-4 w-4 text-slate-500 transition-transform hover:-rotate-12" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">
-                  {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-
-        {/* Theme customizer */}
         <ThemeCustomizer />
-
-        {/* Contextual help */}
         <ContextualHelp />
 
-        {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 gap-2 px-2">
               <UserAvatar />
-              <span className="hidden md:inline text-xs font-medium"><UserDisplayName /></span>
+              <span className="hidden md:inline text-xs font-medium">
+                <UserDisplayName />
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <div className="px-3 py-2 flex items-center gap-2">
               <UserAvatar size="lg" />
               <div>
-                <p className="text-sm font-medium"><UserDisplayName /></p>
-                <p className="text-xs text-muted-foreground"><UserEmail /></p>
+                <p className="text-sm font-medium">
+                  <UserDisplayName />
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <UserEmail />
+                </p>
               </div>
             </div>
             <DropdownMenuSeparator />
@@ -294,8 +278,6 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
     </header>
   )
 }
-
-/* ── Auth-aware avatar helpers ─────────────────────────────────── */
 
 function getInitials(name: string): string {
   return name

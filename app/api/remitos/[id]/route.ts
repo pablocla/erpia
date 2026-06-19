@@ -25,6 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true, total: true } },
         incoterm: true,
         lineas: true,
+        cot: true,
       },
     })
 

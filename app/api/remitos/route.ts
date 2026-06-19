@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
           factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true } },
           incoterm: true,
           lineas: true,
+          cot: true,
         },
         orderBy: { fecha: "desc" },
         skip,
@@ -123,7 +124,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(remito, { status: 201 })
+    try {
+      const { cotService } = await import("@/lib/arba/cot-service")
+      await cotService.procesarCOT(remito.id)
+    } catch (e) {
+      console.error("Error al procesar COT automático:", e)
+    }
+
+    const remitoFinal = await prisma.remito.findUnique({
+      where: { id: remito.id },
+      include: {
+        lineas: true,
+        cliente: { select: { id: true, nombre: true } },
+        incoterm: true,
+        cot: true,
+      },
+    })
+
+    return NextResponse.json(remitoFinal || remito, { status: 201 })
   } catch (error) {
     console.error("Error al crear remito:", error)
     return NextResponse.json({ error: "Error interno" }, { status: 500 })

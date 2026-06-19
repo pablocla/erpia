@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "cae-rechazado-trigger",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        360
+      ],
+      "id": "trigger-id",
+      "name": "Webhook Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/actions/create-task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-NOP-Api-Key", "value": "={{$env.NOP_API_KEY}}" },
+            { "name": "X-NOP-Empresa-Id", "value": "={{$env.NOP_EMPRESA_ID}}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"descripcion\": \"Reintento de facturación AFIP rechazado. Revisar CUIT receptor.\",\n  \"rolAsignado\": \"contador\",\n  \"prioridad\": \"alta\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        360
+      ],
+      "id": "cae-retry-id",
+      "name": "Retry AFIP + Tarea Contador",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Retry AFIP + Tarea Contador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

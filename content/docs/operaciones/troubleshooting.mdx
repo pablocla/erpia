@@ -1,0 +1,30 @@
+---
+title: "Resolución de Problemas"
+description: "Guía de fallos comunes y cómo resolverlos rápidamente (Base de Datos, AFIP, NextJS)."
+sidebar_position: 4
+tags: ["operaciones", "troubleshooting", "debug"]
+audience: operaciones
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Guía de Resolución de Problemas (Troubleshooting)
+
+### 🚨 Error: "Prisma Client cannot be loaded in Edge Runtime"
+- **Causa**: Estás importando el cliente de Prisma físico desde un middleware de Next.js o un componente Edge.
+- **Resolución**: Usa adaptadores Serverless de Prisma o limita las queries de base de datos a APIs tradicionales ejecutadas en server-side (Node.js runtime completo).
+
+### 🚨 Error: "Next.js Build fails on _ssgManifest.js" (Windows)
+- **Causa**: Bug intermitente de borrado de archivos temporales en Next.js bajo Windows.
+- **Resolución**: Limpia manualmente la carpeta temporales del build:
+  ```bash
+  rmdir /s /q .next
+  npm run verify
+  ```
+
+### 🚨 Error: "Error 500 conectando con AFIP"
+- **Causa**: El certificado de homologación (`.crt`) caducó o el servidor de AFIP está caído (comportamiento muy común en Argentina).
+- **Resolución**:
+  - Verifica el estado de AFIP en [https://status.afip.gob.ar/](https://status.afip.gob.ar/).
+  - Genera y carga un nuevo certificado digital en el Punto de Venta desde la UI del ERP.

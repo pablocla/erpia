@@ -30,4 +30,22 @@ describe("onboarding-ia", () => {
     expect(config.maestrosCriticos.length).toBeGreaterThan(0)
     expect(config.flujosCriticos.length).toBeGreaterThan(0)
   })
+
+  it("activates agro module for acopio rubro", () => {
+    const config = generarConfiguracionOnboarding({
+      rubro: "agro_acopio",
+      tamano: "pequeno",
+      tieneStock: true,
+      tienePersonal: true,
+      necesitaFacturacion: true,
+      necesitaContabilidad: true,
+      condicionAfip: "responsable_inscripto",
+      tieneLocal: true,
+      tieneDelivery: false,
+    })
+
+    expect(config.modulosActivos).toContain("logistica")
+    expect(config.mensajeBienvenida.toLowerCase()).toContain("acopio")
+    expect(config.particularidadesRubro.some((p) => p.toLowerCase().includes("balanza"))).toBe(true)
+  })
 })

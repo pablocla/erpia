@@ -1,0 +1,46 @@
+---
+title: "Seguridad Multi-Tenant"
+description: "Detalles sobre cómo se implementa el aislamiento de inquilinos en el ERP a nivel base de datos y API."
+sidebar_position: 2
+tags: ["developer", "security", "multi-tenant"]
+audience: developer
+layer: 5-codigo
+last_verified: 2026-06-19
+status: completo
+---
+
+# Arquitectura Multi-Tenant
+
+El ERP Argentina está diseñado bajo una arquitectura de **Base de Datos Única con Aislamiento Lógico (Shared Database, Shared Schema)**. Todos los clientes (tenants) comparten la misma base de datos de PostgreSQL, pero sus datos se encuentran aislados por la columna `empresaId`.
+
+---
+
+## 🔒 Regla de Oro: Filtrado Obligatorio
+
+Cada ruta API que consulte o modifique datos en la base de datos **DEBE** obtener el contexto de autenticación a través del token JWT y aplicar un filtro `where` usando la función `whereEmpresa()`.
+
+### Ejemplo Práctico de Ruta GET (`app/api/clientes/route.ts`):
+
+```typescript
+import { NextRequest, NextResponse } from "next/server"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
+import { prisma } from "@/lib/prisma"
+
+export async function GET(request: NextRequest) {
+  // 1. Obtener y validar el contexto de autenticación
+  const auth = getAuthContext(request)
+  if (!auth.ok) return auth.response
+  
+  // 2. Filtrar los clientes por la empresa del token
+  const clientes = await prisma.cliente.findMany({
+    where: whereEmpresa(auth.auth.empresaId),
+  })
+  
+  return NextResponse.json(clientes)
+}
+```
+
+---
+
+## 🚨 Auditoría de Seguridad
+El pipeline de integración continua y los tests estructurales (`__tests__/auth/empresa-guard.test.ts`) aseguran que ninguna consulta a base de datos de Prisma retorne información si el filtro de `empresaId` es nulo o se omite.

@@ -14,10 +14,13 @@ import {
 import {
   DollarSign, TrendingUp, TrendingDown, FileText, ShoppingCart,
   Wallet, AlertTriangle, RefreshCw, ArrowUpRight, ArrowDownRight, Sparkles, Rocket,
-  BarChart3, Bot,
+  BarChart3, Bot, CheckSquare, Package, Users, Scissors, Truck, CalendarDays,
+  ClipboardList, UtensilsCrossed, Shield, Clock, BookOpen, AlertCircle, PlayCircle,
+  Lock, CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
+import { useAuthStore } from "@/lib/stores/auth-store"
 
 interface DashboardStats {
   resumenMes: {
@@ -90,7 +93,645 @@ function KPICard({
   return href ? <Link href={href}>{card}</Link> : card
 }
 
+// ─── PENDIENTES HOOK ──────────────────────────────────────────────────────────
+function usePendientes(rol: string) {
+  const [pendientes, setPendientes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const cargar = useCallback(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    fetch(`/api/pendientes?rol=${rol}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.pendientes) {
+          setPendientes(data.pendientes)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [rol])
+
+  useEffect(() => {
+    cargar()
+    const interval = setInterval(cargar, 30_000)
+    return () => clearInterval(interval)
+  }, [cargar])
+
+  return { pendientes, loading, refetch: cargar }
+}
+
+// ─── RENDERING DE PENDIENTES COMUNES ─────────────────────────────────────────
+function PendientesList({ pendientes, loading }: { pendientes: any[], loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <div className="h-10 bg-muted/50 rounded-lg animate-pulse" />
+        <div className="h-10 bg-muted/50 rounded-lg animate-pulse" />
+      </div>
+    )
+  }
+
+  if (pendientes.length === 0) {
+    return (
+      <div className="text-center py-6 text-xs text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+        Sin alertas ni pendientes para tu rol. ¡Todo al día!
+      </div>
+    )
+  }
+
+  const priColor = {
+    bloqueante: "bg-red-500/10 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50",
+    alta: "bg-orange-500/10 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/50",
+    media: "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50",
+    baja: "bg-slate-500/10 text-slate-600 border-slate-200 dark:bg-slate-950/20 dark:text-slate-400 dark:border-slate-800"
+  }
+
+  return (
+    <div className="space-y-2">
+      {pendientes.map((p) => (
+        <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/60 backdrop-blur-md">
+          <div className="min-w-0 flex-1 mr-3">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${priColor[p.prioridad as keyof typeof priColor] || ""}`}>
+                {p.prioridad}
+              </Badge>
+              <span className="text-xs font-semibold">{p.titulo}</span>
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-2">{p.descripcion}</p>
+          </div>
+          {p.href && (
+            <Link href={p.href} className="shrink-0">
+              <Button size="sm" variant="outline" className="h-7 text-xs">
+                {p.accion ?? "Ir"}
+              </Button>
+            </Link>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── DASHBOARDS POR ROL ───────────────────────────────────────────────────────
+
+function DashboardCajero({ user, authHeaders }: { user: any; authHeaders: () => HeadersInit }) {
+  const { pendientes, loading: loadingPendientes } = usePendientes("cajero")
+  const [caja, setCaja] = useState<any>(null)
+  const [loadingCaja, setLoadingCaja] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/pos/venta", { headers: authHeaders() })
+      .then(res => res.json())
+      .then(data => setCaja(data))
+      .catch(() => {})
+      .finally(() => setLoadingCaja(false))
+  }, [authHeaders])
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Ventas</h1>
+          <p className="text-muted-foreground text-sm mt-1">Cajero: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+        </div>
+        <Link href="/dashboard/pos">
+          <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
+            <PlayCircle className="h-5 w-5" />
+            ABRIR POS / FACTURAR
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-panel border-border/50 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 text-primary" />
+              Pendientes y Alertas del Turno
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PendientesList pendientes={pendientes} loading={loadingPendientes} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Wallet className="h-4 w-4 text-primary" />
+              Estado de la Caja
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            {loadingCaja ? (
+              <div className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+            ) : caja?.cajaAbierta ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2.5 p-3 rounded-lg border border-green-200 bg-green-500/10 text-green-700 dark:text-green-400 dark:border-green-900/50">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold">Caja Abierta (ID: {caja.cajaId})</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Ventas del día: {caja.ventasHoy}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link href="/dashboard/pos/cierre" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full text-xs">Arqueo / Cierre Z</Button>
+                  </Link>
+                  <Link href="/dashboard/caja" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full text-xs">Ver Movimientos</Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2.5 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive">
+                  <Lock className="h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold">Caja Cerrada</p>
+                    <p className="text-[11px] opacity-80 mt-0.5">Abrí el turno antes de vender.</p>
+                  </div>
+                </div>
+                <Link href="/dashboard/caja" className="block">
+                  <Button variant="destructive" size="sm" className="w-full text-xs font-semibold">
+                    Abrir Caja del Día
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="glass-panel border-border/50">
+        <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+            <Rocket className="h-4 w-4 text-primary" />
+            Accesos Rápidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/dashboard/pos" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Abrir POS</p>
+              <p className="text-xs text-muted-foreground mt-1">Terminal de facturación rápida.</p>
+            </Link>
+            <Link href="/dashboard/pos/cierre" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Cierre de Caja</p>
+              <p className="text-xs text-muted-foreground mt-1">Cierre X / Z fiscal del día.</p>
+            </Link>
+            <Link href="/dashboard/caja" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Movimientos Caja</p>
+              <p className="text-xs text-muted-foreground mt-1">Ingresos, egresos y arqueos.</p>
+            </Link>
+            <Link href="/dashboard/mis-tareas" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Mis Tareas</p>
+              <p className="text-xs text-muted-foreground mt-1">Lista de pendientes del cajero.</p>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DashboardDeposito({ user, authHeaders }: { user: any; authHeaders: () => HeadersInit }) {
+  const { pendientes, loading: loadingPendientes } = usePendientes("deposito")
+  const [inventario, setInventario] = useState<any>(null)
+  const [loadingInv, setLoadingInv] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/productos?soloActivos=true&limit=5", { headers: authHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const criticos = data.filter(p => Number(p.stock) <= Number(p.stockMinimo ?? 5))
+          setInventario({ stockCriticos: criticos.length, criticos })
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingInv(false))
+  }, [authHeaders])
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Depósito y Logística</h1>
+          <p className="text-muted-foreground text-sm mt-1">Operario: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+        </div>
+        <Link href="/dashboard/picking">
+          <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
+            <ClipboardList className="h-5 w-5" />
+            Terminal de Picking
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-panel border-border/50 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Bandeja de Tareas de Depósito
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PendientesList pendientes={pendientes} loading={loadingPendientes} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Package className="h-4 w-4 text-primary" />
+              Alertas de Stock
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            {loadingInv ? (
+              <div className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+            ) : inventario?.stockCriticos > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5 p-3 rounded-lg border border-amber-200 bg-amber-500/10 text-amber-700 dark:text-amber-400 dark:border-amber-900/50">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+                  <div>
+                    <p className="text-xs font-semibold">{inventario.stockCriticos} productos con Stock Bajo</p>
+                    <p className="text-[10.5px] text-muted-foreground mt-0.5">Requieren reposición inmediata.</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {inventario.criticos.slice(0, 3).map((p: any) => (
+                    <div key={p.id} className="flex justify-between items-center text-xs p-1 bg-muted/20 rounded">
+                      <span className="truncate max-w-[150px]">{p.nombre}</span>
+                      <span className="font-bold text-destructive">Stock: {p.stock}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/dashboard/productos" className="block text-center text-xs text-primary hover:underline font-semibold pt-1">
+                  Ver catálogo completo
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-muted-foreground">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
+                Nivel de stock óptimo
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="glass-panel border-border/50">
+        <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+            <Rocket className="h-4 w-4 text-primary" />
+            Accesos Rápidos Logística
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/dashboard/picking" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Órdenes de Picking</p>
+              <p className="text-xs text-muted-foreground mt-1">Preparación de pedidos confirmados.</p>
+            </Link>
+            <Link href="/dashboard/picking/tablet" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Modo Tablet</p>
+              <p className="text-xs text-muted-foreground mt-1">Interfaz simplificada para operarios.</p>
+            </Link>
+            <Link href="/dashboard/productos/transferencias" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Transferencias Stock</p>
+              <p className="text-xs text-muted-foreground mt-1">Movimientos entre depósitos / sucursales.</p>
+            </Link>
+            <Link href="/dashboard/productos" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Inventario de Productos</p>
+              <p className="text-xs text-muted-foreground mt-1">Stock de insumos y mercadería.</p>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DashboardVendedor({ user, authHeaders }: { user: any; authHeaders: () => HeadersInit }) {
+  const { pendientes, loading: loadingPendientes } = usePendientes("vendedor_ruta")
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Ventas y Ruta</h1>
+          <p className="text-muted-foreground text-sm mt-1">Ejecutivo Comercial: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+        </div>
+        <Link href="/dashboard/pos">
+          <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
+            <DollarSign className="h-5 w-5" />
+            Nueva Cotización / Venta
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-panel border-border/50 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Users className="h-4 w-4 text-primary" />
+              Alertas y Pendientes Comerciales
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PendientesList pendientes={pendientes} loading={loadingPendientes} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Mi Actividad
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            <div className="rounded-lg border p-3 bg-muted/10 text-center">
+              <p className="text-xs text-muted-foreground">Objetivo de Venta Mensual</p>
+              <p className="text-2xl font-bold mt-1">$1.500.000</p>
+              <div className="h-2 bg-muted rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: "65%" }} />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">Llevás acumulado el 65% del mes.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="glass-panel border-border/50">
+        <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+            <Rocket className="h-4 w-4 text-primary" />
+            Accesos Rápidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/dashboard/ventas/presupuestos" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Presupuestos / Cotizaciones</p>
+              <p className="text-xs text-muted-foreground mt-1">Crear y enviar cotizaciones a clientes.</p>
+            </Link>
+            <Link href="/dashboard/clientes" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Cartera de Clientes</p>
+              <p className="text-xs text-muted-foreground mt-1">Ver saldos, CUITs y límites de crédito.</p>
+            </Link>
+            <Link href="/dashboard/listas-precio" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Listas de Precios</p>
+              <p className="text-xs text-muted-foreground mt-1">Consultar descuentos por rubro y cliente.</p>
+            </Link>
+            <Link href="/vendedor" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Vendedor en Ruta</p>
+              <p className="text-xs text-muted-foreground mt-1">Terminal de autoventa móvil para viajantes.</p>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DashboardContador({ user, authHeaders }: { user: any; authHeaders: () => HeadersInit }) {
+  const { pendientes, loading: loadingPendientes } = usePendientes("contador")
+  const [periodo, setPeriodo] = useState<any>(null)
+  const [loadingPer, setLoadingPer] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/contabilidad/periodos", { headers: authHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPeriodo(data.find((p: any) => p.estado === "abierto") ?? data[0])
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingPer(false))
+  }, [authHeaders])
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel Contable y Fiscal</h1>
+          <p className="text-muted-foreground text-sm mt-1">Estudio Contable: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+        </div>
+        <Link href="/dashboard/impuestos">
+          <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
+            <FileText className="h-5 w-5" />
+            Libros IVA Digitales
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-panel border-border/50 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Shield className="h-4 w-4 text-primary" />
+              Alertas y Pendientes Fiscales
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PendientesList pendientes={pendientes} loading={loadingPendientes} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Clock className="h-4 w-4 text-primary" />
+              Período Fiscal Activo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            {loadingPer ? (
+              <div className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+            ) : periodo ? (
+              <div className="space-y-4">
+                <div className="p-3 rounded-lg border bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Mes/Año de Cierre</p>
+                  <p className="text-2xl font-bold mt-1">{periodo.mes}/{periodo.anio}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
+                    Estado: {periodo.estado}
+                  </p>
+                </div>
+                <Link href="/dashboard/contabilidad/periodos" className="block">
+                  <Button variant="outline" size="sm" className="w-full text-xs font-semibold">
+                    Gestionar Períodos
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-muted-foreground">
+                No hay períodos fiscales cargados en el sistema.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="glass-panel border-border/50">
+        <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+            <Rocket className="h-4 w-4 text-primary" />
+            Accesos Rápidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/dashboard/impuestos" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Libros IVA F.2002</p>
+              <p className="text-xs text-muted-foreground mt-1">Exportar archivos para AFIP IVA Digital.</p>
+            </Link>
+            <Link href="/dashboard/contabilidad" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Asientos Contables</p>
+              <p className="text-xs text-muted-foreground mt-1">Crear asientos contables manuales y automáticos.</p>
+            </Link>
+            <Link href="/dashboard/contabilidad/balance" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Balance Sumas y Saldos</p>
+              <p className="text-xs text-muted-foreground mt-1">Consultar saldos mensuales de cuentas.</p>
+            </Link>
+            <Link href="/dashboard/configuracion" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Configuración Fiscal</p>
+              <p className="text-xs text-muted-foreground mt-1">Certificados, CUIT y alícuotas AFIP.</p>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function DashboardMozo({ user, authHeaders }: { user: any; authHeaders: () => HeadersInit }) {
+  const { pendientes, loading: loadingPendientes } = usePendientes("mozo")
+  const [mesas, setMesas] = useState<any[]>([])
+  const [loadingMesas, setLoadingMesas] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/hospitalidad", { headers: authHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.mesas)) {
+          setMesas(data.mesas)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMesas(false))
+  }, [authHeaders])
+
+  const mesasAbiertas = mesas.filter(m => m.estado === "abierta")
+
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Hospitalidad y Salón</h1>
+          <p className="text-muted-foreground text-sm mt-1">Mozo: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+        </div>
+        <Link href="/dashboard/hospitalidad">
+          <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
+            <UtensilsCrossed className="h-5 w-5" />
+            Mapa de Mesas
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="glass-panel border-border/50 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <Clock className="h-4 w-4 text-primary" />
+              Pendientes y Alertas de Comandas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PendientesList pendientes={pendientes} loading={loadingPendientes} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-border/50">
+          <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+              <UtensilsCrossed className="h-4 w-4 text-primary" />
+              Mesas de mi Turno
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            {loadingMesas ? (
+              <div className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+            ) : mesasAbiertas.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-semibold uppercase">{mesasAbiertas.length} Mesas Abiertas</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {mesasAbiertas.map((m: any) => (
+                    <Link key={m.id} href="/dashboard/hospitalidad" className="p-2 border rounded-lg hover:border-primary text-center hover:bg-primary/5 transition-all">
+                      <p className="font-bold text-sm">Mesa {m.numero}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Capacidad: {m.capacidad}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-muted-foreground">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-60" />
+                No tenés mesas activas.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="glass-panel border-border/50">
+        <CardHeader className="pb-3 border-b border-border/40 bg-muted/20">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase text-muted-foreground">
+            <Rocket className="h-4 w-4 text-primary" />
+            Accesos Rápidos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+            <Link href="/dashboard/hospitalidad" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Salón Principal</p>
+              <p className="text-xs text-muted-foreground mt-1">Ver mesas, comandas y cierres.</p>
+            </Link>
+            <Link href="/dashboard/toma-pedidos" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Toma de Pedidos</p>
+              <p className="text-xs text-muted-foreground mt-1">Cargar comanda rápida para mesa.</p>
+            </Link>
+            <Link href="/dashboard/hospitalidad/kds" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Pantalla de Cocina (KDS)</p>
+              <p className="text-xs text-muted-foreground mt-1">Ver platos listos para servir.</p>
+            </Link>
+            <Link href="/dashboard/agenda" className="group rounded-lg border bg-background/70 px-4 py-3 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all">
+              <p className="font-semibold text-sm">Agenda Turnos</p>
+              <p className="text-xs text-muted-foreground mt-1">Reservas de comensales.</p>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── MAIN DASHBOARD COMPONENT ────────────────────────────────────────────────
+
 export default function DashboardPage() {
+  const user = useAuthStore((s) => s.user)
+  const rol = user?.rol
+
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [periodo, setPeriodo] = useState("mes")
@@ -102,6 +743,23 @@ export default function DashboardPage() {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
+
+  // Dynamic role dashboard selection
+  if (rol === "cajero") {
+    return <DashboardCajero user={user} authHeaders={authHeaders} />
+  }
+  if (rol === "deposito") {
+    return <DashboardDeposito user={user} authHeaders={authHeaders} />
+  }
+  if (rol === "vendedor" || rol === "vendedor_ruta") {
+    return <DashboardVendedor user={user} authHeaders={authHeaders} />
+  }
+  if (rol === "contador") {
+    return <DashboardContador user={user} authHeaders={authHeaders} />
+  }
+  if (rol === "mozo") {
+    return <DashboardMozo user={user} authHeaders={authHeaders} />
+  }
 
   const cargarStats = async () => {
     setLoading(true)

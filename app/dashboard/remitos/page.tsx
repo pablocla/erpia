@@ -46,6 +46,7 @@ type Remito = {
   factura?: { id: number; tipo: string; numero: number; puntoVenta: number } | null
   incoterm?: { id: number; nombre: string } | null
   lineas: LineaRemito[]
+  cot?: { id: number; numeroCOT: string | null; estado: string; errorMensaje: string | null; codigoIntegridad: string | null } | null
 }
 
 const ESTADOS = ["pendiente", "entregado", "anulado"]
@@ -226,6 +227,31 @@ export default function RemitosPage() {
               { key: "factura" as any, header: "Factura", cell: (r) => <span className="font-mono text-xs">{r.factura ? `FAC ${r.factura.tipo} ${String(r.factura.puntoVenta).padStart(4, "0")}-${String(r.factura.numero).padStart(8, "0")}` : "—"}</span> },
               { key: "incoterm" as any, header: "Incoterm", cell: (r) => <span className="text-xs text-muted-foreground">{r.incoterm?.nombre ?? "—"}</span> },
               { key: "lineas" as any, header: "Líneas", align: "right", cell: (r) => <span className="flex items-center justify-end gap-1"><Package className="h-3.5 w-3.5 text-muted-foreground" />{r.lineas.length}</span>, exportFn: (r) => String(r.lineas.length) },
+              {
+                key: "cot" as any,
+                header: "COT ARBA",
+                cell: (r) => {
+                  if (!r.cot) return <span className="text-muted-foreground text-xs">—</span>
+                  if (r.cot.estado === "aprobado") {
+                    return (
+                      <div className="flex flex-col text-left">
+                        <span className="font-mono text-xs text-green-600 font-semibold">{r.cot.numeroCOT}</span>
+                        {r.cot.codigoIntegridad && (
+                          <span className="text-[10px] text-muted-foreground font-mono">CI: {r.cot.codigoIntegridad}</span>
+                        )}
+                      </div>
+                    )
+                  }
+                  if (r.cot.estado === "rechazado") {
+                    return (
+                      <span className="text-xs text-red-500 max-w-[120px] truncate block" title={r.cot.errorMensaje ?? "Rechazado"}>
+                        Error: {r.cot.errorMensaje}
+                      </span>
+                    )
+                  }
+                  return <Badge variant="secondary" className="text-[10px]">{r.cot.estado}</Badge>
+                }
+              },
               { key: "estado", header: "Estado", cell: (r) => <Badge variant={r.estado === "entregado" ? "default" : r.estado === "anulado" ? "destructive" : "secondary"} className="text-xs">{r.estado}</Badge> },
               { key: "acciones" as any, header: "", cell: (r) => r.estado === "pendiente" ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); cambiarEstado(r.id, "entregado") }}><Truck className="h-3 w-3 mr-1" />Entregar</Button> : null },
             ] as DataTableColumn<Remito>[]}

@@ -13,6 +13,7 @@
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
 import type { RemitoEmitidoPayload } from "@/lib/events/types"
+import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 
 export interface PedidoVentaInput {
   clienteId: number
@@ -26,8 +27,10 @@ export interface PedidoVentaInput {
     productoId?: number
     descripcion: string
     cantidad: number
-    precioUnitario: number
+    /** Si se omite o es 0, se resuelve con listas de precio del cliente/empresa */
+    precioUnitario?: number
   }[]
+  usarListaPrecios?: boolean
 }
 
 export class VentasService {
@@ -41,7 +44,23 @@ export class VentasService {
       fechaEntregaEst,
       observaciones,
       lineas,
+      usarListaPrecios = true,
     } = input
+
+    const lineasConPrecio = usarListaPrecios
+      ? await resolverPreciosLineas(
+          lineas.map((l) => ({
+            productoId: l.productoId,
+            cantidad: l.cantidad,
+            precioUnitario: l.precioUnitario,
+          })),
+          { empresaId, clienteId }
+        )
+      : lineas.map((l) => ({
+          productoId: l.productoId,
+          cantidad: l.cantidad,
+          precioUnitario: l.precioUnitario ?? 0,
+        }))
 
     // Auto-number
     const ultimo = await prisma.pedidoVenta.findFirst({ orderBy: { id: "desc" } })
@@ -49,13 +68,14 @@ export class VentasService {
 
     let subtotal = 0
     const lineasData = lineas.map((l, i) => {
-      const lineaSubtotal = l.cantidad * l.precioUnitario
+      const precioUnitario = lineasConPrecio[i].precioUnitario
+      const lineaSubtotal = l.cantidad * precioUnitario
       subtotal += lineaSubtotal
       return {
         productoId: l.productoId ?? null,
         descripcion: l.descripcion,
         cantidad: l.cantidad,
-        precioUnitario: l.precioUnitario,
+        precioUnitario,
         subtotal: lineaSubtotal,
         orden: i + 1,
       }
@@ -117,11 +137,27 @@ export class VentasService {
       }
     }
 
-    return prisma.pedidoVenta.update({
+    const pedidoConfirmado = await prisma.pedidoVenta.update({
       where: { id: pedidoId },
       data: { estado: "confirmado" },
       include: { lineas: true, cliente: true },
     })
+
+    const { emitAutomationEvent } = await import("@/lib/automation/emit-event")
+    void emitAutomationEvent(
+      empresaId,
+      "PEDIDO_CONFIRMADO",
+      {
+        pedidoId: pedidoConfirmado.id,
+        numero: pedidoConfirmado.numero,
+        cliente: pedidoConfirmado.cliente?.nombre,
+        total: Number(pedidoConfirmado.total),
+        lineas: pedidoConfirmado.lineas.length,
+      },
+      `ped-${pedidoConfirmado.id}`
+    )
+
+    return pedidoConfirmado
   }
 
   async generarListaPicking(pedidoId: number, empresaId: number) {

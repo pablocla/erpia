@@ -1,0 +1,13 @@
+---
+pid: 18076
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cmd /c \"set DATABASE_URL=postgresql://postgres.onhwnepnswwjyrelwjuv:nQ9IxXK2aMMPcYZL@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&& npx prisma migrate status\""
+started_at: 2026-06-19T05:27:18.995Z
+running_for_ms: 744998   
+---
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Prisma schema loaded from prisma\schema.prisma
+Environment variables loaded from .env
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-us-east-1.pooler.supabase.com:6543"

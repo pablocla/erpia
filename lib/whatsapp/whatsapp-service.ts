@@ -17,19 +17,25 @@ export class WhatsappService {
   private readonly accountSid: string
   private readonly authToken: string
   private readonly from: string
+  private readonly devMode: boolean
+
+  static isConfigured(): boolean {
+    return Boolean(
+      process.env.TWILIO_ACCOUNT_SID &&
+        process.env.TWILIO_AUTH_TOKEN &&
+        process.env.TWILIO_WHATSAPP_FROM
+    )
+  }
 
   constructor() {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-    const from = process.env.TWILIO_WHATSAPP_FROM
+    const accountSid = process.env.TWILIO_ACCOUNT_SID ?? ""
+    const authToken = process.env.TWILIO_AUTH_TOKEN ?? ""
+    const from = process.env.TWILIO_WHATSAPP_FROM ?? ""
 
-    if (!accountSid || !authToken || !from) {
-      throw new Error("TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN y TWILIO_WHATSAPP_FROM deben estar configurados")
-    }
-
+    this.devMode = !WhatsappService.isConfigured()
     this.accountSid = accountSid
     this.authToken = authToken
-    this.from = ensureWhatsappNumber(from)
+    this.from = from ? ensureWhatsappNumber(from) : ""
   }
 
   private get authorizationHeader() {
@@ -37,6 +43,11 @@ export class WhatsappService {
   }
 
   async sendMessage(to: string, body: string) {
+    if (this.devMode) {
+      console.info(`[WhatsApp DEV] → ${formatRecipient(to)}: ${body.slice(0, 120)}...`)
+      return { sid: "dev-mode", status: "queued", to, body }
+    }
+
     const url = `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`
     const payload = new URLSearchParams()
     payload.append("From", `whatsapp:${this.from}`)

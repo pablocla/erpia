@@ -1,0 +1,302 @@
+---
+title: "Mapa de APIs"
+description: "Índice de rutas y endpoints de la API del ERP."
+sidebar_position: 4
+tags: ["developer", "api"]
+audience: developer
+layer: 5-codigo
+last_verified: 2026-06-19
+status: completo
+---
+
+# Mapa de la API del ERP Argentina
+
+Este documento lista de forma automatizada las rutas de la API del ERP a partir del escaneo de los archivos de controlador de Next.js App Router (`route.ts`).
+
+---
+
+## 📌 Rutas API Disponibles
+
+| Ruta | Métodos Detectados | Seguridad | Estado |
+|---|---|---|---|
+| `/api/afip/caea` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/afip/emitir-factura` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/afip/padron` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/afip/reintentar-cae` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/afip/setup-homologacion` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/afip/subir-certificados` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/afip/test-conexion` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/afip/tipos-comprobante` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/afip/wscdc` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/agenda` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/agenda/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/agenda-publica/[empresaId]` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/agro/balanza` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/clima` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/clima/[loteId]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/contratos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/dashboard` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/granos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/ia/recomendar-riego` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/liquidaciones` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/lotes` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/mapa/[loteId]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/maquinas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/maquinas/sync` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/ndvi` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/ndvi/[loteId]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/pizarra` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/productor/resumen` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/riego/zonas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/riego/[zonaId]/programa` | GET, POST, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/agro/riego/[zonaId]/trigger` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/sensores/ingest` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/sensores` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/agro/sensores/[sensorId]/lecturas` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/agro/silos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/agentes/autopilot` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/agentes/batch` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/agentes/logs` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/ai/agentes` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/ai/alertas` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/ai/anomalias` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/chat` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/clasificar-producto` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/cobranza` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/onboarding` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/ai/prediccion-compras` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/preguntar` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/presupuesto` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/ai/proyeccion` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/ai/reporte` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/ai/status` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/ai/valor-rubro` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/ai/whatsapp-mensajes` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/alertas` | GET, POST, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/aprobaciones` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/automation/actions/create-task` | POST | 🔑 API Key / HMAC | ✅ Con test |
+| `/api/automation/actions/create-user-virtual` | POST | 🔑 API Key / HMAC | ❌ Sin test |
+| `/api/automation/actions/trigger-playbook` | POST | 🔑 API Key / HMAC | ❌ Sin test |
+| `/api/automation/catalog` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/automation/config` | GET, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/automation/events` | GET, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/automation/executions` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/automation/playbooks/[key]/run` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/automation/poll` | GET, POST | 🔑 API Key | ✅ Con test |
+| `/api/automation/seed` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/automation/test` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/automation/webhooks/inbound` | POST | 🔑 API Key / HMAC | ✅ Con test |
+| `/api/auth/cambiar-password` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/demo` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/forgot-password` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/invite` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/auth/login` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/me` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/auth/refresh` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/register` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/reset-password` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/auth/signup` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/banco/conciliar` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/banco` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/banco/transferencias` | GET, POST | 🔒 JWT | ✅ Con test |
+| `/api/banco/transferencias/[id]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/caja/movimientos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/caja` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/caja/[id]/arqueo` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/caja/[id]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/calidad` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/campos-personalizados` | GET, POST, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/campos-personalizados/valores` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/cashflow` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/categorias` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/categorias/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/cheques` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/cheques/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/clientes/lista-precio` | PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/clientes` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/clientes/[id]` | GET, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/cobradores` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/cobradores/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/cocina` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/comisiones` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/compras/ordenes` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/compras/ordenes/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/compras/recepciones` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/compras/recepciones/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/compras` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/compras/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/config/asientos` | GET, PUT | 🔓 Pública | ❌ Sin test |
+| `/api/config/auditoria` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/config/campos-personalizados` | GET, POST, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/config/cotizaciones` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/config/empresa` | GET, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/config/features` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/config/maestros` | GET, POST, PUT, DELETE | 🔓 Pública | ❌ Sin test |
+| `/api/config/modulos` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/config/numeradores` | GET, POST, PUT | 🔓 Pública | ❌ Sin test |
+| `/api/config/onboarding/apply` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/config/parametrizacion` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/config/parametros-fiscales` | GET, POST, PUT | 🔓 Pública | ❌ Sin test |
+| `/api/config/plan-cuentas` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/config/plantillas-asiento` | GET, POST, PUT, DELETE | 🔓 Pública | ❌ Sin test |
+| `/api/config/rubros` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/config/tablas-auxiliares` | GET, POST, PUT, DELETE | 🔓 Pública | ❌ Sin test |
+| `/api/config/test` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/config/usuarios` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/config/workflows` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/contabilidad/activos-fijos` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/asientos` | GET, POST, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/contabilidad/balance-general` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/balance-sumas` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/contabilidad/centros-costo` | GET, POST, DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/cierre-ejercicio` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/estado-resultados` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/exportar-csv` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/inflacion` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/contabilidad/libro-mayor` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/liquidacion-iva` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/periodos-fiscales` | GET, POST, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/contabilidad/plan-cuentas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/cotizaciones` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/crm` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/cron/agentes` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/cron/enviar-whatsapp` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/cron/ia-diaria` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/cron/recordatorios` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/cron/sync-afip` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/cuentas-cobrar/cobros` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/cuentas-cobrar` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/cuentas-cobrar/[id]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/cuentas-pagar/pagos` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/cuentas-pagar` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/cuentas-pagar/[id]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/choferes` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/choferes/[id]` | DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/hojas-ruta` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/hojas-ruta/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/paradas/[id]` | PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/vehiculos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/distribucion/vehiculos/[id]` | DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/documentos` | GET, POST, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/ecommerce/catalogo` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/ecommerce/checkout` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/empleados` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/envases/movimientos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/envases` | GET, POST, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/envases/saldo` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/estadisticas/dashboard` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/estadisticas/export` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/export` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/facturacion-recurrente` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/facturas` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/facturas/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/health` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/historia-clinica` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/historia-clinica/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/hospitalidad/facturar` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/hospitalidad/kds` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/hospitalidad/mesas` | GET, POST, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/hospitalidad/platos` | GET, POST, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/hospitalidad` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/impresion/configurar-impresora` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/impresion/detectar-impresoras` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/impresion/email` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/impresion/imprimir-ticket` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/impresion/pdf` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/citi` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/impuestos/iibb` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/impuestos/iva` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/impuestos/libro-iva-compras` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/libro-iva-digital` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/impuestos/libro-iva-ventas` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/padron` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/percepciones` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/presentacion-afip` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/impuestos/sicore` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/industria/bom` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/industria` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/industria/[id]` | DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/iot/alertas` | GET, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/iot/dispositivos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/iot/lecturas` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/kpis` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/listas-precio` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/logistica` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/logistica/transportistas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/logistica/[id]` | DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/maestros/[tabla]` | GET, POST, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/mantenimiento` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/membresias` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/membresias/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/mercadolibre` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/mercadopago` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/mercadopago/webhook` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/mis-tareas` | GET, POST, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/mrp` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/notas-credito` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/notas-credito/[id]` | GET, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/notas-debito` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/notas-debito/[id]` | GET, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/ordenes-pago` | GET | 🔒 JWT | ✅ Con test |
+| `/api/ordenes-pago/[id]` | GET, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/pagos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/pagos/[id]` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/platform/suscripciones` | GET, POST | 🔒 JWT | ✅ Con test |
+| `/api/pendientes` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/picking` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/picking/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/portal/catalogo` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/portal/pedidos` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/portal/verify-cuit` | POST | 🔓 Pública | ❌ Sin test |
+| `/api/pos/anular-venta` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/pos/cierre-x` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/pos/cierre-z` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/pos/plu` | GET, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/pos/venta` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/pos/ventas-hoy` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/precios/calcular` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/precios/escalones` | GET, POST, DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/precios/items` | GET, POST, DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/precios/resolver` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/precios` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/presupuesto` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/productos/movimientos` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/productos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/productos/[id]` | GET, PUT, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/proveedores` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/proveedores/[id]` | GET, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/puntos-venta` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/puntos-venta/[id]` | GET, DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/recibos` | GET | 🔒 JWT | ✅ Con test |
+| `/api/recibos/[id]` | GET, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/remitos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/remitos/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/reportes/plantillas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/reportes/plantillas/[id]` | GET, PUT, DELETE | 🔒 JWT | ❌ Sin test |
+| `/api/reportes/render` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/rrhh/liquidacion` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/series` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/series/[id]` | GET, DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/stock/depositos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/stock/movimientos` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/stock` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/stock/toma-inventario` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/stock/transferencia-deposito` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/stock/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/sucursales` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/tes` | GET, POST | 🔓 Pública | ❌ Sin test |
+| `/api/tickets/metricas` | GET | 🔒 JWT | ❌ Sin test |
+| `/api/tickets` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/tickets/[id]/comentarios` | POST | 🔒 JWT | ❌ Sin test |
+| `/api/tickets/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/usuarios` | GET | 🔓 Pública | ❌ Sin test |
+| `/api/usuarios/[id]` | DELETE, PATCH | 🔓 Pública | ❌ Sin test |
+| `/api/vendedores` | GET, POST, PUT | 🔒 JWT | ❌ Sin test |
+| `/api/vendedores/[id]` | GET, DELETE, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/ventas/pedidos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/ventas/pedidos/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/ventas/presupuestos` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/ventas/presupuestos/[id]` | GET, PATCH | 🔒 JWT | ❌ Sin test |
+| `/api/veterinaria/consultas` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/veterinaria/pacientes` | GET, POST | 🔒 JWT | ❌ Sin test |
+| `/api/webhooks/whatsapp` | POST | 🔓 Pública | ❌ Sin test |

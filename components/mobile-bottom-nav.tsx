@@ -1,11 +1,7 @@
 "use client"
 
 /**
- * Mobile Bottom Navigation — Sticky footer for core modules on mobile.
- *
- * Only visible on screens < 768px. Provides quick access to:
- * Dashboard, Ventas, Caja, Productos, Aprobaciones.
- * Shows badge count on Aprobaciones when pending items exist.
+ * Mobile Bottom Navigation — navegación por rol en pantallas < 768px.
  */
 
 import Link from "next/link"
@@ -22,20 +18,22 @@ import {
   Truck,
   FileText,
   Scissors,
+  Store,
+  ScanLine,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { useState } from "react"
+import { useAuthStore } from "@/lib/stores/auth-store"
+import { useState, useMemo } from "react"
 
-const ITEMS = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
-  { href: "/dashboard/ventas", icon: Receipt, label: "Ventas" },
-  { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
-  { href: "/dashboard/aprobaciones-mobile", icon: ClipboardCheck, label: "Aprobar", badge: true },
-  { href: "#more", icon: MoreHorizontal, label: "Más" },
-]
+type NavItem = {
+  href: string
+  icon: React.ElementType
+  label: string
+  badge?: boolean
+}
 
-const MORE_ITEMS = [
+const MORE_ITEMS_DEFAULT = [
   { href: "/dashboard/productos", icon: Package, label: "Productos" },
   { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
   { href: "/dashboard/peluqueria", icon: Scissors, label: "Peluquería" },
@@ -44,21 +42,71 @@ const MORE_ITEMS = [
   { href: "/dashboard/kpis", icon: BarChart3, label: "KPIs" },
 ]
 
+const MORE_ITEMS_CAJERO = [
+  { href: "/dashboard/facturas", icon: FileText, label: "Facturas" },
+  { href: "/dashboard/productos", icon: Package, label: "Productos" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Inicio ERP" },
+  { href: "/dashboard/mis-tareas", icon: ClipboardCheck, label: "Tareas" },
+]
+
+const MORE_ITEMS_DEPOSITO = [
+  { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+  { href: "/dashboard/productos", icon: Package, label: "Productos" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
+]
+
+const NAV_BY_ROL: Record<string, NavItem[]> = {
+  cajero: [
+    { href: "/dashboard/pos", icon: Store, label: "POS" },
+    { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
+    { href: "/dashboard/pos/cierre", icon: BarChart3, label: "Cierre" },
+    { href: "#more", icon: MoreHorizontal, label: "Más" },
+  ],
+  deposito: [
+    { href: "/dashboard/picking", icon: ScanLine, label: "Picking" },
+    { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+    { href: "/dashboard/productos", icon: Package, label: "Productos" },
+    { href: "#more", icon: MoreHorizontal, label: "Más" },
+  ],
+}
+
+const DEFAULT_ITEMS: NavItem[] = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
+  { href: "/dashboard/ventas", icon: Receipt, label: "Ventas" },
+  { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
+  { href: "/dashboard/aprobaciones-mobile", icon: ClipboardCheck, label: "Aprobar", badge: true },
+  { href: "#more", icon: MoreHorizontal, label: "Más" },
+]
+
+function moreItemsForRol(rol: string) {
+  if (rol === "cajero") return MORE_ITEMS_CAJERO
+  if (rol === "deposito") return MORE_ITEMS_DEPOSITO
+  return MORE_ITEMS_DEFAULT
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const rol = useAuthStore((s) => s.user?.rol ?? "")
   const [showMore, setShowMore] = useState(false)
-  const { data: aprobData } = useAuthFetch<{ data: { length: number }[] }>("/api/aprobaciones?estado=pendiente&take=1")
+  const { data: aprobData } = useAuthFetch<{ data: { length: number }[] }>(
+    "/api/aprobaciones?estado=pendiente&take=1"
+  )
   const pendingCount = aprobData?.data?.length ?? 0
+
+  const items = useMemo(
+    () => NAV_BY_ROL[rol] ?? DEFAULT_ITEMS,
+    [rol]
+  )
+  const moreItems = useMemo(() => moreItemsForRol(rol), [rol])
 
   return (
     <>
-      {/* More menu overlay */}
       {showMore && (
         <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowMore(false)}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
           <div className="absolute bottom-16 inset-x-2 bg-background rounded-2xl border shadow-xl p-3 safe-area-pb">
             <div className="grid grid-cols-3 gap-2">
-              {MORE_ITEMS.map((item) => (
+              {moreItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -74,10 +122,9 @@ export function MobileBottomNav() {
         </div>
       )}
 
-      {/* Bottom navigation */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 safe-area-pb">
         <div className="flex items-center justify-around h-14">
-          {ITEMS.map((item) => {
+          {items.map((item) => {
             const isMore = item.href === "#more"
             const isActive = isMore
               ? showMore

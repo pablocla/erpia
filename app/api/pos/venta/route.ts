@@ -15,6 +15,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { onFacturaEmitida } from "@/lib/contabilidad/factura-hooks"
+import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
+import { solicitarCaeFactura } from "@/lib/afip/solicitar-cae-factura"
+import { obtenerEstadoAfipPos } from "@/lib/pos/pos-afip-status"
+import { letraDesdeTipoCbte, resolverTipoCbtePos } from "@/lib/pos/pos-tipo-factura"
 import { z } from "zod"
 
 // ──────────────────────────────────────────────────────────────
@@ -25,7 +29,7 @@ const lineaSchema = z.object({
   productoId: z.number().int().positive().optional(),
   descripcion: z.string().min(1),
   cantidad: z.number().positive(),
-  precioUnitario: z.number().nonnegative(),
+  precioUnitario: z.number().nonnegative().optional(),
   porcentajeIva: z.number().min(0).max(105).default(21),
   descuento: z.number().min(0).max(100).default(0),
 })
@@ -53,6 +57,8 @@ const ventaPosSchema = z.object({
   /** Array de pagos — permite split payment */
   pagos: z.array(pagoSchema).min(1),
   descuentoGlobal: z.number().min(0).max(100).default(0),
+  /** Si true (default), resuelve precio desde listas del cliente/empresa */
+  usarListaPrecios: z.boolean().default(true),
   observaciones: z.string().optional(),
 })
 
@@ -127,35 +133,80 @@ export async function POST(request: NextRequest) {
 
     const facturaClienteId = clienteId
 
+    const cliente = await prisma.cliente.findUnique({
+      where: { id: facturaClienteId },
+      select: { condicionIva: true, esGranEmpresa: true, cuit: true, dni: true },
+    })
+
     // ── 3. Siguiente número de factura ───────────────────────
+    const esTicket = data.tipoFactura === "ticket"
+    let tipoCbteFinal = tipoCbteDesde(data.tipoFactura)
+
     const ultimaFactura = await prisma.factura.findFirst({
       where: {
         empresaId,
-        tipo: data.tipoFactura === "ticket" ? "B" : data.tipoFactura,
-        puntoVenta: data.puntoVenta,
+        ...(esTicket
+          ? { estado: "ticket", puntoVenta: data.puntoVenta }
+          : { tipoCbte: tipoCbteFinal, puntoVenta: data.puntoVenta }),
       },
       orderBy: { numero: "desc" },
     })
     const siguienteNumero = (ultimaFactura?.numero ?? 0) + 1
 
-    // ── 4. Calcular totales ──────────────────────────────────
+    // ── 4. Resolver precios desde listas (si aplica) ─────────
+    const lineasConPrecio = data.usarListaPrecios
+      ? await resolverPreciosLineas(
+          data.lineas.map((l) => ({
+            productoId: l.productoId,
+            cantidad: l.cantidad,
+            precioUnitario: l.precioUnitario,
+          })),
+          { empresaId, clienteId, forzarLista: true }
+        )
+      : data.lineas.map((l) => ({
+          productoId: l.productoId,
+          cantidad: l.cantidad,
+          precioUnitario: l.precioUnitario ?? 0,
+        }))
+
+    const lineaSinPrecio = lineasConPrecio.find((l) => l.precioUnitario <= 0)
+    if (lineaSinPrecio) {
+      return NextResponse.json(
+        { error: "No se pudo resolver el precio de un ítem. Verificá producto y listas de precio." },
+        { status: 400 },
+      )
+    }
+
+    // ── 5. Calcular totales ──────────────────────────────────
     let subtotal = 0
     let totalIva = 0
-    const lineasCalculadas = data.lineas.map((l) => {
+    const lineasCalculadas = data.lineas.map((l, i) => {
+      const precioUnitario = lineasConPrecio[i].precioUnitario
       const { neto, iva, total } = calcularLinea(
-        l.precioUnitario,
+        precioUnitario,
         l.cantidad,
         l.porcentajeIva,
         l.descuento + data.descuentoGlobal,
       )
       subtotal += neto
       totalIva += iva
-      return { ...l, neto, iva, total }
+      return { ...l, precioUnitario, neto, iva, total }
     })
 
     const totalVenta = parseFloat((subtotal + totalIva).toFixed(2))
     const totalPagado = data.pagos.reduce((s, p) => s + p.monto, 0)
     const vuelto = parseFloat(Math.max(0, totalPagado - totalVenta).toFixed(2))
+
+    if (!esTicket) {
+      tipoCbteFinal = await resolverTipoCbtePos(
+        empresaId,
+        tipoCbteDesde(data.tipoFactura),
+        totalVenta,
+        cliente,
+      )
+    }
+
+    const letraFactura = esTicket ? "TK" : letraDesdeTipoCbte(tipoCbteFinal)
 
     // ── 5. Transacción atómica ───────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
@@ -165,14 +216,15 @@ export async function POST(request: NextRequest) {
         data: {
           empresaId,
           clienteId: facturaClienteId,
-          tipo: data.tipoFactura === "ticket" ? "B" : data.tipoFactura,
-          tipoCbte: tipoCbteDesde(data.tipoFactura),
+          tipo: letraFactura,
+          tipoCbte: esTicket ? tipoCbteDesde("B") : tipoCbteFinal,
           numero: siguienteNumero,
           puntoVenta: data.puntoVenta,
           subtotal: parseFloat(subtotal.toFixed(2)),
           iva: parseFloat(totalIva.toFixed(2)),
           total: totalVenta,
-          estado: data.tipoFactura === "ticket" ? "pendiente_cae" : "emitida",
+          estado: esTicket ? "ticket" : "pendiente_cae",
+          condicionIvaReceptor: cliente?.condicionIva ?? undefined,
           observaciones: data.observaciones,
           lineas: {
             create: lineasCalculadas.map((l) => ({
@@ -268,21 +320,49 @@ export async function POST(request: NextRequest) {
     })
 
     // ── 6. Asiento contable (fuera de la tx atómica para no bloquearla) ───
-    // No lanzamos error si falla: la venta ya está confirmada
     void onFacturaEmitida(result.id, empresaId)
+
+    let cae: string | undefined
+    let qrBase64: string | undefined
+    let vencimientoCAE: string | undefined
+    let afipError: string | undefined
+    let estadoFinal = result.estado
+
+    if (!esTicket) {
+      const afip = await solicitarCaeFactura(result.id)
+      if (afip.ok) {
+        cae = afip.cae
+        qrBase64 = afip.qrBase64
+        vencimientoCAE = afip.vencimientoCAE
+        estadoFinal = "emitida"
+      } else {
+        afipError = afip.error
+        estadoFinal = "pendiente_cae"
+      }
+    }
+
+    const esFce = !esTicket && [201, 206, 211].includes(tipoCbteFinal)
 
     return NextResponse.json(
       {
         ok: true,
         facturaId: result.id,
         tipo: result.tipo,
+        tipoCbte: tipoCbteFinal,
+        esFce,
         numero: result.numero,
         puntoVenta: result.puntoVenta,
-        numeroCompleto: `${result.tipo}-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`,
+        numeroCompleto: esTicket
+          ? `TK-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`
+          : `${result.tipo}-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`,
         total: totalVenta,
         totalPagado,
         vuelto,
-        estado: result.estado,
+        estado: estadoFinal,
+        cae,
+        qrBase64,
+        vencimientoCAE,
+        afipError,
         lineas: lineasCalculadas.length,
       },
       { status: 201 },
@@ -305,15 +385,26 @@ export async function GET(request: NextRequest) {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    const caja = await prisma.caja.findFirst({
-      where: { empresaId: ctx.auth.empresaId, estado: "abierta" },
-      include: {
-        movimientos: {
-          orderBy: { createdAt: "desc" },
-          take: 5,
+    const empresaId = ctx.auth.empresaId
+
+    const [caja, afip, ventasHoy] = await Promise.all([
+      prisma.caja.findFirst({
+        where: { empresaId, estado: "abierta" },
+        include: {
+          movimientos: {
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          },
         },
-      },
-    })
+      }),
+      obtenerEstadoAfipPos(empresaId),
+      prisma.factura.count({
+        where: {
+          empresaId,
+          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        },
+      }),
+    ])
 
     return NextResponse.json({
       cajaAbierta: !!caja,
@@ -321,6 +412,8 @@ export async function GET(request: NextRequest) {
       turno: caja?.turno ?? null,
       saldoInicial: caja?.saldoInicial ?? 0,
       ultimosMovimientos: caja?.movimientos ?? [],
+      ventasHoy,
+      afip,
     })
   } catch (error) {
     console.error("Error al obtener estado POS:", error)

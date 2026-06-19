@@ -135,6 +135,23 @@ export async function procesarWebhookMP(
     await conciliarPagoMP(empresaId, transaccion.id, payment.external_reference)
   }
 
+  if (payment.status === "approved") {
+    const { emitToN8n } = await import("@/lib/automation/n8n-bridge")
+    const { buildIdempotencyKey } = await import("@/lib/automation/sign-payload")
+    void emitToN8n(
+      empresaId,
+      "PAGO_MP_RECIBIDO",
+      {
+        paymentId,
+        monto: payment.transaction_amount,
+        estado: payment.status,
+        externalReference: payment.external_reference,
+        transaccionId: transaccion.id,
+      },
+      buildIdempotencyKey(empresaId, "PAGO_MP_RECIBIDO", paymentId)
+    )
+  }
+
   return transaccion
 }
 

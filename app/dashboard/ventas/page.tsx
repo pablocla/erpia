@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import Link from "next/link"
 import {
   Plus, Trash2, CheckCircle2, QrCode, Search, Package,
   FileText, Receipt, RefreshCw, Tags, Keyboard,
@@ -60,6 +61,7 @@ interface Resultado {
   total: number
   tes: string
   tipoCbte: number
+  qrBase64?: string
 }
 
 interface PuntoVenta {
@@ -94,6 +96,7 @@ export default function VentasPage() {
   const [puntoVentaId, setPuntoVentaId] = useState<string>("")
   const [serieId, setSerieId] = useState<string>("")
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
+  const [mostrarQr, setMostrarQr] = useState(false)
   const [productoFocusIdx, setProductoFocusIdx] = useState(0)
   const clienteSearchRef = useRef<HTMLInputElement | null>(null)
   const productoSearchRef = useRef<HTMLInputElement | null>(null)
@@ -388,14 +391,17 @@ export default function VentasPage() {
         setResultado({
           success: true,
           facturaId: data.facturaId,
-          numero: data.numero ?? Math.floor(Math.random() * 9999) + 1,
+          numero: data.numero,
           tipo: tes?.codigo.charAt(1) ?? "B",
-          cae: data.cae ?? `75${Date.now()}`,
-          vencimientoCae: data.vencimientoCAE ?? new Date(Date.now() + 10 * 86400000).toLocaleDateString("es-AR"),
+          cae: data.cae,
+          vencimientoCae: data.vencimientoCAE
+            ? new Date(data.vencimientoCAE).toLocaleDateString("es-AR")
+            : "—",
           cliente: clienteSeleccionado.nombre,
           total: totales.total,
           tes: tes?.nombre ?? "",
           tipoCbte: tipoCbteFinal,
+          qrBase64: data.qrBase64,
         })
         setItems([])
         setClienteSeleccionado(null)
@@ -452,9 +458,11 @@ export default function VentasPage() {
             <Keyboard className="h-4 w-4 mr-2" />
             Atajos (F1)
           </Button>
-          <Button variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-2" />
-            Historial de Facturas
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/facturas">
+              <FileText className="h-4 w-4 mr-2" />
+              Historial de Facturas
+            </Link>
           </Button>
         </div>
       </div>
@@ -480,7 +488,13 @@ export default function VentasPage() {
                 <div><span className="font-medium">TES:</span> {resultado.tes}</div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-transparent"
+                  onClick={() => setMostrarQr(true)}
+                  disabled={!resultado.qrBase64}
+                >
                   <QrCode className="h-4 w-4 mr-2" />
                   QR AFIP
                 </Button>
@@ -854,6 +868,20 @@ export default function VentasPage() {
           <Button variant="outline" className="w-full mt-2" onClick={() => setMostrarAyuda(false)}>
             Cerrar (Esc)
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mostrarQr} onOpenChange={setMostrarQr}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>QR AFIP</DialogTitle>
+          </DialogHeader>
+          {resultado?.qrBase64 ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={resultado.qrBase64} alt="QR AFIP" className="mx-auto h-48 w-48 rounded border" />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">QR no disponible para este comprobante</p>
+          )}
         </DialogContent>
       </Dialog>
     </div>

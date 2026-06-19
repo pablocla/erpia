@@ -1,0 +1,38 @@
+---
+title: "Migraciones Prisma"
+description: "Cómo agregar, modificar y aplicar migraciones de esquema en PostgreSQL con Prisma ORM."
+sidebar_position: 3
+tags: ["developer", "prisma", "database"]
+audience: developer
+layer: 5-codigo
+last_verified: 2026-06-19
+status: completo
+---
+
+# Guía de Migraciones de Base de Datos con Prisma
+
+El esquema de la base de datos se define en `prisma/schema.prisma`. Para realizar cambios estructurales, seguimos el flujo de Prisma Migrations.
+
+---
+
+## 🛠️ Creación de una Migración Local
+
+1. Realiza el cambio en el archivo `prisma/schema.prisma` (ej. agregar un campo nuevo a la tabla `Producto`).
+2. Crea el archivo de migración SQL y aplícalo localmente en tu DB de desarrollo:
+   ```bash
+   npx prisma migrate dev --name agregar_trazabilidad_productos
+   ```
+3. Esto generará una carpeta en `prisma/migrations/` con el archivo SQL correspondiente.
+
+---
+
+## 🚀 Aplicación de Migraciones en Producción
+
+Las migraciones se ejecutan de manera automática durante la fase de despliegue (`build` y `release` de Vercel/Render/Railway) mediante el comando:
+
+```bash
+npx prisma migrate deploy
+```
+
+> [!WARNING]
+> **No Downtime Rules**: Nunca elimines columnas que estén siendo utilizadas por la versión activa en producción. Si necesitas refactorizar una columna, primero agrégala como opcional, despliega el código que lee/escribe en ambas columnas, migra los datos en background, y finalmente elimina la columna antigua en una migración separada en el siguiente release.

@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: NOP Automation API
+  description: |
+    Contrato de servicios de automatización NOP ↔ n8n.
+    Incluye webhooks salientes (modo A), callbacks entrantes (modo B), polling (modo C)
+    y administración de configuración / entitlements.
+  version: 1.1.0
+servers:
+  - url: http://localhost:3000/api/automation
+    description: Automation routes (relativo a /api/automation)
+  - url: http://localhost:3000/api/platform
+    description: Platform / entitlements
+
+components:
+  securitySchemes:
+    NopJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de usuario NOP (dashboard)
+    NopApiKey:
+      type: apiKey
+      in: header
+      name: X-NOP-Api-Key
+    NopEmpresaId:
+      type: apiKey
+      in: header
+      name: X-NOP-Empresa-Id
+    NopHmac:
+      type: apiKey
+      in: header
+      name: X-NOP-Signature
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        reason:
+          type: string
+          enum:
+            - module_not_entitled
+            - usage_limit_exceeded
+            - automation_inactive
+            - no_event_map
+
+    ModoConexion:
+      type: string
+      enum: [webhook, poll, both]
+      default: webhook
+
+    AutomationConfig:
+      type: object
+      properties:
+        n8nBaseUrl:
+          type: string
+          nullable: true
+        n8nApiKeySet:
+          type: boolean
+        webhookSecret:
+          type: string
+        activo:
+          type: boolean
+        metadata:
+          type: object
+          properties:
+            modoConexion:
+              $ref: '#/components/schemas/ModoConexion'
+
+    SignedEnvelope:
+      type: object
+      required: [eventId, event, empresaId, timestamp, data, signature]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        event:
+          type: string
+        empresaId:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        idempotencyKey:
+          type: string
+        data:
+          type: object
+        signature:
+          type: string
+          description: HMAC-SHA256 hex del payload
+
+    PollQueueItem:
+      type: object
+      properties:
+        id:
+          type: string
+        eventKey:
+          type: string
+        envelope:
+          $ref: '#/components/schemas/SignedEnvelope'
+        idempotencyKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PollResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        empresaId:
+          type: integer
+        count:
+          type: integer
+        hasMore:
+          type: boolean
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollQueueItem'
+
+    PollAckRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+
+    SuscripcionModulo:
+      type: object
+      properties:
+        sku:
+          type: string
+          example: automation.n8n_hub
+        activo:
+          type: boolean
+        uso:
+          type: object
+          properties:
+            mes:
+              type: string
+              example: "2026-06"
+            usado:
+              type: integer
+            limite:
+              type: integer
+              nullable: true
+
+paths:
+  /config:
+    get:
+      summary: Obtener configuración Automation Hub
+      security:
+        - NopJwt: []
+      responses:
+        '200':
+          description: Configuración del tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationConfig'
+        '402':
+          description: Módulo no contratado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Guardar configuración Automation Hub
+      security:
+        - NopJwt: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                n8nBaseUrl:
+                  type: string
+                  nullable: true
+                n8nApiKey:
+                  type: string
+                  nullable: true
+                webhookSecret:
+                  type: string
+                activo:
+                  type: boolean
+                metadata:
+                  type: object
+                  properties:
+                    modoConexion:
+                      $ref: '#/components/schemas/ModoConexion'
+                eventMaps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      eventKey:
+                        type: string
+                      n8nWebhookUrl:
+                        type: string
+                        format: uri
+                      activo:
+                        type: boolean
+      responses:
+        '200':
+          description: Configuración actualizada
+
+  /events:
+    get:
+      summary: Catálogo de eventos NOP
+      security:
+        - NopJwt: []
+      responses:
+        '200':
+          description: Lista de eventos disponibles
+
+  /executions:
+    get:
+      summary: Logs de ejecución
+      security:
+        - NopJwt: []
+      parameters:
+        - name: take
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Últimas ejecuciones inbound/outbound
+
+  /test:
+    post:
+      summary: Emitir WEBHOOK_TEST
+      security:
+        - NopJwt: []
+      responses:
+        '200':
+          description: Resultado del test
+
+  /poll:
+    get:
+      summary: Modo C — consultar eventos pendientes (n8n poll)
+      description: n8n consulta periódicamente cuando `metadata.modoConexion` es `poll` o `both`.
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Cola de eventos pendientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollResponse'
+        '401':
+          description: API key inválida
+        '402':
+          description: Sin entitlement automation.n8n_hub
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Modo C — confirmar recepción (ACK)
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollAckRequest'
+      responses:
+        '200':
+          description: Eventos marcados como entregados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  acknowledged:
+                    type: integer
+
+  /webhooks/inbound:
+    post:
+      summary: Callback entrante firmado desde n8n
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+        - NopHmac: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, data]
+              properties:
+                action:
+                  type: string
+                data:
+                  type: object
+                signature:
+                  type: string
+                empresaId:
+                  type: integer
+      responses:
+        '200':
+          description: Acción ejecutada
+        '401':
+          description: Firma o API key inválida
+
+  /actions/create-task:
+    post:
+      summary: Crear tarea pendiente
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [descripcion, rolAsignado, prioridad]
+              properties:
+                descripcion:
+                  type: string
+                rolAsignado:
+                  type: string
+                prioridad:
+                  type: string
+                  enum: [baja, media, alta, bloqueante]
+      responses:
+        '201':
+          description: Tarea creada
+
+  /actions/create-user-virtual:
+    post:
+      summary: Crear usuario virtual / bot técnico
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, rol]
+              properties:
+                nombre:
+                  type: string
+                rol:
+                  type: string
+      responses:
+        '201':
+          description: Bot creado
+
+  /actions/trigger-playbook:
+    post:
+      summary: Disparar playbook local
+      security:
+        - NopApiKey: []
+        - NopEmpresaId: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                playbookKey:
+                  type: string
+                parametros:
+                  type: object
+      responses:
+        '200':
+          description: Playbook ejecutado
+
+  /playbooks/{key}/run:
+    post:
+      summary: Ejecutar playbook manualmente (JWT admin)
+      security:
+        - NopJwt: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado de ejecución
+
+  /suscripciones:
+    get:
+      summary: Listar suscripciones comerciales del tenant
+      servers:
+        - url: http://localhost:3000/api/platform
+      security:
+        - NopJwt: []
+      responses:
+        '200':
+          description: Suscripciones con uso mensual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suscripciones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SuscripcionModulo'
+    post:
+      summary: Alta o actualización de suscripción (admin)
+      servers:
+        - url: http://localhost:3000/api/platform
+      security:
+        - NopJwt: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku]
+              properties:
+                sku:
+                  type: string
+                activo:
+                  type: boolean
+                limiteEventosMes:
+                  type: integer
+                  nullable: true
+                vigenciaHasta:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '200':
+          description: Suscripción guardada

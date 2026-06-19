@@ -1,0 +1,26 @@
+---
+title: "Preguntas Frecuentes (FAQ)"
+description: "FAQ técnica e impositiva sobre la implementación y parametrización del ERP."
+sidebar_position: 7
+tags: ["analista", "faq"]
+audience: analista
+layer: 1-config
+last_verified: 2026-06-19
+status: completo
+---
+
+# Preguntas Frecuentes del Analista Técnico
+
+### ❓ ¿Cómo se aísla la información de dos empresas competidoras en el ERP?
+El ERP utiliza un aislamiento multi-tenant por software a nivel base de datos. Cada tabla tiene la columna `empresaId` de tipo entero. Todas las llamadas API pasan obligatoriamente por el middleware `getAuthContext(request)` y la función `whereEmpresa(auth.empresaId)`, garantizando que un usuario jamás acceda a los registros de otro inquilino.
+
+### ❓ ¿Qué pasa si el cliente pide que un campo sea obligatorio en la UI?
+Si el campo se agrega en la **Capa 2** (Campos Personalizados), la interfaz de configuración permite marcar el flag `requerido: true`. El validador dinámico del formulario del frontend impedirá el submit si el campo está vacío, y la API también validará el JSONB de entrada.
+
+### ❓ ¿Cómo homologamos el sistema de facturación AFIP para un cliente nuevo?
+1. Solicitar el certificado digital del cliente (`.key` y `.crt`) a través de la web de AFIP con su clave fiscal.
+2. Cargar el certificado en la configuración del Punto de Venta en la interfaz del ERP.
+3. El módulo impositivo se comunica automáticamente con los Web Services de AFIP (`WSFEv1` y `WSCMTX1`) usando las credenciales seguras.
+
+### ❓ ¿Se puede forzar a que las actualizaciones de código no rompan personalizaciones locales de código de la Capa 5?
+Si se modificó código core (Capa 5), esas modificaciones deben realizarse en sub-servicios o handlers de eventos específicos (`__tests__/` o `lib/custom-handlers/`). Evita tocar servicios núcleo como `ventas-service.ts` para no tener conflictos de merge al actualizar el código upstream del ERP.

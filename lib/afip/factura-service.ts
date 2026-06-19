@@ -9,6 +9,15 @@ import { eventBus } from "@/lib/events/event-bus"
 import type { FacturaEmitidaPayload } from "@/lib/events/types"
 import { getParametro } from "@/lib/config/parametro-service"
 import { padronService } from "@/lib/impuestos/padron-service"
+import {
+  buildCbtesAsocFce,
+  buildFceOpcionales,
+  formatFechaAfip,
+  isFceNotaCreditoDebito,
+  isFceTipoCbte,
+  type TipoTransferenciaFce,
+  validateCbu,
+} from "./mipyme-fce"
 // Register event handlers (stock, CC/CP, contabilidad)
 import "@/lib/stock/stock-service"
 import "@/lib/cc-cp/cuentas-service"
@@ -35,15 +44,76 @@ export class FacturaService {
         return { success: false, error: "Certificados AFIP no configurados" }
       }
 
-      // 2. Autenticar con AFIP
+      // 1b. Obtener o crear cliente receptor
+      const cliente = await this.obtenerOCrearCliente(payload.cliente, empresa.id)
+
+      // 2. Calcular totales
+      const { subtotal, iva, total } = this.calcularTotales(payload.items)
+
+      // 2b. Ruteo automático de tipoCbte y puntoVenta (FCE MiPyMEs / Exportación)
+      let finalTipoCbte = payload.tipoCbte
+      let finalPuntoVenta = payload.puntoVenta
+
+      const { isFeatureActiva } = await import("@/lib/config/rubro-config-service")
+
+      // Determinar si es Exportación
+      const esExportacion = cliente.esExportacion || (payload.moneda && payload.moneda !== "PES")
+      const moduloExportacionActivo = await isFeatureActiva(empresa.id, "factura_exportacion")
+
+      if (esExportacion && moduloExportacionActivo) {
+        if (payload.tipoCbte === 1 || payload.tipoCbte === 6 || payload.tipoCbte === 11) {
+          finalTipoCbte = 19 // Factura de Exportación E
+        } else if (payload.tipoCbte === 3 || payload.tipoCbte === 8 || payload.tipoCbte === 13) {
+          finalTipoCbte = 21 // Nota de Crédito de Exportación E
+        } else if (payload.tipoCbte === 2 || payload.tipoCbte === 7 || payload.tipoCbte === 12) {
+          finalTipoCbte = 20 // Nota de Débito de Exportación E
+        }
+      } else {
+        // Determinar si es FCE MiPyME
+        const moduloMipymeActivo = await isFeatureActiva(empresa.id, "factura_mipymes")
+        const umbralMipyme = await getParametro(empresa.id, "umbral_mipyme", 5468127, "AR")
+
+        if (moduloMipymeActivo && cliente.esGranEmpresa && total >= umbralMipyme) {
+          if (payload.tipoCbte === 1) finalTipoCbte = 201 // FCE MiPyME A
+          else if (payload.tipoCbte === 6) finalTipoCbte = 206 // FCE MiPyME B
+          else if (payload.tipoCbte === 11) finalTipoCbte = 211 // FCE MiPyME C
+          else if (payload.tipoCbte === 3) finalTipoCbte = 203 // NC FCE A
+          else if (payload.tipoCbte === 8) finalTipoCbte = 208 // NC FCE B
+          else if (payload.tipoCbte === 13) finalTipoCbte = 213 // NC FCE C
+          else if (payload.tipoCbte === 2) finalTipoCbte = 202 // ND FCE A
+          else if (payload.tipoCbte === 7) finalTipoCbte = 207 // ND FCE B
+          else if (payload.tipoCbte === 12) finalTipoCbte = 212 // ND FCE C
+        }
+      }
+
+      // Buscar si existe una Serie configurada para finalTipoCbte que defina un Punto de Venta específico
+      const serieConfig = await prisma.serie.findFirst({
+        where: {
+          tipoCbteAfip: finalTipoCbte,
+          activo: true,
+          puntoVenta: {
+            empresaId: empresa.id,
+            activo: true,
+          },
+        },
+        include: {
+          puntoVenta: true,
+        },
+      })
+
+      if (serieConfig?.puntoVenta?.numero) {
+        finalPuntoVenta = serieConfig.puntoVenta.numero
+      }
+
+      // 3. Autenticar con AFIP
       const auth = await this.soapClient.authenticate(empresa.cuit, empresa.certificadoCRT, empresa.certificadoKEY)
 
-      // 3. Obtener el último número de comprobante
+      // 4. Obtener el último número de comprobante
       const ultimoNumero = await this.soapClient.consultarUltimoComprobante(
         auth,
         empresa.cuit,
-        payload.puntoVenta,
-        payload.tipoCbte,
+        finalPuntoVenta,
+        finalTipoCbte,
       )
 
       const nuevoNumero = ultimoNumero + 1
@@ -52,8 +122,8 @@ export class FacturaService {
       const existing = await prisma.factura.findFirst({
         where: {
           empresaId: empresa.id,
-          puntoVenta: payload.puntoVenta,
-          tipoCbte: payload.tipoCbte,
+          puntoVenta: finalPuntoVenta,
+          tipoCbte: finalTipoCbte,
           numero: nuevoNumero,
         },
       })
@@ -68,9 +138,6 @@ export class FacturaService {
           numero: existing.numero,
         }
       }
-
-      // 4. Calcular totales
-      const { subtotal, iva, total } = this.calcularTotales(payload.items)
 
       // — Optional full tax breakdown (percepciones, IIBB, retenciones)
       let totalPercepciones = 0
@@ -127,8 +194,8 @@ export class FacturaService {
 
       // 5. RG 5824/2026: Validate CUIT/CUIL for FC B/C > threshold
       const UMBRAL_RG5824 = await getParametro(empresa.id, "umbral_rg5824", 10_000_000, "AR")
-      const esFCB = payload.tipoCbte === 6  // FC B
-      const esFCC = payload.tipoCbte === 11 // FC C
+      const esFCB = finalTipoCbte === 6  // FC B
+      const esFCC = finalTipoCbte === 11 // FC C
       const totalConPercepciones = total + totalPercepciones
 
       let cuitReceptor: string | null = null
@@ -195,7 +262,30 @@ export class FacturaService {
 
       const impTrib = tributos.reduce((sum, t) => sum + t.Importe, 0)
 
+      const esFce = isFceTipoCbte(finalTipoCbte)
+      let cbuFce: string | null = null
+      let tipoTransferenciaFce: TipoTransferenciaFce = "SCA"
+
+      if (esFce) {
+        const configFiscal = await prisma.configFiscalEmpresa.findUnique({
+          where: { empresaId: empresa.id },
+        })
+        cbuFce = payload.fce?.cbu ?? configFiscal?.cbuFce ?? null
+        tipoTransferenciaFce =
+          payload.fce?.tipoTransferencia ??
+          (configFiscal?.tipoTransferenciaFce === "ADC" ? "ADC" : "SCA")
+
+        if (!cbuFce || !validateCbu(cbuFce)) {
+          return {
+            success: false,
+            error:
+              "FCE MiPyME requiere CBU emisor de 22 dígitos. Configuralo en Parámetros Fiscales → FCE MiPyME.",
+          }
+        }
+      }
+
       const comprobante: any = {
+        CbteTipo: finalTipoCbte,
         Concepto: concepto,
         DocTipo: payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99),
         DocNro: payload.cliente.cuit || payload.cliente.dni || 0,
@@ -225,13 +315,52 @@ export class FacturaService {
         comprobante.Tributos = tributos
       }
 
+      if (esFce && cbuFce) {
+        Object.assign(comprobante, buildFceOpcionales(cbuFce, tipoTransferenciaFce))
+      }
+
+      if (esFce && isFceNotaCreditoDebito(finalTipoCbte)) {
+        let asociado = payload.facturaAsociada
+        if (payload.facturaAsociadaId) {
+          const facOrig = await prisma.factura.findFirst({
+            where: { id: payload.facturaAsociadaId, empresaId: empresa.id },
+          })
+          if (facOrig) {
+            asociado = {
+              tipoCbte: facOrig.tipoCbte,
+              puntoVenta: facOrig.puntoVenta,
+              numero: facOrig.numero,
+              fecha: facOrig.createdAt,
+            }
+          }
+        }
+        if (!asociado) {
+          return {
+            success: false,
+            error: "NC/ND FCE MiPyME requiere facturaAsociada o facturaAsociadaId",
+          }
+        }
+        Object.assign(
+          comprobante,
+          buildCbtesAsocFce({
+            Tipo: asociado.tipoCbte,
+            PtoVta: asociado.puntoVenta,
+            Nro: asociado.numero,
+            Cuit: empresa.cuit.replace(/\D/g, ""),
+            CbteFch: asociado.fecha
+              ? formatFechaAfip(asociado.fecha)
+              : this.formatearFecha(new Date()),
+          })
+        )
+      }
+
       // 7. Emitir el comprobante en AFIP (con fallback offline)
       let cae: string
       let fechaCAE: string
       let modoOffline = false
 
       try {
-        const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, payload.puntoVenta, comprobante, empresa.id)
+        const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, finalPuntoVenta, comprobante, empresa.id)
 
         // 8. Verificar respuesta AFIP
         if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
@@ -246,7 +375,6 @@ export class FacturaService {
         fechaCAE = resultado.FeDetResp.FECAEDetResponse.CAEFchVto
       } catch (afipErr) {
         // AFIP caído: guardamos en modo offline para sincronizar después.
-        // AFIP tiene mantenimiento 00:00-00:30 diario y puede fallar fines de semana.
         const esErrorConectividad = afipErr instanceof Error && (
           afipErr.message.includes("ECONNREFUSED") ||
           afipErr.message.includes("ETIMEDOUT") ||
@@ -270,8 +398,8 @@ export class FacturaService {
       if (!modoOffline && cae) {
         const qrData = this.generarDatosQR(
           empresa.cuit,
-          payload.tipoCbte,
-          payload.puntoVenta,
+          finalTipoCbte,
+          finalPuntoVenta,
           nuevoNumero,
           cae,
           fechaCAE,
@@ -285,14 +413,12 @@ export class FacturaService {
       }
 
       // 10. Guardar la factura en la base de datos
-      const cliente = await this.obtenerOCrearCliente(payload.cliente, empresa.id)
-
       const facturaCreada = await prisma.factura.create({
         data: {
-          tipo: this.obtenerTipoFactura(payload.tipoCbte),
-          tipoCbte: payload.tipoCbte,
+          tipo: this.obtenerTipoFactura(finalTipoCbte),
+          tipoCbte: finalTipoCbte,
           numero: nuevoNumero,
-          puntoVenta: payload.puntoVenta,
+          puntoVenta: finalPuntoVenta,
           cae: modoOffline ? null : cae,
           fechaCAE: modoOffline ? null : new Date(),
           vencimientoCAE: modoOffline ? null : this.parsearFechaCAE(fechaCAE),
@@ -317,7 +443,6 @@ export class FacturaService {
           fechaVtoPago: concepto >= 2 ? payload.fechaVtoPago : undefined,
           empresaId: empresa.id,
           clienteId: cliente.id,
-          estado: "emitida",
           lineas: {
             create: payload.items.map((item) => {
               const codigoAfipIva = this.ivaToCodigoAfip(item.iva)
@@ -355,7 +480,7 @@ export class FacturaService {
         })
       }
 
-      await this.sincronizarNumeradorSerie(empresa.id, payload.puntoVenta, payload.tipoCbte, nuevoNumero)
+      await this.sincronizarNumeradorSerie(empresa.id, finalPuntoVenta, finalTipoCbte, nuevoNumero)
 
       await onFacturaEmitida(facturaCreada.id)
 
@@ -460,9 +585,13 @@ export class FacturaService {
 
   private obtenerTipoFactura(tipoCbte: number): string {
     const tipos: Record<number, string> = {
-      1: "A",
-      6: "B",
-      11: "C",
+      1: "A", 2: "A", 3: "A",
+      6: "B", 7: "B", 8: "B",
+      11: "C", 12: "C", 13: "C",
+      19: "E", 20: "E", 21: "E", // Exportación
+      201: "A", 202: "A", 203: "A", // MiPyMEs A
+      206: "B", 207: "B", 208: "B", // MiPyMEs B
+      211: "C", 212: "C", 213: "C", // MiPyMEs C
     }
     return tipos[tipoCbte] || "B"
   }

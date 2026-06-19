@@ -1,0 +1,181 @@
+{
+  "name": "NOP Poll Consumer (Modo C)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 3
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "id": "schedule-poll",
+      "name": "Cada 3 minutos"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/poll?limit=50",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NOP-Api-Key",
+              "value": "={{$env.NOP_API_KEY}}"
+            },
+            {
+              "name": "X-NOP-Empresa-Id",
+              "value": "={{$env.NOP_EMPRESA_ID}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "id": "get-poll",
+      "name": "GET NOP Poll",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-events",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "id": "if-has-events",
+      "name": "¿Hay eventos?"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "events",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [920, 220],
+      "id": "split-events",
+      "name": "Split eventos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Procesar envelope NOP (misma lógica que webhook inbound)\nconst item = $input.item.json;\nconst envelope = item.envelope;\nreturn {\n  json: {\n    pollId: item.id,\n    eventKey: item.eventKey,\n    eventId: envelope?.eventId,\n    empresaId: envelope?.empresaId,\n    data: envelope?.data,\n    signature: envelope?.signature\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 220],
+      "id": "process-envelope",
+      "name": "Procesar envelope"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1360, 220],
+      "id": "collect-ids",
+      "name": "Recolectar IDs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/poll",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-NOP-Api-Key",
+              "value": "={{$env.NOP_API_KEY}}"
+            },
+            {
+              "name": "X-NOP-Empresa-Id",
+              "value": "={{$env.NOP_EMPRESA_ID}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"ids\": {{ JSON.stringify($json.events.map(e => e.pollId || e.id)) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1580, 220],
+      "id": "post-ack",
+      "name": "POST ACK Poll",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cada 3 minutos": {
+      "main": [[{ "node": "GET NOP Poll", "type": "main", "index": 0 }]]
+    },
+    "GET NOP Poll": {
+      "main": [[{ "node": "¿Hay eventos?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay eventos?": {
+      "main": [
+        [{ "node": "Split eventos", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Split eventos": {
+      "main": [[{ "node": "Procesar envelope", "type": "main", "index": 0 }]]
+    },
+    "Procesar envelope": {
+      "main": [[{ "node": "Recolectar IDs", "type": "main", "index": 0 }]]
+    },
+    "Recolectar IDs": {
+      "main": [[{ "node": "POST ACK Poll", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

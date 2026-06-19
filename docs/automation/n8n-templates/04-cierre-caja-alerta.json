@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "caja-abierta-12h-trigger",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        360
+      ],
+      "id": "trigger-id",
+      "name": "Webhook Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NOP_BASE_URL}}/api/automation/actions/create-task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-NOP-Api-Key", "value": "={{$env.NOP_API_KEY}}" },
+            { "name": "X-NOP-Empresa-Id", "value": "={{$env.NOP_EMPRESA_ID}}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"descripcion\": \"Alerta: Caja abierta por más de 12 horas detectada\",\n  \"rolAsignado\": \"administrador\",\n  \"prioridad\": \"alta\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        480,
+        360
+      ],
+      "id": "caja-alert-id",
+      "name": "Notificar Gerente",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "nop-api-credentials",
+          "name": "NOP API Key Header"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notificar Gerente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -150,7 +150,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
   )
 }
 
-export default function ConfiguracionPage() {
+function ConfiguracionPageContent() {
   const { toast } = useToast()
   const [seccionActiva, setSeccionActiva] = useState<SectionKey | null>(null)
   const [guardado, setGuardado] = useState(false)
@@ -1473,5 +1473,13 @@ export default function ConfiguracionPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ConfiguracionPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">Cargando...</div>}>
+      <ConfiguracionPageContent />
+    </Suspense>
   )
 }

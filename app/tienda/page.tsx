@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { ShoppingCart, Sparkles, Truck, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -52,7 +52,7 @@ function normalizeCanalVenta(value?: string | null): string {
   return trimmed
 }
 
-export default function TiendaPage() {
+function TiendaPageContent() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const empresaId = Number(searchParams.get("empresaId") ?? defaultEmpresaId)
@@ -425,5 +425,13 @@ export default function TiendaPage() {
         </section>
       </div>
     </div>
+  )
+}
+
+export default function TiendaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+      <TiendaPageContent />
+    </Suspense>
   )
 }

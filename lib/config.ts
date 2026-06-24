@@ -20,11 +20,10 @@ export const config = {
         : "https://wsaahomo.afip.gov.ar/ws/services/LoginCms",
   },
 
-  // JWT
+  // JWT — sin throw en import: Vercel evalúa rutas API en build ("Collecting page data").
+  // La validación en producción ocurre en validateConfig() y auth-service (lazy getter).
   jwt: {
-    secret: process.env.JWT_SECRET || (process.env.NODE_ENV === "production"
-      ? (() => { throw new Error("JWT_SECRET requerido en producción") })()
-      : "dev-only-local"),
+    secret: process.env.JWT_SECRET || "dev-only-local",
     expiresIn: "7d",
   },
 

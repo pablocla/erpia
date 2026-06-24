@@ -21,7 +21,7 @@ export default function ClavERPOgImage() {
           fontFamily: "Georgia, serif",
         }}
       >
-        <div style={{ fontSize: 22, color: "#fbbf24", marginBottom: 12 }}>by {CLAVER_GROUP.name}</div>
+        <div style={{ fontSize: 22, color: "#fbbf24", marginBottom: 12 }}>{`by ${CLAVER_GROUP.name}`}</div>
         <div style={{ fontSize: 80, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 16 }}>
           {CLAVERP_PRODUCT.name}
         </div>

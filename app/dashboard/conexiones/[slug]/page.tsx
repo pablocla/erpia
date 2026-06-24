@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback } from "react"
+import { Suspense, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { ConnectionDetail } from "@/components/integrations/connection-detail"
 
@@ -14,7 +14,9 @@ export default function ConexionDetallePage() {
 
   return (
     <div className="p-4 md:p-6">
-      <ConnectionDetail slug={slug} authHeaders={authHeaders} />
+      <Suspense fallback={<div className="text-muted-foreground">Cargando conexión...</div>}>
+        <ConnectionDetail slug={slug} authHeaders={authHeaders} />
+      </Suspense>
     </div>
   )
 }

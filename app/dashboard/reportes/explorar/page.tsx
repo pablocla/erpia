@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
@@ -56,7 +56,7 @@ function authHeaders(): HeadersInit {
     : { "Content-Type": "application/json" }
 }
 
-export default function ReportesExplorarPage() {
+function ReportesExplorarPageContent() {
   const searchParams = useSearchParams()
   const loadId = searchParams.get("load")
   const templateId = searchParams.get("template")
@@ -590,5 +590,13 @@ export default function ReportesExplorarPage() {
         onActivated={refresh}
       />
     </PageShell>
+  )
+}
+
+export default function ReportesExplorarPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">Cargando...</div>}>
+      <ReportesExplorarPageContent />
+    </Suspense>
   )
 }

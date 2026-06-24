@@ -36,7 +36,7 @@ export default function ClaverOgImage() {
           >
             <div style={{ fontSize: 48, fontWeight: 700, color: "#f8fafc" }}>C</div>
           </div>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 72, fontWeight: 700, letterSpacing: "-0.03em" }}>{CLAVER_GROUP.name}</div>
             <div style={{ fontSize: 28, color: "#94a3b8", marginTop: 8 }}>{CLAVER_GROUP.tagline}</div>
           </div>

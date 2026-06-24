@@ -48,6 +48,11 @@ export class PDFService {
         lineas: true,
         cliente: true,
         empresa: true,
+        remitos: {
+          include: {
+            cot: true,
+          },
+        },
       },
     })
 
@@ -84,6 +89,7 @@ export class PDFService {
     const condIvaEmisor = empresa?.condicionIva ?? "Responsable Inscripto"
     const condIvaReceptor = cliente?.condicionIva ?? "Consumidor Final"
     const iibbEmisor = ""
+    const cotCodigo = factura.remitos?.[0]?.cot?.numeroCOT ?? null
 
     const html = `
 <!DOCTYPE html>
@@ -133,6 +139,7 @@ export class PDFService {
       <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
       <div class="dato">Cond. IVA: ${condIvaEmisor}</div>
       ${iibbEmisor ? `<div class="dato">IIBB: ${iibbEmisor}</div>` : ""}
+      ${cotCodigo ? `<div class="dato" style="font-weight: bold; color: #b45309;">COT (Código de Operación de Traslado): ${cotCodigo}</div>` : ""}
       <div class="dato">${empresa?.direccion ?? ""}</div>
     </div>
     <div class="header-center">
@@ -1071,6 +1078,325 @@ export class PDFService {
         total: 0,
         cae: "",
       },
+    }
+  }
+
+  /**
+   * Genera PDF para Pedido de Venta.
+   */
+  async generarPedidoPDF(pedidoId: number): Promise<PDFComprobante> {
+    const pedido = await prisma.pedidoVenta.findUnique({
+      where: { id: pedidoId },
+      include: {
+        lineas: { include: { producto: { select: { codigo: true, nombre: true } } }, orderBy: { orden: "asc" } },
+        cliente: true,
+        empresa: true,
+        vendedor: true,
+        condicionPago: true,
+      },
+    })
+
+    if (!pedido) throw new Error("Pedido de Venta no encontrado")
+
+    const empresa = pedido.empresa
+    const cliente = pedido.cliente
+    const fecha = new Date(pedido.fechaEmision).toLocaleDateString("es-AR")
+    const fechaEntrega = pedido.fechaEntregaEst ? new Date(pedido.fechaEntregaEst).toLocaleDateString("es-AR") : "—"
+
+    const lineasHTML = (pedido.lineas ?? []).map((l) => `
+      <tr>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.producto?.codigo ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee;">${l.descripcion ?? l.producto?.nombre ?? ""}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">${Number(l.cantidad).toFixed(2)}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.precioUnitario).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+        <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">$${Number(l.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td>
+      </tr>
+    `).join("")
+
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Pedido de Venta ${pedido.numero}</title>
+  <style>
+    @media print { body { margin: 0; } .no-print { display: none !important; } }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 12px; }
+    .header { border: 2px solid #ea580c; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+    .empresa-nombre { font-size: 18px; font-weight: bold; }
+    .titulo { font-size: 20px; font-weight: bold; color: #ea580c; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #ffedd5; color: #ea580c; }
+    .dato { font-size: 11px; color: #555; line-height: 1.6; }
+    .seccion { border: 1px solid #ccc; padding: 10px 14px; margin-bottom: 12px; }
+    .seccion-titulo { font-weight: bold; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #fff7ed; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; color: #ea580c; border-bottom: 2px solid #fdba74; }
+    .totales { text-align: right; padding-top: 8px; }
+    .totales-row { display: flex; justify-content: flex-end; gap: 40px; padding: 4px 0; }
+    .totales-row.total { font-size: 16px; font-weight: bold; border-top: 2px solid #ea580c; padding-top: 8px; color: #ea580c; }
+    .condiciones { margin-top: 16px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; }
+    .firma { margin-top: 60px; display: flex; justify-content: space-between; }
+    .firma-linea { border-top: 1px solid #333; width: 200px; text-align: center; padding-top: 4px; font-size: 10px; }
+    .btn-print { position: fixed; top: 10px; right: 10px; background: #ea580c; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+
+  <div class="header">
+    <div>
+      <div class="empresa-nombre">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+      <div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div>
+      <div class="dato">${empresa?.direccion ?? ""}</div>
+    </div>
+    <div style="text-align: right;">
+      <div class="titulo">PEDIDO DE VENTA</div>
+      <div style="font-size: 16px; font-weight: bold;">Nº ${pedido.numero}</div>
+      <div class="dato">Fecha: ${fecha}</div>
+      <div class="dato">Entrega est.: ${fechaEntrega}</div>
+      <div class="badge">${pedido.estado.toUpperCase()}</div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <div class="seccion-titulo">Cliente</div>
+    <div class="dato"><strong>${cliente?.nombre ?? "—"}</strong></div>
+    <div class="dato">CUIT: ${cliente?.cuit ?? "—"} — ${cliente?.condicionIva ?? ""}</div>
+    <div class="dato">${cliente?.direccion ?? ""} ${cliente?.email ? "— " + cliente.email : ""}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 60px;">Cód.</th>
+        <th>Descripción</th>
+        <th style="text-align: right; width: 80px;">Cant.</th>
+        <th style="text-align: right; width: 100px;">P. Unit.</th>
+        <th style="text-align: right; width: 110px;">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>${lineasHTML}</tbody>
+  </table>
+
+  <div class="totales">
+    <div class="totales-row"><span>Subtotal:</span> <span>$${Number(pedido.subtotal).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row"><span>Impuestos:</span> <span>$${Number(pedido.impuestos).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+    <div class="totales-row total"><span>TOTAL:</span> <span>$${Number(pedido.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span></div>
+  </div>
+
+  <div class="condiciones">
+    <div class="seccion-titulo">Condiciones</div>
+    ${pedido.condicionPago ? `<div class="dato">Pago: ${pedido.condicionPago.nombre}</div>` : ""}
+    ${pedido.vendedor ? `<div class="dato">Vendedor: ${pedido.vendedor.nombre}</div>` : ""}
+    ${pedido.observaciones ? `<div class="dato" style="margin-top: 4px;">Obs.: ${pedido.observaciones}</div>` : ""}
+  </div>
+
+  <div class="firma">
+    <div class="firma-linea">Firma vendedor</div>
+    <div class="firma-linea">Firma / conformidad cliente</div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `pedido_${pedido.numero}.html`,
+      metadata: {
+        tipo: "Pedido de Venta",
+        numero: pedido.numero,
+        fecha,
+        total: Number(pedido.total),
+        cae: "",
+      },
+    }
+  }
+
+  /**
+   * Genera PDF para Etiqueta de Proceso Industrial (Movimiento de Stock).
+   */
+  async generarEtiquetaProcesoPDF(data: { procesoId: number; producto: string; fecha: string; qrData?: string; codigoBarras?: string }): Promise<PDFComprobante> {
+    const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiqueta Proceso ${data.procesoId}</title>
+  <style>
+    @media print { 
+      @page { size: 80mm 120mm; margin: 0; }
+      body { margin: 0; padding: 4mm; box-sizing: border-box; width: 80mm; height: 120mm; } 
+      .no-print { display: none !important; } 
+    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; padding: 20px; font-size: 14px; display: flex; flex-direction: column; align-items: center; }
+    .label-container { border: 2px solid #000; width: 72mm; padding: 4mm; display: flex; flex-direction: column; gap: 8px; border-radius: 4px; }
+    .header { font-weight: bold; font-size: 16px; text-transform: uppercase; text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+    .field { display: flex; flex-direction: column; }
+    .label { font-size: 10px; text-transform: uppercase; color: #555; }
+    .value { font-size: 14px; font-weight: bold; word-break: break-all; }
+    .value.large { font-size: 18px; }
+    .qr-container { display: flex; justify-content: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #000; }
+    .qr-box { width: 120px; height: 120px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999; }
+    .qr-box img { width: 100%; height: 100%; object-fit: contain; }
+    .btn-print { margin-bottom: 20px; background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir Etiqueta (80x120mm)</button>
+
+  <div class="label-container">
+    <div class="header">ETIQUETA DE PROCESO</div>
+    
+    <div class="field">
+      <span class="label">Nº Proceso / Movimiento</span>
+      <span class="value large"># ${String(data.procesoId).padStart(6, "0")}</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Producto / Componente</span>
+      <span class="value">${data.producto}</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Código de Barras</span>
+      <span class="value">${data.codigoBarras ?? "—"}</span>
+    </div>
+
+    <div class="field">
+      <span class="label">Fecha</span>
+      <span class="value">${data.fecha}</span>
+    </div>
+
+    <div class="qr-container">
+      <div class="qr-box">
+        ${data.qrData ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data.qrData)}" alt="QR" />` : 'Sin QR'}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+
+    return {
+      html,
+      filename: `etiqueta_proceso_${data.procesoId}.html`,
+      metadata: {
+        tipo: "Etiqueta Proceso",
+        numero: String(data.procesoId),
+        fecha: data.fecha,
+        total: 0,
+        cae: "",
+      },
+    }
+  }
+
+  async generarReciboPDF(reciboId: number): Promise<PDFComprobante> {
+    const recibo = await prisma.recibo.findUnique({
+      where: { id: reciboId },
+      include: {
+        cliente: { include: { empresa: true } },
+        items: { include: { cuentaCobrar: { include: { factura: true } } } },
+        cheques: true,
+      },
+    })
+    if (!recibo) throw new Error("Recibo no encontrado")
+
+    const empresa = recibo.cliente.empresa
+    const fecha = new Date(recibo.fecha).toLocaleDateString("es-AR")
+    const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+
+    const lineas = recibo.items.map((item) => {
+      const fac = item.cuentaCobrar.factura
+      const ref = fac ? `${fac.tipo} ${String(fac.puntoVenta).padStart(4, "0")}-${String(fac.numero).padStart(8, "0")}` : `CC #${item.cuentaCobrarId}`
+      return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">${ref}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(Number(item.montoPagado))}</td></tr>`
+    }).join("")
+
+    const chequeInfo = recibo.cheques?.length
+      ? `<p class="dato"><strong>Cheque:</strong> N° ${recibo.cheques[0].numero} — Vto ${new Date(recibo.cheques[0].fechaVencimiento).toLocaleDateString("es-AR")}${recibo.cheques[0].bancoNombre ? ` — ${recibo.cheques[0].bancoNombre}` : ""}</p>`
+      : ""
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Recibo ${recibo.numero}</title>
+<style>@media print{.no-print{display:none!important}}body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;font-size:12px;color:#333}
+.header{border:2px solid #059669;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between}
+.titulo{font-size:20px;font-weight:bold;color:#059669}.dato{font-size:11px;color:#555;line-height:1.6}
+table{width:100%;border-collapse:collapse}th{background:#ecfdf5;text-align:left;padding:8px;font-size:11px;color:#059669;border-bottom:2px solid #6ee7b7}
+.totales{text-align:right;margin-top:12px}.totales-row{display:flex;justify-content:flex-end;gap:40px;padding:4px 0}
+.totales-row.total{font-size:16px;font-weight:bold;border-top:2px solid #059669;padding-top:8px;color:#059669}
+.btn-print{position:fixed;top:10px;right:10px;background:#059669;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer}</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+<div class="header"><div><div style="font-size:18px;font-weight:bold">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+<div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div></div>
+<div style="text-align:right"><div class="titulo">RECIBO DE COBRO</div><div style="font-size:16px;font-weight:bold">Nº ${recibo.numero}</div>
+<div class="dato">Fecha: ${fecha}</div><div class="dato">Medio: ${recibo.medioPago}</div></div></div>
+<div class="dato"><strong>Cliente:</strong> ${recibo.cliente.nombre} ${recibo.cliente.cuit ? `(CUIT ${recibo.cliente.cuit})` : ""}</div>
+${chequeInfo}
+<table><thead><tr><th>Comprobante imputado</th><th style="text-align:right">Importe</th></tr></thead><tbody>${lineas}</tbody></table>
+<div class="totales">
+<div class="totales-row"><span>Total imputado</span><span>${fmt(Number(recibo.montoTotal))}</span></div>
+<div class="totales-row"><span>Retenciones</span><span>${fmt(Number(recibo.totalRetenciones))}</span></div>
+<div class="totales-row total"><span>Neto recibido</span><span>${fmt(Number(recibo.netoRecibido))}</span></div>
+</div>
+${recibo.observaciones ? `<p class="dato" style="margin-top:16px"><strong>Obs:</strong> ${recibo.observaciones}</p>` : ""}
+</body></html>`
+
+    return {
+      html,
+      filename: `recibo_${recibo.numero}.html`,
+      metadata: { tipo: "Recibo", numero: recibo.numero, fecha, total: Number(recibo.netoRecibido), cae: "" },
+    }
+  }
+
+  async generarOrdenPagoPDF(ordenPagoId: number): Promise<PDFComprobante> {
+    const op = await prisma.ordenPago.findUnique({
+      where: { id: ordenPagoId },
+      include: {
+        proveedor: { include: { empresa: true } },
+        items: { include: { cuentaPagar: { include: { compra: true } } } },
+        cheques: true,
+      },
+    })
+    if (!op) throw new Error("Orden de pago no encontrada")
+
+    const empresa = op.proveedor.empresa
+    const fecha = new Date(op.fecha).toLocaleDateString("es-AR")
+    const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+
+    const lineas = op.items.map((item) => {
+      const comp = item.cuentaPagar.compra
+      const ref = comp ? `${comp.tipo ?? "FAC"} ${comp.numero ?? item.cuentaPagarId}` : `CP #${item.cuentaPagarId}`
+      return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">${ref}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(Number(item.montoPagado))}</td></tr>`
+    }).join("")
+
+    const chequeInfo = op.cheques?.length
+      ? `<p class="dato"><strong>Cheque propio:</strong> N° ${op.cheques[0].numero} — Vto ${new Date(op.cheques[0].fechaVencimiento).toLocaleDateString("es-AR")}</p>`
+      : ""
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>OP ${op.numero}</title>
+<style>@media print{.no-print{display:none!important}}body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;font-size:12px;color:#333}
+.header{border:2px solid #7c3aed;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between}
+.titulo{font-size:20px;font-weight:bold;color:#7c3aed}.dato{font-size:11px;color:#555;line-height:1.6}
+table{width:100%;border-collapse:collapse}th{background:#f5f3ff;text-align:left;padding:8px;font-size:11px;color:#7c3aed;border-bottom:2px solid #c4b5fd}
+.totales{text-align:right;margin-top:12px}.totales-row{display:flex;justify-content:flex-end;gap:40px;padding:4px 0}
+.totales-row.total{font-size:16px;font-weight:bold;border-top:2px solid #7c3aed;padding-top:8px;color:#7c3aed}
+.btn-print{position:fixed;top:10px;right:10px;background:#7c3aed;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer}</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+<div class="header"><div><div style="font-size:18px;font-weight:bold">${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</div>
+<div class="dato">CUIT: ${empresa?.cuit ?? "—"}</div></div>
+<div style="text-align:right"><div class="titulo">ORDEN DE PAGO</div><div style="font-size:16px;font-weight:bold">Nº ${op.numero}</div>
+<div class="dato">Fecha: ${fecha}</div><div class="dato">Medio: ${op.medioPago}</div></div></div>
+<div class="dato"><strong>Proveedor:</strong> ${op.proveedor.nombre} ${op.proveedor.cuit ? `(CUIT ${op.proveedor.cuit})` : ""}</div>
+${chequeInfo}
+<table><thead><tr><th>Comprobante imputado</th><th style="text-align:right">Importe</th></tr></thead><tbody>${lineas}</tbody></table>
+<div class="totales">
+<div class="totales-row"><span>Total imputado</span><span>${fmt(Number(op.montoTotal))}</span></div>
+<div class="totales-row"><span>Retenciones</span><span>${fmt(Number(op.totalRetenciones))}</span></div>
+<div class="totales-row total"><span>Neto pagado</span><span>${fmt(Number(op.netoPagado))}</span></div>
+</div>
+${op.observaciones ? `<p class="dato" style="margin-top:16px"><strong>Obs:</strong> ${op.observaciones}</p>` : ""}
+</body></html>`
+
+    return {
+      html,
+      filename: `orden_pago_${op.numero}.html`,
+      metadata: { tipo: "Orden de Pago", numero: op.numero, fecha, total: Number(op.netoPagado), cae: "" },
     }
   }
 }

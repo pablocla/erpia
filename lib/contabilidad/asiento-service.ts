@@ -1,12 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import type { PrismaClient } from "@prisma/client"
 import { getCuentaLabel } from "@/lib/config/parametro-service"
+import { resolveCuentaCobro, resolveCuentaPago } from "@/lib/contabilidad/medio-pago-cuentas"
 import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
 import type { AsientoContableData } from "@/lib/types"
-
-// Default empresaId used when caller doesn't supply one.
-// In a real multi-tenant deployment this comes from the auth context.
-const DEFAULT_EMPRESA_ID = 1
 
 type TxClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">
 
@@ -21,30 +18,34 @@ async function resolveTipoAsientoId(codigo: string, empresaId: number, tx: TxCli
 /**
  * Get next asiento number inside a transaction to prevent race conditions.
  */
-async function nextNumeroAsiento(tx: TxClient): Promise<number> {
-  const ultimo = await tx.asientoContable.findFirst({ orderBy: { numero: "desc" } })
+async function nextNumeroAsiento(tx: TxClient, empresaId: number): Promise<number> {
+  const ultimo = await tx.asientoContable.findFirst({
+    where: { empresaId },
+    orderBy: { numero: "desc" },
+  })
   return (ultimo?.numero ?? 0) + 1
 }
 
 export class AsientoService {
-  async generarAsientoVenta(facturaId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoVenta(facturaId: number, empresaId?: number): Promise<void> {
     const factura = await prisma.factura.findUnique({
       where: { id: facturaId },
       include: { lineas: true, cliente: true },
     })
     if (!factura) throw new Error("Factura no encontrada")
 
-    await periodoFiscalService.validarPeriodoAbierto(factura.createdAt, empresaId)
+    const resolvedEmpresaId = empresaId ?? factura.empresaId
+    await periodoFiscalService.validarPeriodoAbierto(factura.createdAt, resolvedEmpresaId)
 
     const [ctaCaja, ctaVentas, ctaIvaDF, ctaPercepciones] = await Promise.all([
-      getCuentaLabel(empresaId, "venta", "caja", "1.1", "Caja"),
-      getCuentaLabel(empresaId, "venta", "ingreso", "4.1", "Ventas"),
-      getCuentaLabel(empresaId, "venta", "iva_df", "2.2", "IVA Débito Fiscal"),
-      getCuentaLabel(empresaId, "venta", "percepciones", "2.3", "Percepciones a Pagar"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "caja", "1.1", "Caja"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "ingreso", "4.1", "Ventas"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "iva_df", "2.2", "IVA Débito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "percepciones", "2.3", "Percepciones a Pagar"),
     ])
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       await tx.asientoContable.create({
         data: {
@@ -52,16 +53,16 @@ export class AsientoService {
           numero,
           descripcion: `Venta según Factura ${factura.tipo} ${factura.numero.toString().padStart(8, "0")} - Cliente: ${factura.cliente.nombre}`,
           tipo: "venta",
-          tipoAsientoId: await resolveTipoAsientoId("VENTA", empresaId, tx),
+          tipoAsientoId: await resolveTipoAsientoId("VENTA", resolvedEmpresaId, tx),
           facturaId: factura.id,
-          empresaId,
+          empresaId: resolvedEmpresaId,
           movimientos: {
             create: [
-              { cuenta: ctaCaja, debe: factura.total + (factura.totalPercepciones ?? 0), haber: 0 },
-              { cuenta: ctaVentas, debe: 0, haber: factura.subtotal },
-              { cuenta: ctaIvaDF, debe: 0, haber: factura.iva },
-              ...((factura.totalPercepciones ?? 0) > 0
-                ? [{ cuenta: ctaPercepciones, debe: 0, haber: factura.totalPercepciones }]
+              { cuenta: ctaCaja, debe: Number(factura.total) + Number(factura.totalPercepciones ?? 0), haber: 0 },
+              { cuenta: ctaVentas, debe: 0, haber: Number(factura.subtotal) },
+              { cuenta: ctaIvaDF, debe: 0, haber: Number(factura.iva) },
+              ...((Number(factura.totalPercepciones ?? 0) > 0)
+                ? [{ cuenta: ctaPercepciones, debe: 0, haber: Number(factura.totalPercepciones) }]
                 : []),
             ],
           },
@@ -70,23 +71,24 @@ export class AsientoService {
     })
   }
 
-  async generarAsientoCompra(compraId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoCompra(compraId: number, empresaId?: number): Promise<void> {
     const compra = await prisma.compra.findUnique({
       where: { id: compraId },
       include: { lineas: true, proveedor: true },
     })
     if (!compra) throw new Error("Compra no encontrada")
 
-    await periodoFiscalService.validarPeriodoAbierto(compra.fecha, empresaId)
+    const resolvedEmpresaId = empresaId ?? compra.empresaId
+    await periodoFiscalService.validarPeriodoAbierto(compra.fecha, resolvedEmpresaId)
 
     const [ctaMercaderia, ctaIvaCF, ctaProveedores] = await Promise.all([
-      getCuentaLabel(empresaId, "compra", "mercaderia", "1.4", "Mercaderías"),
-      getCuentaLabel(empresaId, "compra", "iva_cf", "1.6", "IVA Crédito Fiscal"),
-      getCuentaLabel(empresaId, "compra", "proveedores", "2.1", "Proveedores"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "mercaderia", "1.4", "Mercaderías"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "iva_cf", "1.6", "IVA Crédito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "proveedores", "2.1", "Proveedores"),
     ])
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       await tx.asientoContable.create({
         data: {
@@ -94,14 +96,14 @@ export class AsientoService {
           numero,
           descripcion: `Compra según Factura ${compra.tipo} ${compra.numero} - Proveedor: ${compra.proveedor.nombre}`,
           tipo: "compra",
-          tipoAsientoId: await resolveTipoAsientoId("COMPRA", empresaId, tx),
+          tipoAsientoId: await resolveTipoAsientoId("COMPRA", resolvedEmpresaId, tx),
           compraId: compra.id,
-          empresaId,
+          empresaId: resolvedEmpresaId,
           movimientos: {
             create: [
-              { cuenta: ctaMercaderia, debe: compra.subtotal, haber: 0 },
-              { cuenta: ctaIvaCF, debe: compra.iva, haber: 0 },
-              { cuenta: ctaProveedores, debe: 0, haber: compra.total },
+              { cuenta: ctaMercaderia, debe: Number(compra.subtotal), haber: 0 },
+              { cuenta: ctaIvaCF, debe: Number(compra.iva), haber: 0 },
+              { cuenta: ctaProveedores, debe: 0, haber: Number(compra.total) },
             ],
           },
         },
@@ -110,7 +112,10 @@ export class AsientoService {
   }
 
   async crearAsientoManual(data: AsientoContableData & { empresaId?: number }): Promise<void> {
-    const eid = data.empresaId ?? DEFAULT_EMPRESA_ID
+    if (!data.empresaId) {
+      throw new Error("empresaId es requerido para crear asiento manual")
+    }
+    const eid = data.empresaId
     await periodoFiscalService.validarPeriodoAbierto(data.fecha, eid)
 
     const totalDebe = data.movimientos.reduce((sum, m) => sum + m.debe, 0)
@@ -121,10 +126,11 @@ export class AsientoService {
     }
 
     await prisma.$transaction(async (tx) => {
+      const numero = data.numero || await nextNumeroAsiento(tx, eid)
       await tx.asientoContable.create({
         data: {
           fecha: data.fecha,
-          numero: data.numero,
+          numero,
           descripcion: data.descripcion,
           tipo: data.tipo,
           empresaId: eid,
@@ -234,28 +240,30 @@ export class AsientoService {
     asientos.forEach((asiento) => {
       asiento.movimientos.forEach((mov) => {
         const fecha = asiento.fecha.toISOString().split("T")[0]
-        csv += `${asiento.numero},"${fecha}","${asiento.descripcion}","${mov.cuenta}",${mov.debe},${mov.haber}\n`
+        csv += `${asiento.numero},"${fecha}","${asiento.descripcion}","${mov.cuenta}",${Number(mov.debe)},${Number(mov.haber)}\n`
       })
     })
 
     return csv
   }
 
-  async generarAsientoNC(ncId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoNC(ncId: number, empresaId?: number): Promise<void> {
     const nc = await prisma.notaCredito.findUnique({
       where: { id: ncId },
-      include: { cliente: true, factura: true },
+      include: { cliente: true, factura: { select: { empresaId: true } } },
     })
     if (!nc) throw new Error("Nota de crédito no encontrada")
 
+    const resolvedEmpresaId = empresaId ?? nc.factura.empresaId
+
     const [ctaVentas, ctaIvaDF, ctaCaja] = await Promise.all([
-      getCuentaLabel(empresaId, "nc", "ingreso", "4.1", "Ventas"),
-      getCuentaLabel(empresaId, "nc", "iva_df", "2.2", "IVA Débito Fiscal"),
-      getCuentaLabel(empresaId, "nc", "caja", "1.1", "Caja"),
+      getCuentaLabel(resolvedEmpresaId, "nc", "ingreso", "4.1", "Ventas"),
+      getCuentaLabel(resolvedEmpresaId, "nc", "iva_df", "2.2", "IVA Débito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "nc", "caja", "1.1", "Caja"),
     ])
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       await tx.asientoContable.create({
         data: {
@@ -263,13 +271,13 @@ export class AsientoService {
           numero,
           descripcion: `NC ${nc.tipo} Nº ${nc.numero.toString().padStart(8, "0")} - ${nc.motivo} - Cliente: ${nc.cliente.nombre}`,
           tipo: "manual",
-          tipoAsientoId: await resolveTipoAsientoId("NC", empresaId, tx),
-          empresaId,
+          tipoAsientoId: await resolveTipoAsientoId("NC", resolvedEmpresaId, tx),
+          empresaId: resolvedEmpresaId,
           movimientos: {
             create: [
-              { cuenta: ctaVentas, debe: nc.subtotal, haber: 0 },
-              { cuenta: ctaIvaDF, debe: nc.iva, haber: 0 },
-              { cuenta: ctaCaja, debe: 0, haber: nc.total },
+              { cuenta: ctaVentas, debe: Number(nc.subtotal), haber: 0 },
+              { cuenta: ctaIvaDF, debe: Number(nc.iva), haber: 0 },
+              { cuenta: ctaCaja, debe: 0, haber: Number(nc.total) },
             ],
           },
         },
@@ -286,7 +294,7 @@ export class AsientoService {
    *
    * Uses weighted average cost (promedioPonderado) or product's costo field.
    */
-  async generarAsientoCMV(facturaId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoCMV(facturaId: number, empresaId?: number): Promise<void> {
     const factura = await prisma.factura.findUnique({
       where: { id: facturaId },
       include: {
@@ -295,6 +303,8 @@ export class AsientoService {
       },
     })
     if (!factura) throw new Error("Factura no encontrada")
+
+    const resolvedEmpresaId = empresaId ?? factura.empresaId
 
     let totalCMV = 0
     for (const linea of factura.lineas) {
@@ -306,21 +316,21 @@ export class AsientoService {
     if (totalCMV <= 0) return
 
     const [ctaCMV, ctaMercaderia] = await Promise.all([
-      getCuentaLabel(empresaId, "cmv", "cmv", "5.1", "CMV"),
-      getCuentaLabel(empresaId, "cmv", "mercaderia", "1.4", "Mercaderías"),
+      getCuentaLabel(resolvedEmpresaId, "cmv", "cmv", "5.1", "CMV"),
+      getCuentaLabel(resolvedEmpresaId, "cmv", "mercaderia", "1.4", "Mercaderías"),
     ])
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       await tx.asientoContable.create({
         data: {
-          empresaId,
+          empresaId: resolvedEmpresaId,
           fecha: factura.createdAt,
           numero,
           descripcion: `CMV Factura ${factura.tipo} ${factura.numero.toString().padStart(8, "0")} - ${factura.cliente.nombre}`,
           tipo: "cmv",
-          tipoAsientoId: await resolveTipoAsientoId("VENTA", empresaId, tx),
+          tipoAsientoId: await resolveTipoAsientoId("VENTA", resolvedEmpresaId, tx),
           facturaId: factura.id,
           movimientos: {
             create: [
@@ -342,19 +352,24 @@ export class AsientoService {
    * Si DF > CF:  DEBE IVA DF / HABER IVA CF / HABER IVA a Pagar
    * Si CF > DF:  DEBE IVA DF / DEBE IVA a Favor / HABER IVA CF
    */
-  async generarAsientoLiquidacionIVA(periodo: { mes: number; anio: number }, empresaId = DEFAULT_EMPRESA_ID): Promise<{
+  async generarAsientoLiquidacionIVA(periodo: { mes: number; anio: number }, empresaId?: number): Promise<{
     debitoFiscal: number
     creditoFiscal: number
     saldo: number
     posicion: "a_pagar" | "a_favor"
     asientoId: number
   }> {
+    if (!empresaId) {
+      throw new Error("empresaId es requerido para liquidar IVA")
+    }
+    const resolvedEmpresaId = empresaId
+
     // Resolve account labels from DB config
     const [ctaIvaDF, ctaIvaCF, ctaIvaPagar, ctaIvaFavor] = await Promise.all([
-      getCuentaLabel(empresaId, "liquidacion_iva", "iva_df", "2.2", "IVA Débito Fiscal"),
-      getCuentaLabel(empresaId, "liquidacion_iva", "iva_cf", "1.6", "IVA Crédito Fiscal"),
-      getCuentaLabel(empresaId, "liquidacion_iva", "iva_a_pagar", "2.5", "IVA a Pagar"),
-      getCuentaLabel(empresaId, "liquidacion_iva", "iva_a_favor", "1.8", "IVA a Favor"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_df", "2.2", "IVA Débito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_cf", "1.6", "IVA Crédito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_a_pagar", "2.5", "IVA a Pagar"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_a_favor", "1.8", "IVA a Favor"),
     ])
 
     const fechaDesde = new Date(periodo.anio, periodo.mes - 1, 1)
@@ -364,18 +379,18 @@ export class AsientoService {
     const movimientosDF = await prisma.movimientoContable.findMany({
       where: {
         cuenta: ctaIvaDF,
-        asiento: { fecha: { gte: fechaDesde, lte: fechaHasta } },
+        asiento: { fecha: { gte: fechaDesde, lte: fechaHasta }, empresaId: resolvedEmpresaId },
       },
     })
-    const debitoFiscal = movimientosDF.reduce((sum, m) => sum + m.haber - m.debe, 0)
+    const debitoFiscal = movimientosDF.reduce((sum, m) => sum + Number(m.haber) - Number(m.debe), 0)
 
     const movimientosCF = await prisma.movimientoContable.findMany({
       where: {
         cuenta: ctaIvaCF,
-        asiento: { fecha: { gte: fechaDesde, lte: fechaHasta } },
+        asiento: { fecha: { gte: fechaDesde, lte: fechaHasta }, empresaId: resolvedEmpresaId },
       },
     })
-    const creditoFiscal = movimientosCF.reduce((sum, m) => sum + m.debe - m.haber, 0)
+    const creditoFiscal = movimientosCF.reduce((sum, m) => sum + Number(m.debe) - Number(m.haber), 0)
 
     const saldo = Math.abs(debitoFiscal - creditoFiscal)
     const posicion = debitoFiscal >= creditoFiscal ? "a_pagar" as const : "a_favor" as const
@@ -397,11 +412,11 @@ export class AsientoService {
     const mesStr = String(periodo.mes).padStart(2, "0")
 
     const asiento = await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       return tx.asientoContable.create({
         data: {
-          empresaId,
+          empresaId: resolvedEmpresaId,
           fecha: fechaHasta,
           numero,
           descripcion: `Liquidación IVA ${mesStr}/${periodo.anio} — ${posicion === "a_pagar" ? "Saldo a pagar" : "Saldo a favor"}: $${saldo.toFixed(2)}`,
@@ -419,7 +434,7 @@ export class AsientoService {
    * The original entry is soft-deleted (deletedAt set).
    * Returns the reversal asiento ID.
    */
-  async anularAsiento(asientoId: number, motivo: string, empresaId = DEFAULT_EMPRESA_ID): Promise<number> {
+  async anularAsiento(asientoId: number, motivo: string, empresaId?: number): Promise<number> {
     const asiento = await prisma.asientoContable.findUnique({
       where: { id: asientoId },
       include: { movimientos: true },
@@ -427,16 +442,17 @@ export class AsientoService {
     if (!asiento) throw new Error("Asiento no encontrado")
     if (asiento.deletedAt) throw new Error("El asiento ya fue anulado")
 
-    await periodoFiscalService.validarPeriodoAbierto(asiento.fecha, empresaId)
+    const resolvedEmpresaId = empresaId ?? asiento.empresaId
+    await periodoFiscalService.validarPeriodoAbierto(asiento.fecha, resolvedEmpresaId)
 
     const movimientosReversos = asiento.movimientos.map((m) => ({
       cuenta: m.cuenta,
-      debe: m.haber,
-      haber: m.debe,
+      debe: Number(m.haber),
+      haber: Number(m.debe),
     }))
 
     return prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       // Soft-delete original
       await tx.asientoContable.update({
@@ -447,7 +463,7 @@ export class AsientoService {
       // Create reversal entry
       const reverso = await tx.asientoContable.create({
         data: {
-          empresaId,
+          empresaId: resolvedEmpresaId,
           fecha: new Date(),
           numero,
           descripcion: `ANULACIÓN Asiento #${asiento.numero} — ${motivo}`,
@@ -468,20 +484,22 @@ export class AsientoService {
    *   DEBE  Retenciones sufridas        (IVA/Ganancias/IIBB)
    *   HABER Deudores por Ventas         (montoTotal)
    */
-  async generarAsientoCobro(reciboId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoCobro(reciboId: number, empresaId?: number): Promise<void> {
     const recibo = await prisma.recibo.findUnique({
       where: { id: reciboId },
       include: { cliente: true },
     })
     if (!recibo) throw new Error("Recibo no encontrado")
 
-    const [ctaCaja, ctaBanco, ctaRetIVA, ctaRetGan, ctaRetIIBB, ctaDeudores] = await Promise.all([
-      getCuentaLabel(empresaId, "cobro", "caja", "1.1.1", "Caja Moneda Nacional"),
-      getCuentaLabel(empresaId, "cobro", "banco", "1.1.3", "Banco Cuenta Corriente"),
-      getCuentaLabel(empresaId, "cobro", "ret_iva_sufrida", "1.5.2", "Retenciones de IVA Sufridas"),
-      getCuentaLabel(empresaId, "cobro", "ret_gan_sufrida", "1.5.3", "Retenciones de Ganancias Sufridas"),
-      getCuentaLabel(empresaId, "cobro", "ret_iibb_sufrida", "1.5.4", "Retenciones de IIBB Sufridas"),
-      getCuentaLabel(empresaId, "cobro", "deudores", "1.3.1", "Deudores por Ventas"),
+    const resolvedEmpresaId = empresaId ?? recibo.cliente.empresaId
+
+    const medioPago = recibo.medioPago as "efectivo" | "transferencia" | "cheque" | "tarjeta"
+    const [ctaMedioPago, ctaRetIVA, ctaRetGan, ctaRetIIBB, ctaDeudores] = await Promise.all([
+      resolveCuentaCobro(resolvedEmpresaId, medioPago),
+      getCuentaLabel(resolvedEmpresaId, "cobro", "ret_iva_sufrida", "1.7.1", "Ret. IVA sufridas"),
+      getCuentaLabel(resolvedEmpresaId, "cobro", "ret_gan_sufrida", "1.7.2", "Ret. Ganancias sufridas"),
+      getCuentaLabel(resolvedEmpresaId, "cobro", "ret_iibb_sufrida", "1.7.3", "Ret. IIBB sufridas"),
+      getCuentaLabel(resolvedEmpresaId, "cobro", "deudores", "1.3", "Deudores por Ventas"),
     ])
 
     const montoTotal = Number(recibo.montoTotal)
@@ -490,24 +508,23 @@ export class AsientoService {
     const retencionGanancias = Number(recibo.retencionGanancias)
     const retencionIIBB = Number(recibo.retencionIIBB)
 
-    const cuentaCaja = recibo.medioPago === "efectivo" ? ctaCaja : ctaBanco
     const movimientos: { cuenta: string; debe: number; haber: number }[] = []
-    if (netoRecibido > 0) movimientos.push({ cuenta: cuentaCaja, debe: netoRecibido, haber: 0 })
+    if (netoRecibido > 0) movimientos.push({ cuenta: ctaMedioPago, debe: netoRecibido, haber: 0 })
     if (retencionIVA > 0) movimientos.push({ cuenta: ctaRetIVA, debe: retencionIVA, haber: 0 })
     if (retencionGanancias > 0) movimientos.push({ cuenta: ctaRetGan, debe: retencionGanancias, haber: 0 })
     if (retencionIIBB > 0) movimientos.push({ cuenta: ctaRetIIBB, debe: retencionIIBB, haber: 0 })
     movimientos.push({ cuenta: ctaDeudores, debe: 0, haber: montoTotal })
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
       await tx.asientoContable.create({
         data: {
           fecha: recibo.fecha,
           numero,
           descripcion: `Cobro Recibo ${recibo.numero} - Cliente: ${recibo.cliente.nombre}`,
           tipo: "cobro",
-          tipoAsientoId: await resolveTipoAsientoId("COBRO", empresaId, tx),
-          empresaId,
+          tipoAsientoId: await resolveTipoAsientoId("COBRO", resolvedEmpresaId, tx),
+          empresaId: resolvedEmpresaId,
           movimientos: { create: movimientos },
         },
       })
@@ -521,20 +538,22 @@ export class AsientoService {
    *   HABER Caja/Banco                (netoPagado)
    *   HABER Retenciones a depositar   (IVA/Ganancias/IIBB)
    */
-  async generarAsientoPago(ordenPagoId: number, empresaId = DEFAULT_EMPRESA_ID): Promise<void> {
+  async generarAsientoPago(ordenPagoId: number, empresaId?: number): Promise<void> {
     const op = await prisma.ordenPago.findUnique({
       where: { id: ordenPagoId },
       include: { proveedor: true },
     })
     if (!op) throw new Error("Orden de pago no encontrada")
 
-    const [ctaProveedores, ctaCaja, ctaBanco, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
-      getCuentaLabel(empresaId, "pago", "proveedores", "2.1.1", "Proveedores"),
-      getCuentaLabel(empresaId, "pago", "caja", "1.1.1", "Caja Moneda Nacional"),
-      getCuentaLabel(empresaId, "pago", "banco", "1.1.3", "Banco Cuenta Corriente"),
-      getCuentaLabel(empresaId, "pago", "ret_iva_depositar", "2.3.2", "Retenciones IVA a Depositar"),
-      getCuentaLabel(empresaId, "pago", "ret_gan_depositar", "2.3.3", "Retenciones Ganancias a Depositar"),
-      getCuentaLabel(empresaId, "pago", "ret_iibb_depositar", "2.3.4", "Retenciones IIBB a Depositar"),
+    const resolvedEmpresaId = empresaId ?? op.proveedor.empresaId
+
+    const medioPago = op.medioPago as "transferencia" | "cheque" | "efectivo" | "tarjeta"
+    const [ctaProveedores, ctaMedioPago, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
+      getCuentaLabel(resolvedEmpresaId, "pago", "proveedores", "2.1", "Proveedores"),
+      resolveCuentaPago(resolvedEmpresaId, medioPago),
+      getCuentaLabel(resolvedEmpresaId, "pago", "ret_iva_depositar", "2.4.1", "Retenciones IVA a Depositar"),
+      getCuentaLabel(resolvedEmpresaId, "pago", "ret_gan_depositar", "2.4.2", "Retenciones Ganancias a Depositar"),
+      getCuentaLabel(resolvedEmpresaId, "pago", "ret_iibb_depositar", "2.4.3", "Retenciones IIBB a Depositar"),
     ])
 
     const montoTotal = Number(op.montoTotal)
@@ -543,24 +562,23 @@ export class AsientoService {
     const retencionGanancias = Number(op.retencionGanancias)
     const retencionIIBB = Number(op.retencionIIBB)
 
-    const cuentaBanco = op.medioPago === "efectivo" ? ctaCaja : ctaBanco
     const movimientos: { cuenta: string; debe: number; haber: number }[] = []
     movimientos.push({ cuenta: ctaProveedores, debe: montoTotal, haber: 0 })
-    if (netoPagado > 0) movimientos.push({ cuenta: cuentaBanco, debe: 0, haber: netoPagado })
+    if (netoPagado > 0) movimientos.push({ cuenta: ctaMedioPago, debe: 0, haber: netoPagado })
     if (retencionIVA > 0) movimientos.push({ cuenta: ctaRetIVADep, debe: 0, haber: retencionIVA })
     if (retencionGanancias > 0) movimientos.push({ cuenta: ctaRetGanDep, debe: 0, haber: retencionGanancias })
     if (retencionIIBB > 0) movimientos.push({ cuenta: ctaRetIIBBDep, debe: 0, haber: retencionIIBB })
 
     await prisma.$transaction(async (tx) => {
-      const numero = await nextNumeroAsiento(tx)
+      const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
       await tx.asientoContable.create({
         data: {
           fecha: op.fecha,
           numero,
           descripcion: `Pago Orden ${op.numero} - Proveedor: ${op.proveedor.nombre}`,
           tipo: "pago",
-          tipoAsientoId: await resolveTipoAsientoId("PAGO", empresaId, tx),
-          empresaId,
+          tipoAsientoId: await resolveTipoAsientoId("PAGO", resolvedEmpresaId, tx),
+          empresaId: resolvedEmpresaId,
           movimientos: { create: movimientos },
         },
       })

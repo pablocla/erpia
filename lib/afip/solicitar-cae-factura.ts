@@ -10,6 +10,9 @@ import {
   validateCbu,
   type TipoTransferenciaFce,
 } from "./mipyme-fce"
+import { resolverPercepcionesFactura } from "./resolver-percepciones-factura"
+import { getCaeaConfig, debeIntentarCaea, isAfipNetworkError } from "./caea-config"
+import { emitirConCaeaFactura } from "./emitir-caea-factura"
 
 export interface SolicitarCaeResult {
   ok: boolean
@@ -75,6 +78,7 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
     where: { id: facturaId },
     include: {
       lineas: true,
+      tributos: true,
       empresa: {
         select: {
           id: true,
@@ -94,10 +98,13 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
     return { ok: false, error: "Factura no encontrada" }
   }
 
-  if (factura.estado === "emitida" && factura.cae) {
+  if (
+    (factura.estado === "emitida" && factura.cae) ||
+    (factura.modalidadAuth === "CAEA" && factura.caea)
+  ) {
     return {
       ok: true,
-      cae: factura.cae,
+      cae: factura.cae ?? factura.caea ?? undefined,
       qrBase64: factura.qrBase64 ?? undefined,
       vencimientoCAE: factura.vencimientoCAE?.toISOString(),
     }
@@ -105,6 +112,12 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
 
   if (factura.estado === "ticket") {
     return { ok: false, error: "Los tickets no requieren CAE" }
+  }
+
+  const caeaConfig = await getCaeaConfig(factura.empresaId)
+  if (debeIntentarCaea(caeaConfig, "preferir")) {
+    const caeaDirecto = await emitirConCaeaFactura(facturaId, "preferir")
+    if (caeaDirecto.ok) return caeaDirecto
   }
 
   const { empresa, cliente } = factura
@@ -123,7 +136,52 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
 
   const impNeto = Number(factura.subtotal)
   const impIva = Number(factura.iva)
-  const impTrib = Number(factura.totalPercepciones)
+
+  const { totalPercepciones: impTrib, tributos } = await resolverPercepcionesFactura({
+    empresaId: empresa.id,
+    subtotal: impNeto,
+    totalPercepciones: Number(factura.totalPercepciones),
+    lineas: factura.lineas.map((l) => ({
+      descripcion: l.descripcion,
+      cantidad: Number(l.cantidad),
+      precioUnitario: Number(l.precioUnitario),
+      subtotal: Number(l.subtotal),
+      porcentajeIva: Number(l.porcentajeIva),
+    })),
+    cliente,
+    tributos: factura.tributos?.map((t) => ({
+      codigoAfip: t.codigoAfip,
+      descripcion: t.descripcion,
+      baseImponible: Number(t.baseImponible),
+      alicuota: t.alicuota,
+      importe: Number(t.importe),
+    })),
+  })
+
+  if (impTrib > 0 && Number(factura.totalPercepciones) === 0) {
+    await prisma.factura.update({
+      where: { id: factura.id },
+      data: {
+        totalPercepciones: impTrib,
+        ...(tributos.length > 0
+          ? {
+              tributos: {
+                deleteMany: {},
+                create: tributos.map((t) => ({
+                  codigoAfip: t.Id,
+                  descripcion: t.Desc,
+                  baseImponible: t.BaseImp,
+                  alicuota: t.Alic,
+                  importe: t.Importe,
+                  empresaId: empresa.id,
+                })),
+              },
+            }
+          : {}),
+      },
+    })
+  }
+
   const impTotal = Number(factura.total) + impTrib
 
   const comprobante: Record<string, unknown> = {
@@ -147,6 +205,10 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
       BaseImp: Math.round(v.base * 100) / 100,
       Importe: Math.round(v.importe * 100) / 100,
     })),
+  }
+
+  if (tributos.length > 0) {
+    comprobante.Tributos = tributos
   }
 
   if (isFceTipoCbte(factura.tipoCbte)) {
@@ -259,19 +321,19 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido"
-    const esRed =
-      err instanceof Error &&
-      (msg.includes("ECONNREFUSED") ||
-        msg.includes("ETIMEDOUT") ||
-        msg.includes("ENOTFOUND") ||
-        msg.includes("timeout"))
 
-    if (esRed) {
+    if (isAfipNetworkError(err)) {
+      const caeaFallback = await emitirConCaeaFactura(facturaId, "fallback")
+      if (caeaFallback.ok) return caeaFallback
+
       await prisma.factura.update({
         where: { id: factura.id },
         data: { estado: "pendiente_cae" },
       })
-      return { ok: false, error: "AFIP no disponible — quedó pendiente de CAE" }
+      return {
+        ok: false,
+        error: caeaFallback.error ?? "AFIP no disponible — quedó pendiente de CAE",
+      }
     }
 
     return { ok: false, error: msg }

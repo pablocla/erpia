@@ -17,6 +17,11 @@ const formatTime = (minutes: number) => {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
 }
 
+const calculateEndTime = (start: string, durationMin: number) => {
+  const endMinutes = parseTime(start) + durationMin
+  return formatTime(endMinutes)
+}
+
 const overlaps = (startA: string, endA: string, startB: string, endB: string) => {
   const a1 = parseTime(startA)
   const a2 = parseTime(endA)
@@ -77,7 +82,7 @@ export async function GET(request: NextRequest, { params }: { params: { empresaI
 
   let duracionMinutos = 30
   if (servicioId) {
-    const servicio = servicios.find((item) => item.id === servicioId)
+    const servicio = servicios.find((item: any) => item.id === servicioId)
     if (servicio) duracionMinutos = servicio.duracionMinutos
   }
 

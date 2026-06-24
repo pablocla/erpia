@@ -192,7 +192,7 @@ export default function PeluqueriaMobilePage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {turno.cliente?.telefono ? (
-                        <Button variant="outline" size="sm" className="h-7" onClick={() => enviarWhatsApp(turno.cliente!.telefono, turno)}>
+                        <Button variant="outline" size="sm" className="h-7" onClick={() => enviarWhatsApp(turno.cliente!.telefono!, turno)}>
                           <MessageSquare className="h-3.5 w-3.5 mr-1" />
                           WhatsApp
                         </Button>

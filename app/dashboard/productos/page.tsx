@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight } from "lucide-react"
+import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package } from "lucide-react"
+import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
 import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
+import { formatARS, toNumber } from "@/lib/format/currency"
 
 interface Categoria {
   id: number
@@ -27,8 +30,8 @@ interface Producto {
   codigo: string
   nombre: string
   descripcion?: string
-  precioVenta: number
-  precioCompra: number
+  precioVenta: number | string
+  precioCompra: number | string
   porcentajeIva: number
   stock: number
   stockMinimo: number
@@ -117,8 +120,8 @@ export default function ProductosPage() {
       codigo: producto.codigo,
       nombre: producto.nombre,
       descripcion: producto.descripcion || "",
-      precioVenta: producto.precioVenta.toString(),
-      precioCompra: producto.precioCompra.toString(),
+      precioVenta: String(toNumber(producto.precioVenta)),
+      precioCompra: String(toNumber(producto.precioCompra)),
       porcentajeIva: producto.porcentajeIva.toString(),
       stock: producto.stock.toString(),
       stockMinimo: producto.stockMinimo.toString(),
@@ -209,7 +212,7 @@ export default function ProductosPage() {
   }
 
   const stockBajoCount = productos.filter((p) => p.stock <= p.stockMinimo).length
-  const valorInventario = productos.reduce((sum, p) => sum + (p.precioCompra ?? 0) * p.stock, 0)
+  const valorInventario = productos.reduce((sum, p) => sum + toNumber(p.precioCompra) * p.stock, 0)
 
   const filterFields: FilterField[] = [
     { key: "stockBajo", label: "Stock bajo", type: "boolean" },
@@ -231,18 +234,29 @@ export default function ProductosPage() {
     })
   }, [productosFiltrados, filters])
 
+  if (loading && productos.length === 0) {
+    return <PageSkeleton kpis={3} tableRows={10} tableCols={6} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Productos</h1>
-          <p className="text-muted-foreground">Gestión de inventario y precios</p>
-        </div>
-        <Button onClick={abrirNuevo}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Productos"
+        description="Gestión de inventario y precios"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Catálogo y stock
+          </span>
+        }
+        actions={
+          <Button onClick={abrirNuevo}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Producto
+          </Button>
+        }
+      />
 
       {stockBajoCount > 0 && (
         <Alert className="border-orange-200 bg-orange-50">
@@ -260,32 +274,22 @@ export default function ProductosPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Productos</p>
-            <p className="text-2xl font-semibold">{productos.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Stock total</p>
-            <p className="text-2xl font-semibold">{productos.reduce((sum, p) => sum + p.stock, 0)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Valor inventario</p>
-            <p className="text-2xl font-semibold">${valorInventario.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiStrip
+        items={[
+          { label: "Productos", value: productos.length, icon: Package },
+          { label: "Stock total", value: productos.reduce((sum, p) => sum + p.stock, 0) },
+          {
+            label: "Valor inventario",
+            value: new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(valorInventario),
+          },
+        ]}
+      />
 
       {/* Filtros */}
       <Card>
         <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-48">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-stretch sm:items-end">
+            <div className="flex-1 w-full sm:min-w-48">
               <Label className="mb-1 block">Buscar</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -297,7 +301,7 @@ export default function ProductosPage() {
                 />
               </div>
             </div>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <Label className="mb-1 block">Categoría</Label>
               <Select value={filtroCategoria || "__todas__"} onValueChange={(v) => setFiltroCategoria(v === "__todas__" ? "" : v)}>
                 <SelectTrigger>
@@ -369,14 +373,14 @@ export default function ProductosPage() {
                 header: "P. Compra",
                 align: "right",
                 sortable: true,
-                cell: (p) => `$${p.precioCompra.toFixed(2)}`,
+                cell: (p) => formatARS(p.precioCompra),
               },
               {
                 key: "precioVenta",
                 header: "P. Venta",
                 align: "right",
                 sortable: true,
-                cell: (p) => <span className="font-medium">${p.precioVenta.toFixed(2)}</span>,
+                cell: (p) => <span className="font-medium">{formatARS(p.precioVenta)}</span>,
               },
               {
                 key: "porcentajeIva",
@@ -705,6 +709,6 @@ export default function ProductosPage() {
         </DialogContent>
       </Dialog>
       <ConfirmDialog />
-    </div>
+    </PageShell>
   )
 }

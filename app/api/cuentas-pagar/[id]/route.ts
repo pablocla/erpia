@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       include: {
         compra: { select: { id: true, tipo: true, numero: true, puntoVenta: true, total: true } },
         proveedor: { select: { id: true, nombre: true, cuit: true } },
-        items: {
+        itemsOrdenPago: {
           include: {
             ordenPago: { select: { id: true, numero: true, fecha: true } },
           },

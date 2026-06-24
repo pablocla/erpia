@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileSpreadsheet, Loader2, Calculator, TrendingUp, TrendingDown } from "lucide-react"
+import Link from "next/link"
+import { Download, FileSpreadsheet, Loader2, Calculator, TrendingUp, TrendingDown, ClipboardCheck } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 
 interface DetalleIVA {
@@ -71,9 +72,17 @@ export default function ImpuestosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Calculator className="h-6 w-6 text-red-500" />
-        <div><h1 className="text-2xl font-bold">Impuestos — IVA</h1><p className="text-sm text-muted-foreground">Liquidación IVA mensual y libros fiscales</p></div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Calculator className="h-6 w-6 text-red-500" />
+          <div><h1 className="text-2xl font-bold">Impuestos — IVA</h1><p className="text-sm text-muted-foreground">Liquidación IVA mensual y libros fiscales</p></div>
+        </div>
+        <Link href="/dashboard/impuestos/pre-presentacion">
+          <Button variant="outline" size="sm">
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Checklist pre-presentación
+          </Button>
+        </Link>
       </div>
 
       <Card className="dashboard-surface">

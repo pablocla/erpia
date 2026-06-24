@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, RefreshCw, Package, SwapHorizontal, Truck } from "lucide-react"
+import { AlertTriangle, RefreshCw, Package, Truck } from "lucide-react"
 
 interface Deposito {
   id: number
@@ -48,7 +48,7 @@ export default function TransferenciasStockPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
-  const authHeaders = useCallback(() => {
+  const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])

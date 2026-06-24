@@ -19,13 +19,13 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'ERP Argentina — Sistema de Gestión Integral',
-  description: 'Sistema ERP integral para empresas argentinas: facturación electrónica AFIP, contabilidad, stock, ventas, compras, caja y banco.',
+  title: 'Clavis by Claver — ERP & POS Argentina',
+  description: 'Clavis by Claver del grupo Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'NegocioOS',
+    title: 'Clavis',
   },
   icons: {
     icon: [

@@ -3,11 +3,18 @@
  *
  * Triggers: nightly batch + STOCK_ACTUALIZADO event
  * Actions: creates AlertaIA records for critical stock, demand drops, expiring lots
+/**
+ * Stock Alerts Agent — Monitors stock levels and generates intelligent alerts
+ *
+ * Triggers: nightly batch + STOCK_ACTUALIZADO event
+ * Actions: creates AlertaIA records for critical stock, demand drops, expiring lots
  */
 
-import { prisma } from "@/lib/prisma"
 import { AgentBase } from "./agent-base"
 import { analizarAlertasInteligentes } from "../analyzers"
+import { crearAlertaIAConNotificacion } from "../notificacion-ia-service"
+import { getIANotificacionConfig } from "../ia-notificacion-config"
+import { prisma } from "@/lib/prisma"
 import type { AgentConfig, AgentRunContext, AgentAction } from "./agent-types"
 
 export class StockAlertsAgent extends AgentBase {
@@ -26,25 +33,34 @@ export class StockAlertsAgent extends AgentBase {
   protected async execute(ctx: AgentRunContext) {
     const acciones: AgentAction[] = []
 
+    // Fetch company rubro
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: ctx.empresaId },
+      select: { rubro: true },
+    })
+
     // Use existing analyzer
-    const result = await analizarAlertasInteligentes(ctx.empresaId)
+    const result = await analizarAlertasInteligentes(ctx.empresaId, empresa?.rubro || "comercio")
 
     if (!result || !result.alertas?.length) {
       return { resumen: "Sin alertas de stock relevantes hoy", acciones }
     }
 
-    // Persist each alert
+    const iaConfig = await getIANotificacionConfig(ctx.empresaId)
+    const notificar = iaConfig.agentesNotificacion["alertas-stock"] !== false
+
     for (const alerta of result.alertas) {
-      await prisma.alertaIA.create({
-        data: {
-          empresaId: ctx.empresaId,
-          tipo: alerta.tipo,
-          prioridad: alerta.prioridad,
-          titulo: alerta.titulo,
-          descripcion: alerta.detalle,
-          accion: alerta.accionSugerida,
-          datos: { impacto: alerta.impactoEstimado },
-        },
+      await crearAlertaIAConNotificacion({
+        empresaId: ctx.empresaId,
+        tipo: alerta.tipo,
+        prioridad: alerta.prioridad as "alta" | "media" | "baja",
+        titulo: alerta.titulo,
+        descripcion: alerta.detalle,
+        accion: alerta.accionSugerida,
+        origen: "ia_agente",
+        agenteId: "alertas-stock",
+        notificar,
+        datosExtra: { impacto: alerta.impactoEstimado },
       })
 
       acciones.push({

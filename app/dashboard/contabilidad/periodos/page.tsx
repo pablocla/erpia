@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -27,13 +26,12 @@ import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcu
 import {
   Lock,
   LockOpen,
-  ShieldCheck,
   Calendar,
-  FileText,
-  ShoppingCart,
-  Receipt,
   Info,
+  Sparkles,
 } from "lucide-react"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { periodoFiscalVariant, periodoFiscalLabel } from "@/lib/ui/status-map"
 
 interface PeriodoMes {
   mes: number
@@ -43,12 +41,6 @@ interface PeriodoMes {
   fechaCierre: string | null
   cerradoPor: number | null
   id: number | null
-}
-
-const ESTADO_CONFIG = {
-  abierto: { label: "Abierto", variant: "default" as const, icon: LockOpen, color: "text-emerald-600" },
-  cerrado: { label: "Cerrado", variant: "secondary" as const, icon: Lock, color: "text-amber-600" },
-  bloqueado: { label: "Bloqueado", variant: "destructive" as const, icon: ShieldCheck, color: "text-red-600" },
 }
 
 export default function PeriodosFiscalesPage() {
@@ -113,38 +105,38 @@ export default function PeriodosFiscalesPage() {
   const anioActual = new Date().getFullYear()
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-primary" />
-            Períodos Fiscales
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Controle la apertura y cierre de meses contables. Un período cerrado bloquea asientos, facturas y compras.
-          </p>
-        </div>
-        <Select value={String(anio)} onValueChange={(v) => setAnio(parseInt(v, 10))}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[anioActual - 1, anioActual, anioActual + 1].map((a) => (
-              <SelectItem key={a} value={String(a)}>{a}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Períodos Fiscales"
+        description="Controle la apertura y cierre de meses contables. Un período cerrado bloquea la registración de nuevos asientos, facturas y compras."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Calendar className="h-3.5 w-3.5 text-primary/80" />
+            Ejercicio fiscal {anio}
+          </span>
+        }
+        actions={
+          <Select value={String(anio)} onValueChange={(v) => setAnio(parseInt(v, 10))}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[anioActual - 1, anioActual, anioActual + 1].map((a) => (
+                <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {/* Info card */}
-      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+      <Card className="border-[var(--status-info-border)] bg-[var(--status-info-muted)] backdrop-blur-sm">
         <CardContent className="p-4">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm space-y-1.5">
-              <p className="font-medium text-blue-900 dark:text-blue-200">¿Cómo funcionan los períodos fiscales?</p>
-              <ul className="text-blue-800/80 dark:text-blue-300/80 space-y-1 list-disc list-inside">
+            <Info className="h-5 w-5 text-[var(--status-info-foreground)] shrink-0 mt-0.5" />
+            <div className="text-sm space-y-1.5 text-[var(--status-info-foreground)]">
+              <p className="font-semibold">¿Cómo funcionan los períodos fiscales?</p>
+              <ul className="space-y-1 list-disc list-inside opacity-90">
                 <li><strong>Abierto:</strong> Se pueden registrar transacciones normalmente.</li>
                 <li><strong>Cerrado:</strong> Bloquea nuevas facturas, compras y asientos en ese mes. Un administrador puede reabrirlo.</li>
                 <li><strong>Bloqueado:</strong> El período fue presentado ante AFIP. No se puede reabrir sin auditoría.</li>
@@ -159,7 +151,7 @@ export default function PeriodosFiscalesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse backdrop-blur-sm bg-card/60 border-muted/40">
               <CardContent className="p-4 h-32" />
             </Card>
           ))}
@@ -167,8 +159,6 @@ export default function PeriodosFiscalesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {meses.map((p) => {
-            const config = ESTADO_CONFIG[p.estado]
-            const IconEstado = config.icon
             const esMesActual = p.mes === mesActual && anio === anioActual
             const esFuturo = anio > anioActual || (anio === anioActual && p.mes > mesActual)
 
@@ -176,20 +166,21 @@ export default function PeriodosFiscalesPage() {
               <Card
                 key={p.mes}
                 className={
-                  esMesActual
+                  `backdrop-blur-sm bg-card/60 hover:shadow-md transition-all border-muted/40 ` +
+                  (esMesActual
                     ? "ring-2 ring-primary/30 border-primary/50"
                     : esFuturo
                     ? "opacity-60"
-                    : ""
+                    : "")
                 }
               >
                 <CardHeader className="pb-2 p-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{p.label}</CardTitle>
-                    <Badge variant={config.variant} className="gap-1 text-xs">
-                      <IconEstado className="h-3 w-3" />
-                      {config.label}
-                    </Badge>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-base font-semibold">{p.label}</CardTitle>
+                    <StatusBadge
+                      variant={periodoFiscalVariant(p.estado)}
+                      label={periodoFiscalLabel(p.estado)}
+                    />
                   </div>
                   <CardDescription className="text-xs">
                     {esMesActual && "← Mes en curso"}
@@ -273,6 +264,6 @@ export default function PeriodosFiscalesPage() {
           })}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

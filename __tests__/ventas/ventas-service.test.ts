@@ -156,7 +156,7 @@ describe("VentasService", () => {
         remitos: [{ id: 7, facturaId: null }],
       })
       mockPrismaClient.factura.findFirst.mockResolvedValue(null)
-      mockPrismaClient.factura.create.mockResolvedValue({
+      const mockedFactura = {
         id: 99,
         tipo: "B",
         tipoCbte: 6,
@@ -165,8 +165,13 @@ describe("VentasService", () => {
         subtotal: 1000,
         iva: 210,
         total: 1210,
+        createdAt: new Date(),
         lineas: [{ id: 1 }],
-      })
+        empresa: { certificadoCRT: "dummyCRT", certificadoKEY: "dummyKEY", cuit: "20-12345678-9" },
+        cliente: { cuit: "20-87654321-0" },
+      }
+      mockPrismaClient.factura.create.mockResolvedValue(mockedFactura)
+      mockPrismaClient.factura.findUnique.mockResolvedValue(mockedFactura)
       mockPrismaClient.pedidoVenta.update.mockResolvedValue({ id: 1, estado: "facturado" })
       mockPrismaClient.remito.updateMany.mockResolvedValue({ count: 1 })
 
@@ -176,6 +181,7 @@ describe("VentasService", () => {
         tipo: "B",
         tipoCbte: 6,
         puntoVenta: 1,
+        cae: "12345678901234",
         condicionPagoId: 2,
         depositoId: 3,
       })

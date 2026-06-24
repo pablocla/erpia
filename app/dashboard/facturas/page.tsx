@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2 } from "lucide-react"
+import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2, Sparkles } from "lucide-react"
+import { PageShell, PageHeader, PageToolbar, KpiStrip, StatusBadge } from "@/components/layout"
+import { facturaEstadoLabel, facturaEstadoVariant } from "@/lib/ui/status-map"
 import Link from "next/link"
 import { authFetch } from "@/lib/stores"
 import { useToast } from "@/hooks/use-toast"
@@ -40,15 +41,6 @@ interface FacturasResponse {
   summary: { totalFacturado: number; totalIVA: number; cantidadEmitidas: number }
 }
 
-const estadoColors: Record<string, string> = {
-  emitida: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  pendiente_cae: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  error_cae: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  ticket: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
-  anulada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  borrador: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-}
-
 export default function FacturasPage() {
   const { toast } = useToast()
   const [reintentando, setReintentando] = useState(false)
@@ -77,13 +69,19 @@ export default function FacturasPage() {
 
   const fechaFactura = (f: Factura) => f.fecha ?? f.createdAt
 
-  const reintentarCae = async () => {
-    setReintentando(true)
+  const [reintentandoId, setReintentandoId] = useState<number | null>(null)
+
+  const reintentarCae = async (facturaId?: number) => {
+    if (facturaId) setReintentandoId(facturaId)
+    else setReintentando(true)
     try {
-      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const res = await authFetch("/api/afip/reintentar-cae", {
+        method: "POST",
+        body: JSON.stringify(facturaId ? { facturaId } : {}),
+      })
       const json = await res.json()
       if (!res.ok) {
-        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error ?? json.mensaje })
         return
       }
       toast({ title: "Sincronización AFIP", description: json.mensaje })
@@ -92,6 +90,7 @@ export default function FacturasPage() {
       toast({ variant: "destructive", title: "Error de conexión" })
     } finally {
       setReintentando(false)
+      setReintentandoId(null)
     }
   }
 
@@ -107,6 +106,8 @@ export default function FacturasPage() {
     { key: "estado", label: "Estado", type: "select", options: [
       { value: "emitida", label: "Emitida" },
       { value: "pendiente_cae", label: "Sin CAE" },
+      { value: "caea_emitida", label: "CAEA (pend. informar)" },
+      { value: "caea_informada", label: "CAEA informada" },
       { value: "error_cae", label: "Error CAE" },
       { value: "ticket", label: "Ticket" },
       { value: "anulada", label: "Anulada" },
@@ -131,100 +132,79 @@ export default function FacturasPage() {
   }, [data, filters])
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Facturas</h1>
-          <p className="text-muted-foreground">Comprobantes emitidos y pendientes de CAE</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void reintentarCae()}
-          disabled={reintentando}
-        >
-          {reintentando ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Reintentar CAE pendientes
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Facturas"
+        description="Comprobantes emitidos y pendientes de CAE"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Libro de ventas
+          </span>
+        }
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void reintentarCae()}
+            disabled={reintentando || reintentandoId !== null}
+          >
+            {reintentando ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Reintentar CAE
+          </Button>
+        }
+      />
 
-      {/* Summary Cards */}
       {data?.summary && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Facturado</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(data.summary.totalFacturado)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total IVA</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(data.summary.totalIVA)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cantidad Emitidas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data.summary.cantidadEmitidas}</div>
-            </CardContent>
-          </Card>
-        </div>
+        <KpiStrip
+          items={[
+            { label: "Total facturado", value: formatCurrency(data.summary.totalFacturado), icon: FileText },
+            { label: "Total IVA", value: formatCurrency(data.summary.totalIVA) },
+            { label: "Emitidas", value: data.summary.cantidadEmitidas },
+          ]}
+        />
       )}
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por cliente, número o CAE..."
-                  className="pl-9"
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                />
-              </div>
-            </div>
-            <Select value={tipo} onValueChange={(v) => { setTipo(v === "all" ? "" : v); setPage(1) }}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="A">Factura A</SelectItem>
-                <SelectItem value="B">Factura B</SelectItem>
-                <SelectItem value="C">Factura C</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={estado} onValueChange={(v) => { setEstado(v === "all" ? "" : v); setPage(1) }}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="emitida">Emitida</SelectItem>
-                <SelectItem value="pendiente_cae">Sin CAE</SelectItem>
-                <SelectItem value="error_cae">Error CAE</SelectItem>
-                <SelectItem value="ticket">Ticket</SelectItem>
-                <SelectItem value="anulada">Anulada</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <PageToolbar>
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por cliente, número o CAE..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          />
+        </div>
+        <Select value={tipo} onValueChange={(v) => { setTipo(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="A">Factura A</SelectItem>
+            <SelectItem value="B">Factura B</SelectItem>
+            <SelectItem value="C">Factura C</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={estado} onValueChange={(v) => { setEstado(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="emitida">Emitida</SelectItem>
+            <SelectItem value="pendiente_cae">Sin CAE</SelectItem>
+            <SelectItem value="error_cae">Error CAE</SelectItem>
+            <SelectItem value="ticket">Ticket</SelectItem>
+            <SelectItem value="anulada">Anulada</SelectItem>
+          </SelectContent>
+        </Select>
+      </PageToolbar>
 
       <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
 
@@ -238,8 +218,39 @@ export default function FacturasPage() {
               { key: "fecha", header: "Fecha", sortable: true, cell: (f) => new Date(fechaFactura(f)).toLocaleDateString("es-AR") },
               { key: "cliente" as any, header: "Cliente", cell: (f) => (<div>{f.cliente?.nombre ?? "—"}{f.cliente?.cuit && <div className="text-xs text-muted-foreground">{f.cliente.cuit}</div>}</div>), exportFn: (f) => f.cliente?.nombre ?? "" },
               { key: "total", header: "Total", align: "right", sortable: true, cell: (f) => <span className="font-medium">{formatCurrency(f.total)}</span> },
-              { key: "estado", header: "Estado", cell: (f) => <Badge variant="outline" className={estadoColors[f.estado] ?? ""}>{f.estado.replace(/_/g, " ")}</Badge> },
-              { key: "cae" as any, header: "CAE", cell: (f) => f.cae ? <span className="font-mono text-xs">{f.cae}</span> : f.estado === "pendiente_cae" ? <Badge variant="outline" className="text-amber-700 text-[10px]">Pendiente</Badge> : <span className="text-muted-foreground text-xs">—</span> },
+              {
+                key: "estado",
+                header: "Estado",
+                cell: (f) => (
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge variant={facturaEstadoVariant(f.estado)} label={facturaEstadoLabel(f.estado)} />
+                    {(f.estado === "pendiente_cae" || f.estado === "error_cae") && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); void reintentarCae(f.id) }}
+                        disabled={reintentandoId === f.id}
+                        title="Reintentar CAE"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${reintentandoId === f.id ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: "cae" as any,
+                header: "CAE",
+                cell: (f) =>
+                  f.cae ? (
+                    <span className="font-mono text-xs">{f.cae}</span>
+                  ) : f.estado === "pendiente_cae" ? (
+                    <StatusBadge variant="warning" label="Pendiente" />
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  ),
+              },
               { key: "_count" as any, header: "NC", cell: (f) => f._count?.notasCredito ?? 0, exportFn: (f) => String(f._count?.notasCredito ?? 0) },
               { key: "acciones" as any, header: "", cell: (f) => <Link href={`/dashboard/facturas/${f.id}`}><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></Link> },
             ] as DataTableColumn<Factura>[]}
@@ -283,6 +294,6 @@ export default function FacturasPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

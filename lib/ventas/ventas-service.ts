@@ -412,7 +412,7 @@ export class VentasService {
           subtotal,
           iva,
           total,
-          estado: datosFactura.cae ? "emitida" : "pendiente",
+          estado: datosFactura.cae ? "emitida" : "pendiente_cae",
           empresaId: datosFactura.empresaId,
           clienteId: pedido.clienteId,
           vendedorId: pedido.vendedorId,
@@ -435,19 +435,44 @@ export class VentasService {
       return createdFactura
     })
 
-    await eventBus.emit({
-      type: "FACTURA_EMITIDA",
-      payload: {
-        facturaId: factura.id,
-        empresaId: datosFactura.empresaId,
-        clienteId: pedido.clienteId,
-        condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId ?? null,
-        depositoId: datosFactura.depositoId ?? null,
-      },
-      timestamp: new Date(),
-    })
+    let caeResult: { ok: boolean; cae?: string; qrBase64?: string; vencimientoCAE?: string; error?: string } | null =
+      null
 
-    return factura
+    const emitirEventoFactura = () =>
+      eventBus.emit({
+        type: "FACTURA_EMITIDA",
+        payload: {
+          facturaId: factura.id,
+          empresaId: datosFactura.empresaId,
+          clienteId: pedido.clienteId,
+          condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId ?? null,
+          depositoId: datosFactura.depositoId ?? null,
+        },
+        timestamp: new Date(),
+      })
+
+    if (!datosFactura.cae) {
+      const { solicitarCaeFactura } = await import("@/lib/afip/solicitar-cae-factura")
+      caeResult = await solicitarCaeFactura(factura.id)
+      if (caeResult.ok) {
+        const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
+        await onFacturaEmitida(factura.id)
+        await emitirEventoFactura()
+      }
+    } else {
+      const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
+      await onFacturaEmitida(factura.id)
+      await emitirEventoFactura()
+    }
+
+    const facturaActualizada = await prisma.factura.findUnique({ where: { id: factura.id } })
+
+    return {
+      ...facturaActualizada,
+      afipOk: datosFactura.cae ? true : (caeResult?.ok ?? false),
+      afipError: caeResult?.error,
+      qrBase64: caeResult?.qrBase64,
+    }
   }
 }
 

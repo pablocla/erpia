@@ -31,19 +31,19 @@ export class ArqueoCajaService {
     // Aggregate system amounts by payment method
     const sistemaEfectivo = caja.movimientos
       .filter((m) => m.medioPago === "efectivo")
-      .reduce((s, m) => s + m.monto, 0)
+      .reduce((s, m) => s + Number(m.monto), 0)
     const sistemaTarjeta = caja.movimientos
       .filter((m) => m.medioPago === "tarjeta")
-      .reduce((s, m) => s + m.monto, 0)
+      .reduce((s, m) => s + Number(m.monto), 0)
     const sistemaTransferencia = caja.movimientos
       .filter((m) => m.medioPago === "transferencia")
-      .reduce((s, m) => s + m.monto, 0)
+      .reduce((s, m) => s + Number(m.monto), 0)
     const sistemaCheque = caja.movimientos
       .filter((m) => m.medioPago === "cheque")
-      .reduce((s, m) => s + m.monto, 0)
+      .reduce((s, m) => s + Number(m.monto), 0)
     const sistemaQR = caja.movimientos
       .filter((m) => m.medioPago === "qr")
-      .reduce((s, m) => s + m.monto, 0)
+      .reduce((s, m) => s + Number(m.monto), 0)
 
     const totalDeclarado = datos.efectivoDeclarado + datos.tarjetaDeclarado +
       datos.transferenciaDeclarado + datos.chequeDeclarado + datos.qrDeclarado

@@ -22,8 +22,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight,
-  Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight,
+  Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight, Sparkles,
 } from "lucide-react"
+import { PageShell, PageHeader } from "@/components/layout"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { CSVImport } from "@/components/csv-import"
@@ -31,6 +32,7 @@ import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcu
 import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
 import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
+import { CuitPadronLookup, mapCondicionIvaPadron } from "@/components/fiscal/cuit-padron-lookup"
 
 /* ---------- helpers ---------- */
 const authHeaders = (): HeadersInit => ({
@@ -293,14 +295,19 @@ export default function ClientesPage() {
 
   /* ---------- RENDER ---------- */
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground">Maestro de clientes — Fiscal, Financiero, Comercial</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Clientes"
+        description="Maestro de clientes — Fiscal, Financiero, Comercial"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Maestro comercial
+          </span>
+        }
+        actions={
+          <>
           <CSVImport
             columns={[
               { key: "codigo", label: "Código" },
@@ -336,8 +343,9 @@ export default function ClientesPage() {
             title="Importar Clientes desde CSV"
           />
           <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />Nuevo Cliente</Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <FilterPanel fields={filterFields} values={filters} onChange={setFilters} />
 
@@ -403,7 +411,7 @@ export default function ClientesPage() {
 
       {/* ========== DETAIL PANEL ========== */}
       <Dialog open={!!vistaDetalle} onOpenChange={() => setVistaDetalle(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{vistaDetalle?.nombre}</DialogTitle>
             <DialogDescription>Detalle completo del cliente</DialogDescription>
@@ -483,7 +491,7 @@ export default function ClientesPage() {
 
       {/* ========== CREATE / EDIT DIALOG ========== */}
       <Dialog open={dialogAbierto} onOpenChange={(open) => { if (!open) { setDialogAbierto(false); setClienteEditando(null) } }}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{clienteEditando ? "Editar Cliente" : "Nuevo Cliente"}</DialogTitle>
             <DialogDescription>Complete todas las pestañas con la información del cliente</DialogDescription>
@@ -549,9 +557,23 @@ export default function ClientesPage() {
             {/* ----- TAB: Fiscal / Impositiva ----- */}
             <TabsContent value="fiscal" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="cuit">CUIT *</Label>
                   <Input id="cuit" value={formData.cuit} onChange={e => set("cuit", e.target.value)} placeholder="20-12345678-9" />
+                  <CuitPadronLookup
+                    cuit={formData.cuit}
+                    disabled={guardando}
+                    onResult={(r) => {
+                      set("nombre", r.denominacion)
+                      set("cuit", r.cuit.replace(/(\d{2})(\d{8})(\d)/, "$1-$2-$3"))
+                      set("condicionIva", mapCondicionIvaPadron(r.condicionIva))
+                      if (r.domicilioFiscal) {
+                        const dir = [r.domicilioFiscal.direccion, r.domicilioFiscal.localidad].filter(Boolean).join(", ")
+                        if (dir) set("direccion", dir)
+                        if (r.domicilioFiscal.codigoPostal) set("codigoPostal", r.domicilioFiscal.codigoPostal)
+                      }
+                    }}
+                  />
                 </div>
                 <div>
                   <Label>Condición IVA *</Label>
@@ -742,7 +764,7 @@ export default function ClientesPage() {
         </DialogContent>
       </Dialog>
       <ConfirmDialog />
-    </div>
+    </PageShell>
   )
 }
 

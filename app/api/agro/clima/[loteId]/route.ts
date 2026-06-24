@@ -15,7 +15,7 @@ const cache = new Map<string, { at: number; payload: unknown }>()
 const TTL = 60 * 60 * 1000
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ loteId: string }> }) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { loteId } = await params

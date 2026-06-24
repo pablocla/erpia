@@ -4,7 +4,7 @@ import { pdfService } from "@/lib/printer/pdf-service"
 import { z } from "zod"
 
 const schema = z.object({
-  tipo: z.enum(["factura", "nc", "nd", "remito", "presupuesto", "oc", "remito-transferencia", "remito-entrada"]),
+  tipo: z.enum(["factura", "nc", "nd", "remito", "presupuesto", "oc", "remito-transferencia", "remito-entrada", "pedido", "recibo", "orden-pago", "etiqueta-proceso"]),
   id: z.number().int().positive(),
 })
 
@@ -50,6 +50,17 @@ export async function GET(request: NextRequest) {
       case "remito-entrada":
         result = await pdfService.generarRemitoEntradaPDF(parsed.data.id)
         break
+      case "pedido":
+        result = await pdfService.generarPedidoPDF(parsed.data.id)
+        break
+      case "recibo":
+        result = await pdfService.generarReciboPDF(parsed.data.id)
+        break
+      case "orden-pago":
+        result = await pdfService.generarOrdenPagoPDF(parsed.data.id)
+        break
+      case "etiqueta-proceso":
+        return NextResponse.json({ error: "Por favor, use POST para etiqueta-proceso enviando los datos requeridos" }, { status: 400 })
     }
 
     if (!result) {
@@ -108,6 +119,25 @@ export async function POST(request: NextRequest) {
         break
       case "remito-entrada":
         result = await pdfService.generarRemitoEntradaPDF(parsed.data.id)
+        break
+      case "pedido":
+        result = await pdfService.generarPedidoPDF(parsed.data.id)
+        break
+      case "recibo":
+        result = await pdfService.generarReciboPDF(parsed.data.id)
+        break
+      case "orden-pago":
+        result = await pdfService.generarOrdenPagoPDF(parsed.data.id)
+        break
+      case "etiqueta-proceso":
+        const d = body.datos ?? {}
+        result = await pdfService.generarEtiquetaProcesoPDF({
+          procesoId: parsed.data.id,
+          producto: d.producto ?? "Producto / Componente Genérico",
+          fecha: d.fecha ?? new Date().toLocaleDateString("es-AR"),
+          qrData: d.qrData,
+          codigoBarras: d.codigoBarras
+        })
         break
     }
 

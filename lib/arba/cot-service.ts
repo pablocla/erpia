@@ -84,7 +84,7 @@ export class COTService {
         valorMercaderia = Number(remito.pedidoVenta.total)
       } else {
         for (const linea of remito.lineas) {
-          const precioBase = Number(linea.producto?.precioBase ?? 0)
+          const precioBase = Number(linea.producto?.precioVenta ?? 0)
           valorMercaderia += linea.cantidad * precioBase
         }
       }

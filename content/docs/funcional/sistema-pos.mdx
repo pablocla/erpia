@@ -333,7 +333,7 @@ Si el cliente paga con `cuenta_corriente`, se genera automáticamente una **Cuen
 |---|---------|---------|-------------|
 | P1 | **Sin escáner de código de barras en POS** | En kiosko/ferretería el cajero no puede escanear. Tiene que tipear el nombre. | Implementar `BarcodeDetector` API + fallback `QuaggaJS` para cámara. Input oculto que captura scan de pistola USB. |
 | P2 | **Sin impresora fiscal / térmica** | No imprime ticket físico legal. Solo `window.print()` (usa papel A4, inútil en POS real). | Integrar con API del browser `PrinterService` + template CSS `@media print` para 80mm. Para fiscal: socket TCP Epson/Hasar. |
-| P3 | **Sin modo offline real** | Si se corta internet → caja queda inutilizable. | Service Worker con queue de ventas en IndexedDB. Sync cuando vuelve la red. |
+| P3 | **Modo offline con contingencia** | Si se corta internet, se requiere facturar offline sin interrupciones. | Integrado con CAEA offline. Ver la [Guía de Contingencia CAEA](file:///c:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/content/docs/funcional/caea-contingencia) para parametrización y sincronización diferida. |
 | P4 | **`Producto.precioVenta` es `Float` no `Decimal`** (Bug A-007) | Errores de redondeo en IVA: `$1234.50 × 1.21 = $1493.745000000001` | Migración Prisma a `Decimal @db.Decimal(15,2)`. |
 | P5 | **Sin búsqueda por código de barras en API** | El campo `codigoBarras` existe en el schema pero no se usa en el WHERE de búsqueda POS. | Agregar `{ codigoBarras: { contains: search } }` en el OR de `/api/productos`. |
 

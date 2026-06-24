@@ -27,6 +27,12 @@ export type Rubro =
   | "salon_belleza"
   | "gimnasio"
   | "agro_acopio"
+  | "prestamista"
+  | "concesionaria"
+  | "importador"
+  | "reventa_tendencias"
+  | "quimica"
+  | "textil_fabrica"
   | "otro"
 
 export interface RespuestasOnboarding {
@@ -330,6 +336,75 @@ const CONFIG_POR_RUBRO: Record<Rubro, {
     argumentoVenta: "¿Todavía liquidás a tus productores en Excel? Con este sistema el ticket de balanza actualiza el stock solo, el contrato calcula la liquidación con las retenciones de AFIP correctas, y el productor puede ver su saldo desde el celular. La pizarra BCR aparece en el dashboard para que puedas decidir cuándo vender.",
     rolesSugeridos: ["dueno", "gerente", "cajero", "deposito", "contador"],
   },
+  prestamista: {
+    modulos: ["clientes", "caja", "banco", "reportes"],
+    particularidades: [
+      "Control de prestamos por cuotas diarias, semanales o mensuales",
+      "Calculadora de intereses integrada",
+      "Emision e impresion de Pagares listos para firmar",
+      "Ruteo de cobranzas (agenda de cobradores)",
+      "Control de mora y alertas de atraso",
+    ],
+    argumentoVenta: "Gestioná tus prestamos sin perder la cabeza con fechas. El sistema te dice quién te tiene que pagar hoy, calcula el interés por mora y te imprime el pagaré listo para firmar.",
+    rolesSugeridos: ["dueno", "cajero"],
+  },
+  concesionaria: {
+    modulos: ["ventas", "clientes", "compras", "stock", "caja", "reportes"],
+    particularidades: [
+      "Ficha tecnica del vehiculo (patente, chasis, km, estado)",
+      "Red de revendedores y comisiones",
+      "CRM enfocado en leads vehiculares (test drive, tasacion)",
+      "Gestion de documentacion de vehiculos usados (transferencias, 08)",
+      "Calculo de rentabilidad por unidad de negocio",
+    ],
+    argumentoVenta: "Llevá el control total de tu flota, los gastos de acondicionamiento de cada usado y las comisiones de tu red de revendedores en un solo lugar.",
+    rolesSugeridos: ["dueno", "gerente", "vendedor_ruta"],
+  },
+  importador: {
+    modulos: ["ventas", "clientes", "compras", "proveedores", "productos", "stock", "caja", "contabilidad", "reportes"],
+    particularidades: [
+      "Calculadora de costos de importacion (Landed cost)",
+      "Seguimiento de embarques y ETAs",
+      "Prorrateo de flete internacional, seguros y despachante",
+      "Conversion multimoneda (FOB en USD a CIF en pesos)",
+      "Prevision de rentabilidad antes de traer el contenedor",
+    ],
+    argumentoVenta: "¿Sabés exactamente a cuánto te queda el costo en puerta de tu contenedor de China? Con nuestra calculadora integrada prorrateás flete e impuestos sin usar planillas complejas.",
+    rolesSugeridos: ["dueno", "gerente", "contador"],
+  },
+  reventa_tendencias: {
+    modulos: ["pos", "ventas", "clientes", "productos", "stock", "caja", "reportes"],
+    particularidades: [
+      "Stock efimero para productos virales (Dropshipping / Reventas)",
+      "Calculadora de margen flash (Costo vs Precio de Venta en TikTok)",
+      "Integracion rapida de links de pago",
+      "Control de envios y margen despues de comisiones",
+    ],
+    argumentoVenta: "Subite a una tendencia de TikTok, calculá el margen flash, compartí un link de pago y controlá tu stock en minutos. Ideal para revendedores y creadores.",
+    rolesSugeridos: ["dueno"],
+  },
+  quimica: {
+    modulos: ["ventas", "clientes", "compras", "proveedores", "productos", "stock", "reportes"],
+    particularidades: [
+      "Fórmulas maestras y recetas (BOM - Lista de Materiales)",
+      "Trazabilidad por lote y fecha de vencimiento",
+      "Impresion de etiquetas con rombo NFPA y normas de seguridad",
+      "Control de calidad y mermas en producción",
+    ],
+    argumentoVenta: "Llevá el control estricto de tus fórmulas y lotes. Trazabilidad completa desde el tambor de materia prima hasta el bidón que le vendés a tu cliente, con etiquetas normadas.",
+    rolesSugeridos: ["dueno", "gerente", "deposito"],
+  },
+  textil_fabrica: {
+    modulos: ["ventas", "clientes", "compras", "proveedores", "productos", "stock", "reportes"],
+    particularidades: [
+      "Gestion de consumo de telas (rollos, kg, metros)",
+      "Órdenes de corte y moldería",
+      "Envío y recepcion a talleres externos (confeccion)",
+      "Seguimiento de prendas terminadas vs mermas de corte",
+    ],
+    argumentoVenta: "Controlá exactamente cuántos metros rinde cada rollo de tela, mandá a cortar y seguí el progreso de tus talleres externos sin perder prendas en el camino.",
+    rolesSugeridos: ["dueno", "gerente", "deposito"],
+  },
   otro: {
     modulos: ["pos", "ventas", "clientes", "productos", "stock", "caja", "impuestos", "tes", "usuarios", "reportes"],
     particularidades: [
@@ -437,6 +512,12 @@ function getMensajeBienvenida(rubro: Rubro): string {
     salon_belleza: "¡Tu salón está listo! Agenda por profesional, fidelidad con sellos, comisiones automáticas y recordatorio de turnos.",
     gimnasio: "Gimnasio configurado: membresías con vencimiento, control de acceso, clases con cupo y retención automática de socios.",
     agro_acopio: "¡Tu acopio ya está listo! Pizarra BCR en el dashboard, balanza digital, contratos de cereales y liquidaciones con retenciones AFIP correctas. El productor puede ver su saldo desde el celular.",
+    prestamista: "¡Tu gestor de prestamos listo! Controlá tus cuotas, calculá intereses, imprimí pagarés e identificá tu cobranza diaria.",
+    concesionaria: "¡Concesionaria configurada! Gestioná tu flota, la documentación de vehículos, tasaciones y la red de revendedores.",
+    importador: "¡Herramientas de importación listas! Calculá landed cost, prorrateá despachante y fletes, y asegurá el ROI de tus contenedores de China.",
+    reventa_tendencias: "¡Listo para reventas TikTok! Controlá tu margen flash, emití links de pago rápido y gestioná el stock de tus productos virales.",
+    quimica: "Fábrica química configurada: fórmulas maestras, trazabilidad de lotes y etiquetas NFPA listas para imprimir.",
+    textil_fabrica: "Fábrica textil en marcha: órdenes de corte, seguimiento a talleres y control exacto del consumo de tus rollos de tela.",
     otro: "¡Sistema configurado! Empezá a vender, controlar el stock y tener la facturación al día.",
   }
   return mensajes[rubro]
@@ -525,6 +606,34 @@ function getProductosEjemploByRubro(rubro: Rubro): { nombre: string; codigo: str
       { nombre: "Almacenaje soja (por tn/mes)", codigo: "ALM-SOJ", precio: 2800, iva: 21 },
       { nombre: "Secado soja (por punto de humedad/tn)", codigo: "SEC-SOJ", precio: 1200, iva: 21 },
     ],
+    prestamista: [
+      { nombre: "Interes mora diaria", codigo: "INT-MORA", precio: 0, iva: 0 },
+      { nombre: "Gasto administrativo", codigo: "GTOS-ADM", precio: 2500, iva: 21 },
+    ],
+    concesionaria: [
+      { nombre: "Gasto de gestoria y transferencia", codigo: "GEST-TRANSF", precio: 45000, iva: 21 },
+      { nombre: "Lavado y acondicionamiento pre-entrega", codigo: "LAV-PRE", precio: 15000, iva: 21 },
+      { nombre: "Comision venta usado", codigo: "COM-USADO", precio: 0, iva: 21 },
+    ],
+    importador: [
+      { nombre: "Producto importado genérico", codigo: "IMP-001", precio: 15000, iva: 21 },
+      { nombre: "Servicio Despachante Aduana", codigo: "DESP-ADUANA", precio: 350000, iva: 21 },
+    ],
+    reventa_tendencias: [
+      { nombre: "Aro de Luz LED viral", codigo: "ARO-LUZ", precio: 12000, iva: 21 },
+      { nombre: "Mini Impresora Termica Bluetooth", codigo: "MINI-IMP", precio: 15500, iva: 21 },
+      { nombre: "Termo Stanley Alternativo", codigo: "TER-ALT", precio: 18000, iva: 21 },
+    ],
+    quimica: [
+      { nombre: "Hipoclorito de sodio 100g/l (Bidon 5L)", codigo: "HIP-5L", precio: 2800, iva: 21 },
+      { nombre: "Detergente concentrado (Tambor 200L)", codigo: "DET-200L", precio: 85000, iva: 21 },
+      { nombre: "Aromatizante (Bidon 5L)", codigo: "ARO-5L", precio: 4500, iva: 21 },
+    ],
+    textil_fabrica: [
+      { nombre: "Remera Lisa (Confeccionada)", codigo: "REM-LISA", precio: 4500, iva: 21 },
+      { nombre: "Rollo Tela Algodon Peinado (kg)", codigo: "TEL-ALG-KG", precio: 6800, iva: 21 },
+      { nombre: "Corte de Pantalon Cargo", codigo: "CRT-CARGO", precio: 1200, iva: 21 },
+    ],
     otro: [
       { nombre: "Producto genérico 1", codigo: "PRD001", precio: 1000, iva: 21 },
       { nombre: "Servicio / Hora", codigo: "SRV001", precio: 5000, iva: 21 },
@@ -551,6 +660,18 @@ const RUBRO_ALIASES: Record<string, Rubro> = {
   construccion: "ferreteria",
   gasolinera: "estacion_servicio",
   estacion_servicio: "estacion_servicio",
+  financiera: "prestamista",
+  prestamista: "prestamista",
+  autos: "concesionaria",
+  vehiculos: "concesionaria",
+  china: "importador",
+  importacion: "importador",
+  tiktok: "reventa_tendencias",
+  tendencias: "reventa_tendencias",
+  quimica: "quimica",
+  fabrica: "quimica",
+  textil: "textil_fabrica",
+  ropa_fabrica: "textil_fabrica",
 }
 
 const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
@@ -788,6 +909,96 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
       { tabla: "rubros", label: "Rubros", descripcion: "Planes y servicios." },
     ],
     flujosCriticos: ["Alta socio -> membresia -> cobro", "Renovacion -> control de acceso"],
+  },
+  prestamista: {
+    nombre: "Prestamista",
+    foco: ["Cobranza diaria", "Capital prestado", "Mora", "Rentabilidad mensual"],
+    alertas: ["Cuotas vencidas", "Renegociaciones pendientes"],
+    quickActions: [
+      { label: "Nuevo prestamo", href: "/dashboard/prestamos" },
+      { label: "Agenda cobros", href: "/dashboard/prestamos" },
+    ],
+    sidebarPrioridad: ["prestamos", "clientes", "caja"],
+    maestrosCriticos: [
+      { tabla: "condiciones-pago", label: "Condiciones de pago", descripcion: "Plazos (diario, semanal, mensual)." },
+      { tabla: "tipos-contacto", label: "Tipos de contacto", descripcion: "Ruteo de cobro." },
+    ],
+    flujosCriticos: ["Alta prestamo -> imprimir pagare -> ruteo cobranza"],
+  },
+  concesionaria: {
+    nombre: "Concesionaria",
+    foco: ["Vehiculos en stock", "Leads test drive", "Rotacion", "Comisiones"],
+    alertas: ["Unidades trabadas", "Documentacion faltante", "Reservas caidas"],
+    quickActions: [
+      { label: "Stock vehiculos", href: "/dashboard/concesionaria" },
+      { label: "Revendedores", href: "/dashboard/concesionaria" },
+    ],
+    sidebarPrioridad: ["concesionaria", "ventas", "crm", "caja"],
+    maestrosCriticos: [
+      { tabla: "depositos", label: "Playas / Sucursales", descripcion: "Ubicacion de vehiculos." },
+      { tabla: "vendedores", label: "Revendedores", descripcion: "Comisiones y red." },
+    ],
+    flujosCriticos: ["Toma de usado -> acondicionamiento -> publicacion -> venta"],
+  },
+  importador: {
+    nombre: "Importador China",
+    foco: ["Landed cost", "ETAs", "Rentabilidad por contenedor"],
+    alertas: ["Demoras embarque", "Vencimiento DJAI/SIRA", "Variacion cambiaria"],
+    quickActions: [
+      { label: "Calculadora ROI", href: "/dashboard/importacion" },
+      { label: "Embarques", href: "/dashboard/importacion" },
+    ],
+    sidebarPrioridad: ["importacion", "compras", "stock", "ventas"],
+    maestrosCriticos: [
+      { tabla: "proveedores", label: "Fabricantes", descripcion: "China y otros." },
+      { tabla: "monedas", label: "Monedas", descripcion: "USD, CNY." },
+    ],
+    flujosCriticos: ["Calculo ROI -> orden compra -> tracking ETA -> despacho -> stock"],
+  },
+  reventa_tendencias: {
+    nombre: "Reventa TikTok",
+    foco: ["Margen flash", "Productos virales", "Stock efimero", "Links de pago"],
+    alertas: ["Stock viral bajo", "Margen negativo post envios"],
+    quickActions: [
+      { label: "Links de pago", href: "/dashboard/reventas" },
+      { label: "Stock flash", href: "/dashboard/reventas" },
+    ],
+    sidebarPrioridad: ["reventas", "ventas", "stock", "caja"],
+    maestrosCriticos: [
+      { tabla: "formas-pago", label: "Pasarelas", descripcion: "MercadoPago, Uala." },
+      { tabla: "depositos", label: "Depositos", descripcion: "Fisico y dropshipping." },
+    ],
+    flujosCriticos: ["Viralizacion -> link de pago -> envio rapido -> reposicion flash"],
+  },
+  quimica: {
+    nombre: "Fabrica Quimica",
+    foco: ["BOM", "Trazabilidad lotes", "Merma", "Costos produccion"],
+    alertas: ["Materias primas bajas", "Lotes por vencer", "Falta etiqueta NFPA"],
+    quickActions: [
+      { label: "Formulas", href: "/dashboard/industria" },
+      { label: "Produccion", href: "/dashboard/industria" },
+    ],
+    sidebarPrioridad: ["industria", "stock", "compras", "ventas"],
+    maestrosCriticos: [
+      { tabla: "unidades-medida", label: "Unidades", descripcion: "Litros, kg, tambores." },
+      { tabla: "depositos", label: "Depositos", descripcion: "Cuarentena, MP, Producto Terminado." },
+    ],
+    flujosCriticos: ["Formula maestra -> orden produccion -> consumos MP -> lote PT"],
+  },
+  textil_fabrica: {
+    nombre: "Fabrica Textil",
+    foco: ["Consumo tela", "Control talleres", "Mermas corte"],
+    alertas: ["Demoras talleres", "Falta avios", "Rollos sin consumir"],
+    quickActions: [
+      { label: "Orden de corte", href: "/dashboard/industria" },
+      { label: "Talleres", href: "/dashboard/industria" },
+    ],
+    sidebarPrioridad: ["industria", "stock", "compras", "ventas"],
+    maestrosCriticos: [
+      { tabla: "unidades-medida", label: "Unidades", descripcion: "Metros, kg, unidades." },
+      { tabla: "proveedores", label: "Talleres", descripcion: "Corte, confeccion, lavadero." },
+    ],
+    flujosCriticos: ["Rollo tela -> orden corte -> taller confeccion -> producto terminado"],
   },
   otro: {
     nombre: "Comercio",

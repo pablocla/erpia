@@ -254,7 +254,7 @@ export async function anularVentaPos(
       notaCreditoId: result.id,
       facturaId: factura.id,
       clienteId: factura.clienteId,
-      total: result.total,
+      total: Number(result.total),
       motivo,
     },
     timestamp: new Date(),

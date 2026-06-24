@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { notaDebitoEstadoLabel, notaDebitoEstadoVariant } from "@/lib/ui/status-map"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
 import { Search, ChevronLeft, ChevronRight, Eye, FileWarning } from "lucide-react"
 import Link from "next/link"
@@ -23,11 +24,6 @@ interface NotaDebito {
   cliente?: { id: number; nombre: string }
   proveedor?: { id: number; nombre: string }
   factura?: { id: number; tipo: string; numero: number }
-}
-
-const estadoColors: Record<string, string> = {
-  emitida: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  anulada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 }
 
 export default function NotasDebitoPage() {
@@ -49,13 +45,11 @@ export default function NotasDebitoPage() {
     `ND ${nd.tipo} ${String(nd.puntoVenta).padStart(5, "0")}-${String(nd.numero).padStart(8, "0")}`
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notas de Débito</h1>
-          <p className="text-muted-foreground">Notas de débito emitidas</p>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Notas de Débito"
+        description="Notas de débito emitidas"
+      />
 
       {/* Summary */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -106,7 +100,7 @@ export default function NotasDebitoPage() {
               { key: "cliente" as any, header: "Destino", cell: (nd) => nd.cliente?.nombre ?? nd.proveedor?.nombre ?? "—", exportFn: (nd) => nd.cliente?.nombre ?? nd.proveedor?.nombre ?? "" },
               { key: "motivo" as any, header: "Motivo", cell: (nd) => <span className="truncate max-w-[200px] block">{nd.motivo ?? "—"}</span> },
               { key: "total", header: "Total", align: "right", sortable: true, cell: (nd) => <span className="font-medium">{formatCurrency(nd.total)}</span> },
-              { key: "estado", header: "Estado", cell: (nd) => <Badge variant="outline" className={estadoColors[nd.estado] ?? ""}>{nd.estado}</Badge> },
+              { key: "estado", header: "Estado", cell: (nd) => <StatusBadge variant={notaDebitoEstadoVariant(nd.estado)} label={notaDebitoEstadoLabel(nd.estado)} /> },
               { key: "factura" as any, header: "Factura Origen", cell: (nd) => <span className="font-mono text-xs">{nd.factura ? `${nd.factura.tipo} ${String(nd.factura.numero).padStart(8, "0")}` : "—"}</span> },
               { key: "acciones" as any, header: "", cell: (nd) => <Link href={`/dashboard/notas-debito/${nd.id}`}><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></Link> },
             ] as DataTableColumn<NotaDebito>[]}
@@ -123,6 +117,6 @@ export default function NotasDebitoPage() {
           />
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

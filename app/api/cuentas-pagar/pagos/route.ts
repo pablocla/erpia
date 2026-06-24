@@ -1,25 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { pagosService } from "@/lib/pagos/pagos-service"
-import { z } from "zod"
-
-const pagoSchema = z.object({
-  proveedorId: z.number().int().positive(),
-  items: z.array(z.object({
-    cuentaPagarId: z.number().int().positive(),
-    monto: z.number().positive("El monto debe ser positivo"),
-  })).min(1),
-  medioPago: z.enum(["transferencia", "cheque", "efectivo", "tarjeta"]),
-  fecha: z.string().optional(),
-  observaciones: z.string().optional(),
-  retenciones: z.object({
-    retencionIVA: z.number().min(0).optional(),
-    retencionGanancias: z.number().min(0).optional(),
-    retencionIIBB: z.number().min(0).optional(),
-  }).optional(),
-})
-
-// ─── POST — Register payment against account(s) payable with retenciones ─────
+import { pagoSchema, pagoLegacySchema } from "@/lib/pagos/pago-schemas"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,12 +10,40 @@ export async function POST(request: NextRequest) {
     if (!ctx.ok) return ctx.response
 
     const body = await request.json()
-    const validacion = pagoSchema.safeParse(body)
-    if (!validacion.success) {
-      return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
-    }
 
-    const { proveedorId, items, medioPago, fecha, observaciones, retenciones } = validacion.data
+    let proveedorId: number
+    let items: { cuentaPagarId: number; monto: number }[]
+    let medioPago: "transferencia" | "cheque" | "efectivo" | "tarjeta"
+    let fecha: string | undefined
+    let observaciones: string | undefined
+    let cheque: typeof body.cheque
+    let retenciones: typeof body.retenciones
+
+    const full = pagoSchema.safeParse(body)
+    if (full.success) {
+      ({ proveedorId, items, medioPago, fecha, observaciones, cheque, retenciones } = full.data)
+    } else {
+      const legacy = pagoLegacySchema.safeParse(body)
+      if (!legacy.success) {
+        return NextResponse.json({ error: "Datos inválidos", detalles: legacy.error.errors }, { status: 400 })
+      }
+
+      const cp = await prisma.cuentaPagar.findFirst({
+        where: { id: legacy.data.cuentaPagarId, proveedor: { empresaId: ctx.auth.empresaId } },
+        select: { proveedorId: true },
+      })
+      if (!cp) {
+        return NextResponse.json({ error: "Cuenta a pagar no encontrada" }, { status: 404 })
+      }
+
+      proveedorId = cp.proveedorId
+      items = [{ cuentaPagarId: legacy.data.cuentaPagarId, monto: legacy.data.monto }]
+      medioPago = legacy.data.medioPago
+      fecha = legacy.data.fecha
+      observaciones = legacy.data.observaciones
+      cheque = legacy.data.cheque
+      retenciones = legacy.data.retenciones
+    }
 
     const result = await pagosService.registrarPago({
       proveedorId,
@@ -41,6 +52,7 @@ export async function POST(request: NextRequest) {
       medioPago,
       fecha: fecha ? new Date(fecha) : undefined,
       observaciones,
+      cheque,
       retenciones,
     })
 
@@ -48,7 +60,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Error al registrar pago:", error)
     const message = error?.message ?? "Error interno"
-    const status = message.includes("no encontrada") || message.includes("excede") ? 400 : 500
+    const status = message.includes("no encontrada") || message.includes("excede") || message.includes("requerid") ? 400 : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

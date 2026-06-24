@@ -31,7 +31,7 @@ export class CuentasService {
     // Contado → no generar CC
     if (cuotas === 1 && diasBase === 0) return
 
-    const montoCuota = Math.round((factura.total / cuotas) * 100) / 100
+    const montoCuota = Math.round((Number(factura.total) / cuotas) * 100) / 100
     const fechaBase = factura.createdAt
 
     for (let i = 0; i < cuotas; i++) {
@@ -41,7 +41,7 @@ export class CuentasService {
 
       // Adjusto última cuota para evitar diferencia de redondeo
       const monto = i === cuotas - 1
-        ? factura.total - montoCuota * (cuotas - 1)
+        ? Number(factura.total) - montoCuota * (cuotas - 1)
         : montoCuota
 
       await prisma.cuentaCobrar.create({
@@ -169,7 +169,7 @@ export class CuentasService {
 
     if (cuotas === 1 && diasBase === 0) return
 
-    const montoCuota = Math.round((compra.total / cuotas) * 100) / 100
+    const montoCuota = Math.round((Number(compra.total) / cuotas) * 100) / 100
     const fechaBase = compra.fecha
 
     for (let i = 0; i < cuotas; i++) {
@@ -178,7 +178,7 @@ export class CuentasService {
       vencimiento.setDate(vencimiento.getDate() + dias)
 
       const monto = i === cuotas - 1
-        ? compra.total - montoCuota * (cuotas - 1)
+        ? Number(compra.total) - montoCuota * (cuotas - 1)
         : montoCuota
 
       await prisma.cuentaPagar.create({

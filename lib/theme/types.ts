@@ -163,6 +163,21 @@ export const THEME_PRESETS: ThemePreset[] = [
     config: { mode: "dark", palette: "violet", surface: "glow", canvasStyle: "minimal", sidebarStyle: "floating" },
   },
   {
+    id: "glass-aurora",
+    label: "Glass Aurora",
+    description: "Cristal translúcido y auroras vibrantes",
+    config: {
+      mode: "dark",
+      palette: "violet",
+      surface: "glow",
+      canvasStyle: "gradient",
+      sidebarStyle: "floating",
+      radius: "xl",
+      blurIntensity: "high",
+      cardStyle: "elevated",
+    },
+  },
+  {
     id: "minimal",
     label: "Minimal",
     description: "Sin decoración, máximo foco",

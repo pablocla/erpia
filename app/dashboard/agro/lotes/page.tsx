@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -12,7 +11,9 @@ import { Spinner } from "@/components/ui/spinner"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
 import { authFetch } from "@/lib/stores"
 import { useToast } from "@/hooks/use-toast"
-import { MapPin, Plus, Wheat } from "lucide-react"
+import { MapPin, Plus, Wheat, Sparkles } from "lucide-react"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { cultivoVariant, cultivoLabel } from "@/lib/ui/status-map"
 
 interface Lote {
   id: number
@@ -30,14 +31,6 @@ interface Lote {
 interface Proveedor { id: number; nombre: string }
 
 const NUM = (v: number, d = 1) => new Intl.NumberFormat("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v)
-
-const CULTIVO_COLOR: Record<string, string> = {
-  Soja: "bg-green-100 text-green-800",
-  Maíz: "bg-yellow-100 text-yellow-800",
-  Trigo: "bg-amber-100 text-amber-800",
-  Girasol: "bg-orange-100 text-orange-800",
-  Barbecho: "bg-gray-100 text-gray-700",
-}
 
 export default function LotesPage() {
   const { toast } = useToast()
@@ -96,25 +89,29 @@ export default function LotesPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Lotes / Campos</h1>
-          <p className="text-sm text-muted-foreground">
+    <PageShell>
+      <PageHeader
+        title="Lotes / Campos"
+        description="Gestión y monitoreo georreferenciado de lotes de cultivo y parcelas productivas."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Wheat className="h-3.5 w-3.5 text-primary/80" />
             {(lotes ?? []).length} lotes · {NUM(totalHa)} ha totales
-          </p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" /> Nuevo lote
-        </Button>
-      </div>
+          </span>
+        }
+        actions={
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Nuevo lote
+          </Button>
+        }
+      />
 
       {/* Mapa placeholder — integrar Mapbox GL JS */}
-      <Card className="border-dashed">
+      <Card className="border-dashed backdrop-blur-sm bg-card/60">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
           <MapPin className="h-12 w-12 opacity-20 mb-4" />
-          <p className="font-medium">Mapa interactivo</p>
-          <p className="text-sm max-w-xs">
+          <p className="font-medium text-foreground">Mapa interactivo</p>
+          <p className="text-sm max-w-xs text-muted-foreground">
             Integrar Mapbox GL JS con mapbox-gl-draw para dibujar polígonos y calcular hectáreas automáticamente.
           </p>
           <p className="text-xs mt-2 font-mono text-muted-foreground/60">
@@ -127,43 +124,46 @@ export default function LotesPage() {
       {isLoading ? (
         <div className="flex h-32 items-center justify-center"><Spinner /></div>
       ) : (lotes ?? []).length === 0 ? (
-        <Card>
+        <Card className="backdrop-blur-sm bg-card/60">
           <CardContent className="flex flex-col items-center py-12 text-center text-muted-foreground gap-4">
             <Wheat className="h-12 w-12 opacity-20" />
             <div>
-              <p className="font-medium">Sin lotes registrados</p>
-              <p className="text-sm">Registre los campos de sus productores</p>
+              <p className="font-medium text-foreground">Sin lotes registrados</p>
+              <p className="text-sm text-muted-foreground">Registre los campos de sus productores</p>
             </div>
-            <Button onClick={() => setDialogOpen(true)}><Plus className="mr-1 h-4 w-4" /> Nuevo lote</Button>
+            <Button onClick={() => setDialogOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Nuevo lote</Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {lotes?.map(l => (
-            <Card key={l.id} className="hover:shadow-md transition-shadow">
+            <Card key={l.id} className="hover:shadow-md transition-shadow backdrop-blur-sm bg-card/60 border-muted/40">
               <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-base">{l.nombre}</CardTitle>
+                <div className="flex items-start justify-between gap-4">
+                  <CardTitle className="text-base font-semibold">{l.nombre}</CardTitle>
                   {l.cultivoActual && (
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${CULTIVO_COLOR[l.cultivoActual] ?? "bg-gray-100 text-gray-800"}`}>
-                      {l.cultivoActual}
-                    </span>
+                    <StatusBadge
+                      variant={cultivoVariant(l.cultivoActual)}
+                      label={cultivoLabel(l.cultivoActual)}
+                    />
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="text-sm space-y-1">
-                <p className="text-lg font-bold">{NUM(l.superficieHa)} ha</p>
-                {l.proveedor && <p className="text-muted-foreground">{l.proveedor.nombre}</p>}
-                {l.campana && <p className="text-muted-foreground">Campaña: {l.campana}</p>}
-                {l.renspaProductor && (
-                  <p className="font-mono text-xs text-muted-foreground">RENSPA: {l.renspaProductor}</p>
-                )}
-                {l.lat && l.lon && (
-                  <p className="text-xs text-muted-foreground">
-                    <MapPin className="inline h-3 w-3 mr-0.5" />
-                    {NUM(l.lat, 4)}, {NUM(l.lon, 4)}
-                  </p>
-                )}
+              <CardContent className="text-sm space-y-2">
+                <p className="text-2xl font-bold tracking-tight text-foreground">{NUM(l.superficieHa)} ha</p>
+                <div className="space-y-1 text-muted-foreground">
+                  {l.proveedor && <p className="font-medium text-foreground/80">{l.proveedor.nombre}</p>}
+                  {l.campana && <p>Campaña: {l.campana}</p>}
+                  {l.renspaProductor && (
+                    <p className="font-mono text-xs">RENSPA: {l.renspaProductor}</p>
+                  )}
+                  {l.lat && l.lon && (
+                    <p className="text-xs flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground/70" />
+                      {NUM(l.lat, 4)}, {NUM(l.lon, 4)}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -234,6 +234,6 @@ export default function LotesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

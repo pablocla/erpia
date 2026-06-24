@@ -15,8 +15,10 @@ import {
   Loader2,
   Printer,
   RefreshCw,
-  AlertTriangle,
 } from "lucide-react"
+import { FiscalEmissionResult } from "@/components/fiscal/fiscal-emission-result"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { facturaEstadoLabel, facturaEstadoVariant } from "@/lib/ui/status-map"
 
 interface LineaFactura {
   id: number
@@ -47,14 +49,6 @@ interface FacturaDetalle {
   observaciones?: string | null
   cliente?: { id: number; nombre: string; cuit?: string | null; condicionIva?: string }
   lineas: LineaFactura[]
-}
-
-const estadoStyles: Record<string, string> = {
-  emitida: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  pendiente_cae: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-  error_cae: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  ticket: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
-  anulada: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 }
 
 export default function FacturaDetallePage({
@@ -120,31 +114,23 @@ export default function FacturaDetallePage({
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
+    <PageShell maxWidth="4xl">
+      <PageHeader
+        title={comprobante}
+        description={`${new Date(data.createdAt).toLocaleString("es-AR")}${data.cliente ? ` · ${data.cliente.nombre}` : ""}`}
+        badge={
+          <Button variant="ghost" size="sm" className="h-7 px-2 -ml-2" asChild>
             <Link href="/dashboard/facturas">
               <ArrowLeft className="h-4 w-4 mr-1" />
               Facturas
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <FileText className="h-6 w-6" />
-              {comprobante}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {new Date(data.createdAt).toLocaleString("es-AR")}
-              {data.cliente && ` · ${data.cliente.nombre}`}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={estadoStyles[data.estado] ?? ""}>
-            {data.estado.replace(/_/g, " ")}
-          </Badge>
-          {(data.estado === "pendiente_cae" || data.estado === "error_cae") && (
+        }
+        statusSlot={
+          <StatusBadge variant={facturaEstadoVariant(data.estado)} label={facturaEstadoLabel(data.estado)} />
+        }
+        actions={
+          (data.estado === "pendiente_cae" || data.estado === "error_cae") ? (
             <Button
               size="sm"
               variant="secondary"
@@ -158,23 +144,38 @@ export default function FacturaDetallePage({
               )}
               Reintentar CAE
             </Button>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
-      {data.estado === "pendiente_cae" && (
-        <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="pt-4 flex items-start gap-2 text-sm">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <p>
-              Este comprobante aún no tiene CAE de AFIP. Reintentá la emisión o revisá el certificado en{" "}
-              <Link href="/dashboard/configuracion?seccion=afip" className="underline font-medium">
-                Configuración AFIP
-              </Link>
-              .
-            </p>
-          </CardContent>
-        </Card>
+      {["emitida", "pendiente_cae", "error_cae"].includes(data.estado) && (
+        <FiscalEmissionResult
+          data={{
+            success: data.estado === "emitida" && !!data.cae,
+            numero: data.numero,
+            tipo: data.tipo,
+            cae: data.cae ?? undefined,
+            vencimientoCAE: data.vencimientoCAE ?? undefined,
+            qrBase64: data.qrBase64 ?? undefined,
+            pendienteCae: data.estado === "pendiente_cae",
+            error: data.estado === "error_cae" ? "Error al obtener CAE — revisá certificado AFIP" : undefined,
+          }}
+          title={data.estado === "emitida" ? "Comprobante fiscal" : "Estado fiscal"}
+          onRetry={
+            data.estado === "pendiente_cae" || data.estado === "error_cae"
+              ? () => void reintentarCae()
+              : undefined
+          }
+          retrying={reintentando}
+          actions={
+            data.qrBase64 ? (
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimir
+              </Button>
+            ) : undefined
+          }
+        />
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -228,22 +229,6 @@ export default function FacturaDetallePage({
         </Card>
       </div>
 
-      {data.qrBase64 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">QR AFIP</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={data.qrBase64} alt="QR AFIP" className="h-32 w-32 rounded border" />
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Líneas ({data.lineas.length})</CardTitle>
@@ -276,6 +261,6 @@ export default function FacturaDetallePage({
           <CardContent className="text-sm text-muted-foreground">{data.observaciones}</CardContent>
         </Card>
       )}
-    </div>
+    </PageShell>
   )
 }

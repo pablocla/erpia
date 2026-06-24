@@ -13,10 +13,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Plus, FolderTree, BarChart3, ChevronRight, ChevronDown,
+  Plus, FolderTree, BarChart3, ChevronRight, ChevronDown, Sparkles
 } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { PageShell, PageHeader } from "@/components/layout"
 
 interface CentroCosto {
   id: number
@@ -157,19 +158,19 @@ export default function CentrosCostoPage() {
       return (
         <div key={node.id}>
           <div
-            className="flex items-center gap-2 py-2 px-2 hover:bg-muted/50 rounded cursor-pointer"
-            style={{ paddingLeft: `${depth * 24 + 8}px` }}
+            className="flex items-center gap-2 py-2 px-3 hover:bg-muted/30 rounded-lg cursor-pointer transition-colors"
+            style={{ paddingLeft: `${depth * 24 + 12}px` }}
             onClick={() => hasChildren && toggleExpanded(node.id)}
           >
             {hasChildren ? (
-              isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+              isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             ) : (
-              <div className="w-4" />
+              <div className="w-4 shrink-0" />
             )}
-            <span className="font-mono text-sm text-muted-foreground">{node.codigo}</span>
-            <span className="font-medium">{node.nombre}</span>
+            <span className="font-mono text-xs text-muted-foreground shrink-0">{node.codigo}</span>
+            <span className="font-medium text-foreground">{node.nombre}</span>
             {node._count && node._count.movimientos > 0 && (
-              <Badge variant="secondary" className="ml-auto text-xs">{node._count.movimientos} mov.</Badge>
+              <Badge variant="secondary" className="ml-auto text-xs backdrop-blur-sm bg-muted/40">{node._count.movimientos} mov.</Badge>
             )}
           </div>
           {hasChildren && isExpanded && renderTree(node.hijos!, depth + 1)}
@@ -182,40 +183,46 @@ export default function CentrosCostoPage() {
   const totalReporteHaber = reporte.reduce((s, r) => s + r.totalHaber, 0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Centros de Costo</h1>
-          <p className="text-muted-foreground">Estructura jerárquica y distribución de gastos</p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Nuevo Centro
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Centros de Costo"
+        description="Estructura de imputación jerárquica para la distribución, análisis y reporte de egresos e ingresos corporativos."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5 text-primary/80" />
+            Control de Gestión
+          </span>
+        }
+        actions={
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Nuevo Centro
+          </Button>
+        }
+      />
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-      {success && <Alert><AlertDescription className="text-green-600">{success}</AlertDescription></Alert>}
+      {success && <Alert><AlertDescription className="text-[var(--status-success-foreground)]">{success}</AlertDescription></Alert>}
 
-      <Tabs defaultValue="jerarquia">
-        <TabsList>
+      <Tabs defaultValue="jerarquia" className="space-y-6">
+        <TabsList className="backdrop-blur-sm bg-muted/60">
           <TabsTrigger value="jerarquia"><FolderTree className="mr-2 h-4 w-4" /> Jerarquía</TabsTrigger>
           <TabsTrigger value="reporte"><BarChart3 className="mr-2 h-4 w-4" /> Reporte por Período</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="jerarquia">
-          <Card>
+        <TabsContent value="jerarquia" className="space-y-6">
+          <Card className="backdrop-blur-sm bg-card/60 border-muted/40">
             <CardHeader>
-              <CardTitle>Estructura de Centros de Costo</CardTitle>
+              <CardTitle className="text-base font-semibold">Estructura Jerárquica</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="text-muted-foreground text-center py-8">Cargando...</p>
+                <div className="text-muted-foreground text-center py-12">Cargando jerarquía...</div>
               ) : arbol.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
+                <div className="text-muted-foreground text-center py-12">
                   Sin centros de costo. Cree el primer centro para comenzar.
-                </p>
+                </div>
               ) : (
-                <div className="border rounded-lg p-2">
+                <div className="border border-muted/30 rounded-xl p-3 bg-background/30 space-y-1">
                   {renderTree(arbol)}
                 </div>
               )}
@@ -223,17 +230,17 @@ export default function CentrosCostoPage() {
           </Card>
 
           {/* Flat list */}
-          <Card>
-            <CardHeader><CardTitle>Lista Completa</CardTitle></CardHeader>
-            <CardContent className="pt-4">
+          <Card className="backdrop-blur-sm bg-card/60 border-muted/40">
+            <CardHeader><CardTitle className="text-base font-semibold">Todos los Centros</CardTitle></CardHeader>
+            <CardContent className="pt-0">
               <DataTable<CentroCosto>
                 data={centros}
                 columns={[
-                  { key: "codigo", header: "Código", sortable: true, cell: (cc) => <span className="font-mono">{cc.codigo}</span> },
-                  { key: "nombre", header: "Nombre", sortable: true, cell: (cc) => <span className="font-medium">{cc.nombre}</span> },
+                  { key: "codigo", header: "Código", sortable: true, cell: (cc) => <span className="font-mono text-xs">{cc.codigo}</span> },
+                  { key: "nombre", header: "Nombre", sortable: true, cell: (cc) => <span className="font-medium text-foreground">{cc.nombre}</span> },
                   { key: "parent" as any, header: "Centro Padre", cell: (cc) => <span className="text-muted-foreground">{cc.parent ? `${cc.parent.codigo} — ${cc.parent.nombre}` : "—"}</span>, exportFn: (cc) => cc.parent ? `${cc.parent.codigo} - ${cc.parent.nombre}` : "" },
-                  { key: "_count" as any, header: "Movimientos", cell: (cc) => <span className="text-right block">{cc._count?.movimientos ?? 0}</span>, exportFn: (cc) => String(cc._count?.movimientos ?? 0) },
-                ] as DataTableColumn<CentroCosto>[]}
+                  { key: "_count" as any, header: "Movimientos", cell: (cc) => <span className="text-right block font-semibold">{cc._count?.movimientos ?? 0}</span>, exportFn: (cc) => String(cc._count?.movimientos ?? 0) },
+                ]}
                 rowKey="id"
                 searchPlaceholder="Buscar centro de costo..."
                 searchKeys={["codigo", "nombre"]}
@@ -245,17 +252,17 @@ export default function CentrosCostoPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="reporte" className="space-y-4">
-          <Card>
+        <TabsContent value="reporte" className="space-y-6">
+          <Card className="backdrop-blur-sm bg-card/60 border-muted/40">
             <CardHeader>
-              <CardTitle>Reporte por Período</CardTitle>
+              <CardTitle className="text-base font-semibold">Reporte Mensual</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4 items-end">
-                <div>
-                  <Label>Mes</Label>
+            <CardContent className="space-y-6">
+              <div className="flex flex-wrap gap-4 items-end bg-muted/20 p-4 rounded-xl border border-muted/20">
+                <div className="space-y-1.5">
+                  <Label>Mes de Consulta</Label>
                   <Select value={repMes} onValueChange={setRepMes}>
-                    <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => (
                         <SelectItem key={i + 1} value={String(i + 1)}>
@@ -265,51 +272,55 @@ export default function CentrosCostoPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <Label>Año</Label>
                   <Input type="number" className="w-28" value={repAnio} onChange={e => setRepAnio(e.target.value)} />
                 </div>
-                <Button onClick={cargarReporte} disabled={loadingRep}>
-                  <BarChart3 className="mr-2 h-4 w-4" /> {loadingRep ? "Generando..." : "Generar Reporte"}
+                <Button onClick={cargarReporte} disabled={loadingRep} className="gap-2">
+                  <BarChart3 className="h-4 w-4" /> {loadingRep ? "Generando..." : "Generar Reporte"}
                 </Button>
               </div>
 
-              {reporte.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Centro de Costo</TableHead>
-                      <TableHead className="text-right">Debe</TableHead>
-                      <TableHead className="text-right">Haber</TableHead>
-                      <TableHead className="text-right">Saldo</TableHead>
-                      <TableHead className="text-right">Mov.</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reporte.map(r => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-mono">{r.codigo}</TableCell>
-                        <TableCell className="font-medium">{r.nombre}</TableCell>
-                        <TableCell className="text-right">${fmt(r.totalDebe)}</TableCell>
-                        <TableCell className="text-right">${fmt(r.totalHaber)}</TableCell>
-                        <TableCell className="text-right font-bold">
-                          <span className={r.saldo >= 0 ? "text-blue-600" : "text-red-600"}>
-                            ${fmt(r.saldo)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">{r.movimientos}</TableCell>
+              {reporte.length > 0 ? (
+                <div className="border border-muted/30 rounded-xl overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Centro de Costo</TableHead>
+                        <TableHead className="text-right">Debe</TableHead>
+                        <TableHead className="text-right">Haber</TableHead>
+                        <TableHead className="text-right">Saldo</TableHead>
+                        <TableHead className="text-right">Mov.</TableHead>
                       </TableRow>
-                    ))}
-                    <TableRow className="font-bold border-t-2">
-                      <TableCell colSpan={2}>TOTAL</TableCell>
-                      <TableCell className="text-right">${fmt(totalReporteDebe)}</TableCell>
-                      <TableCell className="text-right">${fmt(totalReporteHaber)}</TableCell>
-                      <TableCell className="text-right">${fmt(totalReporteDebe - totalReporteHaber)}</TableCell>
-                      <TableCell />
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {reporte.map(r => (
+                        <TableRow key={r.id} className="hover:bg-muted/10">
+                          <TableCell className="font-mono text-xs">{r.codigo}</TableCell>
+                          <TableCell className="font-medium text-foreground">{r.nombre}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">${fmt(r.totalDebe)}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">${fmt(r.totalHaber)}</TableCell>
+                          <TableCell className="text-right font-mono text-xs font-bold">
+                            <span className={r.saldo >= 0 ? "text-[var(--status-info-foreground)]" : "text-[var(--status-error-foreground)]"}>
+                              ${fmt(r.saldo)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{r.movimientos}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="font-bold border-t-2 bg-muted/20">
+                        <TableCell colSpan={2}>TOTAL ACUMULADO</TableCell>
+                        <TableCell className="text-right font-mono text-xs">${fmt(totalReporteDebe)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs">${fmt(totalReporteHaber)}</TableCell>
+                        <TableCell className="text-right font-mono text-xs">${fmt(totalReporteDebe - totalReporteHaber)}</TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                !loadingRep && <p className="text-sm text-muted-foreground text-center py-8">Genere el reporte para el período seleccionado.</p>
               )}
             </CardContent>
           </Card>
@@ -350,13 +361,13 @@ export default function CentrosCostoPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button onClick={crear}>Crear Centro</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

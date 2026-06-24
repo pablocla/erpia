@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
+import { ensureProyectoImplementacion } from "@/lib/ops/implementacion-service"
 import { z } from "zod"
 
 const signupSchema = z.object({
@@ -64,6 +65,11 @@ export async function POST(request: NextRequest) {
       SELECT id, nombre, email, rol, "empresaId" FROM usuarios WHERE email = ${email} LIMIT 1
     `
     const usuario = usuarioRows[0]
+
+    void ensureProyectoImplementacion({
+      empresaId,
+      planComercial: "Pro",
+    }).catch((err) => console.error("Error auto-crear proyecto CCA en signup:", err))
 
     const authService = new AuthService()
     const token = await authService.generarToken({

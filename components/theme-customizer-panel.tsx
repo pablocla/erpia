@@ -458,10 +458,11 @@ export function ThemeCustomizerPanel({ className }: { className?: string }) {
         <div className="space-y-3">
           <div>
             <Label className="text-[10px] text-muted-foreground">Nombre en sidebar</Label>
+            <p className="text-[10px] text-muted-foreground/80 mb-1">Vacío muestra Clavis by Claver</p>
             <Input
               disabled={disabled}
               value={config.appName ?? ""}
-              placeholder="ERP Argentina"
+              placeholder="Mi Empresa S.A."
               className="h-9 mt-1"
               onChange={(e) => setAppName(e.target.value || null)}
             />

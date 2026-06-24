@@ -86,7 +86,7 @@ export const exportService = {
     ]
     const rows = productos.map((p: any) => [
       p.codigo, p.nombre, p.descripcion || "", p.categoria?.nombre || "",
-      formatMoney(p.precioVenta), formatMoney(p.precioCompra),
+      formatMoney(Number(p.precioVenta)), formatMoney(Number(p.precioCompra)),
       p.porcentajeIva, p.stock, p.stockMinimo, p.unidad, p.activo ? "Sí" : "No",
     ])
 
@@ -123,8 +123,8 @@ export const exportService = {
       formatDate(f.createdAt), f.tipo, f.puntoVenta,
       f.numero.toString().padStart(8, "0"),
       f.cliente.nombre, f.cliente.cuit || "",
-      formatMoney(f.subtotal), formatMoney(f.iva),
-      formatMoney(f.totalPercepciones), formatMoney(f.total),
+      formatMoney(Number(f.subtotal)), formatMoney(Number(f.iva)),
+      formatMoney(Number(f.totalPercepciones)), formatMoney(Number(f.total)),
       f.cae || "", f.estado, f.monedaOrigen, f.tipoCambio,
     ])
 
@@ -160,9 +160,9 @@ export const exportService = {
     const rows = compras.map((c) => [
       formatDate(c.fecha), c.tipo, c.puntoVenta, c.numero,
       c.proveedor.nombre, c.proveedor.cuit,
-      formatMoney(c.subtotal), formatMoney(c.iva),
-      formatMoney(c.totalPercepciones), formatMoney(c.totalRetenciones),
-      formatMoney(c.total), c.caeProveedor || "", c.estadoVerificacionCAE || "",
+      formatMoney(Number(c.subtotal)), formatMoney(Number(c.iva)),
+      formatMoney(Number(c.totalPercepciones)), formatMoney(Number(c.totalRetenciones)),
+      formatMoney(Number(c.total)), c.caeProveedor || "", c.estadoVerificacionCAE || "",
     ])
 
     return {
@@ -197,18 +197,18 @@ export const exportService = {
         "Neto Gravado", "IVA 21%", "IVA 10.5%", "IVA 27%", "IVA 0%", "Percepciones", "Total",
       ]
       const rows = facturas.map((f) => {
-        const iva21 = f.lineas.filter((l) => l.porcentajeIva === 21).reduce((s, l) => s + l.iva, 0)
-        const iva105 = f.lineas.filter((l) => l.porcentajeIva === 10.5).reduce((s, l) => s + l.iva, 0)
-        const iva27 = f.lineas.filter((l) => l.porcentajeIva === 27).reduce((s, l) => s + l.iva, 0)
-        const iva0 = f.lineas.filter((l) => l.porcentajeIva === 0).reduce((s, l) => s + l.subtotal, 0)
+        const iva21 = f.lineas.filter((l) => l.porcentajeIva === 21).reduce((s, l) => s + Number(l.iva), 0)
+        const iva105 = f.lineas.filter((l) => l.porcentajeIva === 10.5).reduce((s, l) => s + Number(l.iva), 0)
+        const iva27 = f.lineas.filter((l) => l.porcentajeIva === 27).reduce((s, l) => s + Number(l.iva), 0)
+        const iva0 = f.lineas.filter((l) => l.porcentajeIva === 0).reduce((s, l) => s + Number(l.subtotal), 0)
 
         return [
           formatDate(f.createdAt), f.tipoCbte, f.puntoVenta,
           f.numero.toString().padStart(8, "0"),
           f.cliente.cuit || "", f.cliente.nombre,
-          formatMoney(f.subtotal),
+          formatMoney(Number(f.subtotal)),
           formatMoney(iva21), formatMoney(iva105), formatMoney(iva27), formatMoney(iva0),
-          formatMoney(f.totalPercepciones), formatMoney(f.total),
+          formatMoney(Number(f.totalPercepciones)), formatMoney(Number(f.total)),
         ]
       })
 
@@ -232,17 +232,17 @@ export const exportService = {
         "Neto Gravado", "IVA 21%", "IVA 10.5%", "IVA 27%", "Percepciones", "Retenciones", "Total",
       ]
       const rows = compras.map((c) => {
-        const iva21 = c.lineas.filter((l) => l.porcentajeIva === 21).reduce((s, l) => s + l.iva, 0)
-        const iva105 = c.lineas.filter((l) => l.porcentajeIva === 10.5).reduce((s, l) => s + l.iva, 0)
-        const iva27 = c.lineas.filter((l) => l.porcentajeIva === 27).reduce((s, l) => s + l.iva, 0)
+        const iva21 = c.lineas.filter((l) => l.porcentajeIva === 21).reduce((s, l) => s + Number(l.iva), 0)
+        const iva105 = c.lineas.filter((l) => l.porcentajeIva === 10.5).reduce((s, l) => s + Number(l.iva), 0)
+        const iva27 = c.lineas.filter((l) => l.porcentajeIva === 27).reduce((s, l) => s + Number(l.iva), 0)
 
         return [
           formatDate(c.fecha), c.tipo, c.puntoVenta, c.numero,
           c.proveedor.cuit, c.proveedor.nombre,
-          formatMoney(c.subtotal),
+          formatMoney(Number(c.subtotal)),
           formatMoney(iva21), formatMoney(iva105), formatMoney(iva27),
-          formatMoney(c.totalPercepciones), formatMoney(c.totalRetenciones),
-          formatMoney(c.total),
+          formatMoney(Number(c.totalPercepciones)), formatMoney(Number(c.totalRetenciones)),
+          formatMoney(Number(c.total)),
         ]
       })
 

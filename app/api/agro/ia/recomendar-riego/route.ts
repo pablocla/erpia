@@ -9,7 +9,7 @@ const recomendarSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const body = await request.json()
@@ -46,3 +46,4 @@ export async function POST(request: NextRequest) {
     provider: "heuristica_local",
   })
 }
+

@@ -32,14 +32,28 @@ export interface SyncResult {
   sincronizadas: number
   errores: number
   omitidas: number  // en ventana de mantenimiento
-  detalles: { facturaId: number; resultado: "ok" | "error" | "omitida"; mensaje?: string }[]
+  detalles: {
+    comprobanteId: number
+    tipo: "factura" | "nota_credito"
+    resultado: "ok" | "error" | "omitida"
+    mensaje?: string
+  }[]
 }
 
 export async function syncFacturasPendientes(empresaId?: number): Promise<SyncResult> {
   const result: SyncResult = { procesadas: 0, sincronizadas: 0, errores: 0, omitidas: 0, detalles: [] }
 
   if (enVentanaMantenimientoAFIP()) {
-    return { ...result, omitidas: 1, detalles: [{ facturaId: 0, resultado: "omitida", mensaje: "Ventana de mantenimiento AFIP (00:00-01:00 ART)" }] }
+    return {
+      ...result,
+      omitidas: 1,
+      detalles: [{
+        comprobanteId: 0,
+        tipo: "factura",
+        resultado: "omitida",
+        mensaje: "Ventana de mantenimiento AFIP (00:00-01:00 ART)",
+      }],
+    }
   }
 
   const limiteAntigüedad = new Date(Date.now() - HORAS_LIMITE_REINTENTO * 3600_000)
@@ -93,20 +107,85 @@ export async function syncFacturasPendientes(empresaId?: number): Promise<SyncRe
     }
   }
 
-  result.procesadas = pendientes.length
+  const ncPendientes = await prisma.notaCredito.findMany({
+    where: {
+      estado: "pendiente_cae",
+      createdAt: { gte: limiteAntigüedad },
+      ...(empresaId ? { empresaId } : {}),
+    },
+    orderBy: { createdAt: "asc" },
+    take: 50,
+  })
+
+  const ncVencidas = await prisma.notaCredito.findMany({
+    where: {
+      estado: "pendiente_cae",
+      createdAt: { lt: limiteAntigüedad },
+      ...(empresaId ? { empresaId } : {}),
+    },
+    select: { id: true },
+  })
+  if (ncVencidas.length > 0) {
+    await prisma.notaCredito.updateMany({
+      where: { id: { in: ncVencidas.map((n) => n.id) } },
+      data: { estado: "error_cae" },
+    })
+  }
+
+  result.procesadas = pendientes.length + ncPendientes.length
 
   for (const factura of pendientes) {
     const afip = await solicitarCaeFactura(factura.id)
     if (afip.ok) {
       result.sincronizadas++
-      result.detalles.push({ facturaId: factura.id, resultado: "ok" })
+      result.detalles.push({ comprobanteId: factura.id, tipo: "factura", resultado: "ok" })
     } else {
       result.errores++
       result.detalles.push({
-        facturaId: factura.id,
+        comprobanteId: factura.id,
+        tipo: "factura",
         resultado: "error",
         mensaje: afip.error ?? "Error desconocido",
       })
+    }
+  }
+
+  const { emitirNotaCreditoAfip } = await import("./emitir-nota-credito-afip")
+  for (const nc of ncPendientes) {
+    const afip = await emitirNotaCreditoAfip(nc.id)
+    if (afip.ok) {
+      result.sincronizadas++
+      result.detalles.push({ comprobanteId: nc.id, tipo: "nota_credito", resultado: "ok" })
+    } else {
+      result.errores++
+      result.detalles.push({
+        comprobanteId: nc.id,
+        tipo: "nota_credito",
+        resultado: "error",
+        mensaje: afip.error ?? "Error desconocido",
+      })
+    }
+  }
+
+  // Informar comprobantes CAEA pendientes (si auto_informar está activo)
+  if (empresaId) {
+    try {
+      const { syncCaeaEmpresa } = await import("./caea-informar")
+      const caeaSync = await syncCaeaEmpresa(empresaId)
+      if (caeaSync.informados > 0) {
+        result.sincronizadas += caeaSync.informados
+        result.detalles.push({
+          comprobanteId: 0,
+          tipo: "factura",
+          resultado: "ok",
+          mensaje: `${caeaSync.informados} comprobante(s) CAEA informados`,
+        })
+      }
+      if (caeaSync.errores.length > 0) {
+        result.errores += caeaSync.errores.length
+      }
+    } catch {
+      /* no bloquear sync CAE */
     }
   }
 

@@ -79,6 +79,10 @@ interface ThemeConfigContextValue {
 
 const ThemeConfigContext = createContext<ThemeConfigContextValue | null>(null)
 
+/** Evita GET duplicados si el provider se remonta (view transitions, HMR, Strict Mode). */
+let temaConfigCache: { config: EmpresaTemaConfig; canEdit: boolean } | null = null
+let temaConfigLoadPromise: Promise<void> | null = null
+
 export function ThemeConfigProvider({ children }: { children: React.ReactNode }) {
   const { setTheme } = useTheme()
   const [config, setConfig] = useState<EmpresaTemaConfig>(DEFAULT_TEMA_CONFIG)
@@ -88,6 +92,7 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
   const configRef = useRef(config)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const skipSave = useRef(false)
+  const applyLocalRef = useRef<(next: EmpresaTemaConfig) => void>(() => {})
 
   configRef.current = config
 
@@ -105,6 +110,8 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
     [setTheme]
   )
 
+  applyLocalRef.current = applyLocal
+
   const persistToServer = useCallback(async (next: EmpresaTemaConfig) => {
     if (!canEdit) return
     setSaving(true)
@@ -116,7 +123,11 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
       })
       if (res.ok) {
         const data = await res.json()
-        if (data.config) applyLocal(mergeTemaConfig(data.config))
+        if (data.config) {
+          const merged = mergeTemaConfig(data.config)
+          temaConfigCache = { config: merged, canEdit: true }
+          applyLocal(merged)
+        }
       }
     } catch {
       /* ignore */
@@ -145,25 +156,58 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
   )
 
   useEffect(() => {
+    let cancelled = false
+
     applyThemeToDocument(DEFAULT_TEMA_CONFIG)
 
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
     if (!token) {
+      temaConfigCache = null
+      temaConfigLoadPromise = null
       setLoading(false)
       return
     }
 
-    authFetch("/api/config/tema")
-      .then(async (res) => {
-        if (!res.ok) return
-        const data = await res.json()
+    if (temaConfigCache) {
+      skipSave.current = true
+      applyLocalRef.current(temaConfigCache.config)
+      setCanEdit(temaConfigCache.canEdit)
+      skipSave.current = false
+      setLoading(false)
+      return
+    }
+
+    if (!temaConfigLoadPromise) {
+      temaConfigLoadPromise = authFetch("/api/config/tema")
+        .then(async (res) => {
+          if (!res.ok) return
+          const data = await res.json()
+          temaConfigCache = {
+            config: mergeTemaConfig(data.config),
+            canEdit: Boolean(data.canEdit),
+          }
+        })
+        .finally(() => {
+          temaConfigLoadPromise = null
+        })
+    }
+
+    void temaConfigLoadPromise
+      .then(() => {
+        if (cancelled || !temaConfigCache) return
         skipSave.current = true
-        applyLocal(mergeTemaConfig(data.config))
-        setCanEdit(Boolean(data.canEdit))
+        applyLocalRef.current(temaConfigCache.config)
+        setCanEdit(temaConfigCache.canEdit)
         skipSave.current = false
       })
-      .finally(() => setLoading(false))
-  }, [applyLocal])
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const makeSetter = <K extends keyof EmpresaTemaConfig>(key: K) =>
     (value: EmpresaTemaConfig[K]) => update({ [key]: value } as Partial<EmpresaTemaConfig>)
@@ -181,7 +225,9 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
       if (res.ok) {
         const data = await res.json()
         skipSave.current = true
-        applyLocal(mergeTemaConfig(data.config))
+        const merged = mergeTemaConfig(data.config)
+        temaConfigCache = { config: merged, canEdit: true }
+        applyLocal(merged)
         skipSave.current = false
       }
     } finally {

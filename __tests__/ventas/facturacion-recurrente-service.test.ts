@@ -67,18 +67,29 @@ describe("Facturación Recurrente Service", () => {
           montoNeto: 10000,
           alicuotaIva: 21,
           frecuencia: "mensual",
+          tipoCbte: 6,
           clienteId: 5,
           proximaEmision: ahora,
           fechaFin: null,
           facturasEmitidas: 2,
         },
       ])
+      mockPrismaClient.cliente.findUnique.mockResolvedValue({ condicionIva: "Consumidor Final" })
+      mockPrismaClient.empresa.findUnique.mockResolvedValue({ puntoVenta: 1 })
+      mockPrismaClient.factura.findFirst.mockResolvedValue({ numero: 10 })
+      mockPrismaClient.factura.create.mockResolvedValue({ id: 99, numero: 11 })
       mockPrismaClient.facturaRecurrente.update.mockResolvedValue({ id: 1 })
+
+      vi.doMock("@/lib/afip/solicitar-cae-factura", () => ({
+        solicitarCaeFactura: vi.fn().mockResolvedValue({ ok: true, cae: "12345678901234" }),
+      }))
 
       const result = await procesarFacturasRecurrentes(empresaId)
 
       expect(result.procesadas).toBe(1)
       expect(result.facturas[0].monto).toBe(12100) // 10000 + 21%
+      expect(result.facturas[0].afipOk).toBe(true)
+      expect(result.facturas[0].cae).toBe("12345678901234")
       expect(mockPrismaClient.facturaRecurrente.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 1 },

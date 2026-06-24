@@ -70,6 +70,8 @@ export interface AFIPResponse {
   qrBase64?: string
   numero?: number
   error?: string
+  pendienteCAE?: boolean
+  advertencia?: string
 }
 
 export interface AsientoContableData {

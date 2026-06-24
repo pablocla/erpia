@@ -333,7 +333,7 @@ export class WorkflowEngine {
           const result = await executeN8nWorkflowStep(this.empresaId, step, contexto)
           return {
             success: result.success,
-            output: result.output,
+            output: result.output as Record<string, unknown> | undefined,
             error: result.error,
           }
         }

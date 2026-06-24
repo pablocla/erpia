@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { activoLabel, activoVariant } from "@/lib/ui/status-map"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Hash, CheckCircle, XCircle } from "lucide-react"
+import { Plus, Pencil, Hash } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import type { TipoComprobanteAfip } from "@/lib/afip/tipos-comprobante"
@@ -140,18 +142,16 @@ export default function SeriesPage() {
   }, [form.tipoCbteAfip, form.puntoVentaId, editando, tiposCbte, puntosVenta])
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Maestro de Series</h1>
-          <p className="text-muted-foreground text-sm">
-            Series de numeración por Punto de Venta y Tipo de Comprobante AFIP
-          </p>
-        </div>
-        <Button onClick={abrirNuevo} disabled={puntosVenta.length === 0}>
-          <Plus className="h-4 w-4 mr-1" /> Nueva Serie
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Maestro de Series"
+        description="Series de numeración por Punto de Venta y Tipo de Comprobante AFIP"
+        actions={
+          <Button onClick={abrirNuevo} disabled={puntosVenta.length === 0}>
+            <Plus className="h-4 w-4 mr-1" /> Nueva Serie
+          </Button>
+        }
+      />
 
       {puntosVenta.length === 0 && !loading && (
         <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
@@ -216,7 +216,7 @@ export default function SeriesPage() {
               { key: "nombreComprobante", header: "Tipo Comprobante", cell: (s) => <div className="flex items-center gap-2"><Badge className={LETRA_COLORS[s.letraComprobante] ?? LETRA_COLORS[""]}>{s.letraComprobante || "—"}</Badge><div><p className="font-medium text-sm">{s.nombreComprobante}</p><p className="text-xs text-muted-foreground">tipoCbte: {s.tipoCbteAfip}</p></div></div> },
               { key: "puntoVenta" as any, header: "Punto de Venta", cell: (s) => s.puntoVenta ? <span className="text-sm">PV {String(s.puntoVenta.numero).padStart(4, "0")} — {s.puntoVenta.nombre}</span> : null, exportFn: (s) => s.puntoVenta ? `PV ${s.puntoVenta.numero}` : "" },
               { key: "ultimoNumero", header: "Último Nº", sortable: true, cell: (s) => <span className="font-mono">{s.ultimoNumero.toLocaleString("es-AR")}</span> },
-              { key: "activo", header: "Estado", cell: (s) => s.activo ? <CheckCircle className="h-4 w-4 text-green-500 mx-auto" /> : <XCircle className="h-4 w-4 text-red-400 mx-auto" /> },
+              { key: "activo", header: "Estado", cell: (s) => <StatusBadge variant={activoVariant(s.activo)} label={activoLabel(s.activo)} /> },
               { key: "acciones" as any, header: "", cell: (s) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(s) }}><Pencil className="h-3.5 w-3.5" /></Button> },
             ] as DataTableColumn<Serie>[]}
             rowKey="id"
@@ -312,6 +312,6 @@ export default function SeriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

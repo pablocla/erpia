@@ -111,7 +111,7 @@ export async function computarSnapshot(
   // ── 3. Totales generales ─────────────────────────────────────────────────
   const cantidadFacturas = facturas.filter((f) => f.tipo !== "ticket").length
   const cantidadTickets  = facturas.filter((f) => f.tipo === "ticket" || f.estado === "pendiente_cae").length
-  const totalVentas      = facturas.reduce((s, f) => s + (f.total ?? 0), 0)
+  const totalVentas      = facturas.reduce((s, f) => s + Number(f.total ?? 0), 0)
 
   const nums = facturas.map((f) => f.numero).filter(Boolean) as number[]
   const primerNumFactura = nums.length ? Math.min(...nums) : null
@@ -131,8 +131,8 @@ export async function computarSnapshot(
   for (const factura of facturas) {
     for (const linea of factura.lineas) {
       const pct = linea.porcentajeIva ?? 21
-      const ivaLinea   = linea.iva   ?? 0
-      const totalLinea = linea.subtotal ?? 0
+      const ivaLinea   = Number(linea.iva ?? 0)
+      const totalLinea = Number(linea.subtotal ?? 0)
       const netoLinea  = totalLinea - ivaLinea
 
       if (pct === 21)      { iva.neto21  += netoLinea; iva.iva21  += ivaLinea }
@@ -153,7 +153,7 @@ export async function computarSnapshot(
 
   // ── 5. Desglose medios de pago (desde MovimientoCaja) ────────────────────
   const sumMedio = (medio: string) =>
-    movimientos.filter((m) => m.medioPago === medio).reduce((s, m) => s + m.monto, 0)
+    movimientos.filter((m) => m.medioPago === medio).reduce((s, m) => s + Number(m.monto), 0)
 
   const pagos: DesgloseMedioPago = {
     efectivo:       parseFloat(sumMedio("efectivo").toFixed(2)),
@@ -178,13 +178,13 @@ export async function computarSnapshot(
       const existing = productoMap.get(key)
       if (existing) {
         existing.cantidad += linea.cantidad
-        existing.total    += linea.subtotal ?? 0
+        existing.total    += Number(linea.subtotal ?? 0)
       } else {
         productoMap.set(key, {
           productoId: linea.productoId,
           nombre:     linea.descripcion,
           cantidad:   linea.cantidad,
-          total:      linea.subtotal ?? 0,
+          total:      Number(linea.subtotal ?? 0),
         })
       }
     }
@@ -201,9 +201,9 @@ export async function computarSnapshot(
     const existing = horaMap.get(hora)
     if (existing) {
       existing.cantidad += 1
-      existing.total    += factura.total ?? 0
+      existing.total    += Number(factura.total ?? 0)
     } else {
-      horaMap.set(hora, { cantidad: 1, total: factura.total ?? 0 })
+      horaMap.set(hora, { cantidad: 1, total: Number(factura.total ?? 0) })
     }
   }
   const ventasPorHora: VentaPorHora[] = [...horaMap.entries()]
@@ -217,9 +217,9 @@ export async function computarSnapshot(
     const existing = tipoMap.get(tipo)
     if (existing) {
       existing.cantidad += 1
-      existing.total    += factura.total ?? 0
+      existing.total    += Number(factura.total ?? 0)
     } else {
-      tipoMap.set(tipo, { cantidad: 1, total: factura.total ?? 0 })
+      tipoMap.set(tipo, { cantidad: 1, total: Number(factura.total ?? 0) })
     }
   }
   const ventasPorTipo = [...tipoMap.entries()].map(([tipo, d]) => ({

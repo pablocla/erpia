@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { chequeEstadoLabel, chequeEstadoVariant } from "@/lib/ui/status-map"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -208,24 +210,21 @@ export default function ChequesPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="h-6 w-6 text-violet-600" />
-            Cheques
-          </h1>
-          <p className="text-muted-foreground text-sm">Cartera de cheques recibidos y emitidos — mercado argentino</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchCheques} className="gap-1">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-          <Button onClick={() => { setForm(initialForm); setError(""); setDialogOpen(true) }} className="gap-2">
-            <Plus className="h-4 w-4" /> Nuevo Cheque
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Cheques"
+        description="Cartera de cheques recibidos y emitidos — mercado argentino"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={fetchCheques} className="gap-1">
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
+            <Button onClick={() => { setForm(initialForm); setError(""); setDialogOpen(true) }} className="gap-2">
+              <Plus className="h-4 w-4" /> Nuevo Cheque
+            </Button>
+          </div>
+        }
+      />
 
       {/* Alerta vencimientos */}
       {proximosVencer.length > 0 && (
@@ -408,7 +407,7 @@ export default function ChequesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }
 
@@ -446,7 +445,7 @@ function ChequeTable({
               { key: "cliente" as any, header: "Titular", cell: (c) => c.cliente?.nombre || c.proveedor?.nombre || "—", exportFn: (c) => c.cliente?.nombre || c.proveedor?.nombre || "" },
               { key: "monto", header: "Monto", align: "right", sortable: true, cell: (c) => <span className="font-semibold">{currency.format(c.monto)}</span> },
               { key: "fechaVencimiento", header: "Vencimiento", sortable: true, cell: (c) => { const dias = diasParaVencer(c.fechaVencimiento); const venceProx = dias >= 0 && dias <= 7; return (<div><p className={`text-sm ${venceProx ? "font-bold text-orange-600" : ""}`}>{new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}</p>{venceProx && <p className="text-[10px] text-orange-500">En {dias} días</p>}</div>) } },
-              { key: "estado", header: "Estado", cell: (c) => { const cfg = ESTADO_CONFIG[c.estado] || { label: c.estado, color: "bg-gray-100 text-gray-600", icon: FileText }; return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>{cfg.label}</span> } },
+              { key: "estado", header: "Estado", cell: (c) => <StatusBadge variant={chequeEstadoVariant(c.estado)} label={chequeEstadoLabel(c.estado)} /> },
               { key: "acciones" as any, header: "Acciones", cell: (c) => <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onCambiarEstado(c.id, c.estado) }}>Cambiar estado</Button> },
             ] as DataTableColumn<Cheque>[]}
             rowKey="id"

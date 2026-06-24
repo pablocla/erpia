@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { AUTOMATION_SKU } from "./sku-catalog"
+import { AUTOMATION_SKU, SHEETS_LITE_SKU, SHEETS_PRO_SKU } from "./sku-catalog"
 
 export function currentUsageMonth(date = new Date()): string {
   const y = date.getUTCFullYear()
@@ -43,6 +43,20 @@ export async function seedCommercialCatalog() {
       descripcion: "Agentes IA de operaciones",
       precioArs: 19900,
       limiteEventosMes: 2000,
+    },
+    {
+      sku: SHEETS_LITE_SKU,
+      nombre: "Clav Sheets Lite",
+      descripcion: "Reportes pivot, gráficos y export Excel",
+      precioArs: 6900,
+      limiteEventosMes: null,
+    },
+    {
+      sku: SHEETS_PRO_SKU,
+      nombre: "Clav Sheets Pro",
+      descripcion: "Sheets ilimitado, plantillas verticales y programación",
+      precioArs: 14900,
+      limiteEventosMes: null,
     },
   ]
 
@@ -112,6 +126,21 @@ export async function getMonthlyUsageTotal(
   return rows.reduce((sum, r) => sum + r.contador, 0)
 }
 
+export async function getMonthlyUsageCount(
+  empresaId: number,
+  sku: string,
+  eventKey: string,
+  mes = currentUsageMonth()
+): Promise<number> {
+  const row = await prisma.usageEvent.findUnique({
+    where: {
+      empresaId_sku_eventKey_mes: { empresaId, sku, eventKey, mes },
+    },
+    select: { contador: true },
+  })
+  return row?.contador ?? 0
+}
+
 export async function recordUsageEvent(
   empresaId: number,
   sku: string,
@@ -123,14 +152,14 @@ export async function recordUsageEvent(
       empresaId_sku_eventKey_mes: {
         empresaId,
         sku,
-        eventKey: "*",
+        eventKey,
         mes,
       },
     },
     create: {
       empresaId,
       sku,
-      eventKey: "*",
+      eventKey,
       mes,
       contador: 1,
     },

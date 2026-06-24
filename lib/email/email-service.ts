@@ -9,6 +9,13 @@
  *   SMTP_SECURE (default: "true" for port 465, otherwise STARTTLS)
  */
 import { prisma } from "@/lib/prisma"
+import { BRAND_EMAIL_FROM } from "@/lib/brand"
+import {
+  emailFacturaIntro,
+  emailLayout,
+  emailNotaCreditoIntro,
+  emailNotificationBody,
+} from "@/lib/email/email-templates"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,7 +102,7 @@ export const emailService = {
     const config = getSmtpConfig()!
     try {
       const info = await transporter.sendMail({
-        from: `"${process.env.SMTP_FROM_NAME || "ERP Argentina"}" <${config.from}>`,
+        from: `"${process.env.SMTP_FROM_NAME || BRAND_EMAIL_FROM}" <${config.from}>`,
         to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
         subject: options.subject,
         html: options.html,
@@ -131,27 +138,21 @@ export const emailService = {
     return this.enviar({
       to: factura.cliente.email,
       subject: `Factura ${factura.tipo} ${nroFormatted} — ${factura.empresa.razonSocial}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Comprobante Electrónico</h2>
-          <p>Estimado/a <strong>${factura.cliente.nombre}</strong>,</p>
-          <p>Adjuntamos su comprobante fiscal:</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Tipo</td><td style="padding: 8px; border: 1px solid #ddd;">Factura ${factura.tipo}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Número</td><td style="padding: 8px; border: 1px solid #ddd;">${nroFormatted}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">CAE</td><td style="padding: 8px; border: 1px solid #ddd;">${factura.cae || "Pendiente"}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Total</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">$ ${factura.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
+      html: emailLayout(`
+          <h2 style="margin:0 0 16px;font-size:18px;">Comprobante electrónico</h2>
+          ${emailFacturaIntro(factura.cliente.nombre)}
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Tipo</td><td style="padding:8px;border:1px solid #e2e8f0;">Factura ${factura.tipo}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Número</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">CAE</td><td style="padding:8px;border:1px solid #e2e8f0;">${factura.cae || "Pendiente"}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Total</td><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;">$ ${Number(factura.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
           </table>
-          <p style="font-size: 12px; color: #666;">
-            Este comprobante fue autorizado por AFIP. Puede verificarlo en 
-            <a href="https://www.afip.gob.ar/fe/qr/?ver=1&fecha=${factura.createdAt.toISOString().split("T")[0]}&cuit=${factura.empresa.cuit.replace(/-/g, "")}&ptoVta=${factura.puntoVenta}&tipoCmp=${factura.tipoCbte}&nroCmp=${factura.numero}&importe=${factura.total}&moneda=PES&ctz=1&tipoCodAut=E&codAut=${factura.cae || ""}">
-              AFIP QR
-            </a>
+          <p style="font-size:12px;color:#64748b;">
+            Autorizado por AFIP —
+            <a href="https://www.afip.gob.ar/fe/qr/?ver=1&fecha=${factura.createdAt.toISOString().split("T")[0]}&cuit=${factura.empresa.cuit.replace(/-/g, "")}&ptoVta=${factura.puntoVenta}&tipoCmp=${factura.tipoCbte}&nroCmp=${factura.numero}&importe=${factura.total}&moneda=PES&ctz=1&tipoCodAut=E&codAut=${factura.cae || ""}" style="color:#1d4ed8;">verificar QR</a>
           </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="font-size: 11px; color: #999;">${factura.empresa.razonSocial} — CUIT ${factura.empresa.cuit}<br/>${factura.empresa.direccion || ""}</p>
-        </div>
-      `,
+          <p style="margin-top:20px;font-size:11px;color:#94a3b8;">${factura.empresa.razonSocial} — CUIT ${factura.empresa.cuit}<br/>${factura.empresa.direccion || ""}</p>
+      `),
       attachments: [
         {
           filename: `Factura_${factura.tipo}_${nroFormatted}.html`,
@@ -178,21 +179,17 @@ export const emailService = {
     return this.enviar({
       to: nc.cliente.email,
       subject: `Nota de Crédito ${nc.tipo} ${nroFormatted} — ${nc.factura.empresa.razonSocial}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc2626;">Nota de Crédito</h2>
-          <p>Estimado/a <strong>${nc.cliente.nombre}</strong>,</p>
-          <p>Se emitió la siguiente Nota de Crédito a su favor:</p>
-          <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Tipo</td><td style="padding: 8px; border: 1px solid #ddd;">NC ${nc.tipo}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Número</td><td style="padding: 8px; border: 1px solid #ddd;">${nroFormatted}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Motivo</td><td style="padding: 8px; border: 1px solid #ddd;">${nc.motivo}</td></tr>
-            <tr><td style="padding: 8px; border: 1px solid #ddd;">Total</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">$ ${nc.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
+      html: emailLayout(`
+          <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Nota de Crédito</h2>
+          ${emailNotaCreditoIntro(nc.cliente.nombre)}
+          <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Tipo</td><td style="padding:8px;border:1px solid #e2e8f0;">NC ${nc.tipo}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Número</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Motivo</td><td style="padding:8px;border:1px solid #e2e8f0;">${nc.motivo}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Total</td><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;color:#dc2626;">$ ${Number(nc.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
           </table>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="font-size: 11px; color: #999;">${nc.factura.empresa.razonSocial} — CUIT ${nc.factura.empresa.cuit}</p>
-        </div>
-      `,
+          <p style="font-size:11px;color:#94a3b8;">${nc.factura.empresa.razonSocial} — CUIT ${nc.factura.empresa.cuit}</p>
+      `),
       attachments: [
         {
           filename: `NC_${nc.tipo}_${nroFormatted}.html`,
@@ -210,14 +207,7 @@ export const emailService = {
     return this.enviar({
       to,
       subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>${subject}</h2>
-          <div>${body}</div>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="font-size: 11px; color: #999;">ERP Argentina — Notificación automática</p>
-        </div>
-      `,
+      html: emailNotificationBody(subject, body),
     })
   },
 }

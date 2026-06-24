@@ -37,7 +37,7 @@ export class CommunityManagerAgent extends AgentBase {
         where: { empresaId: ctx.empresaId, activo: true },
         orderBy: { precioVenta: "desc" },
         take: 5,
-        select: { id: true, nombre: true, precioVenta: true, precioCosto: true, stock: true },
+        select: { id: true, nombre: true, precioVenta: true, precioCompra: true, stock: true },
       }),
       prisma.producto.findMany({
         where: { empresaId: ctx.empresaId, activo: true, stock: { gt: 0 } },
@@ -59,9 +59,9 @@ export class CommunityManagerAgent extends AgentBase {
     const userPrompt = `Generá 3 posts para redes sociales (Instagram/Facebook) para esta empresa.
 
 DATOS DEL ERP (reales):
-- Productos con mejor margen: ${JSON.stringify(topMargin.map((p) => ({ nombre: p.nombre, precio: p.precioVenta, margen: p.precioCosto ? Math.round(((p.precioVenta - p.precioCosto) / p.precioVenta) * 100) : null })))}
-- Productos con más stock (hay que mover): ${JSON.stringify(overstock.map((p) => ({ nombre: p.nombre, stock: p.stock, precio: p.precioVenta })))}
-- Productos nuevos: ${JSON.stringify(newProducts.map((p) => ({ nombre: p.nombre, precio: p.precioVenta })))}
+- Productos con mejor margen: ${JSON.stringify(topMargin.map((p) => ({ nombre: p.nombre, precio: Number(p.precioVenta), margen: p.precioCompra ? Math.round(((Number(p.precioVenta) - Number(p.precioCompra)) / Number(p.precioVenta)) * 100) : null })))}
+- Productos con más stock (hay que mover): ${JSON.stringify(overstock.map((p) => ({ nombre: p.nombre, stock: p.stock, precio: Number(p.precioVenta) })))}
+- Productos nuevos: ${JSON.stringify(newProducts.map((p) => ({ nombre: p.nombre, precio: Number(p.precioVenta) })))}
 - Fechas comerciales próximas: ${fechasComerciales.length ? fechasComerciales.join(", ") : "ninguna esta semana"}
 
 REGLAS:

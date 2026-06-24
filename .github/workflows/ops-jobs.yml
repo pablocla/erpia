@@ -1,0 +1,52 @@
+name: Ops Jobs Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "OpsJob ID"
+        required: true
+      empresa_id:
+        description: "Empresa ID"
+        required: true
+      job_type:
+        description: "Job tipo (backup_db, migrate_db, test_suite, deploy)"
+        required: true
+      steps:
+        description: "Pasos separados por coma"
+        required: false
+        default: ""
+
+jobs:
+  run-ops-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run job steps
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          OPS_ORCHESTRATOR_ENABLED: "true"
+          OPS_TEST_RUNNER_ENABLED: "true"
+          OPS_WORKER_EXECUTE_INLINE: "true"
+        run: |
+          node --import tsx scripts/ops-run-job.ts \
+            "${{ inputs.job_id }}" \
+            "${{ inputs.empresa_id }}" \
+            "${{ inputs.job_type }}" \
+            "${{ inputs.steps }}"
+

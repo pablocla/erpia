@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { turnoEstadoLabel, turnoEstadoVariant, type StatusVariant } from "@/lib/ui/status-map"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -64,11 +65,12 @@ interface CustomFieldDefinition {
 
 const HORARIOS = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"]
 
-const ESTADO_CONFIG: Record<EstadoTurno, { label: string; color: string }> = {
-  confirmado: { label: "Confirmado", color: "bg-green-100 text-green-800 border-green-300" },
-  pendiente: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-  cancelado: { label: "Cancelado", color: "bg-red-100 text-red-800 border-red-300" },
-  completado: { label: "Completado", color: "bg-slate-100 text-slate-800 border-slate-300" },
+const TURNO_CELL: Record<StatusVariant, string> = {
+  success: "bg-[var(--status-success-muted)] text-[var(--status-success-foreground)] border-[var(--status-success-border)]",
+  warning: "bg-[var(--status-warning-muted)] text-[var(--status-warning-foreground)] border-[var(--status-warning-border)]",
+  error: "bg-[var(--status-error-muted)] text-[var(--status-error-foreground)] border-[var(--status-error-border)]",
+  info: "bg-[var(--status-info-muted)] text-[var(--status-info-foreground)] border-[var(--status-info-border)]",
+  neutral: "bg-[var(--status-neutral-muted)] text-[var(--status-neutral-foreground)] border-[var(--status-neutral-border)]",
 }
 
 const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
@@ -287,20 +289,17 @@ export default function AgendaPage() {
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Calendar className="h-7 w-7" />
-            Agenda de Turnos
-          </h1>
-          <p className="text-muted-foreground">Turnos, reservas y seguimiento de pacientes/clientes</p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Turno
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Agenda de Turnos"
+        description="Turnos, reservas y seguimiento de pacientes/clientes"
+        actions={
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Turno
+          </Button>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -368,7 +367,7 @@ export default function AgendaPage() {
                       {turnosHora.length > 0 ? turnosHora.map(t => (
                         <button
                           key={t.id}
-                          className={`w-full text-left p-2 rounded-lg border text-xs font-medium transition-all hover:shadow-md ${ESTADO_CONFIG[t.estado].color}`}
+                          className={`w-full text-left p-2 rounded-lg border text-xs font-medium transition-all hover:shadow-md ${TURNO_CELL[turnoEstadoVariant(t.estado)]}`}
                           onClick={() => { setTurnoSeleccionado(t); setVistaDetalle(true) }}
                         >
                           <p className="font-bold truncate">{t.cliente?.nombre ?? "Sin cliente"}</p>
@@ -469,9 +468,10 @@ export default function AgendaPage() {
                 <DialogTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   {turnoSeleccionado.cliente?.nombre ?? "Sin cliente"}
-                  <Badge className={ESTADO_CONFIG[turnoSeleccionado.estado].color}>
-                    {ESTADO_CONFIG[turnoSeleccionado.estado].label}
-                  </Badge>
+                  <StatusBadge
+                    variant={turnoEstadoVariant(turnoSeleccionado.estado)}
+                    label={turnoEstadoLabel(turnoSeleccionado.estado)}
+                  />
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-3 text-sm">
@@ -573,6 +573,6 @@ export default function AgendaPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

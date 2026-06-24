@@ -57,6 +57,20 @@ export default function PresentacionAFIPPage() {
     onRefresh: cargarPeriodos,
   }))
 
+  const descargarLiva = async (tipo: "ventas" | "compras" | "alicuotas", p: PeriodoIVA) => {
+    setDescargando(`liva-${tipo}-${p.mes}-${p.anio}`)
+    try {
+      const res = await fetch(`/api/impuestos/libro-iva-digital?mes=${p.mes}&anio=${p.anio}&tipo=${tipo}`)
+      const blob = await res.blob()
+      const objUrl = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = objUrl
+      a.download = `LIBRO_IVA_DIGITAL_${tipo.toUpperCase()}_${String(p.mes).padStart(2, "0")}${p.anio}.txt`
+      a.click()
+      URL.revokeObjectURL(objUrl)
+    } catch { /* ignore */ } finally { setDescargando(null) }
+  }
+
   const descargar = async (tipo: "ventas" | "compras" | "presentacion", p: PeriodoIVA) => {
     setDescargando(`${tipo}-${p.mes}-${p.anio}`)
     try {
@@ -113,16 +127,30 @@ export default function PresentacionAFIPPage() {
                     </div>
                   </div>
                   {hayDatos(p) ? (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => descargar("ventas", p)} disabled={descargando !== null}>
-                        <Download className="h-3 w-3" />Libro Ventas
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => descargar("compras", p)} disabled={descargando !== null}>
-                        <Download className="h-3 w-3" />Libro Compras
-                      </Button>
-                      <Button size="sm" className="gap-1 text-xs" onClick={() => descargar("presentacion", p)} disabled={descargando !== null}>
-                        <Download className="h-3 w-3" />Presentación AFIP
-                      </Button>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => descargar("ventas", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />Libro Ventas
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => descargar("compras", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />Libro Compras
+                        </Button>
+                        <Button size="sm" className="gap-1 text-xs" onClick={() => descargar("presentacion", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />Presentación AFIP
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        <span className="text-[10px] text-muted-foreground w-full text-right">Libro IVA Digital RG 4597</span>
+                        <Button size="sm" variant="secondary" className="gap-1 text-xs h-7" onClick={() => descargarLiva("ventas", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />LIVA Ventas
+                        </Button>
+                        <Button size="sm" variant="secondary" className="gap-1 text-xs h-7" onClick={() => descargarLiva("compras", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />LIVA Compras
+                        </Button>
+                        <Button size="sm" variant="secondary" className="gap-1 text-xs h-7" onClick={() => descargarLiva("alicuotas", p)} disabled={descargando !== null}>
+                          <Download className="h-3 w-3" />LIVA Alícuotas
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground">Sin comprobantes en el período</p>

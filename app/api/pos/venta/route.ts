@@ -142,17 +142,6 @@ export async function POST(request: NextRequest) {
     const esTicket = data.tipoFactura === "ticket"
     let tipoCbteFinal = tipoCbteDesde(data.tipoFactura)
 
-    const ultimaFactura = await prisma.factura.findFirst({
-      where: {
-        empresaId,
-        ...(esTicket
-          ? { estado: "ticket", puntoVenta: data.puntoVenta }
-          : { tipoCbte: tipoCbteFinal, puntoVenta: data.puntoVenta }),
-      },
-      orderBy: { numero: "desc" },
-    })
-    const siguienteNumero = (ultimaFactura?.numero ?? 0) + 1
-
     // ── 4. Resolver precios desde listas (si aplica) ─────────
     const lineasConPrecio = data.usarListaPrecios
       ? await resolverPreciosLineas(
@@ -210,6 +199,16 @@ export async function POST(request: NextRequest) {
 
     // ── 5. Transacción atómica ───────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
+      const ultimaFactura = await tx.factura.findFirst({
+        where: {
+          empresaId,
+          ...(esTicket
+            ? { estado: "ticket", puntoVenta: data.puntoVenta }
+            : { tipoCbte: tipoCbteFinal, puntoVenta: data.puntoVenta }),
+        },
+        orderBy: { numero: "desc" },
+      })
+      const siguienteNumero = (ultimaFactura?.numero ?? 0) + 1
 
       // 5a. Crear Factura
       const factura = await tx.factura.create({
@@ -252,6 +251,9 @@ export async function POST(request: NextRequest) {
         })
         if (!producto) continue
         const stockNuevo = producto.stock - l.cantidad
+        if (stockNuevo < 0) {
+          throw new Error(`Stock insuficiente para el producto ${producto.nombre}. Stock actual: ${producto.stock}, requerido: ${l.cantidad}`)
+        }
         await tx.producto.update({
           where: { id: l.productoId },
           data: { stock: stockNuevo },

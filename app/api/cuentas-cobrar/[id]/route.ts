@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       include: {
         factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true, total: true } },
         cliente: { select: { id: true, nombre: true, cuit: true } },
-        items: {
+        itemsRecibo: {
           include: {
             recibo: { select: { id: true, numero: true, fecha: true } },
           },

@@ -4,9 +4,10 @@ import { agroService } from "@/lib/agro/agro-service"
 
 /** Dashboard AGRO: KPIs + pizarra + stock */
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const resumen = await agroService.resumenDashboard(auth.auth.empresaId)
   return NextResponse.json(resumen)
 }
+

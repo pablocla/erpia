@@ -90,17 +90,17 @@ export default function ContratosPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Buscar..." className="pl-8" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <Select value={campana} onValueChange={setCampana}>
+            <Select value={campana || "todas"} onValueChange={(v) => setCampana(v === "todas" ? "" : v)}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Campaña" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="todas">Todas</SelectItem>
                 {CAMPANAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={estado} onValueChange={setEstado}>
+            <Select value={estado || "todos"} onValueChange={(v) => setEstado(v === "todos" ? "" : v)}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="abierto">Abierto</SelectItem>
                 <SelectItem value="parcial">Parcial</SelectItem>
                 <SelectItem value="cerrado">Cerrado</SelectItem>

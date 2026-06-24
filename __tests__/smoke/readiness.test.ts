@@ -49,6 +49,6 @@ describe("readiness — integraciones críticas", () => {
 
   it("vitest incluye carpetas auth, precios y smoke", () => {
     const config = readFileSync(resolve(process.cwd(), "vitest.config.ts"), "utf-8")
-    expect(config).toContain("__tests__/**/*.test.ts")
+    expect(config.includes("__tests__/**/*.test.ts") || config.includes("__tests__/**/*.test.{ts,tsx}")).toBe(true)
   })
 })

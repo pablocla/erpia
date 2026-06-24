@@ -33,7 +33,7 @@ export default function AjustesStockPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
-  const authHeaders = useCallback(() => {
+  const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])

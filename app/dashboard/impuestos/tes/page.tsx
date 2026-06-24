@@ -7,20 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Tags, Search, ChevronRight, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
+import { Tags, Search, ChevronRight, ArrowUpCircle, ArrowDownCircle, Sparkles } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import type { TES } from "@/lib/tes/tes-config"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
-
-const TIPO_COLORES: Record<string, string> = {
-  venta: "bg-green-100 text-green-800",
-  compra: "bg-orange-100 text-orange-800",
-  devolucion_venta: "bg-yellow-100 text-yellow-800",
-  devolucion_compra: "bg-yellow-100 text-yellow-800",
-  exportacion: "bg-blue-100 text-blue-800",
-  importacion: "bg-purple-100 text-purple-800",
-  interno: "bg-slate-100 text-slate-800",
-}
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { tesTipoVariant, tesTipoLabel, activoVariant, activoLabel } from "@/lib/ui/status-map"
 
 export default function TESPage() {
   const [tesList, setTesList] = useState<TES[]>([])
@@ -35,7 +27,6 @@ export default function TESPage() {
     fetch("/api/tes")
       .then((r) => r.json())
       .then((data) => {
-        // API returns { tes: TES[], paises: [...] }
         setTesList(Array.isArray(data) ? data : (data.tes ?? []))
         setLoading(false)
       })
@@ -68,17 +59,18 @@ export default function TESPage() {
   const tipos = [...new Set(tesList.map((t) => t.tipo))]
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Tags className="h-7 w-7" />
-          TES — Tipos de Entrada / Salida
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Sistema de discriminación inteligente de impuestos por tipo de transacción. Cada TES define cómo
-          se calculan los impuestos, qué cuentas se afectan y si genera movimiento de stock.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="TES — Tipos de Entrada / Salida"
+        description="Sistema de discriminación inteligente de impuestos por tipo de transacción. Cada TES define cómo se calculan los impuestos, qué cuentas se afectan y si genera movimiento de stock."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <Tags className="h-3.5 w-3.5" />
+            Configuración fiscal
+          </span>
+        }
+      />
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Lista de TES */}
@@ -122,10 +114,10 @@ export default function TESPage() {
                 columns={[
                   { key: "codigo", header: "Código", sortable: true, cell: (t) => <span className="font-mono font-bold text-sm">{t.codigo}</span> },
                   { key: "nombre", header: "Nombre", cell: (t) => <span className="font-medium">{t.nombre}</span> },
-                  { key: "tipo", header: "Tipo", cell: (t) => <Badge className={TIPO_COLORES[t.tipo] ?? ""}>{t.tipo.replace("_", " ")}</Badge> },
-                  { key: "operacion", header: "Oper.", cell: (t) => t.operacion === "E" ? <ArrowUpCircle className="h-4 w-4 text-green-600" title="Entrada" /> : <ArrowDownCircle className="h-4 w-4 text-red-600" title="Salida" /> },
-                  { key: "afectaStock", header: "Stock", cell: (t) => t.afectaStock ? <Badge className="bg-blue-100 text-blue-800">Sí</Badge> : <span className="text-muted-foreground text-sm">No</span> },
-                  { key: "requiereCAE", header: "CAE", cell: (t) => t.requiereCAE ? <Badge className="bg-red-100 text-red-800">AFIP</Badge> : <span className="text-muted-foreground text-sm">—</span> },
+                  { key: "tipo", header: "Tipo", cell: (t) => <StatusBadge variant={tesTipoVariant(t.tipo)} label={tesTipoLabel(t.tipo)} /> },
+                  { key: "operacion", header: "Oper.", cell: (t) => t.operacion === "E" ? <span title="Entrada"><ArrowUpCircle className="h-4 w-4 text-green-600" /></span> : <span title="Salida"><ArrowDownCircle className="h-4 w-4 text-red-600" /></span> },
+                  { key: "afectaStock", header: "Stock", cell: (t) => <StatusBadge variant={activoVariant(t.afectaStock)} label={t.afectaStock ? "Sí" : "No"} /> },
+                  { key: "requiereCAE", header: "CAE", cell: (t) => t.requiereCAE ? <StatusBadge variant="error" label="AFIP" /> : <span className="text-muted-foreground text-sm">—</span> },
                   { key: "detalle" as any, header: "", cell: () => <ChevronRight className="h-4 w-4 text-muted-foreground" /> },
                 ] as DataTableColumn<TES>[]}
                 rowKey="codigo"
@@ -237,7 +229,7 @@ export default function TESPage() {
                     <Badge variant="outline" className="text-xs">Afecta caja</Badge>
                   )}
                   {tesSeleccionado.requiereCAE && (
-                    <Badge className="bg-red-100 text-red-800 text-xs">Requiere CAE</Badge>
+                    <StatusBadge variant="error" label="Requiere CAE" />
                   )}
                 </div>
               </CardContent>
@@ -245,6 +237,6 @@ export default function TESPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -44,17 +44,17 @@ export async function listarPluPos(empresaId: number): Promise<PosPluItem[]> {
 
   if (plus.length > 0) {
     return plus
-      .filter((p) => p.producto.activo)
+      .filter((p) => p.producto && p.producto.activo)
       .map((p) => ({
         id: p.id,
-        productoId: p.productoId,
+        productoId: p.productoId!,
         orden: p.orden,
         color: p.color,
         etiqueta: p.etiqueta,
-        nombre: p.etiqueta ?? p.producto.nombre,
-        precioVenta: Number(p.producto.precioVenta),
-        stock: Number(p.producto.stock),
-        codigo: p.producto.codigo,
+        nombre: p.etiqueta ?? p.producto!.nombre,
+        precioVenta: Number(p.producto!.precioVenta),
+        stock: Number(p.producto!.stock),
+        codigo: p.producto!.codigo,
       }))
   }
 

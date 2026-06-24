@@ -31,7 +31,7 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
   // 1. Cobros previstos (CxC pendientes)
   const cxc = await prisma.cuentaCobrar.findMany({
     where: {
-      empresaId,
+      cliente: { empresaId },
       estado: { in: ["pendiente", "parcial"] },
       fechaVencimiento: { lte: hasta },
     },
@@ -43,7 +43,7 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
       origenEntidad: "cuenta_cobrar",
       origenId: c.id,
       concepto: `Cobro Factura #${c.facturaId ?? c.id}`,
-      monto: c.saldo,
+      monto: Number(c.saldo),
       probabilidad: c.fechaVencimiento < hoy ? 0.5 : 0.85,
       empresaId,
     })
@@ -52,7 +52,7 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
   // 2. Pagos previstos (CxP pendientes)
   const cxp = await prisma.cuentaPagar.findMany({
     where: {
-      empresaId,
+      proveedor: { empresaId },
       estado: { in: ["pendiente", "parcial"] },
       fechaVencimiento: { lte: hasta },
     },
@@ -64,7 +64,7 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
       origenEntidad: "cuenta_pagar",
       origenId: p.id,
       concepto: `Pago Compra #${p.compraId ?? p.id}`,
-      monto: -p.saldo,
+      monto: -Number(p.saldo),
       probabilidad: 0.95,
       empresaId,
     })
@@ -73,20 +73,23 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
   // 3. Cheques diferidos a cobrar
   const chequesCobrar = await prisma.cheque.findMany({
     where: {
-      empresaId,
-      tipo: "tercero",
-      estado: { in: ["en_cartera", "depositado"] },
-      fechaCobro: { gte: hoy, lte: hasta },
+      tipoCheque: "tercero",
+      estado: { in: ["cartera", "depositado"] },
+      fechaVencimiento: { gte: hoy, lte: hasta },
+      OR: [
+        { cliente: { empresaId } },
+        { cuentaDeposito: { empresaId } }
+      ]
     },
   })
   for (const ch of chequesCobrar) {
     proyecciones.push({
-      fecha: ch.fechaCobro,
+      fecha: ch.fechaVencimiento,
       tipo: "cheque_diferido_cobrar",
       origenEntidad: "cheque",
       origenId: ch.id,
       concepto: `Cheque tercero #${ch.numero}`,
-      monto: ch.monto,
+      monto: Number(ch.monto),
       probabilidad: 0.9,
       empresaId,
     })
@@ -95,20 +98,23 @@ export async function generarProyeccionFlujoCaja(empresaId: number, diasHorizont
   // 4. Cheques propios emitidos (diferidos a pagar)
   const chequesPagar = await prisma.cheque.findMany({
     where: {
-      empresaId,
-      tipo: "propio",
+      tipoCheque: "propio",
       estado: { in: ["emitido"] },
-      fechaCobro: { gte: hoy, lte: hasta },
+      fechaVencimiento: { gte: hoy, lte: hasta },
+      OR: [
+        { proveedor: { empresaId } },
+        { cuentaEmisor: { empresaId } }
+      ]
     },
   })
   for (const ch of chequesPagar) {
     proyecciones.push({
-      fecha: ch.fechaCobro,
+      fecha: ch.fechaVencimiento,
       tipo: "cheque_diferido_pagar",
       origenEntidad: "cheque",
       origenId: ch.id,
       concepto: `Cheque propio #${ch.numero}`,
-      monto: -ch.monto,
+      monto: -Number(ch.monto),
       probabilidad: 1.0,
       empresaId,
     })

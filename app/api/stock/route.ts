@@ -30,14 +30,19 @@ export async function GET(request: NextRequest) {
     ]
   }
   if (stockBajo) {
-    where.stock = { lte: prisma.producto.fields.stockMinimo }
+    const rawProducts = await prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM productos 
+      WHERE empresa_id = ${ctx.auth.empresaId} 
+        AND activo = true 
+        AND stock <= stock_minimo
+    `
+    const ids = rawProducts.map((p) => p.id)
+    where.id = { in: ids }
   }
 
   const [productos, total] = await Promise.all([
     prisma.producto.findMany({
-      where: stockBajo
-        ? { ...where, stock: undefined, AND: [{ stock: { lte: 0 } }] }
-        : where,
+      where,
       select: {
         id: true,
         codigo: true,

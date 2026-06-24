@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { eventBus } from "@/lib/events/event-bus"
+import { chequeService, TRANSICIONES_CHEQUE } from "@/lib/cheques/cheque-service"
 import { z } from "zod"
 
 const patchSchema = z.object({
@@ -10,16 +10,6 @@ const patchSchema = z.object({
   cuentaDepositoId: z.number().int().positive().optional().nullable(),
   endosadoA: z.string().optional(),
 })
-
-// Valid state transitions for cheque lifecycle
-const TRANSITIONS: Record<string, string[]> = {
-  cartera: ["depositado", "endosado", "anulado"],
-  depositado: ["debitado", "rechazado"],
-  endosado: ["rechazado"],
-  rechazado: ["cartera"], // Re-entry to portfolio
-  debitado: [],
-  anulado: [],
-}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,6 +26,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           { proveedor: { empresaId: ctx.auth.empresaId } },
           { cuentaDeposito: { empresaId: ctx.auth.empresaId } },
           { cuentaEmisor: { empresaId: ctx.auth.empresaId } },
+          { recibo: { cliente: { empresaId: ctx.auth.empresaId } } },
+          { ordenPago: { proveedor: { empresaId: ctx.auth.empresaId } } },
         ],
       },
       include: {
@@ -43,6 +35,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         proveedor: { select: { id: true, nombre: true, cuit: true } },
         cuentaDeposito: { select: { id: true, banco: true, numeroCuenta: true } },
         cuentaEmisor: { select: { id: true, banco: true, numeroCuenta: true } },
+        recibo: { select: { id: true, numero: true } },
+        ordenPago: { select: { id: true, numero: true } },
       },
     })
 
@@ -50,8 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Cheque no encontrado" }, { status: 404 })
     }
 
-    // Available transitions from current state
-    const transicionesDisponibles = TRANSITIONS[cheque.estado] ?? []
+    const transicionesDisponibles = TRANSICIONES_CHEQUE[cheque.estado] ?? []
 
     return NextResponse.json({
       ...cheque,
@@ -70,19 +63,43 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const chequeId = parseInt(id)
     const body = await request.json()
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
     }
 
-    // Validate state transition
+    const empresaId = ctx.auth.empresaId
+
+    // Depósito con circuito contable completo
+    if (parsed.data.estado === "depositado") {
+      if (!parsed.data.cuentaDepositoId) {
+        return NextResponse.json({ error: "cuentaDepositoId requerida para depositar" }, { status: 400 })
+      }
+      const cheque = await chequeService.depositar(chequeId, parsed.data.cuentaDepositoId, empresaId)
+      return NextResponse.json(cheque)
+    }
+
+    // Rechazo con re-débito CC
+    if (parsed.data.estado === "rechazado") {
+      const cheque = await chequeService.rechazar(chequeId, empresaId, parsed.data.observaciones)
+      return NextResponse.json(cheque)
+    }
+
+    // Débito cheque propio
+    if (parsed.data.estado === "debitado") {
+      const cheque = await chequeService.debitarPropio(chequeId, empresaId)
+      return NextResponse.json(cheque)
+    }
+
+    // Transiciones simples (endosado, anulado, etc.)
     if (parsed.data.estado) {
-      const current = await prisma.cheque.findUnique({ where: { id: parseInt(id) }, select: { estado: true } })
+      const current = await prisma.cheque.findUnique({ where: { id: chequeId }, select: { estado: true } })
       if (!current) return NextResponse.json({ error: "Cheque no encontrado" }, { status: 404 })
 
-      const allowed = TRANSITIONS[current.estado] ?? []
-      if (!allowed.includes(parsed.data.estado)) {
+      if (!chequeService.validarTransicion(current.estado, parsed.data.estado)) {
+        const allowed = TRANSICIONES_CHEQUE[current.estado] ?? []
         return NextResponse.json({
           error: `Transición inválida: ${current.estado} → ${parsed.data.estado}. Permitidas: ${allowed.join(", ")}`,
         }, { status: 400 })
@@ -90,7 +107,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const cheque = await prisma.cheque.update({
-      where: { id: parseInt(id) },
+      where: { id: chequeId },
       data: {
         estado: parsed.data.estado,
         observaciones: parsed.data.observaciones,
@@ -99,25 +116,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     })
 
-    // Emit events for key transitions
-    if (parsed.data.estado === "depositado") {
-      eventBus.emit({
-        type: "CHEQUE_DEPOSITADO",
-        payload: { chequeId: cheque.id, monto: Number(cheque.monto), cuentaDepositoId: parsed.data.cuentaDepositoId },
-        timestamp: new Date(),
-      })
-    } else if (parsed.data.estado === "rechazado") {
-      eventBus.emit({
-        type: "CHEQUE_RECHAZADO",
-        payload: { chequeId: cheque.id, monto: Number(cheque.monto), clienteId: cheque.clienteId },
-        timestamp: new Date(),
-      })
-    }
-
     return NextResponse.json({ ...cheque, monto: Number(cheque.monto) })
-  } catch (error) {
+  } catch (error: any) {
     console.error("cheques PATCH:", error)
-    return NextResponse.json({ error: "Error al actualizar cheque" }, { status: 500 })
+    return NextResponse.json({ error: error?.message ?? "Error al actualizar cheque" }, { status: 500 })
   }
 }
 
@@ -134,8 +136,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         OR: [
           { cliente: { empresaId: ctx.auth.empresaId } },
           { proveedor: { empresaId: ctx.auth.empresaId } },
-          { cuentaDeposito: { empresaId: ctx.auth.empresaId } },
-          { cuentaEmisor: { empresaId: ctx.auth.empresaId } },
+          { recibo: { cliente: { empresaId: ctx.auth.empresaId } } },
+          { ordenPago: { proveedor: { empresaId: ctx.auth.empresaId } } },
         ],
       },
     })
@@ -144,8 +146,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: "Cheque no encontrado" }, { status: 404 })
     }
 
-    // Only allow anulación from cartera state
-    if (!["cartera"].includes(cheque.estado)) {
+    if (cheque.estado !== "cartera") {
       return NextResponse.json({
         error: `No se puede anular un cheque en estado '${cheque.estado}'. Solo cheques en cartera.`,
       }, { status: 400 })

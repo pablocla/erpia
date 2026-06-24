@@ -43,7 +43,7 @@ export class ClasificadorProductosAgent extends AgentBase {
 
     for (const producto of unclassified) {
       const descripcion = `${producto.nombre} ${producto.descripcion || ""}`.trim()
-      const result = await clasificarProducto(ctx.empresaId, descripcion)
+      const result = await clasificarProducto(descripcion, ctx.empresaId)
 
       if (!result) continue
 
@@ -56,12 +56,26 @@ export class ClasificadorProductosAgent extends AgentBase {
         select: { id: true },
       })
 
+      // Try to find matching unit of measure
+      let unidadMedidaId: number | undefined = undefined
+      if (result.unidad_medida) {
+        const unidad = await prisma.unidadMedida.findFirst({
+          where: {
+            codigo: { equals: result.unidad_medida, mode: "insensitive" },
+          },
+          select: { id: true },
+        })
+        if (unidad) {
+          unidadMedidaId = unidad.id
+        }
+      }
+
       // Update product with classification
       await prisma.producto.update({
         where: { id: producto.id },
         data: {
           ...(categoria ? { categoriaId: categoria.id } : {}),
-          unidadMedida: result.unidad_medida || undefined,
+          ...(unidadMedidaId ? { unidadMedidaId } : {}),
         },
       })
 

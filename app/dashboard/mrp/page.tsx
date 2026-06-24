@@ -53,7 +53,7 @@ export default function MRPPage() {
   const [ejecutando, setEjecutando] = useState(false)
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
 
   const fetchCorrida = useCallback(async () => {
     setLoading(true)

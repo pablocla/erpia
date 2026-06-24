@@ -1,31 +1,75 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, Search } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Download, Search, Loader2 } from "lucide-react"
+import { authFetch } from "@/lib/stores"
+
+interface CuentaContable {
+  id: number
+  codigo: string
+  nombre: string
+  imputable?: boolean
+}
+
+interface MovimientoMayor {
+  id: number
+  cuenta: string
+  debe: number
+  haber: number
+  saldo: number
+  asiento: { fecha: string; descripcion: string; numero: number }
+}
+
+interface LineaBalance {
+  cuenta: string
+  debe: number
+  haber: number
+  saldo: number
+}
 
 export default function ContabilidadPage() {
   const [desde, setDesde] = useState("")
   const [hasta, setHasta] = useState("")
+  const [cuentaCodigo, setCuentaCodigo] = useState("")
+  const [cuentas, setCuentas] = useState<CuentaContable[]>([])
   const [asientos, setAsientos] = useState<any[]>([])
-  const [libroMayor, setLibroMayor] = useState<any[]>([])
-  const [balance, setBalance] = useState<any>(null)
+  const [libroMayor, setLibroMayor] = useState<MovimientoMayor[]>([])
+  const [balance, setBalance] = useState<LineaBalance[]>([])
   const [cargando, setCargando] = useState(false)
 
+  useEffect(() => {
+    authFetch("/api/contabilidad/plan-cuentas")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.cuentas) {
+          const imputables = data.cuentas.filter(
+            (c: CuentaContable) => c.imputable !== false,
+          )
+          setCuentas(imputables)
+          if (imputables.length > 0) {
+            setCuentaCodigo((prev) => prev || imputables[0].codigo)
+          }
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const buscarAsientos = async () => {
+    if (!desde || !hasta) return
     setCargando(true)
     try {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`/api/contabilidad/asientos?desde=${desde}&hasta=${hasta}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await authFetch(
+        `/api/contabilidad/asientos?fechaDesde=${desde}&fechaHasta=${hasta}`,
+      )
       const data = await res.json()
-      setAsientos(data)
+      setAsientos(data.asientos ?? [])
     } catch (error) {
       console.error("Error al buscar asientos:", error)
     }
@@ -33,51 +77,62 @@ export default function ContabilidadPage() {
   }
 
   const buscarLibroMayor = async () => {
+    if (!desde || !hasta || !cuentaCodigo) return
     setCargando(true)
     try {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`/api/contabilidad/libro-mayor?desde=${desde}&hasta=${hasta}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await authFetch(
+        `/api/contabilidad/libro-mayor?cuenta=${encodeURIComponent(cuentaCodigo)}&fechaDesde=${desde}&fechaHasta=${hasta}`,
+      )
       const data = await res.json()
-      setLibroMayor(data)
+      setLibroMayor(data.movimientos ?? [])
     } catch (error) {
       console.error("Error al buscar libro mayor:", error)
     }
     setCargando(false)
   }
 
-  const buscarBalance = async () => {
+  const buscarBalance = useCallback(async () => {
     setCargando(true)
     try {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`/api/contabilidad/balance-sumas?desde=${desde}&hasta=${hasta}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await authFetch("/api/contabilidad/balance-sumas")
       const data = await res.json()
-      setBalance(data)
+      setBalance(data.balance ?? [])
     } catch (error) {
       console.error("Error al buscar balance:", error)
     }
     setCargando(false)
-  }
+  }, [])
 
   const exportarCSV = async (tipo: string) => {
     try {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`/api/contabilidad/exportar-csv?tipo=${tipo}&desde=${desde}&hasta=${hasta}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const params = new URLSearchParams({ tipo })
+      if (desde) params.set("desde", desde)
+      if (hasta) params.set("hasta", hasta)
+      if (tipo === "mayor" && cuentaCodigo) params.set("cuenta", cuentaCodigo)
+      const res = await authFetch(`/api/contabilidad/exportar-csv?${params}`)
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${tipo}-${desde}-${hasta}.csv`
+      a.download = `${tipo}-${desde || "todo"}-${hasta || "hoy"}.csv`
       a.click()
     } catch (error) {
       console.error("Error al exportar:", error)
     }
   }
+
+  const totalesBalance = balance.reduce(
+    (acc, c) => ({
+      debe: acc.debe + c.debe,
+      haber: acc.haber + c.haber,
+      saldoDeudor: acc.saldoDeudor + (c.saldo > 0 ? c.saldo : 0),
+      saldoAcreedor: acc.saldoAcreedor + (c.saldo < 0 ? Math.abs(c.saldo) : 0),
+    }),
+    { debe: 0, haber: 0, saldoDeudor: 0, saldoAcreedor: 0 },
+  )
+
+  const fmt = (n: number) =>
+    `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
 
   return (
     <div className="space-y-6">
@@ -89,10 +144,10 @@ export default function ContabilidadPage() {
       <Card>
         <CardHeader>
           <CardTitle>Filtros de Búsqueda</CardTitle>
-          <CardDescription>Selecciona el rango de fechas para consultar</CardDescription>
+          <CardDescription>Seleccioná el rango de fechas y cuenta para el libro mayor</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="desde">Desde</Label>
               <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
@@ -100,6 +155,21 @@ export default function ContabilidadPage() {
             <div>
               <Label htmlFor="hasta">Hasta</Label>
               <Input id="hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+            </div>
+            <div>
+              <Label>Cuenta (Libro Mayor)</Label>
+              <Select value={cuentaCodigo} onValueChange={setCuentaCodigo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar cuenta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cuentas.map((c) => (
+                    <SelectItem key={c.codigo} value={c.codigo}>
+                      {c.codigo} — {c.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -121,8 +191,8 @@ export default function ContabilidadPage() {
                   <CardDescription>Registro cronológico de todos los asientos contables</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={buscarAsientos} disabled={cargando}>
-                    <Search className="h-4 w-4 mr-2" />
+                  <Button onClick={buscarAsientos} disabled={cargando || !desde || !hasta}>
+                    {cargando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                     Buscar
                   </Button>
                   <Button variant="outline" onClick={() => exportarCSV("diario")}>
@@ -151,18 +221,18 @@ export default function ContabilidadPage() {
                         {idx === 0 && (
                           <>
                             <TableCell rowSpan={asiento.movimientos.length}>
-                              {new Date(asiento.fecha).toLocaleDateString()}
+                              {new Date(asiento.fecha).toLocaleDateString("es-AR")}
                             </TableCell>
                             <TableCell rowSpan={asiento.movimientos.length}>{asiento.numero}</TableCell>
                             <TableCell rowSpan={asiento.movimientos.length}>{asiento.descripcion}</TableCell>
                           </>
                         )}
-                        <TableCell>{mov.cuenta.nombre}</TableCell>
+                        <TableCell>{mov.cuenta}</TableCell>
                         <TableCell className="text-right">
-                          {mov.tipo === "DEBE" ? `$${mov.importe.toFixed(2)}` : "-"}
+                          {Number(mov.debe) > 0 ? fmt(Number(mov.debe)) : "-"}
                         </TableCell>
                         <TableCell className="text-right">
-                          {mov.tipo === "HABER" ? `$${mov.importe.toFixed(2)}` : "-"}
+                          {Number(mov.haber) > 0 ? fmt(Number(mov.haber)) : "-"}
                         </TableCell>
                       </TableRow>
                     )),
@@ -179,11 +249,16 @@ export default function ContabilidadPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Libro Mayor</CardTitle>
-                  <CardDescription>Movimientos agrupados por cuenta contable</CardDescription>
+                  <CardDescription>
+                    Movimientos de la cuenta {cuentaCodigo || "—"} con saldo acumulado
+                  </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={buscarLibroMayor} disabled={cargando}>
-                    <Search className="h-4 w-4 mr-2" />
+                  <Button
+                    onClick={buscarLibroMayor}
+                    disabled={cargando || !desde || !hasta || !cuentaCodigo}
+                  >
+                    {cargando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                     Buscar
                   </Button>
                   <Button variant="outline" onClick={() => exportarCSV("mayor")}>
@@ -194,47 +269,48 @@ export default function ContabilidadPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {libroMayor.map((cuenta) => (
-                  <div key={cuenta.codigo} className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">
-                      {cuenta.codigo} - {cuenta.nombre}
-                    </h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Descripción</TableHead>
-                          <TableHead className="text-right">Debe</TableHead>
-                          <TableHead className="text-right">Haber</TableHead>
-                          <TableHead className="text-right">Saldo</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cuenta.movimientos.map((mov: any) => (
-                          <TableRow key={mov.id}>
-                            <TableCell>{new Date(mov.fecha).toLocaleDateString()}</TableCell>
-                            <TableCell>{mov.descripcion}</TableCell>
-                            <TableCell className="text-right">
-                              {mov.tipo === "DEBE" ? `$${mov.importe.toFixed(2)}` : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {mov.tipo === "HABER" ? `$${mov.importe.toFixed(2)}` : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">${mov.saldo.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="bg-muted font-semibold">
-                          <TableCell colSpan={2}>Total</TableCell>
-                          <TableCell className="text-right">${cuenta.totalDebe.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${cuenta.totalHaber.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${cuenta.saldoFinal.toFixed(2)}</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                ))}
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead className="text-right">Debe</TableHead>
+                    <TableHead className="text-right">Haber</TableHead>
+                    <TableHead className="text-right">Saldo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {libroMayor.map((mov) => (
+                    <TableRow key={mov.id}>
+                      <TableCell>
+                        {new Date(mov.asiento.fecha).toLocaleDateString("es-AR")}
+                      </TableCell>
+                      <TableCell>{mov.asiento.descripcion}</TableCell>
+                      <TableCell className="text-right">
+                        {mov.debe > 0 ? fmt(mov.debe) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {mov.haber > 0 ? fmt(mov.haber) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{fmt(mov.saldo)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {libroMayor.length > 0 && (
+                    <TableRow className="bg-muted font-semibold">
+                      <TableCell colSpan={2}>Saldo final</TableCell>
+                      <TableCell className="text-right">
+                        {fmt(libroMayor.reduce((s, m) => s + m.debe, 0))}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {fmt(libroMayor.reduce((s, m) => s + m.haber, 0))}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {fmt(libroMayor[libroMayor.length - 1]?.saldo ?? 0)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -249,7 +325,7 @@ export default function ContabilidadPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={buscarBalance} disabled={cargando}>
-                    <Search className="h-4 w-4 mr-2" />
+                    {cargando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                     Buscar
                   </Button>
                   <Button variant="outline" onClick={() => exportarCSV("balance")}>
@@ -260,11 +336,10 @@ export default function ContabilidadPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {balance && (
+              {balance.length > 0 && (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Código</TableHead>
                       <TableHead>Cuenta</TableHead>
                       <TableHead className="text-right">Debe</TableHead>
                       <TableHead className="text-right">Haber</TableHead>
@@ -273,26 +348,25 @@ export default function ContabilidadPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {balance.cuentas?.map((cuenta: any) => (
-                      <TableRow key={cuenta.codigo}>
-                        <TableCell>{cuenta.codigo}</TableCell>
-                        <TableCell>{cuenta.nombre}</TableCell>
-                        <TableCell className="text-right">${cuenta.debe.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">${cuenta.haber.toFixed(2)}</TableCell>
+                    {balance.map((cuenta) => (
+                      <TableRow key={cuenta.cuenta}>
+                        <TableCell>{cuenta.cuenta}</TableCell>
+                        <TableCell className="text-right">{fmt(cuenta.debe)}</TableCell>
+                        <TableCell className="text-right">{fmt(cuenta.haber)}</TableCell>
                         <TableCell className="text-right">
-                          {cuenta.saldo > 0 ? `$${cuenta.saldo.toFixed(2)}` : "-"}
+                          {cuenta.saldo > 0 ? fmt(cuenta.saldo) : "-"}
                         </TableCell>
                         <TableCell className="text-right">
-                          {cuenta.saldo < 0 ? `$${Math.abs(cuenta.saldo).toFixed(2)}` : "-"}
+                          {cuenta.saldo < 0 ? fmt(Math.abs(cuenta.saldo)) : "-"}
                         </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-muted font-bold">
-                      <TableCell colSpan={2}>TOTALES</TableCell>
-                      <TableCell className="text-right">${balance.totales?.debe.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${balance.totales?.haber.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${balance.totales?.saldoDeudor.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${balance.totales?.saldoAcreedor.toFixed(2)}</TableCell>
+                      <TableCell>TOTALES</TableCell>
+                      <TableCell className="text-right">{fmt(totalesBalance.debe)}</TableCell>
+                      <TableCell className="text-right">{fmt(totalesBalance.haber)}</TableCell>
+                      <TableCell className="text-right">{fmt(totalesBalance.saldoDeudor)}</TableCell>
+                      <TableCell className="text-right">{fmt(totalesBalance.saldoAcreedor)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

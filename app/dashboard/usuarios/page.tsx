@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader } from "@/components/layout"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -146,20 +147,17 @@ export default function UsuariosPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="h-7 w-7" />
-            Usuarios y Permisos
-          </h1>
-          <p className="text-muted-foreground">Gestión de accesos y roles del sistema</p>
-        </div>
-        <Button onClick={abrirNuevo}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Usuario
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Usuarios y Permisos"
+        description="Gestión de accesos y roles del sistema"
+        actions={
+          <Button onClick={abrirNuevo}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Usuario
+          </Button>
+        }
+      />
 
       {/* Roles disponibles */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -281,6 +279,6 @@ export default function UsuariosPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

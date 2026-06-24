@@ -3,7 +3,7 @@
  *
  * Strategy:
  * - ALL TIERS: Qwen 2.5 7B (~4.7GB) — fits comfortably in available memory
- * - CLOUD:     Anthropic claude-sonnet-4-20250514 — fallback if Ollama unavailable
+ * - CLOUD:     Gemini (Google) → Anthropic claude-sonnet-4 — fallback if Ollama unavailable
  *
  * Current setup: Single model (qwen2.5:7b) for all tiers.
  * Fast, reliable, and fits in ~5GB memory. Good quality for ERP tasks.
@@ -59,9 +59,13 @@ export const AI_MODELS: Record<string, AIModelConfig> = {
   },
 }
 
+export type AIProviderName = "ollama" | "gemini" | "anthropic" | "auto"
+
 export interface AIConfig {
-  provider: "ollama" | "anthropic" | "auto"
+  provider: AIProviderName
   ollamaBaseUrl: string
+  geminiApiKey: string | null
+  geminiModel: string
   anthropicApiKey: string | null
   anthropicModel: string
   /** Model to use for each tier */
@@ -84,10 +88,16 @@ export interface AIConfig {
   chatHistoryPairs: number
 }
 
+function resolveGeminiApiKey(): string | null {
+  return process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || null
+}
+
 export function getAIConfig(): AIConfig {
   return {
     provider: (process.env.AI_PROVIDER as AIConfig["provider"]) || "auto",
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+    geminiApiKey: resolveGeminiApiKey(),
+    geminiModel: process.env.GEMINI_MODEL || "gemini-2.0-flash",
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
     anthropicModel: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
     modelByTier: {

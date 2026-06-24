@@ -5,7 +5,7 @@ import { addMaquinaLog, listMaquinas } from "@/lib/agro/iot-stub-store"
 const SUPPORTED = new Set(["JOHN_DEERE", "AGCO"])
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const maquinas = listMaquinas(auth.auth.empresaId)
@@ -34,3 +34,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ sincronizadas, errores, proveedor: "stub" })
 }
+

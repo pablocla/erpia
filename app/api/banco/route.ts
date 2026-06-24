@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const cuentaId = searchParams.get("cuentaId")
     const estado = searchParams.get("estado")
+    const tipo = searchParams.get("tipo")
     const skip = parseInt(searchParams.get("skip") ?? "0", 10)
     const take = Math.min(parseInt(searchParams.get("take") ?? "100", 10), 500)
 
@@ -27,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     const movimientosWhere: Record<string, unknown> = {
       cuentaBancaria: whereEmpresa(ctx.auth.empresaId),
-      tipo: { contains: "transf", mode: "insensitive" },
       ...(cuentaBancariaId ? { cuentaBancariaId } : {}),
       ...(estado ? { estado } : {}),
+      ...(tipo ? { tipo: { contains: tipo, mode: "insensitive" } } : {}),
     }
 
     const [movimientos, total, cuentas] = await Promise.all([

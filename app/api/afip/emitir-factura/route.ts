@@ -4,6 +4,7 @@ import { z } from "zod"
 import { verificarToken } from "@/lib/auth/middleware"
 import { prisma } from "@/lib/prisma"
 import type { FacturaPayload } from "@/lib/types"
+import { getFiscalEmissionContext } from "@/lib/afip/fiscal-context"
 
 const facturaAfipSchema = z.object({
   cuit: z.string().regex(/^\d{11}$/, "CUIT debe tener 11 dígitos"),
@@ -30,8 +31,8 @@ const facturaAfipSchema = z.object({
 
 const facturaPosSchema = z.object({
   clienteId: z.number().int().positive(),
-  puntoVenta: z.number().min(1).max(9999).optional(),
-  tipoCbte: z.number().int().positive().optional(),
+  puntoVenta: z.number().min(1).max(9999),
+  tipoCbte: z.number().int().positive(),
   tesCodigo: z.string().optional(),
   remitoId: z.number().int().positive().optional(),
   items: z
@@ -39,13 +40,13 @@ const facturaPosSchema = z.object({
       z.object({
         descripcion: z.string().min(1),
         cantidad: z.number().positive(),
-        precioUnitario: z.number().positive(),
+        precioUnitario: z.number().nonnegative(),
         iva: z.number().min(0).max(100),
         productoId: z.number().int().positive().optional(),
       }),
     )
     .min(1),
-  total: z.number().positive().optional(),
+  total: z.number().nonnegative(),
 })
 
 const payloadUnionSchema = z.union([facturaAfipSchema, facturaPosSchema])
@@ -138,6 +139,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorAfip }, { status: 400 })
     }
 
+    const fiscalCtx = await getFiscalEmissionContext(usuario.empresaId)
+    payload.jurisdiccion = payload.jurisdiccion ?? fiscalCtx.jurisdiccion
+    payload.emisorAgente = payload.emisorAgente ?? fiscalCtx.emisorAgente
+
     // Determinar el entorno (homologación o producción)
     const entorno = process.env.AFIP_ENTORNO === "produccion" ? "produccion" : "homologacion"
 
@@ -157,6 +162,8 @@ export async function POST(request: NextRequest) {
       fechaCAE: resultado.fechaCAE,
       vencimientoCAE: resultado.vencimientoCAE,
       qrBase64: resultado.qrBase64,
+      pendienteCAE: resultado.pendienteCAE ?? false,
+      advertencia: resultado.advertencia,
     })
   } catch (error) {
     console.error("Error en endpoint emitir-factura:", error)

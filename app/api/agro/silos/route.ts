@@ -3,7 +3,7 @@ import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const silos = await prisma.agroSilo.findMany({
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const body = await request.json()
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
       nombre,
       capacidadTn: Number(capacidadTn),
       granoId: granoId ? Number(granoId) : null,
-      lat: lat ? Number(lat) : null,
-      lon: lon ? Number(lon) : null,
+      stockActualTn: 0,
     },
   })
   return NextResponse.json(silo, { status: 201 })
 }
+

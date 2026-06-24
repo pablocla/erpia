@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
+import { notifyAnalistasTicketCritico } from "@/lib/ops/ops-notificaciones"
 
 const ticketSchema = z.object({
   titulo: z.string().min(4, "Título obligatorio"),
@@ -88,6 +89,16 @@ export async function POST(request: NextRequest) {
         empresaId: ctx.auth.empresaId,
       },
     })
+
+    if (ticket.prioridad === "critica") {
+      void notifyAnalistasTicketCritico({
+        empresaId: ticket.empresaId,
+        ticketId: ticket.id,
+        numero: ticket.numero,
+        titulo: ticket.titulo,
+        descripcion: ticket.descripcion,
+      }).catch((e) => console.error("Error notifying analysts of critical ticket:", e))
+    }
 
     return NextResponse.json(ticket, { status: 201 })
   } catch (error) {

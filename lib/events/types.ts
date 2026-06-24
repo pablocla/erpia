@@ -149,14 +149,16 @@ export interface CajaCerradaPayload {
 
 export interface ChequeDepositadoPayload {
   chequeId: number
-  cuentaBancariaId: number
+  cuentaDepositoId: number
   monto: number
 }
 
 export interface ChequeRechazadoPayload {
   chequeId: number
   monto: number
-  motivo: string
+  clienteId: number
+  cuentaCobrarId?: number
+  motivo?: string
 }
 
 export type EventHandler<T = unknown> = (event: ERPEvent<T>) => Promise<void>

@@ -239,7 +239,7 @@ function DiagramaCompras() {
         <FlowArrow />
         <FlowNode variant="step"><Receipt className="h-4 w-4" /> Factura Proveedor (✅)</FlowNode>
         <FlowArrow />
-        <FlowNode variant="highlight"><XCircle className="h-4 w-4" /> generarCPPorCompra() — STUB CRÍTICO</FlowNode>
+        <FlowNode variant="step"><CheckCircle2 className="h-4 w-4" /> generarCPPorCompra() (✅)</FlowNode>
         <FlowArrow />
         <FlowNode variant="step"><Banknote className="h-4 w-4" /> Orden de Pago (✅)</FlowNode>
         <FlowArrow />
@@ -248,7 +248,6 @@ function DiagramaCompras() {
         <FlowNode variant="missing"><FileText className="h-4 w-4" /> OP PDF — FALTA</FlowNode>
       </FlowDiagram>
       <div className="space-y-1">
-        <GapItem severity="critical" title="generarCPPorCompra() es STUB" details="Las compras no generan CuentaPagar automáticamente — el flujo está roto" />
         <GapItem severity="high" title="Asiento OP haber IIBB truncado" details="Falta movimiento contable de retención IIBB en pagos" />
         <GapItem severity="high" title="WSCDC no integrado" details="Se puede verificar comprobantes de terceros pero no se usa en el flow de 3-way" />
         <GapItem severity="medium" title="SolicitudCompra model" details="No existe pedido interno previo a la OC" />
@@ -675,7 +674,7 @@ function DiagramaCrossCutting() {
 
 const RESUMEN_MODULOS = [
   { modulo: "Ventas", completitud: 85, criticos: 0, altos: 1, medios: 2 },
-  { modulo: "Compras", completitud: 70, criticos: 1, altos: 2, medios: 1 },
+  { modulo: "Compras", completitud: 80, criticos: 0, altos: 2, medios: 1 },
   { modulo: "Stock", completitud: 55, criticos: 0, altos: 3, medios: 2 },
   { modulo: "Caja", completitud: 60, criticos: 0, altos: 1, medios: 1 },
   { modulo: "Banco", completitud: 65, criticos: 0, altos: 1, medios: 2 },
@@ -832,7 +831,6 @@ export default function DiagnosticoPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {[
-            { prio: 1, titulo: "generarCPPorCompra() — Completar stub", desc: "Las compras no generan cuentas a pagar. Sin esto el ciclo compras→pago está roto.", modulo: "Compras/CC-CP" },
             { prio: 2, titulo: "Balance General + Estado Resultados", desc: "Solo existe Sumas y Saldos. Obligatorio para presentaciones contables y AFIP.", modulo: "Contabilidad" },
             { prio: 3, titulo: "Ajuste por Inflación (RT 6)", desc: "Requerimiento legal en Argentina para EECC. No existe modelo ni servicio.", modulo: "Contabilidad" },
             { prio: 4, titulo: "Impresión — enviarComandos()", desc: "Los comandos ESC/POS se generan bien pero NO se envían al dispositivo. Sin esto no hay tickets.", modulo: "Impresión" },

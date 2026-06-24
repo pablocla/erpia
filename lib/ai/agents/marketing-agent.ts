@@ -100,7 +100,7 @@ export class MarketingAgent extends AgentBase {
         empresaId,
         activo: true,
         facturas: { some: {} },
-        NOT: { facturas: { some: { fecha: { gte: thirtyDaysAgo } } } },
+        NOT: { facturas: { some: { createdAt: { gte: thirtyDaysAgo } } } },
       },
       select: { id: true, nombre: true, email: true, telefono: true },
       take: 20,
@@ -108,7 +108,7 @@ export class MarketingAgent extends AgentBase {
   }
 
   private async detectOverstockProducts(empresaId: number) {
-    return prisma.producto.findMany({
+    const products = await prisma.producto.findMany({
       where: {
         empresaId,
         activo: true,
@@ -116,8 +116,16 @@ export class MarketingAgent extends AgentBase {
       },
       orderBy: { stock: "desc" },
       take: 10,
-      select: { id: true, nombre: true, stock: true, precioVenta: true, precioCosto: true },
+      select: { id: true, nombre: true, stock: true, precioVenta: true, precioCompra: true },
     })
+
+    return products.map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      stock: p.stock,
+      precioVenta: Number(p.precioVenta),
+      precioCompra: Number(p.precioCompra),
+    }))
   }
 
   private async generatePromoCampaign(

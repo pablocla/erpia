@@ -53,6 +53,9 @@ import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcu
 import { useAuthStore } from "@/lib/stores"
 import { ROLES_SISTEMA, type RolSistema, tienePermiso } from "@/lib/auth/roles"
 import { MipymeFceConfig } from "@/components/fiscal/mipyme-fce-config"
+import { AfipConnectionTest } from "@/components/fiscal/afip-connection-test"
+import { CaeaPanel } from "@/components/fiscal/caea-panel"
+import { CaeaConfigPanel } from "@/components/fiscal/caea-config-panel"
 
 type SectionKey =
   | "empresa"
@@ -877,6 +880,10 @@ export default function ConfiguracionPage() {
                     Certificados cargados correctamente
                   </div>
                 )}
+                <AfipConnectionTest
+                  cuit={empresaCuit}
+                  disabled={!puedeEditarConfig || !tieneCertificado}
+                />
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-xs font-medium mb-1">Estado actual</p>
                   <div className="flex items-center gap-2">
@@ -888,6 +895,11 @@ export default function ConfiguracionPage() {
                 </div>
               </CardContent>
             </Card>
+            <CaeaConfigPanel puedeEditar={puedeEditarConfig} />
+            <CaeaPanel
+              puedeEditar={puedeEditarConfig}
+              puntoVentaDefault={Number(afipConfig.puntoVenta) || 1}
+            />
           </div>
         )}
 
@@ -1301,38 +1313,20 @@ export default function ConfiguracionPage() {
 
         {/* ── INTEGRACIONES ── */}
         {seccionActiva === "integraciones" && (
-          <div className="space-y-3">
-            {[
-              { nombre: "Shopify", logo: "🛍️", desc: "Sincronizar productos, stock y pedidos", conectado: false },
-              { nombre: "MercadoLibre", logo: "🛒", desc: "Publicar productos y gestionar ventas ML", conectado: false },
-              { nombre: "MercadoPago", logo: "💳", desc: "Cobros QR y online integrados al POS", conectado: false },
-              { nombre: "WhatsApp Business", logo: "💬", desc: "Envío de facturas y recordatorios automáticos", conectado: false },
-              { nombre: "Banco BBVA", logo: "🏦", desc: "Conciliación automática de movimientos bancarios", conectado: false },
-              { nombre: "Banco Galicia", logo: "🏦", desc: "Conciliación automática de movimientos bancarios", conectado: false },
-              { nombre: "Google Sheets", logo: "📊", desc: "Exportar reportes automáticamente", conectado: false },
-            ].map((integ, i) => (
-              <Card key={i}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{integ.logo}</span>
-                    <div>
-                      <p className="font-medium text-sm">{integ.nombre}</p>
-                      <p className="text-xs text-muted-foreground">{integ.desc}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {integ.conectado ? (
-                      <Badge variant="default" className="text-xs">Conectado</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">No conectado</Badge>
-                    )}
-                    <Button size="sm" variant="outline" className="h-7 text-xs">
-                      {integ.conectado ? "Configurar" : "Conectar"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-4">
+            <Card className="border-teal-500/20 bg-teal-500/5">
+              <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium text-sm">Centro de Conexiones Nativas</p>
+                  <p className="text-xs text-muted-foreground">
+                    30+ integraciones: Shopify, Tienda Nube, ML, Stripe, WhatsApp, logística y más.
+                  </p>
+                </div>
+                <Button size="sm" asChild>
+                  <a href="/dashboard/conexiones">Abrir Centro de Conexiones</a>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 

@@ -11,7 +11,7 @@
  * - Lotes / potreros (Agricultura 4.0)
  */
 
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 
 // ─── TIPOS ──────────────────────────────────────────────────────────────────
 

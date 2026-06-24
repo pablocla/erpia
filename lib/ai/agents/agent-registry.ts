@@ -101,7 +101,7 @@ class AgentRegistry {
    */
   async executeGlobalBatch(): Promise<Map<number, AgentRunResult[]>> {
     const empresas = await prisma.empresa.findMany({
-      where: { activa: true },
+      where: { deletedAt: null },
       select: { id: true },
     })
 

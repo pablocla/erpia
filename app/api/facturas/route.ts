@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
 
     // Summary stats
     const emitidas = data.filter((f) => f.estado === "emitida")
-    const totalFacturado = emitidas.reduce((s, f) => s + f.total, 0)
-    const totalIVA = emitidas.reduce((s, f) => s + f.iva, 0)
+    const totalFacturado = emitidas.reduce((s, f) => s + Number(f.total), 0)
+    const totalIVA = emitidas.reduce((s, f) => s + Number(f.iva), 0)
 
     const summary = {
       totalFacturado: Math.round(totalFacturado * 100) / 100,

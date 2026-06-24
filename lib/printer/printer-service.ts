@@ -54,14 +54,14 @@ export class PrinterService {
         items: factura.lineas.map((linea) => ({
           descripcion: linea.descripcion,
           cantidad: linea.cantidad,
-          precioUnitario: linea.precioUnitario,
-          iva: linea.porcentajeIva,
-          total: linea.total,
+          precioUnitario: Number(linea.precioUnitario),
+          iva: Number(linea.porcentajeIva),
+          total: Number(linea.total),
         })),
         totales: {
-          subtotal: factura.subtotal,
-          iva: factura.iva,
-          total: factura.total,
+          subtotal: Number(factura.subtotal),
+          iva: Number(factura.iva),
+          total: Number(factura.total),
         },
         qrBase64: factura.qrBase64 || undefined,
       }

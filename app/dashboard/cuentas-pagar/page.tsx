@@ -98,6 +98,12 @@ export default function CuentasPagarPage() {
   const [montoPago, setMontoPago] = useState("")
   const [medioPago, setMedioPago] = useState("transferencia")
   const [obsPago, setObsPago] = useState("")
+  const [chequeNumero, setChequeNumero] = useState("")
+  const [chequeBanco, setChequeBanco] = useState("")
+  const [chequeEmision, setChequeEmision] = useState(new Date().toISOString().split("T")[0])
+  const [chequeVencimiento, setChequeVencimiento] = useState("")
+  const [cuentaEmisorId, setCuentaEmisorId] = useState("")
+  const [cuentasBanco, setCuentasBanco] = useState<{ id: number; banco: string; numeroCuenta: string }[]>([])
   const [pagando, setPagando] = useState(false)
   const [errorPago, setErrorPago] = useState("")
 
@@ -134,6 +140,10 @@ export default function CuentasPagarPage() {
       .then((r) => r.json())
       .then((d) => setProveedores(Array.isArray(d) ? d : []))
       .catch(() => {})
+    fetch("/api/banco", { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => setCuentasBanco(Array.isArray(d.cuentas) ? d.cuentas : []))
+      .catch(() => {})
   }, [authHeaders])
 
   const cargarOrdenesPago = useCallback(async () => {
@@ -166,6 +176,11 @@ export default function CuentasPagarPage() {
     setMontoPago(String(cp.saldo))
     setMedioPago("transferencia")
     setObsPago("")
+    setChequeNumero("")
+    setChequeBanco("")
+    setChequeEmision(new Date().toISOString().split("T")[0])
+    setChequeVencimiento("")
+    setCuentaEmisorId("")
     setErrorPago("")
   }
 
@@ -174,23 +189,40 @@ export default function CuentasPagarPage() {
     setErrorPago("")
     const monto = parseFloat(montoPago)
     if (!monto || monto <= 0) { setErrorPago("Monto inválido"); return }
+    if (medioPago === "cheque") {
+      if (!chequeNumero.trim()) { setErrorPago("Ingresá el número de cheque"); return }
+      if (!chequeVencimiento) { setErrorPago("Ingresá la fecha de vencimiento"); return }
+      if (!cuentaEmisorId) { setErrorPago("Seleccioná la cuenta bancaria emisora"); return }
+    }
 
     setPagando(true)
     try {
+      const payload: Record<string, unknown> = {
+        cuentaPagarId: modalPago.id,
+        monto,
+        medioPago,
+        observaciones: obsPago.trim() || undefined,
+      }
+      if (medioPago === "cheque") {
+        payload.cheque = {
+          numero: chequeNumero.trim(),
+          bancoNombre: chequeBanco.trim() || undefined,
+          fechaEmision: chequeEmision,
+          fechaVencimiento: chequeVencimiento,
+          cuentaEmisorId: parseInt(cuentaEmisorId, 10),
+          monto,
+        }
+      }
+
       const res = await fetch("/api/cuentas-pagar/pagos", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-          cuentaPagarId: modalPago.id,
-          monto,
-          medioPago,
-          observaciones: obsPago.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) { setErrorPago(data.error || "Error al registrar pago"); return }
       setModalPago(null)
-      await cargar()
+      await Promise.all([cargar(), cargarOrdenesPago()])
     } finally {
       setPagando(false)
     }
@@ -332,6 +364,11 @@ export default function CuentasPagarPage() {
               { key: "totalRetenciones", header: "Retenciones", align: "right", cell: (op) => <span className="text-amber-700">{formatCurrency(op.totalRetenciones)}</span> },
               { key: "netoPagado", header: "Neto", align: "right", cell: (op) => <span className="font-bold text-primary">{formatCurrency(op.netoPagado)}</span> },
               { key: "medioPago", header: "Medio", cell: (op) => <span className="text-xs text-muted-foreground">{op.medioPago}</span> },
+              { key: "acciones" as any, header: "", cell: (op) => (
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=orden-pago&id=${op.id}`, "_blank") }}>
+                  PDF
+                </Button>
+              ) },
             ] as DataTableColumn<OrdenPago>[]}
             rowKey="id"
             searchPlaceholder="Buscar orden..."
@@ -344,6 +381,76 @@ export default function CuentasPagarPage() {
           />
         </CardContent>
       </Card>
+
+      <Dialog open={!!modalPago} onOpenChange={() => setModalPago(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Registrar Pago</DialogTitle></DialogHeader>
+          {modalPago && (
+            <div className="space-y-3 py-2">
+              {errorPago && <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">{errorPago}</div>}
+              <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                <p className="font-semibold">{modalPago.proveedor?.nombre}</p>
+                <p className="text-muted-foreground">CP #{modalPago.id}</p>
+                <p>Saldo: <span className="font-bold text-primary">{formatCurrency(modalPago.saldo)}</span></p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Importe a pagar</Label>
+                <Input type="number" step="0.01" value={montoPago} onChange={(e) => setMontoPago(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Forma de pago</Label>
+                <Select value={medioPago} onValueChange={setMedioPago}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                    <SelectItem value="cheque">Cheque propio</SelectItem>
+                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {medioPago === "cheque" && (
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/40">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cheque propio</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5 col-span-2">
+                      <Label>Número de cheque</Label>
+                      <Input value={chequeNumero} onChange={(e) => setChequeNumero(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label>Cuenta emisora</Label>
+                      <Select value={cuentaEmisorId} onValueChange={setCuentaEmisorId}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar cuenta" /></SelectTrigger>
+                        <SelectContent>
+                          {cuentasBanco.map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)}>{c.banco} — {c.numeroCuenta}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Banco</Label>
+                      <Input value={chequeBanco} onChange={(e) => setChequeBanco(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Vencimiento</Label>
+                      <Input type="date" value={chequeVencimiento} onChange={(e) => setChequeVencimiento(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Observaciones</Label>
+                <Input value={obsPago} onChange={(e) => setObsPago(e.target.value)} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalPago(null)}>Cancelar</Button>
+            <Button onClick={registrarPago} disabled={pagando}>{pagando ? "Procesando..." : "Confirmar Pago"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

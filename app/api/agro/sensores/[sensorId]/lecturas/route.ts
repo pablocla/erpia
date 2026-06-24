@@ -7,7 +7,7 @@ interface Params {
 }
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { sensorId } = await params

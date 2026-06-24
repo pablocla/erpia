@@ -268,10 +268,9 @@ function PanelPedido({
       }
 
       if (navigator.onLine) {
-        // Enviar pedido al servidor
         if (cart.length > 0) {
           const total = cart.reduce((s, i) => s + i.precio * i.cantidad, 0)
-          const count = Math.floor(Math.random() * 99999) // en prod usar numerador
+          const count = Math.floor(Math.random() * 99999)
           await fetch("/api/ventas/pedidos", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -290,7 +289,54 @@ function PanelPedido({
             }),
           })
         }
-        setExito(cart.length > 0 ? "Pedido enviado correctamente" : "Visita registrada")
+
+        if (cobro.monto) {
+          const montoCobro = parseFloat(cobro.monto)
+          const ccRes = await fetch(`/api/cuentas-cobrar?clienteId=${cliente.id}&estado=pendiente&take=10`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          const ccData = await ccRes.json()
+          const ccs = Array.isArray(ccData.data) ? ccData.data.filter((c: { saldo: number }) => c.saldo > 0) : []
+
+          if (ccs.length === 0) {
+            throw new Error("El cliente no tiene cuentas pendientes para imputar el cobro")
+          }
+
+          const cc = ccs[0]
+          const payload: Record<string, unknown> = {
+            clienteId: cliente.id,
+            items: [{ cuentaCobrarId: cc.id, monto: Math.min(montoCobro, cc.saldo) }],
+            medioPago: cobro.medio === "cheque" ? "cheque" : cobro.medio === "transferencia" ? "transferencia" : "efectivo",
+            observaciones: cobro.referencia || undefined,
+          }
+
+          if (cobro.medio === "cheque") {
+            const hoy = new Date().toISOString().split("T")[0]
+            const vto = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
+            payload.cheque = {
+              numero: cobro.referencia || `CHQ-${Date.now()}`,
+              fechaEmision: hoy,
+              fechaVencimiento: vto,
+              monto: Math.min(montoCobro, cc.saldo),
+            }
+          }
+
+          const cobroRes = await fetch("/api/cuentas-cobrar/cobros", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          })
+          if (!cobroRes.ok) {
+            const err = await cobroRes.json()
+            throw new Error(err.error || "Error al registrar cobro")
+          }
+        }
+
+        setExito(
+          cart.length > 0 && cobro.monto ? "Pedido y cobro registrados" :
+          cart.length > 0 ? "Pedido enviado correctamente" :
+          cobro.monto ? "Cobro registrado" : "Visita registrada"
+        )
       } else {
         // Guardar offline
         onGuardarPendiente(visita)

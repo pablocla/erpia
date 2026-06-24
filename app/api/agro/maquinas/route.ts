@@ -13,7 +13,7 @@ const createMaquinaSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const maquinas = listMaquinas(auth.auth.empresaId).map((m) => ({
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const body = await request.json()
@@ -53,3 +53,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(maquina, { status: 201 })
 }
+

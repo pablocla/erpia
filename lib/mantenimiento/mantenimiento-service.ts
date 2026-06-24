@@ -134,7 +134,7 @@ export async function generarOTsPreventivas(empresaId: number) {
       descripcion: `${plan.nombre}${plan.descripcion ? ` — ${plan.descripcion}` : ""}`,
       prioridad: "media",
       fechaProgramada: plan.proximaEjecucion,
-      tecnicoAsignado: plan.responsable,
+      tecnicoAsignado: plan.responsable ?? undefined,
     })
 
     // Calcular próxima ejecución

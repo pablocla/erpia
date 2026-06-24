@@ -156,7 +156,7 @@ El analista debe elegir la capa **más baja posible** que resuelva el requerimie
 | Deploy versión | Changelog + tag Git | ❌ falta CHANGELOG.md |
 | Custom capa 5 | PR + ticket + doc cliente | ❌ proceso manual |
 
-**Recomendación G13-09:** por cada cliente enterprise, archivo `docs/clientes/<empresaId>/IMPLEMENTACION.md` con: rubro, features activas, campos custom, integraciones, contactos, fecha go-live.
+**Recomendación G13-09:** por cada cliente enterprise, dossier `docs/clientes/<empresaId>/DOSSIER.md` (plantilla en `_TEMPLATE/`) con: rubro, features activas, campos custom, integraciones, contactos, fecha go-live. Proceso completo: `docs/operaciones/CLAVER_CLOUD_PROCESO_IMPLEMENTACION.md` y wiki CCA.
 
 ---
 

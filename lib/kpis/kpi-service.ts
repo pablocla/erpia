@@ -18,40 +18,47 @@ interface KPIResult {
 // ─── Calcular KPIs en tiempo real ───────────────────────────────────────────
 
 export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
+  const kpis: KPIResult[] = []
   const hoy = new Date()
-  const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-  const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
   const hace30d = new Date(); hace30d.setDate(hace30d.getDate() - 30)
   const hace60d = new Date(); hace60d.setDate(hace60d.getDate() - 60)
 
-  const kpis: KPIResult[] = []
-
-  // 1. Ventas del día
+  // 1. Ventas del día (hoy)
+  const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0)
   const ventasDia = await prisma.factura.aggregate({
-    where: { empresaId, createdAt: { gte: inicioDia }, estado: { not: "anulada" } },
+    where: {
+      empresaId,
+      createdAt: { gte: inicioHoy },
+      estado: "emitida",
+    },
     _sum: { total: true },
     _count: true,
   })
+
   kpis.push({
     codigo: "VENTA_DIA",
-    nombre: "Ventas del día",
-    valor: ventasDia._sum.total ?? 0,
+    nombre: "Venta del día",
+    valor: Number(ventasDia._sum.total ?? 0),
     unidad: "ARS",
     meta: null,
     nivel: "verde",
     tendencia: "estable",
   })
 
-  // 2. Ventas del mes
+  // 2. Ventas del mes (últimos 30 días)
   const ventasMes = await prisma.factura.aggregate({
-    where: { empresaId, createdAt: { gte: inicioMes }, estado: { not: "anulada" } },
+    where: {
+      empresaId,
+      createdAt: { gte: hace30d },
+      estado: "emitida",
+    },
     _sum: { total: true },
     _count: true,
   })
   kpis.push({
     codigo: "VENTA_MES",
     nombre: "Ventas del mes",
-    valor: ventasMes._sum.total ?? 0,
+    valor: Number(ventasMes._sum.total ?? 0),
     unidad: "ARS",
     meta: null,
     nivel: "verde",
@@ -60,7 +67,7 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
 
   // 3. Ticket promedio
   const ticketPromedio =
-    ventasMes._count > 0 ? (ventasMes._sum.total ?? 0) / ventasMes._count : 0
+    ventasMes._count > 0 ? Number(ventasMes._sum.total ?? 0) / ventasMes._count : 0
   kpis.push({
     codigo: "TICKET_PROMEDIO",
     nombre: "Ticket promedio",
@@ -73,15 +80,15 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
 
   // 4. DSO (Days Sales Outstanding)
   const cxcPendientes = await prisma.cuentaCobrar.aggregate({
-    where: { empresaId, estado: { in: ["pendiente", "parcial"] } },
+    where: { cliente: { empresaId }, estado: { in: ["pendiente", "parcial"] } },
     _sum: { saldo: true },
   })
   const ventasDiarias30d = await prisma.factura.aggregate({
     where: { empresaId, createdAt: { gte: hace30d }, estado: { not: "anulada" } },
     _sum: { total: true },
   })
-  const ventaDiaria = (ventasDiarias30d._sum.total ?? 1) / 30
-  const dso = ventaDiaria > 0 ? Math.round((cxcPendientes._sum.saldo ?? 0) / ventaDiaria) : 0
+  const ventaDiaria = Number(ventasDiarias30d._sum.total ?? 1) / 30
+  const dso = ventaDiaria > 0 ? Math.round(Number(cxcPendientes._sum.saldo ?? 0) / ventaDiaria) : 0
   kpis.push({
     codigo: "DSO",
     nombre: "Días promedio de cobro",
@@ -94,15 +101,15 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
 
   // 5. DPO (Days Payable Outstanding)
   const cxpPendientes = await prisma.cuentaPagar.aggregate({
-    where: { empresaId, estado: { in: ["pendiente", "parcial"] } },
+    where: { proveedor: { empresaId }, estado: { in: ["pendiente", "parcial"] } },
     _sum: { saldo: true },
   })
   const compras30d = await prisma.compra.aggregate({
     where: { empresaId, createdAt: { gte: hace30d } },
     _sum: { total: true },
   })
-  const compraDiaria = (compras30d._sum.total ?? 1) / 30
-  const dpo = compraDiaria > 0 ? Math.round((cxpPendientes._sum.saldo ?? 0) / compraDiaria) : 0
+  const compraDiaria = Number(compras30d._sum.total ?? 1) / 30
+  const dpo = compraDiaria > 0 ? Math.round(Number(cxpPendientes._sum.saldo ?? 0) / compraDiaria) : 0
   kpis.push({
     codigo: "DPO",
     nombre: "Días promedio de pago",
@@ -116,14 +123,14 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
   // 6. Índice de morosidad (% CxC vencida)
   const cxcVencidas = await prisma.cuentaCobrar.aggregate({
     where: {
-      empresaId,
+      cliente: { empresaId },
       estado: { in: ["pendiente", "parcial"] },
       fechaVencimiento: { lt: hoy },
     },
     _sum: { saldo: true },
   })
-  const totalCxC = cxcPendientes._sum.saldo ?? 0
-  const morosidad = totalCxC > 0 ? Math.round(((cxcVencidas._sum.saldo ?? 0) / totalCxC) * 100) : 0
+  const totalCxC = Number(cxcPendientes._sum.saldo ?? 0)
+  const morosidad = totalCxC > 0 ? Math.round((Number(cxcVencidas._sum.saldo ?? 0) / totalCxC) * 100) : 0
   kpis.push({
     codigo: "MOROSIDAD",
     nombre: "Índice de morosidad",
@@ -135,20 +142,24 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
   })
 
   // 7. Productos bajo stock mínimo
-  const productosBajoMinimo = await prisma.producto.count({
-    where: {
-      empresaId,
-      activo: true,
-      stockMinimo: { not: null },
-      stock: { lt: prisma.producto.fields.stockMinimo as unknown as number },
-    },
-  })
-  // Fallback: query all
-  const allProds = await prisma.producto.findMany({
-    where: { empresaId, activo: true },
-    select: { stock: true, stockMinimo: true },
-  })
-  const bajoMinimo = allProds.filter((p) => p.stockMinimo != null && p.stock < p.stockMinimo).length
+  let bajoMinimo = 0
+  try {
+    const rawCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*)::int as count FROM productos 
+      WHERE empresa_id = ${empresaId} 
+        AND activo = true 
+        AND stock < stock_minimo
+    `
+    bajoMinimo = Number(rawCount[0]?.count ?? 0)
+  } catch {
+    // Fallback in case of raw SQL problems
+    const allProds = await prisma.producto.findMany({
+      where: { empresaId, activo: true },
+      select: { stock: true, stockMinimo: true },
+    })
+    bajoMinimo = allProds.filter((p) => p.stockMinimo != null && p.stock < p.stockMinimo).length
+  }
+
   kpis.push({
     codigo: "STOCK_BAJO_MINIMO",
     nombre: "Productos bajo stock mínimo",
@@ -174,7 +185,7 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
   kpis.push({
     codigo: "CXC_TOTAL",
     nombre: "Cuentas a cobrar pendientes",
-    valor: Math.round(cxcPendientes._sum.saldo ?? 0),
+    valor: Math.round(Number(cxcPendientes._sum.saldo ?? 0)),
     unidad: "ARS",
     meta: null,
     nivel: "verde",
@@ -185,7 +196,7 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
   kpis.push({
     codigo: "CXP_TOTAL",
     nombre: "Cuentas a pagar pendientes",
-    valor: Math.round(cxpPendientes._sum.saldo ?? 0),
+    valor: Math.round(Number(cxpPendientes._sum.saldo ?? 0)),
     unidad: "ARS",
     meta: null,
     nivel: "verde",

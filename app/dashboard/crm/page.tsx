@@ -28,9 +28,11 @@ import {
 import {
   Users, UserPlus, Phone, Mail, Calendar,
   DollarSign, TrendingUp, Target, ArrowRight,
-  MessageSquare, Plus, RefreshCw, Award,
+  MessageSquare, Plus, RefreshCw, Award, Sparkles,
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
+import { leadEstadoVariant, leadEstadoLabel } from "@/lib/ui/status-map"
 
 interface Lead {
   id: number
@@ -79,14 +81,6 @@ const ETAPA_COLORS: Record<string, string> = {
   propuesta: "bg-amber-500",
   negociacion: "bg-purple-500",
   cierre: "bg-green-500",
-}
-
-const ESTADO_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  nuevo: "default",
-  contactado: "secondary",
-  calificado: "outline",
-  descartado: "destructive",
-  convertido: "default",
 }
 
 const ORIGEN_LABELS: Record<string, string> = {
@@ -151,64 +145,70 @@ export default function CRMPage() {
     fetchAll()
   }
 
+  const kpiItems = metricas ? [
+    { label: "Leads nuevos (30d)", value: metricas.leadsNuevos, icon: UserPlus },
+    { label: "Oportunidades abiertas", value: metricas.oportunidadesAbiertas, icon: Target },
+    { label: "Ganadas (30d)", value: metricas.ganadasMes, icon: Award, iconClassName: "text-[var(--status-success)]" },
+    { label: "Perdidas (30d)", value: metricas.perdidasMes, icon: TrendingUp, iconClassName: "text-[var(--status-error)]" },
+    { label: "Win Rate", value: `${metricas.winRate}%`, icon: TrendingUp, iconClassName: "text-[var(--status-info)]" },
+    { label: "Monto ganado", value: formatARS(metricas.montoGanado), icon: DollarSign, iconClassName: "text-[var(--status-success)]" },
+  ] : []
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Target className="h-7 w-7 text-primary" />
-            CRM — Pipeline Comercial
-          </h1>
-          <p className="text-sm text-muted-foreground">Gestión de leads y oportunidades de venta</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={showNewLead} onOpenChange={setShowNewLead}>
-            <DialogTrigger asChild>
-              <Button size="sm"><UserPlus className="h-4 w-4 mr-1" /> Nuevo Lead</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nuevo Lead</DialogTitle>
-                <DialogDescription>Registrar un nuevo prospecto comercial</DialogDescription>
-              </DialogHeader>
-              <form action={crearLead} className="space-y-3">
-                <div><Label>Nombre *</Label><Input name="nombre" required /></div>
-                <div><Label>Empresa</Label><Input name="empresa" /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Email</Label><Input name="email" type="email" /></div>
-                  <div><Label>Teléfono</Label><Input name="telefono" /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Origen</Label>
-                    <select name="origen" className="w-full h-9 rounded-md border bg-background px-3 text-sm">
-                      {Object.entries(ORIGEN_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                    </select>
+    <PageShell>
+      <PageHeader
+        title="CRM — Pipeline Comercial"
+        description="Gestión de leads y oportunidades de venta"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <Target className="h-3.5 w-3.5" />
+            Ventas y Prospectos
+          </span>
+        }
+        actions={
+          <div className="flex gap-2">
+            <Dialog open={showNewLead} onOpenChange={setShowNewLead}>
+              <DialogTrigger asChild>
+                <Button size="sm"><UserPlus className="h-4 w-4 mr-1" /> Nuevo Lead</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nuevo Lead</DialogTitle>
+                  <DialogDescription>Registrar un nuevo prospecto comercial</DialogDescription>
+                </DialogHeader>
+                <form action={crearLead} className="space-y-3">
+                  <div><Label>Nombre *</Label><Input name="nombre" required /></div>
+                  <div><Label>Empresa</Label><Input name="empresa" /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Email</Label><Input name="email" type="email" /></div>
+                    <div><Label>Teléfono</Label><Input name="telefono" /></div>
                   </div>
-                  <div><Label>Valor estimado</Label><Input name="valorEstimado" type="number" placeholder="$" /></div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Crear Lead</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" size="sm" onClick={fetchAll} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Origen</Label>
+                      <select name="origen" className="w-full h-9 rounded-md border bg-background px-3 text-sm">
+                        {Object.entries(ORIGEN_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div><Label>Valor estimado</Label><Input name="valorEstimado" type="number" placeholder="$" /></div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Crear Lead</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" size="sm" onClick={fetchAll} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+        }
+      />
 
       {/* Métricas rápidas */}
       {metricas && (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          <MetricCard label="Leads nuevos (30d)" value={metricas.leadsNuevos} icon={UserPlus} />
-          <MetricCard label="Oportunidades abiertas" value={metricas.oportunidadesAbiertas} icon={Target} />
-          <MetricCard label="Ganadas (30d)" value={metricas.ganadasMes} icon={Award} color="text-green-500" />
-          <MetricCard label="Perdidas (30d)" value={metricas.perdidasMes} icon={TrendingUp} color="text-red-500" />
-          <MetricCard label="Win Rate" value={`${metricas.winRate}%`} icon={TrendingUp} color="text-blue-500" />
-          <MetricCard label="Monto ganado" value={formatARS(metricas.montoGanado)} icon={DollarSign} color="text-green-500" />
-        </div>
+        <KpiStrip items={kpiItems} className="grid-cols-2 md:grid-cols-3 xl:grid-cols-6" />
       )}
 
       {/* Pipeline visual Kanban */}
@@ -258,9 +258,10 @@ export default function CRMPage() {
                   <p className="font-medium">{lead.nombre}</p>
                   {lead.empresa && <p className="text-xs text-muted-foreground">{lead.empresa}</p>}
                 </div>
-                <Badge variant={ESTADO_COLORS[lead.estado] ?? "secondary"} className="text-[10px]">
-                  {lead.estado}
-                </Badge>
+                <StatusBadge 
+                  variant={leadEstadoVariant(lead.estado)} 
+                  label={leadEstadoLabel(lead.estado)} 
+                />
               </div>
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                 {lead.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{lead.email}</span>}
@@ -278,18 +279,6 @@ export default function CRMPage() {
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-function MetricCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color?: string }) {
-  return (
-    <Card className="p-3">
-      <div className="flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${color ?? "text-muted-foreground"}`} />
-        <span className="text-xs text-muted-foreground">{label}</span>
-      </div>
-      <p className="text-xl font-bold mt-1">{value}</p>
-    </Card>
+    </PageShell>
   )
 }

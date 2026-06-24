@@ -45,6 +45,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { cn } from "@/lib/utils"
+import { useCompactShell } from "@/hooks/use-mobile"
 import {
   ArrowUpDown,
   ArrowUp,
@@ -73,6 +74,8 @@ export interface DataTableColumn<T> {
   exportFn?: (row: T) => string
   /** Hide column by default (user can toggle visibility) */
   hidden?: boolean
+  /** Hide in mobile card layout */
+  mobileHidden?: boolean
   /** Column width class, e.g. "w-[120px]" */
   className?: string
   /** Align: left (default), center, right */
@@ -112,6 +115,8 @@ export interface DataTableProps<T> {
   onRowClick?: (row: T) => void
   /** Compact mode (smaller rows) */
   compact?: boolean
+  /** Mobile layout: auto = cards on small screens */
+  mobileLayout?: "auto" | "table" | "cards"
 }
 
 type SortDir = "asc" | "desc" | null
@@ -174,7 +179,10 @@ export function DataTable<T>({
   stickyHeader = false,
   onRowClick,
   compact = false,
+  mobileLayout = "auto",
 }: DataTableProps<T>) {
+  const compactShell = useCompactShell()
+  const useCardLayout = mobileLayout === "cards" || (mobileLayout === "auto" && compactShell)
   // Normalise rowKey: accept both a field-name string and a function
   const getKey = React.useCallback(
     (row: T): string | number =>
@@ -208,7 +216,12 @@ export function DataTable<T>({
     return data.filter((row) =>
       keys.some((k) => {
         const val = (row as Record<string, unknown>)[k]
-        return val != null && String(val).toLowerCase().includes(term)
+        if (val == null) return false
+        try {
+          return String(val).toLowerCase().includes(term)
+        } catch {
+          return false
+        }
       }),
     )
   }, [data, search, searchKeys, columns])
@@ -288,13 +301,21 @@ export function DataTable<T>({
     setHiddenCols(next)
   }
 
+  function renderCell(col: DataTableColumn<T>, row: T, rowIndex: number) {
+    return col.cell
+      ? col.cell(row, rowIndex)
+      : String((row as Record<string, unknown>)[col.key] ?? "")
+  }
+
+  const mobileColumns = visibleColumns.filter((c) => !c.mobileHidden)
+
   // ── Render ──
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 w-full sm:max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
@@ -314,7 +335,7 @@ export function DataTable<T>({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="flex items-center gap-1.5 sm:ml-auto flex-wrap justify-between sm:justify-end">
           {/* Results count */}
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {sortedData.length} resultado{sortedData.length !== 1 ? "s" : ""}
@@ -374,16 +395,88 @@ export function DataTable<T>({
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card">
+      {/* Mobile cards */}
+      {useCardLayout ? (
+        <div className="space-y-2">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={`skel-card-${i}`} className="rounded-lg border bg-card p-4 space-y-2 animate-pulse">
+                <div className="h-4 w-2/3 bg-muted rounded" />
+                <div className="h-3 w-1/2 bg-muted rounded" />
+                <div className="h-3 w-1/3 bg-muted rounded" />
+              </div>
+            ))
+          ) : pagedData.length === 0 ? (
+            <div className="rounded-lg border bg-card py-12 text-center">
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                {emptyIcon}
+                <p>{emptyMessage}</p>
+              </div>
+            </div>
+          ) : (
+            pagedData.map((row, i) => {
+              const key = getKey(row)
+              const rowIndex = page * pageSize + i
+              const isSelected = selectedKeys.has(key)
+              const primary = mobileColumns[0]
+              const details = mobileColumns.slice(1)
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "rounded-lg border bg-card p-4 space-y-3 transition-colors",
+                    onRowClick && "cursor-pointer active:bg-muted/40",
+                    isSelected && "border-primary/40 bg-primary/5",
+                  )}
+                  onClick={() => onRowClick?.(row)}
+                >
+                  <div className="flex items-start gap-3">
+                    {selectable && (
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(key)}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Seleccionar fila ${key}`}
+                        className="mt-0.5"
+                      />
+                    )}
+                    {primary && (
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-snug break-words">
+                          {renderCell(primary, row, rowIndex)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {details.length > 0 && (
+                    <div className="grid gap-2 text-sm border-t pt-3">
+                      {details.map((col) => (
+                        <div key={col.key} className="flex items-start justify-between gap-3">
+                          <span className="text-muted-foreground text-xs shrink-0">{col.header}</span>
+                          <span className={cn(
+                            "text-right break-words min-w-0",
+                            col.align === "left" && "text-left ml-auto",
+                          )}>
+                            {renderCell(col, row, rowIndex)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+      ) : (
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader className={stickyHeader ? "sticky top-0 bg-card z-10" : ""}>
             <TableRow>
               {selectable && (
                 <TableHead className="w-10">
                   <Checkbox
-                    checked={allSelected}
-                    indeterminate={someSelected && !allSelected ? true : undefined}
+                    checked={allSelected ? true : (someSelected ? "indeterminate" : false)}
                     onCheckedChange={toggleSelectAll}
                     aria-label="Seleccionar todo"
                   />
@@ -473,9 +566,7 @@ export function DataTable<T>({
                           col.className,
                         )}
                       >
-                        {col.cell
-                          ? col.cell(row, page * pageSize + i)
-                          : String((row as Record<string, unknown>)[col.key] ?? "")}
+                        {renderCell(col, row, page * pageSize + i)}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -485,6 +576,7 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Pagination */}
       {sortedData.length > pageSizes[0] && (

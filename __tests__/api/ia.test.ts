@@ -369,6 +369,7 @@ describe("GET /api/ai/status", () => {
     expect(json.success).toBe(true)
     expect(json.ai).toMatchObject({ enabled: expect.any(Boolean), available: expect.any(Boolean) })
     expect(json.ollama).toBeDefined()
+    expect(json.gemini).toMatchObject({ configured: expect.any(Boolean), model: expect.any(String) })
     expect(json.anthropic).toMatchObject({ configured: expect.any(Boolean) })
     expect(json.rubrosConIA).toBeInstanceOf(Array)
     expect(json.rubrosConIA.length).toBeGreaterThan(0)

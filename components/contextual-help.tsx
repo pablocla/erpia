@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -27,7 +28,9 @@ import {
   Lightbulb,
   AlertTriangle,
   ExternalLink,
+  Loader2,
 } from "lucide-react"
+import { resolveDocSlug } from "@/lib/docs/path-to-slug"
 
 interface TutorialStep {
   titulo: string
@@ -465,8 +468,16 @@ function getTutorialForPath(pathname: string): TutorialSeccion[] {
 
 export function ContextualHelp() {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
   const [tutoriales, setTutoriales] = useState<TutorialSeccion[]>([])
   const [completados, setCompletados] = useState<Record<string, boolean>>({})
+
+  // Dynamic doc loading states
+  const [docData, setDocData] = useState<any>(null)
+  const [loadingDoc, setLoadingDoc] = useState(false)
+  const [errorDoc, setErrorDoc] = useState(false)
+
+  const slug = resolveDocSlug(pathname)
 
   useEffect(() => {
     setTutoriales(getTutorialForPath(pathname))
@@ -478,6 +489,52 @@ export function ContextualHelp() {
       if (saved) setCompletados(JSON.parse(saved))
     } catch { /* noop */ }
   }, [])
+
+  useEffect(() => {
+    if (!open) return
+
+    const fetchDoc = async () => {
+      setLoadingDoc(true)
+      setErrorDoc(false)
+      try {
+        const token = localStorage.getItem("token")
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch(`/api/docs/content?slug=${slug}`, { headers })
+        if (!res.ok) {
+          setErrorDoc(true)
+          setDocData(null)
+        } else {
+          const data = await res.json()
+          setDocData(data)
+        }
+      } catch {
+        setErrorDoc(true)
+        setDocData(null)
+      } finally {
+        setLoadingDoc(false)
+      }
+    }
+
+    fetchDoc()
+  }, [slug, open])
+
+  useEffect(() => {
+    if (!docData) return
+    const initMermaid = async () => {
+      try {
+        const mermaid = (await import("mermaid")).default
+        mermaid.initialize({
+          startOnLoad: true,
+          theme: "dark",
+          securityLevel: "loose",
+        })
+        mermaid.contentLoaded()
+      } catch (err) {
+        console.error("Error al inicializar Mermaid en ayuda contextual:", err)
+      }
+    }
+    initMermaid()
+  }, [docData])
 
   const togglePaso = (seccionId: string, pasoIdx: number) => {
     const key = `${seccionId}:${pasoIdx}`
@@ -494,8 +551,10 @@ export function ContextualHelp() {
     0
   )
 
+  const showFallback = errorDoc || !docData
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -504,18 +563,21 @@ export function ContextualHelp() {
           title="Ayuda y tutoriales"
         >
           <HelpCircle className="h-4 w-4" />
-          {pasosCompletados < totalPasos && (
+          {!showFallback && (
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+          )}
+          {showFallback && pasosCompletados < totalPasos && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[440px] p-0">
-        <SheetHeader className="p-4 pb-2 border-b">
+      <SheetContent className="w-[400px] sm:w-[440px] p-0 flex flex-col h-full">
+        <SheetHeader className="p-4 pb-2 border-b shrink-0">
           <SheetTitle className="flex items-center gap-2 text-base">
             <BookOpen className="h-4 w-4 text-primary" />
-            Guía — {tutoriales[0]?.titulo ?? "Ayuda"}
+            {!showFallback ? docData.title : `Guía — ${tutoriales[0]?.titulo ?? "Ayuda"}`}
           </SheetTitle>
-          {totalPasos > 0 && (
+          {showFallback && totalPasos > 0 && (
             <div className="flex items-center gap-2 mt-1">
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
@@ -530,89 +592,136 @@ export function ContextualHelp() {
           )}
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-80px)]">
-          <div className="p-4 space-y-4">
-            {tutoriales.map((seccion) => (
-              <Accordion key={seccion.id} type="single" collapsible defaultValue={seccion.id}>
-                <AccordionItem value={seccion.id} className="border rounded-lg px-3">
-                  <AccordionTrigger className="text-sm font-medium py-3">
-                    {seccion.titulo}
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3 space-y-3">
-                    {/* Steps */}
-                    <div className="space-y-2">
-                      {seccion.pasos.map((paso, idx) => {
-                        const key = `${seccion.id}:${idx}`
-                        const done = completados[key]
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => togglePaso(seccion.id, idx)}
-                            className="w-full text-left flex gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
-                          >
-                            <div className="shrink-0 mt-0.5">
-                              {done ? (
-                                <CheckCircle2 className="h-4 w-4 text-primary" />
-                              ) : (
-                                <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 group-hover:border-primary/50" />
-                              )}
-                            </div>
-                            <div>
-                              <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
-                                {paso.titulo}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{paso.descripcion}</p>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
+        <div className="flex-1 min-h-0 relative">
+          {loadingDoc ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-background/50">
+              <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+              <p className="text-xs text-muted-foreground">Cargando documentación...</p>
+            </div>
+          ) : !showFallback ? (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
+                {docData.description && (
+                  <p className="text-xs text-muted-foreground italic border-b pb-2 mb-2">
+                    {docData.description}
+                  </p>
+                )}
+                
+                {/* HTML content parsed from MDX */}
+                <div 
+                  className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed text-xs space-y-4"
+                  dangerouslySetInnerHTML={{ __html: docData.html }}
+                />
 
-                    {/* Tips */}
-                    {seccion.tips && seccion.tips.length > 0 && (
-                      <Card className="bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900">
-                        <CardContent className="p-3 space-y-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Lightbulb className="h-3.5 w-3.5 text-amber-600" />
-                            <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Tips</span>
+                <div className="mt-6 pt-4 border-t flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">¿Querés ver más detalles?</span>
+                  <Link href={docData.wikiUrl} onClick={() => setOpen(false)}>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-xs text-primary">
+                      Ver Wiki Completa <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </ScrollArea>
+          ) : (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-4">
+                {tutoriales.length > 0 ? (
+                  tutoriales.map((seccion) => (
+                    <Accordion key={seccion.id} type="single" collapsible defaultValue={seccion.id}>
+                      <AccordionItem value={seccion.id} className="border rounded-lg px-3">
+                        <AccordionTrigger className="text-sm font-medium py-3">
+                          {seccion.titulo}
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-3 space-y-3">
+                          {/* Steps */}
+                          <div className="space-y-2">
+                            {seccion.pasos.map((paso, idx) => {
+                              const key = `${seccion.id}:${idx}`
+                              const done = completados[key]
+                              return (
+                                <button
+                                  key={idx}
+                                  onClick={() => togglePaso(seccion.id, idx)}
+                                  className="w-full text-left flex gap-2.5 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                                >
+                                  <div className="shrink-0 mt-0.5">
+                                    {done ? (
+                                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                                    ) : (
+                                      <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 group-hover:border-primary/50" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className={`text-sm font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
+                                      {paso.titulo}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{paso.descripcion}</p>
+                                  </div>
+                                </button>
+                              )
+                            })}
                           </div>
-                          <ul className="space-y-1">
-                            {seccion.tips.map((tip, i) => (
-                              <li key={i} className="text-xs text-amber-700/80 dark:text-amber-300/80 flex gap-1.5">
-                                <ChevronRight className="h-3 w-3 shrink-0 mt-0.5" />
-                                {tip}
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    )}
 
-                    {/* Warnings */}
-                    {seccion.advertencias && seccion.advertencias.length > 0 && (
-                      <Card className="bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
-                        <CardContent className="p-3 space-y-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
-                            <span className="text-xs font-medium text-red-800 dark:text-red-200">Importante</span>
-                          </div>
-                          <ul className="space-y-1">
-                            {seccion.advertencias.map((adv, i) => (
-                              <li key={i} className="text-xs text-red-700/80 dark:text-red-300/80 flex gap-1.5">
-                                <ChevronRight className="h-3 w-3 shrink-0 mt-0.5" />
-                                {adv}
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ))}
-          </div>
-        </ScrollArea>
+                          {/* Tips */}
+                          {seccion.tips && seccion.tips.length > 0 && (
+                            <Card className="bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900">
+                              <CardContent className="p-3 space-y-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <Lightbulb className="h-3.5 w-3.5 text-amber-600" />
+                                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Tips</span>
+                                </div>
+                                <ul className="space-y-1">
+                                  {seccion.tips.map((tip, i) => (
+                                    <li key={i} className="text-xs text-amber-700/80 dark:text-amber-300/80 flex gap-1.5">
+                                      <ChevronRight className="h-3 w-3 shrink-0 mt-0.5" />
+                                      {tip}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </CardContent>
+                            </Card>
+                          )}
+
+                          {/* Warnings */}
+                          {seccion.advertencias && seccion.advertencias.length > 0 && (
+                            <Card className="bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900">
+                              <CardContent className="p-3 space-y-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                                  <span className="text-xs font-medium text-red-800 dark:text-red-200">Importante</span>
+                                </div>
+                                <ul className="space-y-1">
+                                  {seccion.advertencias.map((adv, i) => (
+                                    <li key={i} className="text-xs text-red-700/80 dark:text-red-300/80 flex gap-1.5">
+                                      <ChevronRight className="h-3 w-3 shrink-0 mt-0.5" />
+                                      {adv}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <BookOpen className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm font-semibold">Sin documentación</p>
+                    <p className="text-xs text-muted-foreground mt-1">No hay guías rápidas para esta pantalla.</p>
+                    <Link href="/dashboard/documentacion" onClick={() => setOpen(false)} className="mt-4">
+                      <Button size="sm" variant="outline">
+                        Explorar Wiki
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
   )

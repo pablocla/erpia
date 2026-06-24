@@ -72,7 +72,7 @@ const NAV_BY_ROL: Record<string, NavItem[]> = {
 
 const DEFAULT_ITEMS: NavItem[] = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
-  { href: "/dashboard/ventas", icon: Receipt, label: "Ventas" },
+  { href: "/dashboard/pos", icon: Store, label: "POS" },
   { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
   { href: "/dashboard/aprobaciones-mobile", icon: ClipboardCheck, label: "Aprobar", badge: true },
   { href: "#more", icon: MoreHorizontal, label: "Más" },
@@ -102,7 +102,7 @@ export function MobileBottomNav() {
   return (
     <>
       {showMore && (
-        <div className="md:hidden fixed inset-0 z-40" onClick={() => setShowMore(false)}>
+        <div className="lg:hidden fixed inset-0 z-40" onClick={() => setShowMore(false)}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
           <div className="absolute bottom-16 inset-x-2 bg-background rounded-2xl border shadow-xl p-3 safe-area-pb">
             <div className="grid grid-cols-3 gap-2">
@@ -122,8 +122,8 @@ export function MobileBottomNav() {
         </div>
       )}
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 safe-area-pb">
-        <div className="flex items-center justify-around h-14">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 safe-area-pb shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
+        <div className="flex items-center justify-around h-[3.75rem] max-w-lg mx-auto">
           {items.map((item) => {
             const isMore = item.href === "#more"
             const isActive = isMore
@@ -138,11 +138,11 @@ export function MobileBottomNav() {
                 onClick={() => setShowMore(!showMore)}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
-                  "active:scale-95 touch-manipulation",
+                  "active:scale-95 touch-manipulation min-h-[44px]",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <item.icon className={cn("h-5 w-5", isActive && "drop-shadow-sm")} />
+                <item.icon className={cn("h-5 w-5 sm:h-6 sm:w-6", isActive && "drop-shadow-sm")} />
                 <span className={cn("text-[10px] leading-none", isActive ? "font-semibold" : "font-medium")}>
                   {item.label}
                 </span>

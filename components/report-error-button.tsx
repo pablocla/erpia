@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useUIStore } from "@/lib/stores/ui-store"
 
 const MODULOS = [
   "dashboard",
@@ -34,6 +35,7 @@ export function ReportErrorButton() {
   const [modulo, setModulo] = useState("dashboard")
   const [prioridad, setPrioridad] = useState("media")
   const [hasToken, setHasToken] = useState(false)
+  const chatOpen = useUIStore((s) => s.chatWidgetOpen)
 
   // Only show the button when the user is authenticated
   useEffect(() => {
@@ -105,7 +107,7 @@ export function ReportErrorButton() {
     }
   }
 
-  if (!hasToken) return null
+  if (!hasToken || chatOpen) return null
 
   return (
     <>
@@ -115,7 +117,7 @@ export function ReportErrorButton() {
           setOpen(true)
           setModulo(moduloSugerido)
         }}
-        className="fixed bottom-5 right-5 z-50 h-11 px-4 rounded-full shadow-lg"
+        className="fixed bottom-5 right-5 z-40 h-11 px-4 rounded-full shadow-lg max-lg:bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
       >
         <Bug className="h-4 w-4 mr-2" />
         Reportar error

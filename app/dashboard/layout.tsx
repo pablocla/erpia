@@ -87,6 +87,9 @@ import {
   Repeat,
   UserCircle,
   FileSpreadsheet,
+  Server,
+  Link2,
+  LayoutGrid,
 } from "lucide-react"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
@@ -94,7 +97,7 @@ import { useUIStore } from "@/lib/stores/ui-store"
 import { useThemeConfig } from "@/lib/theme-config"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { RecentlyViewed } from "@/components/recently-viewed"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { useCompactShell } from "@/hooks/use-mobile"
 
 interface MenuItem {
   href?: string
@@ -108,6 +111,7 @@ interface MenuItem {
   excludedRoles?: string[]
   allowedUsers?: string[]
   allowedRubros?: Rubro[]
+  claverAnalystOnly?: boolean
 }
 
 const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuItem[] }[] = [
@@ -278,9 +282,50 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     items: [
       { href: "/dashboard/industria", icon: Factory, label: "Órdenes de Producción" },
       { href: "/dashboard/industria", icon: Layers, label: "Lista de Materiales (BOM)" },
+      { href: "/dashboard/industria/corte", icon: Scissors, label: "Órdenes de Corte", allowedRubros: ["textil_fabrica"] },
+      { href: "/dashboard/industria/talleres", icon: Building2, label: "Talleres Externos", allowedRubros: ["textil_fabrica"] },
       { href: "/dashboard/mrp", icon: Factory, label: "MRP (Planificación)" },
       { href: "/dashboard/calidad", icon: ClipboardCheck, label: "Control de Calidad" },
       { href: "/dashboard/mantenimiento", icon: Wrench, label: "Mantenimiento Preventivo" },
+    ],
+  },
+  {
+    label: "Préstamos",
+    color: "text-green-600",
+    moduloKey: "prestamos",
+    items: [
+      { href: "/dashboard/prestamos", icon: Wallet, label: "Panel de Préstamos", allowedRubros: ["prestamista"] },
+      { href: "/dashboard/prestamos/pagares", icon: FileText, label: "Pagarés", allowedRubros: ["prestamista"] },
+      { href: "/dashboard/prestamos/cobranza", icon: MapPin, label: "Ruteo de Cobranza", allowedRubros: ["prestamista"] },
+    ],
+  },
+  {
+    label: "Concesionaria",
+    color: "text-blue-600",
+    moduloKey: "concesionaria",
+    items: [
+      { href: "/dashboard/concesionaria", icon: Store, label: "Stock Vehículos", allowedRubros: ["concesionaria"] },
+      { href: "/dashboard/concesionaria/crm", icon: Target, label: "CRM Leads", allowedRubros: ["concesionaria"] },
+      { href: "/dashboard/concesionaria/revendedores", icon: Users, label: "Red Revendedores", allowedRubros: ["concesionaria"] },
+    ],
+  },
+  {
+    label: "Importación",
+    color: "text-purple-600",
+    moduloKey: "importacion",
+    items: [
+      { href: "/dashboard/importacion", icon: Calculator, label: "Calculadora ROI CIF", allowedRubros: ["importador"] },
+      { href: "/dashboard/importacion/embarques", icon: Globe, label: "Tracking Embarques", allowedRubros: ["importador"] },
+    ],
+  },
+  {
+    label: "Reventas TikTok",
+    color: "text-pink-600",
+    moduloKey: "reventas",
+    items: [
+      { href: "/dashboard/reventas", icon: TrendingDown, label: "Margen Flash", allowedRubros: ["reventa_tendencias"] },
+      { href: "/dashboard/reventas/links", icon: Link2, label: "Links de Pago Rápido", allowedRubros: ["reventa_tendencias"] },
+      { href: "/dashboard/reventas/stock", icon: Package, label: "Stock Viral", allowedRubros: ["reventa_tendencias"] },
     ],
   },
   {
@@ -310,6 +355,8 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/crm", icon: Target, label: "CRM / Pipeline" },
       { href: "/dashboard/aprobaciones", icon: Shield, label: "Aprobaciones" },
       { href: "/dashboard/kpis", icon: Activity, label: "Tablero KPIs" },
+      { href: "/dashboard/reportes", icon: FileSpreadsheet, label: "Clav Sheets", featureKey: "clav_sheets" },
+      { href: "/dashboard/reportes/plantillas", icon: LayoutGrid, label: "Plantillas Sheets", featureKey: "clav_sheets" },
       { href: "/dashboard/alertas", icon: Bell, label: "Alertas Configurables" },
     ],
   },
@@ -330,6 +377,16 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/capacitacion/manual-usuario", icon: BookOpen, label: "Manual de Usuario" },
       { href: "/dashboard/capacitacion/diagnostico", icon: Target, label: "Diagnóstico Gaps" },
       { href: "/dashboard/documentacion", icon: BookOpen, label: "Documentación Técnica" },
+    ],
+  },
+  {
+    label: "Claver Interno",
+    color: "text-violet-500",
+    items: [
+      { href: "/dashboard/claver/operaciones", icon: Server, label: "Flota de clientes", claverAnalystOnly: true },
+      { href: "/dashboard/claver/implementaciones", icon: ClipboardList, label: "Implementaciones", claverAnalystOnly: true },
+      { href: "/dashboard/claver/asignaciones", icon: Users, label: "Asignaciones", claverAnalystOnly: true },
+      { href: "/dashboard/claver/reportes", icon: FileSpreadsheet, label: "Reportes", claverAnalystOnly: true },
     ],
   },
   {
@@ -496,7 +553,10 @@ function canRenderMenuItem(
   features: Record<string, boolean> | null,
   userId: string | null,
   rubro: Rubro,
+  isClaverAnalyst: boolean,
 ) {
+  if (item.claverAnalystOnly && !isClaverAnalyst) return false
+
   if (["administrador", "admin", "dueno"].includes(role || "")) return true
 
   if (!role) {
@@ -557,17 +617,19 @@ function SidebarBrand({ appName, logoUrl }: { appName: string; logoUrl: string |
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const isMobile = useIsMobile()
+  const compactShell = useCompactShell()
   const [mounted, setMounted] = useState(false)
   const [modulosActivos, setModulosActivos] = useState<Record<string, boolean> | null>(null)
   const [featuresActivas, setFeaturesActivas] = useState<Record<string, boolean> | null>(null)
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [sidebarSearch, setSidebarSearch] = useState("")
+  const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const role = user?.rol
   const userId = user?.id ?? null
   const pathname = usePathname()
+  const isPosShell = pathname.startsWith("/dashboard/pos")
   const router = useRouter()
   const { config: temaConfig } = useThemeConfig()
   const empresaDisplayName = temaConfig.appName ?? "ERP Argentina"
@@ -575,10 +637,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    if (!isMobile) {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    fetch("/api/claver/analista/status", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
+      .catch(() => setIsClaverAnalyst(false))
+  }, [mounted])
+
+  useEffect(() => {
+    if (!compactShell) {
       setMobileSidebarOpen(false)
     }
-  }, [isMobile])
+  }, [compactShell])
 
   // Redirect to login if no token on mount
   useEffect(() => {
@@ -672,7 +745,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const modulosFiltrados = MODULOS.map((modulo) => ({
     ...modulo,
     items: modulo.items.filter((item) =>
-      canRenderMenuItem(item, role, modulosActivos, featuresActivas, userId, rubro),
+      canRenderMenuItem(item, role, modulosActivos, featuresActivas, userId, rubro, isClaverAnalyst),
     ),
   })).filter((modulo) => {
     // Always show sections without a moduloKey if they still have visible items
@@ -708,7 +781,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={cn(
           "sidebar-container border-r flex flex-col z-20 relative bg-sidebar/95 backdrop-blur-xl shadow-[1px_0_12px_rgba(0,0,0,0.02)]",
           "transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          "hidden md:flex",
+          "hidden lg:flex",
           sidebarOpen ? "w-64" : "w-[4.25rem]"
         )}
       >
@@ -788,28 +861,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full rounded-tl-xl border-t border-l border-border/30 bg-background/40 backdrop-blur-sm sm:mt-1.5 sm:ml-1.5 shadow-[-4px_-4px_24px_rgba(0,0,0,0.02)]">
         <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
-        <main className="flex-1 overflow-auto bg-surface/30">
-          <div className="p-4 sm:p-6 pb-20 md:pb-6">
-            <div className="mx-auto w-full max-w-[1400px] space-y-2 mb-4">
-              <CajasAbiertasAlert />
-              <DraftAlert />
-            </div>
-            <Breadcrumbs className="mb-4" />
-            <div className="mx-auto w-full max-w-[1400px]">
+        <main className={cn("flex-1 bg-surface/30", isPosShell ? "overflow-hidden" : "overflow-auto")}>
+          <div className={cn(isPosShell ? "h-full p-0" : "p-3 sm:p-6 dashboard-main-pb")}>
+            {!isPosShell && (
+              <div className="mx-auto w-full max-w-[1400px] space-y-2 mb-4">
+                <CajasAbiertasAlert />
+                <DraftAlert />
+              </div>
+            )}
+            {!isPosShell && <Breadcrumbs className="mb-4 max-lg:mb-3" />}
+            <div className={cn("mx-auto w-full", !isPosShell && "max-w-[1400px]", isPosShell && "h-full")}>
               <MotionPresence mode="wait">
-                <MotionPage pageKey={pathname}>
+                <MotionPage pageKey={pathname} className={isPosShell ? "h-full min-h-0" : undefined}>
                   {children}
                 </MotionPage>
               </MotionPresence>
             </div>
           </div>
         </main>
-        <MobileBottomNav />
+        {!isPosShell && <MobileBottomNav />}
       </div>
 
       {/* Mobile sidebar overlay */}
-      {isMobile && mobileSidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+      {compactShell && mobileSidebarOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
           <aside className="relative z-50 h-full w-full max-w-[80vw] bg-sidebar/95 border-r border-border/60 shadow-2xl">
             <div className="flex h-full flex-col">

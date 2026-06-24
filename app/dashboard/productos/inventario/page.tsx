@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { Search, RefreshCw, Package, AlertTriangle, Warehouse, DollarSign } from "lucide-react"
+import { formatARS, toNumber } from "@/lib/format/currency"
 
 interface Deposito {
   id: number
@@ -49,7 +50,7 @@ export default function InventarioPage() {
   const [loading, setLoading] = useState(true)
   const [resumen, setResumen] = useState<StockResponse["resumen"] | null>(null)
 
-  const authHeaders = useCallback(() => {
+  const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
@@ -92,7 +93,7 @@ export default function InventarioPage() {
 
   const valorInventario = useMemo(() => {
     return items.reduce((sum, item) => {
-      const costo = item.precioCosto ?? item.precioVenta ?? 0
+      const costo = toNumber(item.precioCosto ?? item.precioVenta)
       return sum + costo * item.stock
     }, 0)
   }, [items])
@@ -149,7 +150,7 @@ export default function InventarioPage() {
               <DollarSign className="h-5 w-5 text-amber-600" />
               <div>
                 <p className="text-xs uppercase tracking-[0.12em]">Valor inventario</p>
-                <p className="text-lg font-semibold">${valorInventario.toFixed(2)}</p>
+                <p className="text-lg font-semibold">{formatARS(valorInventario)}</p>
               </div>
             </div>
           </CardContent>
@@ -170,12 +171,12 @@ export default function InventarioPage() {
           </div>
           <div className="w-full sm:w-64">
             <label className="mb-1 block text-sm font-medium">Depósito</label>
-            <Select value={depositoId || ""} onValueChange={(v) => setDepositoId(v)}>
+            <Select value={depositoId || "todos"} onValueChange={(v) => setDepositoId(v === "todos" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 {depositos.map((dep) => (
                   <SelectItem key={dep.id} value={String(dep.id)}>{dep.nombre}</SelectItem>
                 ))}
@@ -197,8 +198,8 @@ export default function InventarioPage() {
               { key: "nombre", header: "Nombre", sortable: true, cell: (item) => <div><p className="font-medium">{item.nombre}</p><p className="text-xs text-muted-foreground">{item.categoria?.nombre ?? "Sin categoría"}</p></div> },
               { key: "stock", header: "Stock", align: "right", sortable: true, cell: (item) => <span className={item.stock <= item.stockMinimo ? "text-red-600 font-bold" : ""}>{item.stock} {item.unidadMedida ?? "uds"}</span> },
               { key: "stockMinimo", header: "Mínimo", align: "right", cell: (item) => item.stockMinimo },
-              { key: "precioCosto", header: "Costo u.", align: "right", cell: (item) => `$${(item.precioCosto ?? 0).toFixed(2)}` },
-              { key: "valorInventario", header: "Valor inventario", align: "right", cell: (item) => `$${((item.precioCosto ?? 0) * item.stock).toFixed(2)}` },
+              { key: "precioCosto", header: "Costo u.", align: "right", cell: (item) => formatARS(item.precioCosto) },
+              { key: "valorInventario", header: "Valor inventario", align: "right", cell: (item) => formatARS(toNumber(item.precioCosto) * item.stock) },
               { key: "stockDepositos", header: "Por depósito", cell: (item) => (
                 <div className="flex flex-wrap gap-1">
                   {item.stockDepositos?.map((sd) => (

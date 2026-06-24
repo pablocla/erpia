@@ -20,6 +20,15 @@ vi.mock("@/lib/events/event-bus", () => ({
   eventBus: { emit: vi.fn(), on: vi.fn() },
 }))
 
+vi.mock("@/lib/afip/emitir-nota-credito-afip", () => ({
+  emitirNotaCreditoAfip: vi.fn().mockResolvedValue({
+    ok: true,
+    cae: "12345678901234",
+    vencimientoCAE: new Date().toISOString(),
+    qrBase64: "data:image/png;base64,test",
+  }),
+}))
+
 const mockGetAuthContext = getAuthContext as unknown as ReturnType<typeof vi.fn>
 
 beforeEach(() => {
@@ -33,13 +42,16 @@ describe("POST /api/notas-credito", () => {
     mockPrismaClient.factura.findUnique.mockResolvedValue({
       id: 1,
       tipo: "A",
+      tipoCbte: 1,
       puntoVenta: 1,
       numero: 100,
+      cae: "99990000999990",
       total: 1000,
       subtotal: 826.45,
       iva: 173.55,
       estado: "emitida",
       clienteId: 5,
+      createdAt: new Date(),
       lineas: [
         {
           id: 2,
@@ -60,6 +72,10 @@ describe("POST /api/notas-credito", () => {
       numero: 1,
       puntoVenta: 1,
       total: 1000,
+      estado: "emitida",
+    })
+    mockPrismaClient.notaCredito.findUnique.mockResolvedValue({
+      id: 11,
       estado: "emitida",
     })
 
@@ -94,13 +110,16 @@ describe("POST /api/notas-credito", () => {
     mockPrismaClient.factura.findUnique.mockResolvedValue({
       id: 1,
       tipo: "B",
+      tipoCbte: 6,
       puntoVenta: 2,
       numero: 200,
+      cae: "99990000999990",
       total: 1210,
       subtotal: 1000,
       iva: 210,
       estado: "emitida",
       clienteId: 6,
+      createdAt: new Date(),
       lineas: [],
     })
 
@@ -112,6 +131,10 @@ describe("POST /api/notas-credito", () => {
       numero: 1,
       puntoVenta: 2,
       total: 1210,
+      estado: "emitida",
+    })
+    mockPrismaClient.notaCredito.findUnique.mockResolvedValue({
+      id: 12,
       estado: "emitida",
     })
 

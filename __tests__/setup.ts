@@ -63,7 +63,7 @@ const prismaModels = [
   "gastoRecurrente", "ajusteInflacion", "coeficienteInflacion",
   // Sprint competitive gap #2 — MercadoPago, CITI, RRHH, Mantenimiento, Alertas, etc.
   "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion",
-  "reglaAlerta", "empleado", "generacionCITI", "cotizacionAutomatica",
+  "reglaAlerta", "configuracionIANotificacion", "empleado", "generacionCITI", "cotizacionAutomatica",
   "planMantenimiento", "ordenTrabajo",
   // Agro
   "agroGrano", "agroSilo", "agroPrecioPizarra", "agroTicketBalanza", "agroContrato", "agroLiquidacion", "agroLote",
@@ -87,6 +87,18 @@ const prismaModels = [
   "productoComercial",
   "suscripcionModulo",
   "usageEvent",
+  "conexionIntegracion",
+  "integracionSyncLog",
+  // Ops console
+  "tenantEntorno",
+  "analistaAsignacion",
+  "opsJob",
+  "opsPipeline",
+  "sistemaLog",
+  "proyectoImplementacion",
+  "actaImplementacion",
+  "reporteDefinicion",
+  "reporteCatalogoCampo",
 ]
 
 for (const model of prismaModels) {

@@ -39,6 +39,10 @@ export async function GET() {
           description: m.description,
         })),
       },
+      gemini: {
+        configured: !!config.geminiApiKey,
+        model: config.geminiModel,
+      },
       anthropic: {
         configured: !!config.anthropicApiKey,
         model: config.anthropicModel,

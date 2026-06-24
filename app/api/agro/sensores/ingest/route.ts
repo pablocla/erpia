@@ -11,7 +11,7 @@ const ingestSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const body = await request.json()
@@ -43,3 +43,4 @@ export async function POST(request: NextRequest) {
     mensaje: alerta ? "Humedad de suelo por debajo del umbral" : "OK",
   })
 }
+

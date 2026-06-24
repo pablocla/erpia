@@ -23,10 +23,17 @@ import {
 } from "@/components/ui/select"
 import {
   Repeat, Plus, RefreshCw, ToggleLeft, ToggleRight,
-  DollarSign, Calendar, Users, FileText,
+  DollarSign, FileText, Sparkles, CheckCircle2, AlertTriangle,
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
+import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
+import { AfipStatusBadge } from "@/components/fiscal/afip-status-badge"
+import type { PosAfipStatus } from "@/lib/pos/pos-afip-status"
+import { authFetch } from "@/lib/stores"
+import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { ClienteSearchSelect } from "@/components/forms/cliente-search-select"
 
 interface FacturaRecurrente {
   id: number
@@ -52,11 +59,27 @@ const FRECUENCIAS: Record<string, string> = {
   anual: "Anual",
 }
 
+interface ResultadoEmision {
+  facturaRecurrenteId: number
+  concepto: string
+  monto: number
+  clienteId: number
+  facturaId?: number
+  numero?: number
+  afipOk?: boolean
+  cae?: string
+  afipError?: string
+}
+
 export default function FacturacionRecurrentePage() {
   const [facturas, setFacturas] = useState<FacturaRecurrente[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [procesando, setProcesando] = useState(false)
+  const [ultimaEmision, setUltimaEmision] = useState<FiscalEmissionData[]>([])
+  const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
+  const [reintentando, setReintentando] = useState(false)
+  const [clienteIdNuevo, setClienteIdNuevo] = useState<number | null>(null)
   const { toast } = useToast()
 
   const headers = { Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") : ""}` }
@@ -64,8 +87,12 @@ export default function FacturacionRecurrentePage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/facturacion-recurrente", { headers })
+      const [res, resAfip] = await Promise.all([
+        fetch("/api/facturacion-recurrente", { headers }),
+        fetch("/api/afip/status", { headers }),
+      ])
       if (res.ok) setFacturas(await res.json())
+      if (resAfip.ok) setAfipStatus(await resAfip.json())
     } finally {
       setLoading(false)
     }
@@ -80,12 +107,16 @@ export default function FacturacionRecurrentePage() {
 
   async function handleCrear(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!clienteIdNuevo) {
+      toast({ title: "Seleccioná un cliente", variant: "destructive" })
+      return
+    }
     const fd = new FormData(e.currentTarget)
     const res = await fetch("/api/facturacion-recurrente", {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({
-        clienteId: Number(fd.get("clienteId")),
+        clienteId: clienteIdNuevo,
         concepto: fd.get("concepto"),
         montoNeto: Number(fd.get("montoNeto")),
         alicuotaIva: Number(fd.get("alicuotaIva")) || 21,
@@ -94,22 +125,63 @@ export default function FacturacionRecurrentePage() {
         fechaFin: fd.get("fechaFin") || undefined,
       }),
     })
-    if (res.ok) { setDialogOpen(false); fetchData(); toast({ title: "Factura recurrente creada", description: "La suscripción se guardó correctamente" }) }
+    if (res.ok) {
+      setDialogOpen(false)
+      setClienteIdNuevo(null)
+      fetchData()
+      toast({ title: "Factura recurrente creada", description: "La suscripción se guardó correctamente" })
+    }
     else { toast({ title: "Error al crear recurrente", description: "No se pudo guardar la factura recurrente", variant: "destructive" }) }
   }
 
   async function handleProcesar() {
     setProcesando(true)
     try {
-      await fetch("/api/facturacion-recurrente", {
+      const res = await fetch("/api/facturacion-recurrente", {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "procesar" }),
       })
+      const json = await res.json()
+      const emitidas = (json.facturas ?? []) as ResultadoEmision[]
+      setUltimaEmision(
+        emitidas.map((f) => ({
+          success: f.afipOk ?? false,
+          numero: f.numero,
+          tipo: "B",
+          cae: f.cae,
+          pendienteCae: !f.afipOk,
+          error: f.afipError,
+        })),
+      )
       fetchData()
-      toast({ title: "Emisión procesada", description: "Las facturas recurrentes se emitieron correctamente" })
+      const ok = emitidas.filter((f) => f.afipOk).length
+      const pend = emitidas.length - ok
+      toast({
+        title: "Emisión recurrente",
+        description: pend > 0
+          ? `${ok} con CAE · ${pend} pendiente(s) de AFIP`
+          : `${ok} factura(s) emitida(s) correctamente`,
+        variant: pend > 0 ? "destructive" : "default",
+      })
     } finally {
       setProcesando(false)
+    }
+  }
+
+  async function reintentarCae() {
+    setReintentando(true)
+    try {
+      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        return
+      }
+      toast({ title: "Sincronización AFIP", description: json.mensaje })
+      fetchData()
+    } finally {
+      setReintentando(false)
     }
   }
 
@@ -126,27 +198,40 @@ export default function FacturacionRecurrentePage() {
     .filter((f) => f.activo)
     .reduce((sum, f) => sum + Number(f.montoNeto) * (1 + f.alicuotaIva / 100), 0)
 
+  if (loading && facturas.length === 0) {
+    return <PageSkeleton kpis={3} tableRows={0} tableCols={0} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Facturación Recurrente</h1>
-          <p className="text-muted-foreground">
-            Suscripciones, alquileres y servicios con facturación automática
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Facturación Recurrente"
+        description="Suscripciones, alquileres y servicios con emisión AFIP programada"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Facturación automática
+          </span>
+        }
+        statusSlot={afipStatus ? <AfipStatusBadge status={afipStatus} /> : undefined}
+        actions={
+          <>
           <Button variant="outline" size="sm" onClick={handleProcesar} disabled={procesando}>
             <Repeat className="mr-2 h-4 w-4" /> {procesando ? "Procesando..." : "Ejecutar emisión"}
           </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setClienteIdNuevo(null) }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="mr-2 h-4 w-4" /> Nueva recurrente</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Nueva Factura Recurrente</DialogTitle></DialogHeader>
               <form onSubmit={handleCrear} className="space-y-4">
-                <div><Label>ID Cliente *</Label><Input name="clienteId" type="number" required /></div>
+                <ClienteSearchSelect
+                  value={clienteIdNuevo}
+                  onChange={setClienteIdNuevo}
+                  required
+                />
                 <div><Label>Concepto *</Label><Input name="concepto" placeholder="Ej: Suscripción mensual" required /></div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label>Monto neto *</Label><Input name="montoNeto" type="number" step="0.01" required /></div>
@@ -171,46 +256,50 @@ export default function FacturacionRecurrentePage() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Resumen */}
-      <div className="grid grid-cols-3 gap-4">
+      {ultimaEmision.length > 0 && (
         <Card>
-          <CardContent className="pt-4 flex items-center gap-3">
-            <div className="rounded-lg bg-blue-500/10 p-2"><FileText className="h-5 w-5 text-blue-500" /></div>
-            <div>
-              <p className="text-2xl font-bold">{facturas.filter((f) => f.activo).length}</p>
-              <p className="text-xs text-muted-foreground">Activas</p>
-            </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Última ejecución ({ultimaEmision.length} comprobante{ultimaEmision.length !== 1 ? "s" : ""})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {ultimaEmision.map((em, i) => (
+              <FiscalEmissionResult
+                key={i}
+                data={em}
+                title={`Factura recurrente #${i + 1}`}
+                onRetry={em.pendienteCae ? reintentarCae : undefined}
+                retrying={reintentando}
+              />
+            ))}
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4 flex items-center gap-3">
-            <div className="rounded-lg bg-emerald-500/10 p-2"><DollarSign className="h-5 w-5 text-emerald-500" /></div>
-            <div>
-              <p className="text-2xl font-bold">
-                {totalMensual.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })}
-              </p>
-              <p className="text-xs text-muted-foreground">Ingreso recurrente</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 flex items-center gap-3">
-            <div className="rounded-lg bg-violet-500/10 p-2"><Repeat className="h-5 w-5 text-violet-500" /></div>
-            <div>
-              <p className="text-2xl font-bold">{facturas.reduce((s, f) => s + f.facturasEmitidas, 0)}</p>
-              <p className="text-xs text-muted-foreground">Facturas emitidas total</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
+
+      <KpiStrip
+        items={[
+          { label: "Activas", value: facturas.filter((f) => f.activo).length, icon: FileText },
+          {
+            label: "Ingreso recurrente",
+            value: totalMensual.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }),
+            icon: DollarSign,
+          },
+          {
+            label: "Emitidas total",
+            value: facturas.reduce((s, f) => s + f.facturasEmitidas, 0),
+            icon: Repeat,
+          },
+        ]}
+      />
 
       {/* Lista */}
-      {loading ? (
-        <p className="text-muted-foreground text-center py-10">Cargando...</p>
-      ) : facturas.length === 0 ? (
+      {facturas.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">
           No hay facturas recurrentes configuradas
         </CardContent></Card>
@@ -221,8 +310,21 @@ export default function FacturacionRecurrentePage() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold">{fr.concepto}</p>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{fr.concepto}</p>
+                      {fr.activo ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px]">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Activa
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-[10px]">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Pausada
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                       <span>Cliente #{fr.clienteId}</span>
                       <Badge variant="outline">{FRECUENCIAS[fr.frecuencia] ?? fr.frecuencia}</Badge>
                       <span>Día {fr.diaEmision}</span>
@@ -248,6 +350,6 @@ export default function FacturacionRecurrentePage() {
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

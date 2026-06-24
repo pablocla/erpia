@@ -61,10 +61,10 @@ export async function fetchPendingPollEvents(
       const slice = rows.slice(0, limit)
       return {
         hasMore,
-        events: slice.map((r) => ({
+        events: slice.map((r: any) => ({
           id: String(r.id),
           eventKey: r.eventKey,
-          envelope: r.envelope as SignedEnvelope,
+          envelope: r.envelope as any as SignedEnvelope,
           idempotencyKey: r.idempotencyKey ?? undefined,
           createdAt: r.createdAt.toISOString(),
         })),

@@ -62,7 +62,7 @@ export class EstadosFinancierosService {
     const saldos = new Map<string, number>()
     for (const m of movimientos) {
       const actual = saldos.get(m.cuenta) ?? 0
-      saldos.set(m.cuenta, actual + m.debe - m.haber)
+      saldos.set(m.cuenta, actual + Number(m.debe) - Number(m.haber))
     }
 
     // Classify by tipo
@@ -154,7 +154,7 @@ export class EstadosFinancierosService {
     const saldos = new Map<string, number>()
     for (const m of movimientos) {
       const actual = saldos.get(m.cuenta) ?? 0
-      saldos.set(m.cuenta, actual + m.debe - m.haber)
+      saldos.set(m.cuenta, actual + Number(m.debe) - Number(m.haber))
     }
 
     const ingresos: LineaBalance[] = []
@@ -236,7 +236,10 @@ export class EstadosFinancierosService {
     if (movimientos.length === 0) throw new Error("No hay movimientos de resultado para cerrar")
 
     const asiento = await prisma.$transaction(async (tx) => {
-      const ultimo = await tx.asientoContable.findFirst({ orderBy: { numero: "desc" } })
+      const ultimo = await tx.asientoContable.findFirst({
+        where: { empresaId },
+        orderBy: { numero: "desc" },
+      })
       const numero = (ultimo?.numero ?? 0) + 1
 
       const created = await tx.asientoContable.create({

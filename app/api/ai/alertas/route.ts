@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { generarAlertasInteligentes, isIAEnabled } from "@/lib/ai"
+import { crearAlertaIAConNotificacion, actualizarSeguimientoAlerta, alertaVisibleParaUsuario } from "@/lib/ai/notificacion-ia-service"
+import { parseAlertaMetadata } from "@/lib/ai/alerta-seguimiento"
 import { prisma } from "@/lib/prisma"
 
 /**
@@ -26,23 +28,19 @@ export async function POST(request: NextRequest) {
     // Use business-layer alertas (context-aware)
     const resultado = await generarAlertasInteligentes(ctx.auth.empresaId)
 
-    // Persist alerts to DB
     if (resultado.alertas.length > 0) {
-      await prisma.$transaction(
-        resultado.alertas.map(a =>
-          prisma.alertaIA.create({
-            data: {
-              empresaId: ctx.auth.empresaId,
-              tipo: a.tipo,
-              prioridad: a.prioridad,
-              titulo: a.titulo,
-              descripcion: a.descripcion,
-              accion: a.accion_sugerida ?? null,
-              datos: a.datos ?? undefined,
-            },
-          })
-        )
-      )
+      for (const a of resultado.alertas) {
+        await crearAlertaIAConNotificacion({
+          empresaId: ctx.auth.empresaId,
+          tipo: a.tipo,
+          prioridad: a.prioridad as "alta" | "media" | "baja",
+          titulo: a.titulo,
+          descripcion: a.descripcion,
+          accion: a.accion_sugerida,
+          origen: "manual",
+          datosExtra: a.datos ?? undefined,
+        })
+      }
     }
 
     return NextResponse.json({ success: true, alertas: resultado.alertas, total: resultado.alertas.length })
@@ -72,13 +70,24 @@ export async function GET(request: NextRequest) {
       where.createdAt = { gte: hoy }
     }
 
-    const alertas = await prisma.alertaIA.findMany({
+    const soloSeguimiento = url.searchParams.get("seguimiento") === "true"
+
+    const alertasRaw = await prisma.alertaIA.findMany({
       where,
-      orderBy: [{ prioridad: "asc" }, { createdAt: "desc" }],
-      take: 20,
+      orderBy: [{ createdAt: "desc" }],
+      take: soloSeguimiento ? 50 : 20,
     })
 
-    // Map prioridad to sort order (alta first)
+    const alertas = alertasRaw
+      .filter((a) => alertaVisibleParaUsuario(a.datos, ctx.auth.userId, ctx.auth.rol))
+      .map((a) => {
+        const meta = parseAlertaMetadata(a.datos)
+        return {
+          ...a,
+          seguimiento: meta,
+        }
+      })
+
     const priOrder: Record<string, number> = { alta: 0, media: 1, baja: 2 }
     alertas.sort((a, b) => (priOrder[a.prioridad] ?? 9) - (priOrder[b.prioridad] ?? 9))
 
@@ -102,27 +111,30 @@ export async function PATCH(request: NextRequest) {
       id: z.number().int().positive(),
       leida: z.boolean().optional(),
       resuelta: z.boolean().optional(),
+      estadoSeguimiento: z.enum(["pendiente", "en_revision", "resuelta", "descartada"]).optional(),
+      asignadoAId: z.number().int().positive().optional(),
+      nota: z.string().max(1000).optional(),
     })
     const parsed = PatchSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: parsed.error.errors }, { status: 400 })
     }
-    const { id, leida, resuelta } = parsed.data
+    const { id, leida, resuelta, estadoSeguimiento, asignadoAId, nota } = parsed.data
 
-    const alerta = await prisma.alertaIA.findFirst({
-      where: { id, empresaId: ctx.auth.empresaId },
-    })
-    if (!alerta) return NextResponse.json({ error: "Alerta no encontrada" }, { status: 404 })
-
-    await prisma.alertaIA.update({
-      where: { id },
-      data: {
-        ...(leida !== undefined && { leida }),
-        ...(resuelta !== undefined && { resuelta }),
-      },
+    const usuario = await prisma.usuario.findFirst({
+      where: { id: ctx.auth.userId, empresaId: ctx.auth.empresaId },
+      select: { nombre: true },
     })
 
-    return NextResponse.json({ success: true })
+    const updated = await actualizarSeguimientoAlerta(
+      ctx.auth.empresaId,
+      id,
+      ctx.auth.userId,
+      usuario?.nombre ?? "Usuario",
+      { leida, resuelta, estadoSeguimiento, asignadoAId, nota },
+    )
+
+    return NextResponse.json({ success: true, data: updated })
   } catch (error) {
     console.error("[AI Alertas PATCH] Error:", error)
     return NextResponse.json({ error: "Error actualizando alerta" }, { status: 500 })

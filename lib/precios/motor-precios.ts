@@ -189,7 +189,7 @@ export async function calcularPrecio(params: CalcPrecioParams): Promise<CalcPrec
   }
 
   return {
-    precioFinal: producto.precioVenta,
+    precioFinal: Number(producto.precioVenta),
     origen: "precio_venta_producto",
   }
 }

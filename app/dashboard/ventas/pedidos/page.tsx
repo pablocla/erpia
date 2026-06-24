@@ -9,6 +9,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DataTable } from "@/components/data-table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckCircle2, Package, Truck, FileText, RefreshCw } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
+import { authFetch } from "@/lib/stores"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { pedidoEstadoLabel, pedidoEstadoVariant } from "@/lib/ui/status-map"
+import { Sparkles } from "lucide-react"
 
 interface Pedido {
   id: number
@@ -21,25 +27,34 @@ interface Pedido {
   remitos: { id: number }[]
 }
 
-const ESTADO_COLOR: Record<string, string> = {
-  borrador: "bg-gray-500",
-  confirmado: "bg-blue-600",
-  en_picking: "bg-indigo-600",
-  remitido: "bg-teal-600",
-  facturado: "bg-emerald-600",
-  anulado: "bg-red-600",
-}
-
 export default function PedidosPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [estadoFiltro, setEstadoFiltro] = useState("todos")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const { toast } = useToast()
+  const [ultimaFactura, setUltimaFactura] = useState<FiscalEmissionData | null>(null)
+  const [reintentando, setReintentando] = useState(false)
 
   useEffect(() => {
     cargarPedidos()
   }, [estadoFiltro])
+
+  async function reintentarCae() {
+    setReintentando(true)
+    try {
+      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        return
+      }
+      toast({ title: "Sincronización AFIP", description: json.mensaje })
+    } finally {
+      setReintentando(false)
+    }
+  }
 
   async function cargarPedidos() {
     setLoading(true)
@@ -74,7 +89,26 @@ export default function PedidosPage() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Error al ejecutar acción")
-      setSuccess(`Acción '${action}' ejecutada correctamente.`)
+
+      if (action === "facturar") {
+        setUltimaFactura({
+          success: json.afipOk ?? !!json.cae,
+          numero: json.numero,
+          tipo: json.tipo,
+          cae: json.cae,
+          vencimientoCAE: json.vencimientoCAE,
+          qrBase64: json.qrBase64,
+          error: json.afipError,
+          pendienteCae: json.estado === "pendiente_cae",
+        })
+        if (json.afipOk) {
+          toast({ title: "Pedido facturado", description: `CAE ${json.cae}` })
+        } else if (json.estado === "pendiente_cae") {
+          toast({ title: "Factura pendiente de CAE", variant: "destructive" })
+        }
+      } else {
+        setSuccess(`Acción '${action}' ejecutada correctamente.`)
+      }
       await cargarPedidos()
     } catch (err: any) {
       setError(err?.message || "Error al ejecutar acción")
@@ -82,16 +116,32 @@ export default function PedidosPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Pedidos de Venta</h1>
-          <p className="text-muted-foreground">Control de pedidos, picking, remito y facturación.</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={cargarPedidos}>
-          <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Pedidos de Venta"
+        description="Control de pedidos, picking, remito y facturación."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Ciclo de ventas
+          </span>
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={cargarPedidos}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
+          </Button>
+        }
+      />
+
+      {ultimaFactura && (
+        <FiscalEmissionResult
+          data={ultimaFactura}
+          title="Última factura desde pedido"
+          onRetry={ultimaFactura.pendienteCae ? reintentarCae : undefined}
+          retrying={reintentando}
+        />
+      )}
 
       {(error || success) && (
         <Alert variant={error ? "destructive" : undefined}>
@@ -133,7 +183,16 @@ export default function PedidosPage() {
             columns={[
               { key: "numero", header: "Pedido", sortable: true, cell: (pedido) => <span className="font-mono">{pedido.numero}</span> },
               { key: "cliente", header: "Cliente", cell: (pedido) => pedido.cliente?.nombre ?? "—" },
-              { key: "estado", header: "Estado", cell: (pedido) => <Badge className={ESTADO_COLOR[pedido.estado] ?? "bg-slate-500"}>{pedido.estado}</Badge> },
+              {
+                key: "estado",
+                header: "Estado",
+                cell: (pedido) => (
+                  <StatusBadge
+                    variant={pedidoEstadoVariant(pedido.estado)}
+                    label={pedidoEstadoLabel(pedido.estado)}
+                  />
+                ),
+              },
               { key: "total", header: "Total", align: "right", sortable: true, cell: (pedido) => <span>${pedido.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span> },
               { key: "lineas", header: "Líneas", align: "right", cell: (pedido) => pedido.lineas.length },
               { key: "remitos", header: "Remitos", align: "right", cell: (pedido) => pedido.remitos.length },
@@ -165,6 +224,6 @@ export default function PedidosPage() {
           />
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

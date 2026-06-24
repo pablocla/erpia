@@ -1,0 +1,7 @@
+---
+pid: 31824
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"contents\":[{\"parts\":[{\"text\":\"Responde solo: OK\"}]}]}'; $r = Invoke-RestMethod -Uri \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent\" -Method POST -Headers @{\"Content-Type\"=\"application/json\"; \"X-goog-api-key\"=\"AIzaSyAOZZSf9n9XVAthAgbo1CBEyJdUHZlrRZk\"} -Body $body -ErrorAction SilentlyContinue; if ($r) { $r | ConvertTo-Json -Depth 5 } else { $Error[0].Exception.Message }"
+started_at: 2026-06-23T23:24:22.278Z
+running_for_ms: 12360012 
+---

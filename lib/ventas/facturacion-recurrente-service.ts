@@ -68,7 +68,17 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
     },
   })
 
-  const resultados: { facturaRecurrenteId: number; concepto: string; monto: number; clienteId: number }[] = []
+  const resultados: {
+    facturaRecurrenteId: number
+    concepto: string
+    monto: number
+    clienteId: number
+    facturaId?: number
+    numero?: number
+    afipOk?: boolean
+    cae?: string
+    afipError?: string
+  }[] = []
 
   for (const fr of pendientes) {
     // Verificar fecha fin
@@ -84,11 +94,65 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
     const iva = montoNeto * (fr.alicuotaIva / 100)
     const total = montoNeto + iva
 
+    const [cliente, empresa] = await Promise.all([
+      prisma.cliente.findUnique({ where: { id: fr.clienteId } }),
+      prisma.empresa.findUnique({ where: { id: empresaId }, select: { puntoVenta: true } }),
+    ])
+
+    const puntoVenta = empresa?.puntoVenta ?? 1
+    const ultimaFactura = await prisma.factura.findFirst({
+      where: { empresaId, tipoCbte: fr.tipoCbte, puntoVenta },
+      orderBy: { numero: "desc" },
+    })
+    const numero = (ultimaFactura?.numero ?? 0) + 1
+    const letraMap: Record<number, string> = { 1: "A", 6: "B", 11: "C" }
+
+    const factura = await prisma.factura.create({
+      data: {
+        tipo: letraMap[fr.tipoCbte] ?? "B",
+        tipoCbte: fr.tipoCbte,
+        numero,
+        puntoVenta,
+        subtotal: montoNeto,
+        iva,
+        total,
+        estado: "pendiente_cae",
+        empresaId,
+        clienteId: fr.clienteId,
+        condicionIvaReceptor: cliente?.condicionIva,
+        lineas: {
+          create: [
+            {
+              descripcion: fr.concepto,
+              cantidad: 1,
+              precioUnitario: montoNeto,
+              porcentajeIva: fr.alicuotaIva,
+              subtotal: montoNeto,
+              iva,
+              total,
+            },
+          ],
+        },
+      },
+    })
+
+    const { solicitarCaeFactura } = await import("@/lib/afip/solicitar-cae-factura")
+    const afip = await solicitarCaeFactura(factura.id)
+    if (afip.ok) {
+      const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
+      await onFacturaEmitida(factura.id)
+    }
+
     resultados.push({
       facturaRecurrenteId: fr.id,
       concepto: fr.concepto,
       monto: total,
       clienteId: fr.clienteId,
+      facturaId: factura.id,
+      numero: factura.numero,
+      afipOk: afip.ok,
+      cae: afip.cae,
+      afipError: afip.error,
     })
 
     // Calcular próxima emisión

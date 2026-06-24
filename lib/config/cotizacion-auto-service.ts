@@ -127,8 +127,7 @@ export async function actualizarCotizaciones() {
             data: {
               monedaId: moneda.id,
               fecha: hoy,
-              valorCompra: cot.compra,
-              valorVenta: cot.venta,
+              valorArs: cot.venta,
               fuente: cot.fuente,
             },
           })

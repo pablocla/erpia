@@ -236,10 +236,10 @@ export default function MisTareasPage() {
     return true
   })
 
-  const pendientes = tareasFiltradas.filter(t => !t.completada)
+  const tareasPendientes = tareasFiltradas.filter(t => !t.completada)
   const completadas = tareasFiltradas.filter(t => t.completada)
-  const urgentes = pendientes.filter(t => t.prioridad === "urgente" || t.prioridad === "alta")
-  const vencidas = pendientes.filter(t => estaVencida(t.fechaVencimiento))
+  const urgentes = tareasPendientes.filter(t => t.prioridad === "urgente" || t.prioridad === "alta")
+  const vencidas = tareasPendientes.filter(t => estaVencida(t.fechaVencimiento))
 
   return (
     <div className="space-y-6">

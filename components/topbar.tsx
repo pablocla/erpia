@@ -47,13 +47,9 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   const [tareasPendientes, setTareasPendientes] = useState(0)
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null)
 
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: "1", title: "Stock bajo en Producto A", description: "Solo quedan 3 unidades disponibles", type: "alerta", module: "stock", timestamp: new Date(Date.now() - 300_000), read: false, href: "/dashboard/productos" },
-    { id: "2", title: "Venta #1042 completada", description: "Total: $54.200,00", type: "exito", module: "ventas", timestamp: new Date(Date.now() - 1_800_000), read: false },
-    { id: "3", title: "Factura #B-0012 vence mañana", type: "vencimiento", module: "ventas", timestamp: new Date(Date.now() - 3_600_000), read: false, href: "/dashboard/cuentas-cobrar" },
-    { id: "4", title: "Backup completado", description: "Respaldo automático exitoso", type: "sistema", timestamp: new Date(Date.now() - 7_200_000), read: true },
-    { id: "5", title: "Nueva versión disponible", description: "v2.1.0 incluye mejoras de facturación", type: "info", timestamp: new Date(Date.now() - 86_400_000), read: true },
-  ])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [afipLabel, setAfipLabel] = useState<string | null>(null)
+  const [ticketsAbiertos, setTicketsAbiertos] = useState(0)
 
   const handleMarkRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -74,6 +70,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
         if (res.ok) {
           const data = await res.json()
           setCajaAbierta(Boolean(data.cajaAbierta))
+          setAfipLabel(data.afip?.label ?? null)
         }
       } catch {
         /* silencioso */
@@ -81,6 +78,59 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
     }
     void cargarCaja()
     const interval = setInterval(() => void cargarCaja(), 60_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const cargarAlertas = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      try {
+        const res = await fetch("/api/centro-alertas?preview=true", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        const items = data.preview ?? []
+        setNotifications(
+          items.map((a: { id: string; titulo: string; descripcion?: string; prioridad?: string; createdAt?: string; href?: string }) => ({
+            id: a.id,
+            title: a.titulo,
+            description: a.descripcion,
+            type: a.prioridad === "alta" ? "alerta" as const : "info" as const,
+            module: "alertas",
+            timestamp: a.createdAt ? new Date(a.createdAt) : new Date(),
+            read: false,
+            href: a.href ?? "/dashboard/centro-alertas",
+          })),
+        )
+      } catch {
+        /* silencioso */
+      }
+    }
+    void cargarAlertas()
+    const interval = setInterval(() => void cargarAlertas(), 120_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const cargarTickets = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) return
+      try {
+        const res = await fetch("/api/tickets/metricas", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setTicketsAbiertos(data.resumen?.abiertos ?? 0)
+        }
+      } catch {
+        /* silencioso */
+      }
+    }
+    void cargarTickets()
+    const interval = setInterval(() => void cargarTickets(), 120_000)
     return () => clearInterval(interval)
   }, [])
 
@@ -106,7 +156,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   }, [])
 
   return (
-    <header className="app-topbar h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
+    <header className="app-topbar h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between gap-2 px-3 sm:px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
 
       <div className="flex items-center gap-2">
@@ -114,17 +164,19 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden h-8 w-8"
+            className="lg:hidden h-9 w-9 touch-target"
             onClick={onMenuClick}
           >
             <Menu className="h-4 w-4" />
             <span className="sr-only">Abrir menú</span>
           </Button>
         )}
-        <Breadcrumbs />
+        <div className="hidden lg:block min-w-0">
+          <Breadcrumbs />
+        </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <Button
           variant="ghost"
           size="sm"
@@ -162,6 +214,16 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           </Link>
         </Button>
 
+        {afipLabel && afipLabel !== "AFIP OK" && (
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs hidden lg:inline-flex" asChild>
+            <Link href="/dashboard/configuracion?seccion=afip">
+              <Badge variant="outline" className="h-4 text-[10px] px-1.5 bg-amber-500/10 text-amber-800 border-amber-200">
+                {afipLabel}
+              </Badge>
+            </Link>
+          </Button>
+        )}
+
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -191,14 +253,18 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
               <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
                 <Link href="/dashboard/soporte">
                   <TicketCheck className="h-4 w-4 text-muted-foreground" />
-                  <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-500 text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
-                    2
-                  </span>
+                  {ticketsAbiertos > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-500 text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
+                      {ticketsAbiertos > 9 ? "9+" : ticketsAbiertos}
+                    </span>
+                  )}
                 </Link>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p className="text-xs">2 tickets abiertos</p>
+              <p className="text-xs">
+                {ticketsAbiertos} ticket{ticketsAbiertos !== 1 ? "s" : ""} abierto{ticketsAbiertos !== 1 ? "s" : ""}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

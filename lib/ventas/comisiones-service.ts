@@ -67,7 +67,7 @@ export class ComisionesService {
 
       let baseImponible = 0
       const facturasDetalle = facturas.map(f => {
-        const subtotal = f.subtotal
+        const subtotal = Number(f.subtotal)
         const comision = subtotal * (pct / 100)
         baseImponible += subtotal
         return {
@@ -124,7 +124,7 @@ export class ComisionesService {
 
     let baseImponible = 0
     const facturasDetalle = facturas.map(f => {
-      const subtotal = f.subtotal
+      const subtotal = Number(f.subtotal)
       const comision = subtotal * (pct / 100)
       baseImponible += subtotal
       return {

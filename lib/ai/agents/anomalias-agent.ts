@@ -26,7 +26,7 @@ export class AnomaliasAgent extends AgentBase {
   protected async execute(ctx: AgentRunContext) {
     const acciones: AgentAction[] = []
 
-    const result = await detectarAnomalias(ctx.empresaId)
+    const result = (await detectarAnomalias(ctx.empresaId)) as any
 
     if (!result?.anomalias?.length) {
       return { resumen: "Sin anomalías detectadas en los últimos 7 días", acciones }
@@ -56,7 +56,7 @@ export class AnomaliasAgent extends AgentBase {
       })
     }
 
-    const criticas = result.anomalias.filter((a) => a.severidad === "critica").length
+    const criticas = result.anomalias.filter((a: any) => a.severidad === "critica").length
     return {
       resumen: `${result.anomalias.length} anomalías detectadas (${criticas} críticas). ${result.resumen}`,
       acciones,

@@ -65,12 +65,15 @@ export async function calcularAjusteInflacion(empresaId: number, periodo: string
     const movimientos = await prisma.movimientoContable.aggregate({
       where: {
         asiento: { empresaId },
-        cuentaId: cuenta.id,
+        OR: [
+          { cuenta: { startsWith: `${cuenta.codigo} ` } },
+          { cuenta: cuenta.codigo },
+        ],
       },
       _sum: { debe: true, haber: true },
     })
 
-    const saldo = (movimientos._sum.debe ?? 0) - (movimientos._sum.haber ?? 0)
+    const saldo = Number(movimientos._sum.debe ?? 0) - Number(movimientos._sum.haber ?? 0)
 
     // Ajuste = saldo * (coeficiente - 1)
     // Si coeficiente = 1.05 (5% inflación), ajuste = saldo * 0.05
@@ -116,12 +119,18 @@ export async function aplicarAjuste(empresaId: number, ajusteId: number) {
   const [anio, mes] = ajuste.periodo.split("-").map(Number)
   const fechaAsiento = new Date(anio, mes - 1, 28) // Último día hábil aprox
 
+  const ultimoAsiento = await prisma.asientoContable.findFirst({
+    where: { empresaId },
+    orderBy: { numero: "desc" },
+  })
+  const siguienteNumero = (ultimoAsiento?.numero ?? 0) + 1
+
   const asiento = await prisma.asientoContable.create({
     data: {
       fecha: fechaAsiento,
+      numero: siguienteNumero,
       descripcion: `Ajuste por inflación — ${ajuste.periodo} (${ajuste.indice} coef. ${ajuste.coeficiente})`,
       tipo: "ajuste_inflacion",
-      estado: "confirmado",
       empresaId,
     },
   })
@@ -135,25 +144,24 @@ export async function aplicarAjuste(empresaId: number, ajusteId: number) {
   })
 
   if (cuentaRECPAM) {
+    const cuentaStr = `${cuentaRECPAM.codigo} ${cuentaRECPAM.nombre}`
     // Movimiento contrapartida RECPAM
     if (ajuste.totalAjuste > 0) {
       await prisma.movimientoContable.create({
         data: {
           asientoId: asiento.id,
-          cuentaId: cuentaRECPAM.id,
+          cuenta: cuentaStr,
           debe: 0,
           haber: ajuste.totalAjuste,
-          detalle: `RECPAM ${ajuste.periodo}`,
         },
       })
     } else {
       await prisma.movimientoContable.create({
         data: {
           asientoId: asiento.id,
-          cuentaId: cuentaRECPAM.id,
+          cuenta: cuentaStr,
           debe: Math.abs(ajuste.totalAjuste),
           haber: 0,
-          detalle: `RECPAM ${ajuste.periodo}`,
         },
       })
     }

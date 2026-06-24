@@ -21,10 +21,11 @@ export async function POST(request: NextRequest) {
 
     const mensajes = await Promise.all(
       turnos.map(async (turno) => {
-        const telefono = turno.cliente?.telefono?.replace(/[^0-9]/g, "")
+        if (!turno.cliente) return null
+        const telefono = turno.cliente.telefono?.replace(/[^0-9]/g, "")
         if (!telefono) return null
 
-        const mensaje = `Hola ${turno.cliente?.nombre}, te recordamos tu turno el ${turno.fecha.toISOString().split("T")[0]} a las ${turno.horaInicio} con ${turno.profesional?.nombre}. Respondé CONFIRMAR o CANCELAR.`
+        const mensaje = `Hola ${turno.cliente.nombre}, te recordamos tu turno el ${turno.fecha.toISOString().split("T")[0]} a las ${turno.horaInicio} with ${turno.profesional?.nombre || "profesional"}. Respondé CONFIRMAR o CANCELAR.`
 
         return prisma.mensajePendienteWhatsApp.create({
           data: {

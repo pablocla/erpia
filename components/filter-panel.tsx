@@ -44,6 +44,7 @@ import {
   RotateCcw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCompactShell } from "@/hooks/use-mobile"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,8 @@ export function FilterPanel({
   onDeletePreset,
   mode = "popover",
 }: FilterPanelProps) {
+  const compactShell = useCompactShell()
+  const effectiveMode = mode === "popover" && compactShell ? "sheet" : mode
   const [presetName, setPresetName] = React.useState("")
   const activeCount = Object.values(values).filter((v) =>
     v !== undefined && v !== "" && v !== false &&
@@ -312,7 +315,7 @@ export function FilterPanel({
     </div>
   )
 
-  if (mode === "sheet") {
+  if (effectiveMode === "sheet") {
     return (
       <Sheet>
         <SheetTrigger asChild>

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { cajaEstadoLabel, cajaEstadoVariant } from "@/lib/ui/status-map"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -275,21 +277,21 @@ export default function CajaPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wallet className="h-6 w-6 text-primary" />
-            Caja
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Apertura, movimientos, arqueo y cierre diario
-            {cajaActual?.turno && (
-              <Badge variant="outline" className="ml-2">{cajaActual.turno}</Badge>
-            )}
-          </p>
-        </div>
-        {!cajaActual ? (
+    <PageShell>
+      <PageHeader
+        title="Caja"
+        description="Apertura, movimientos, arqueo y cierre diario"
+        statusSlot={
+          cajaActual ? (
+            <div className="flex items-center gap-2">
+              <StatusBadge variant={cajaEstadoVariant(cajaActual.estado)} label={cajaEstadoLabel(cajaActual.estado)} />
+              {cajaActual.turno && <Badge variant="outline">{cajaActual.turno}</Badge>}
+            </div>
+          ) : (
+            <StatusBadge variant="neutral" label="Sin caja abierta" />
+          )
+        }
+        actions={!cajaActual ? (
           <Button onClick={() => setAbrirDialogOpen(true)}>
             <Unlock className="h-4 w-4 mr-2" />
             Abrir Caja
@@ -306,7 +308,7 @@ export default function CajaPage() {
             </Button>
           </div>
         )}
-      </div>
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -435,7 +437,7 @@ export default function CajaPage() {
                 { key: "saldoFinal" as any, header: "Saldo Final", align: "right", cell: (c) => <span className="font-bold">${c.saldoFinal?.toFixed(2) ?? "—"}</span> },
                 { key: "diferencia" as any, header: "Diferencia", align: "right", cell: (c) => c.diferencia != null ? <span className={Math.abs(c.diferencia) > 0 ? "text-amber-600 font-medium" : "text-green-600"}>${c.diferencia.toFixed(2)}{c.diferenciaJustif && <span className="text-xs text-muted-foreground ml-1" title={c.diferenciaJustif}>ⓘ</span>}</span> : <span>—</span> },
                 { key: "movimientos" as any, header: "Movimientos", cell: (c) => { const tot = calcularTotales(c.movimientos); return <><span className="text-green-700 dark:text-green-400">+${tot.ingresos.toFixed(2)}</span>{" / "}<span className="text-red-700 dark:text-red-400">-${tot.egresos.toFixed(2)}</span></> } },
-                { key: "estado", header: "Estado", cell: () => <Badge variant="secondary">Cerrada</Badge> },
+                { key: "estado", header: "Estado", cell: () => <StatusBadge variant={cajaEstadoVariant("cerrada")} label={cajaEstadoLabel("cerrada")} /> },
               ] as DataTableColumn<Caja>[]}
               rowKey="id"
               exportFilename="historial-cajas"
@@ -449,7 +451,7 @@ export default function CajaPage() {
 
       {/* Dialog abrir caja */}
       <Dialog open={abrirDialogOpen} onOpenChange={setAbrirDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Abrir Caja</DialogTitle>
             <DialogDescription>Ingresá el efectivo en caja y seleccioná el turno.</DialogDescription>
@@ -492,7 +494,7 @@ export default function CajaPage() {
 
       {/* Dialog nuevo movimiento */}
       <Dialog open={movimientoDialogOpen} onOpenChange={setMovimientoDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Registrar Movimiento</DialogTitle>
           </DialogHeader>
@@ -580,7 +582,7 @@ export default function CajaPage() {
 
       {/* Dialog Arqueo y Cierre */}
       <Dialog open={arqueoDialogOpen} onOpenChange={setArqueoDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
@@ -695,6 +697,6 @@ export default function CajaPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

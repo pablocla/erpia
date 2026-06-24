@@ -411,11 +411,6 @@ export default function VeterinariaPage() {
   const [pacienteConsulta, setPacienteConsulta] = useState<Paciente | null>(null)
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-  useKeyboardShortcuts(erpShortcuts({
-    onRefresh: fetchPacientes,
-    onNew: () => setDialogPaciente(true),
-  }))
-
   const fetchPacientes = useCallback(async () => {
     setLoading(true)
     try {
@@ -427,6 +422,11 @@ export default function VeterinariaPage() {
       if (res.ok) setPacientes(await res.json())
     } finally { setLoading(false) }
   }, [search, token])
+
+  useKeyboardShortcuts(erpShortcuts({
+    onRefresh: fetchPacientes,
+    onNew: () => setDialogPaciente(true),
+  }))
 
   useEffect(() => {
     const t = setTimeout(fetchPacientes, 300)

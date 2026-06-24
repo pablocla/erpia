@@ -25,7 +25,7 @@ interface Params {
 }
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const { zonaId } = await params
   const id = Number(zonaId)
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 export async function POST(request: NextRequest, { params }: Params) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const { zonaId } = await params
   const id = Number(zonaId)
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 }
 
 export async function PUT(request: NextRequest, { params }: Params) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const { zonaId } = await params
   const id = Number(zonaId)
@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const { zonaId } = await params
   const id = Number(zonaId)

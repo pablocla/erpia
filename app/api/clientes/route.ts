@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const clienteSchema = z.object({

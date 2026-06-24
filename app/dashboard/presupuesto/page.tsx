@@ -60,7 +60,7 @@ export default function PresupuestoPage() {
   const [nuevoNombre, setNuevoNombre] = useState("")
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
 
   const fetchReporte = useCallback(async () => {
     setLoading(true)

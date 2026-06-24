@@ -99,6 +99,11 @@ export default function CuentasCobrarPage() {
   const [montoCobro, setMontoCobro] = useState("")
   const [medioPago, setMedioPago] = useState("efectivo")
   const [obsCobro, setObsCobro] = useState("")
+  const [chequeNumero, setChequeNumero] = useState("")
+  const [chequeBanco, setChequeBanco] = useState("")
+  const [chequeCuit, setChequeCuit] = useState("")
+  const [chequeEmision, setChequeEmision] = useState(new Date().toISOString().split("T")[0])
+  const [chequeVencimiento, setChequeVencimiento] = useState("")
   const [cobrando, setCobrando] = useState(false)
   const [errorCobro, setErrorCobro] = useState("")
 
@@ -167,6 +172,11 @@ export default function CuentasCobrarPage() {
     setMontoCobro(String(cc.saldo))
     setMedioPago("efectivo")
     setObsCobro("")
+    setChequeNumero("")
+    setChequeBanco("")
+    setChequeCuit("")
+    setChequeEmision(new Date().toISOString().split("T")[0])
+    setChequeVencimiento("")
     setErrorCobro("")
   }
 
@@ -175,23 +185,39 @@ export default function CuentasCobrarPage() {
     setErrorCobro("")
     const monto = parseFloat(montoCobro)
     if (!monto || monto <= 0) { setErrorCobro("Monto inválido"); return }
+    if (medioPago === "cheque") {
+      if (!chequeNumero.trim()) { setErrorCobro("Ingresá el número de cheque"); return }
+      if (!chequeVencimiento) { setErrorCobro("Ingresá la fecha de vencimiento"); return }
+    }
 
     setCobrando(true)
     try {
+      const payload: Record<string, unknown> = {
+        cuentaCobrarId: modalCobro.id,
+        monto,
+        medioPago,
+        observaciones: obsCobro.trim() || undefined,
+      }
+      if (medioPago === "cheque") {
+        payload.cheque = {
+          numero: chequeNumero.trim(),
+          bancoNombre: chequeBanco.trim() || undefined,
+          cuitBancoLibrador: chequeCuit.trim() || undefined,
+          fechaEmision: chequeEmision,
+          fechaVencimiento: chequeVencimiento,
+          monto,
+        }
+      }
+
       const res = await fetch("/api/cuentas-cobrar/cobros", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({
-          cuentaCobrarId: modalCobro.id,
-          monto,
-          medioPago,
-          observaciones: obsCobro.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (!res.ok) { setErrorCobro(data.error || "Error al registrar cobro"); return }
       setModalCobro(null)
-      await cargar()
+      await Promise.all([cargar(), cargarRecibos()])
     } finally {
       setCobrando(false)
     }
@@ -336,6 +362,11 @@ export default function CuentasCobrarPage() {
               { key: "totalRetenciones", header: "Retenciones", align: "right", cell: (r) => <span className="text-amber-700">{formatCurrency(r.totalRetenciones)}</span> },
               { key: "netoRecibido", header: "Neto", align: "right", cell: (r) => <span className="font-bold text-primary">{formatCurrency(r.netoRecibido)}</span> },
               { key: "medioPago", header: "Medio", cell: (r) => <span className="text-xs text-muted-foreground">{r.medioPago}</span> },
+              { key: "acciones" as any, header: "", cell: (r) => (
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=recibo&id=${r.id}`, "_blank") }}>
+                  PDF
+                </Button>
+              ) },
             ] as DataTableColumn<Recibo>[]}
             rowKey="id"
             searchPlaceholder="Buscar recibo..."
@@ -379,9 +410,36 @@ export default function CuentasCobrarPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {medioPago === "cheque" && (
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/40">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Datos del cheque</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5 col-span-2">
+                      <Label>Número de cheque</Label>
+                      <Input value={chequeNumero} onChange={(e) => setChequeNumero(e.target.value)} placeholder="Ej: 12345678" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Banco</Label>
+                      <Input value={chequeBanco} onChange={(e) => setChequeBanco(e.target.value)} placeholder="Galicia, Nación..." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>CUIT librador</Label>
+                      <Input value={chequeCuit} onChange={(e) => setChequeCuit(e.target.value)} placeholder="30-12345678-9" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Fecha emisión</Label>
+                      <Input type="date" value={chequeEmision} onChange={(e) => setChequeEmision(e.target.value)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Fecha vencimiento</Label>
+                      <Input type="date" value={chequeVencimiento} onChange={(e) => setChequeVencimiento(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Observaciones</Label>
-                <Input placeholder="Referencia transferencia, N° cheque..." value={obsCobro} onChange={(e) => setObsCobro(e.target.value)} />
+                <Input placeholder="Referencia transferencia u observaciones..." value={obsCobro} onChange={(e) => setObsCobro(e.target.value)} />
               </div>
             </div>
           )}

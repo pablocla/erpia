@@ -51,6 +51,7 @@ import { PosPendientesPanel } from "@/components/pos/pos-pendientes-panel"
 import { PosPendientesDrawer } from "@/components/pos/pos-pendientes-drawer"
 import { PosVentasHoyDrawer } from "@/components/pos/pos-ventas-hoy-drawer"
 import { PosPluBar } from "@/components/pos/pos-plu-bar"
+import { PosCartSheet } from "@/components/pos/pos-cart-sheet"
 import type { PosAfipStatus } from "@/lib/pos/pos-afip-status"
 import { tipoFacturaSugerido } from "@/lib/pos/pos-tipo-factura"
 import {
@@ -183,6 +184,7 @@ export default function POSPage() {
 
   // ── Modal mesas (modo mesa) ─────────────────────────────────
   const [modalMesasOpen, setModalMesasOpen] = useState(false)
+  const [cartSheetOpen, setCartSheetOpen] = useState(false)
 
   // ── Error ───────────────────────────────────────────────────
   const [error, setError] = useState("")
@@ -741,7 +743,7 @@ export default function POSPage() {
   // RENDER
   // ──────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] overflow-hidden ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
+    <div className={`flex flex-col h-full min-h-0 overflow-hidden ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
       <style>{`
         @media print {
           @page { margin: 0; size: 80mm auto; }
@@ -753,9 +755,9 @@ export default function POSPage() {
       `}</style>
 
       {/* ── TOPBAR POS ──────────────────────────────────────── */}
-      <div className={`flex items-center gap-3 px-4 py-2 border-b shrink-0 ${modo === "kiosko" ? "bg-gray-900 border-gray-700" : "bg-background"}`}>
+      <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 border-b shrink-0 overflow-x-auto scrollbar-thin ${modo === "kiosko" ? "bg-gray-900 border-gray-700" : "bg-background"}`}>
         {/* Selector de modo */}
-        <div className="flex rounded-lg border overflow-hidden">
+        <div className="flex rounded-lg border overflow-hidden shrink-0">
           {([
             { key: "mostrador", icon: Store, label: "Mostrador" },
             { key: "mesa", icon: UtensilsCrossed, label: "Mesa" },
@@ -764,14 +766,14 @@ export default function POSPage() {
             <button
               key={key}
               onClick={() => setModo(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[40px] ${
                 modo === key
                   ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted text-muted-foreground"
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
@@ -784,7 +786,7 @@ export default function POSPage() {
             setTipoFactura(v as TipoFactura)
           }}
         >
-          <SelectTrigger className="w-32 h-8 text-xs">
+          <SelectTrigger className="w-[7.5rem] sm:w-32 h-9 sm:h-8 text-xs shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -834,10 +836,10 @@ export default function POSPage() {
           <Button variant="ghost" size="sm" onClick={verificarCaja} className="h-7 w-7 p-0">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
-          <Link href="/dashboard/pos/cierre">
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+          <Link href="/dashboard/pos/cierre" className="shrink-0">
+            <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
               <BarChart3 className="h-3.5 w-3.5" />
-              Cierre X/Z
+              <span className="hidden sm:inline">Cierre X/Z</span>
             </Button>
           </Link>
         </div>
@@ -907,7 +909,7 @@ export default function POSPage() {
       <div className="flex flex-1 overflow-hidden">
 
         {/* ══ PANEL IZQUIERDO: Productos ══════════════════════ */}
-        <div className={`flex flex-col ${modo === "kiosko" ? "w-full" : "w-[60%]"} border-r overflow-hidden`}>
+        <div className={`flex flex-col ${modo === "kiosko" ? "w-full" : "w-full lg:w-[60%]"} border-r overflow-hidden`}>
 
           {/* Búsqueda */}
           <div className="flex gap-2 px-3 py-2 shrink-0 border-b">
@@ -923,8 +925,8 @@ export default function POSPage() {
                     setBusqueda("")
                   }
                 }}
-                placeholder="Buscar por nombre, código o código de barras... (/ para enfocar)"
-                className={`pl-9 ${modo === "kiosko" ? "h-12 text-base" : "h-9"}`}
+                placeholder="Buscar producto o escanear…"
+                className={`pl-9 ${modo === "kiosko" ? "h-12 text-base" : "h-11 sm:h-9 text-base sm:text-sm"}`}
               />
               {busqueda && (
                 <button
@@ -959,10 +961,10 @@ export default function POSPage() {
 
           {/* Categorías */}
           {categorias.length > 0 && (
-            <div className="flex gap-1.5 px-3 py-1.5 overflow-x-auto shrink-0 border-b no-scrollbar">
+            <div className="flex gap-1.5 px-3 py-2 overflow-x-auto shrink-0 border-b scrollbar-thin">
               <button
                 onClick={() => setCategoriaActiva("all")}
-                className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors touch-manipulation ${
                   categoriaActiva === "all"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted hover:bg-muted/80"
@@ -974,7 +976,7 @@ export default function POSPage() {
                 <button
                   key={cat.id}
                   onClick={() => setCategoriaActiva(cat.id)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors touch-manipulation ${
                     categoriaActiva === cat.id
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted hover:bg-muted/80"
@@ -988,10 +990,10 @@ export default function POSPage() {
 
           {/* Grilla de productos */}
           <ScrollArea className="flex-1">
-            <div className={`grid gap-2 p-3 ${
+            <div className={`grid gap-2 p-3 pb-24 lg:pb-3 ${
               modo === "kiosko"
-                ? "grid-cols-2 sm:grid-cols-3"
-                : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+                ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+                : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5"
             }`}>
               {cargandoProductos ? (
                 Array.from({ length: 12 }).map((_, i) => (
@@ -1011,7 +1013,8 @@ export default function POSPage() {
                     className={`
                       flex flex-col items-center justify-center rounded-xl border-2 transition-all
                       text-center p-2 gap-1 select-none
-                      ${modo === "kiosko" ? "min-h-[100px]" : "min-h-[80px]"}
+                      ${modo === "kiosko" ? "min-h-[108px]" : "min-h-[92px] sm:min-h-[80px]"}
+                      touch-manipulation active:scale-[0.97]
                       ${p.stock <= 0 && !p.esPlato
                         ? "opacity-40 cursor-not-allowed border-dashed"
                         : "border-border hover:border-primary hover:bg-primary/5 active:scale-95 cursor-pointer"
@@ -1039,7 +1042,7 @@ export default function POSPage() {
 
         {/* ══ PANEL DERECHO: Carrito ═══════════════════════════ */}
         {modo !== "kiosko" && (
-          <div className="flex flex-col w-[40%] overflow-hidden bg-muted/30">
+          <div className="hidden lg:flex flex-col w-[40%] overflow-hidden bg-muted/30">
 
             <PosPendientesPanel
               cajaOk={cajaOk}
@@ -1205,27 +1208,76 @@ export default function POSPage() {
           </div>
         )}
 
-        {/* Carrito flotante en modo kiosko (bottom bar) */}
-        {modo === "kiosko" && carrito.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 px-4 py-3 flex items-center gap-4 z-50">
+        {/* Barra inferior móvil / tablet */}
+        {modo !== "kiosko" && (
+          <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+            <div className="flex items-center gap-2 max-w-lg mx-auto">
+              <button
+                type="button"
+                onClick={() => setCartSheetOpen(true)}
+                className="flex items-center gap-2 min-h-[48px] px-3 rounded-xl border bg-card flex-1 touch-manipulation active:scale-[0.98]"
+              >
+                <ShoppingCart className="h-5 w-5 text-primary shrink-0" />
+                <div className="text-left min-w-0">
+                  <p className="text-xs text-muted-foreground">
+                    {carrito.length === 0 ? "Carrito vacío" : `${carrito.reduce((s, i) => s + i.cantidad, 0)} ítems`}
+                  </p>
+                  <p className="font-bold text-base leading-none">${fmt(total)}</p>
+                </div>
+              </button>
+              <Button
+                className="h-12 px-5 text-base font-bold shrink-0"
+                onClick={abrirCobro}
+                disabled={carrito.length === 0 || !cajaOk || afipBloqueaFiscal}
+              >
+                COBRAR
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Kiosko: barra clásica */}
+        {modo === "kiosko" && (
+          <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 px-4 py-3 flex items-center gap-4 z-50 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-2 text-white">
               <ShoppingCart className="h-5 w-5" />
               <span className="text-sm">{carrito.reduce((s, i) => s + i.cantidad, 0)} items</span>
             </div>
             <span className="text-white font-bold text-xl ml-auto">${fmt(total)}</span>
-            <Button className="h-12 px-8 text-base font-bold" onClick={abrirCobro} disabled={!cajaOk || afipBloqueaFiscal}>
+            <Button className="h-12 px-8 text-base font-bold touch-manipulation" onClick={abrirCobro} disabled={!cajaOk || afipBloqueaFiscal}>
               COBRAR
             </Button>
-            <Button variant="ghost" className="h-12 text-gray-400" onClick={vaciarCarrito}>
+            <Button variant="ghost" className="h-12 w-12 text-gray-400 touch-manipulation" onClick={vaciarCarrito}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         )}
       </div>
 
+      <PosCartSheet
+        open={cartSheetOpen}
+        onOpenChange={setCartSheetOpen}
+        carrito={carrito}
+        clientes={clientes}
+        clienteId={clienteId}
+        onClienteChange={setClienteId}
+        descuentoGlobal={descuentoGlobal}
+        onDescuentoChange={setDescuentoGlobal}
+        subtotal={subtotal}
+        iva={iva}
+        total={total}
+        fmt={fmt}
+        onCantidad={cambiarCantidad}
+        onEliminar={eliminarItem}
+        onVaciar={vaciarCarrito}
+        onCobrar={abrirCobro}
+        cajaOk={cajaOk}
+        afipBloqueaFiscal={afipBloqueaFiscal}
+      />
+
       {/* ═══ MODAL: Cobro ═══════════════════════════════════════ */}
       <Dialog open={modalCobroOpen} onOpenChange={(open) => { if (!procesando) setModalCobroOpen(open) }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-md max-h-[min(92dvh,640px)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
@@ -1377,26 +1429,26 @@ export default function POSPage() {
               </div>
 
               {/* Botones rápidos de medios */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {MEDIOS_PAGO.slice(0, 6).map((m) => (
                   <button
                     key={m.key}
                     onClick={() => setPagos([{ medio: m.key, monto: total }])}
-                    className={`flex flex-col items-center py-2 rounded-lg text-white text-xs font-medium transition-all active:scale-95 ${m.color}`}
+                    className={`flex flex-col items-center py-3 sm:py-2 rounded-lg text-white text-xs font-medium transition-all active:scale-95 touch-manipulation min-h-[52px] ${m.color}`}
                   >
-                    <m.icon className="h-4 w-4 mb-0.5" />
+                    <m.icon className="h-5 w-5 sm:h-4 sm:w-4 mb-0.5" />
                     {m.label}
                   </button>
                 ))}
               </div>
 
               {/* Numpad táctil */}
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {NUMPAD_KEYS.map((k) => (
                   <button
                     key={k}
                     onClick={() => numpadPress(k)}
-                    className="h-12 rounded-lg border bg-muted hover:bg-muted/70 active:bg-primary active:text-primary-foreground font-bold text-base transition-all"
+                    className="h-14 sm:h-12 rounded-lg border bg-muted hover:bg-muted/70 active:bg-primary active:text-primary-foreground font-bold text-lg sm:text-base transition-all touch-manipulation"
                   >
                     {k}
                   </button>

@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { envioEstadoLabel, envioEstadoVariant } from "@/lib/ui/status-map"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -40,13 +41,6 @@ interface Envio {
   transportistaId?: number
   transportista?: Transportista
   remito?: { id: number; numero: number }
-}
-
-const ESTADOS_ENVIO: Record<string, { label: string; color: string }> = {
-  pendiente: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800" },
-  en_transito: { label: "En tránsito", color: "bg-blue-100 text-blue-800" },
-  entregado: { label: "Entregado", color: "bg-green-100 text-green-800" },
-  devuelto: { label: "Devuelto", color: "bg-red-100 text-red-800" },
 }
 
 const initialEnvioForm = {
@@ -193,19 +187,16 @@ export default function LogisticaPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Truck className="h-6 w-6 text-emerald-500" />
-            Logística
-          </h1>
-          <p className="text-muted-foreground text-sm">Gestión de envíos, transportistas y rutas</p>
-        </div>
-        <Button onClick={abrirDialogNuevo} className="gap-2">
-          <Plus className="h-4 w-4" /> Nuevo Envío
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Logística"
+        description="Gestión de envíos, transportistas y rutas"
+        actions={
+          <Button onClick={abrirDialogNuevo} className="gap-2">
+            <Plus className="h-4 w-4" /> Nuevo Envío
+          </Button>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -245,7 +236,18 @@ export default function LogisticaPage() {
                   { key: "transportista" as any, header: "Transportista", cell: (e) => e.transportista?.nombre || <span className="text-muted-foreground">—</span>, exportFn: (e) => e.transportista?.nombre ?? "" },
                   { key: "bultos", header: "Bultos", align: "right", sortable: true },
                   { key: "fechaEmbarque", header: "Embarque", sortable: true, cell: (e) => e.fechaEmbarque ? new Date(e.fechaEmbarque).toLocaleDateString("es-AR") : "—" },
-                  { key: "estado", header: "Estado", cell: (e) => { const est = ESTADOS_ENVIO[e.estado] || { label: e.estado, color: "bg-gray-100 text-gray-800" }; return <Select value={e.estado} onValueChange={(v) => cambiarEstado(e.id, v)}><SelectTrigger className="h-7 w-36 text-xs"><span className={`px-1.5 py-0.5 rounded text-xs font-medium ${est.color}`}>{est.label}</span></SelectTrigger><SelectContent>{Object.entries(ESTADOS_ENVIO).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select> } },
+                  { key: "estado", header: "Estado", cell: (e) => (
+                    <Select value={e.estado} onValueChange={(v) => cambiarEstado(e.id, v)}>
+                      <SelectTrigger className="h-7 w-auto border-0 bg-transparent p-0 shadow-none">
+                        <StatusBadge variant={envioEstadoVariant(e.estado)} label={envioEstadoLabel(e.estado)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(["pendiente", "en_transito", "entregado", "devuelto"] as const).map((k) => (
+                          <SelectItem key={k} value={k}>{envioEstadoLabel(k)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) },
                   { key: "acciones" as any, header: "", cell: (e) => <div className="flex gap-1"><Button size="icon" variant="ghost" className="h-7 w-7" onClick={(ev) => { ev.stopPropagation(); abrirDialogEditar(e) }}><Pencil className="h-3.5 w-3.5" /></Button><Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={(ev) => { ev.stopPropagation(); eliminarEnvio(e.id) }}><Trash2 className="h-3.5 w-3.5" /></Button></div> },
                 ] as DataTableColumn<Envio>[]}
                 rowKey="id"
@@ -312,10 +314,10 @@ export default function LogisticaPage() {
             </div>
             <div className="space-y-1">
               <Label>Transportista</Label>
-              <Select value={form.transportistaId} onValueChange={(v) => setForm({ ...form, transportistaId: v })}>
+              <Select value={form.transportistaId || "none"} onValueChange={(v) => setForm({ ...form, transportistaId: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin transportista</SelectItem>
+                  <SelectItem value="none">Sin transportista</SelectItem>
                   {transportistas.map((t) => <SelectItem key={t.id} value={t.id.toString()}>{t.nombre}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -377,6 +379,6 @@ export default function LogisticaPage() {
         </DialogContent>
       </Dialog>
       <ConfirmDialog />
-    </div>
+    </PageShell>
   )
 }

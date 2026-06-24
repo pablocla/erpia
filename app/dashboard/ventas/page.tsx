@@ -12,11 +12,18 @@ import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import Link from "next/link"
 import {
-  Plus, Trash2, CheckCircle2, QrCode, Search, Package,
-  FileText, Receipt, RefreshCw, Tags, Keyboard,
+  Plus, Trash2, QrCode, Search, Package,
+  FileText, Receipt, RefreshCw, Tags, Keyboard, Sparkles, Shield,
 } from "lucide-react"
+import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
+import { AfipStatusBadge } from "@/components/fiscal/afip-status-badge"
+import { PageShell, PageHeader } from "@/components/layout"
+import type { PosAfipStatus } from "@/lib/pos/pos-afip-status"
+import { authFetch } from "@/lib/stores"
+import { useToast } from "@/hooks/use-toast"
 import { getTESVentaPorCondicion, getTipoCbteAFIP } from "@/lib/tes/tes-config"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { formatARS } from "@/lib/format/currency"
 
 interface Cliente {
   id: number
@@ -50,18 +57,11 @@ interface ItemFactura {
   productoId?: number
 }
 
-interface Resultado {
-  success: boolean
+interface Resultado extends FiscalEmissionData {
   facturaId?: number
-  numero: number
-  tipo: string
-  cae: string
-  vencimientoCae: string
   cliente: string
   total: number
   tes: string
-  tipoCbte: number
-  qrBase64?: string
 }
 
 interface PuntoVenta {
@@ -80,6 +80,7 @@ interface Serie {
 }
 
 export default function VentasPage() {
+  const { toast } = useToast()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null)
@@ -97,6 +98,8 @@ export default function VentasPage() {
   const [serieId, setSerieId] = useState<string>("")
   const [mostrarAyuda, setMostrarAyuda] = useState(false)
   const [mostrarQr, setMostrarQr] = useState(false)
+  const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
+  const [reintentando, setReintentando] = useState(false)
   const [productoFocusIdx, setProductoFocusIdx] = useState(0)
   const clienteSearchRef = useRef<HTMLInputElement | null>(null)
   const productoSearchRef = useRef<HTMLInputElement | null>(null)
@@ -116,10 +119,11 @@ export default function VentasPage() {
     const cargar = async () => {
       try {
         const headers = getAuthHeaders()
-        const [resClientes, resProductos, resPuntosVenta] = await Promise.all([
+        const [resClientes, resProductos, resPuntosVenta, resAfip] = await Promise.all([
           fetch("/api/clientes", { headers }),
           fetch("/api/productos", { headers }),
           fetch("/api/puntos-venta", { headers }),
+          fetch("/api/afip/status", { headers }),
         ])
 
         const dataClientes = await resClientes.json()
@@ -133,6 +137,10 @@ export default function VentasPage() {
 
         const pvDefault = puntos.find((pv: PuntoVenta) => pv.esDefault) ?? puntos[0]
         if (pvDefault) setPuntoVentaId(String(pvDefault.id))
+
+        if (resAfip.ok) {
+          setAfipStatus(await resAfip.json())
+        }
       } catch {
         setError("No se pudieron cargar clientes/productos. Revisá sesión o conexión.")
       }
@@ -387,22 +395,28 @@ export default function VentasPage() {
         }),
       })
       const data = await res.json()
-      if (data.success || data.cae) {
+      const tipoLetra = tes?.codigo.charAt(1) ?? "B"
+      if (data.success || data.facturaId) {
+        const pendiente = data.pendienteCAE || !data.cae
         setResultado({
-          success: true,
+          success: !pendiente,
           facturaId: data.facturaId,
           numero: data.numero,
-          tipo: tes?.codigo.charAt(1) ?? "B",
+          tipo: tipoLetra,
           cae: data.cae,
-          vencimientoCae: data.vencimientoCAE
-            ? new Date(data.vencimientoCAE).toLocaleDateString("es-AR")
-            : "—",
+          vencimientoCAE: data.vencimientoCAE,
           cliente: clienteSeleccionado.nombre,
           total: totales.total,
           tes: tes?.nombre ?? "",
-          tipoCbte: tipoCbteFinal,
           qrBase64: data.qrBase64,
+          pendienteCae: pendiente,
+          error: data.advertencia ?? data.error,
         })
+        if (pendiente) {
+          toast({ title: "Factura pendiente de CAE", variant: "destructive" })
+        } else {
+          toast({ title: "Factura emitida", description: `CAE ${data.cae}` })
+        }
         setItems([])
         setClienteSeleccionado(null)
         setBuscadorCliente("")
@@ -413,6 +427,25 @@ export default function VentasPage() {
       setError("Error de conexión con el servidor")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const reintentarCae = async () => {
+    setReintentando(true)
+    try {
+      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        return
+      }
+      toast({ title: "Sincronización AFIP", description: json.mensaje })
+      const statusRes = await fetch("/api/afip/status", { headers: getAuthHeaders() })
+      if (statusRes.ok) setAfipStatus(await statusRes.json())
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" })
+    } finally {
+      setReintentando(false)
     }
   }
 
@@ -446,26 +479,40 @@ export default function VentasPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Facturación</h1>
-          <p className="text-muted-foreground">Emisión de comprobantes electrónicos con AFIP/ARCA</p>
-          <p className="text-xs text-muted-foreground mt-1">F1 ayuda · F2 cliente · F3 ítem manual · F4 producto · F9 emitir · ↑↓ navegar lista</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setMostrarAyuda(true)}>
-            <Keyboard className="h-4 w-4 mr-2" />
-            Atajos (F1)
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/facturas">
-              <FileText className="h-4 w-4 mr-2" />
-              Historial de Facturas
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Facturación"
+        description="Comprobantes con CAE, TES automático y validación fiscal"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Emisión electrónica AFIP
+          </span>
+        }
+        statusSlot={afipStatus ? <AfipStatusBadge status={afipStatus} /> : undefined}
+        actions={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setMostrarAyuda(true)}>
+              <Keyboard className="h-4 w-4 mr-2" />
+              Atajos
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/configuracion?seccion=afip">
+                <Shield className="h-4 w-4 mr-2" />
+                AFIP
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/facturas">
+                <FileText className="h-4 w-4 mr-2" />
+                Historial
+              </Link>
+            </Button>
+          </>
+        }
+      />
+      <p className="text-xs text-muted-foreground -mt-2 hidden sm:block">F1 ayuda · F2 cliente · F3 ítem manual · F4 producto · F9 emitir</p>
 
       {error && (
         <Alert variant="destructive">
@@ -474,24 +521,17 @@ export default function VentasPage() {
       )}
 
       {resultado && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            <div className="space-y-3">
-              <p className="font-semibold text-base">¡Factura emitida correctamente!</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                <div><span className="font-medium">Comprobante:</span> Factura {resultado.tipo} N° {resultado.numero.toString().padStart(8, "0")}</div>
-                <div><span className="font-medium">CAE:</span> <span className="font-mono">{resultado.cae}</span></div>
-                <div><span className="font-medium">Vence:</span> {resultado.vencimientoCae}</div>
-                <div><span className="font-medium">Cliente:</span> {resultado.cliente}</div>
-                <div><span className="font-medium">Total:</span> ${resultado.total.toFixed(2)}</div>
-                <div><span className="font-medium">TES:</span> {resultado.tes}</div>
-              </div>
-              <div className="flex gap-2">
+        <div className="space-y-3">
+          <FiscalEmissionResult
+            data={resultado}
+            title="Factura emitida"
+            onRetry={resultado.pendienteCae ? reintentarCae : undefined}
+            retrying={reintentando}
+            actions={
+              <>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-transparent"
                   onClick={() => setMostrarQr(true)}
                   disabled={!resultado.qrBase64}
                 >
@@ -501,24 +541,23 @@ export default function VentasPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-transparent"
                   onClick={imprimirFiscal}
                   disabled={!resultado.facturaId || imprimiendoFiscal}
                 >
                   <Receipt className="h-4 w-4 mr-2" />
-                  {imprimiendoFiscal ? "Imprimiendo..." : "Imprimir Fiscal"}
-                </Button>
-                <Button variant="outline" size="sm" className="bg-transparent" onClick={() => window.print()}>
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Vista rápida
+                  {imprimiendoFiscal ? "Imprimiendo..." : "Imprimir"}
                 </Button>
                 <Button size="sm" onClick={() => setResultado(null)}>
-                  Nueva Factura
+                  Nueva factura
                 </Button>
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
+              </>
+            }
+          />
+          <p className="text-sm text-muted-foreground px-1">
+            Cliente: <strong>{resultado.cliente}</strong> · Total: <strong>${resultado.total.toFixed(2)}</strong>
+            {resultado.tes && <> · TES: {resultado.tes}</>}
+          </p>
+        </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -689,14 +728,14 @@ export default function VentasPage() {
         {/* Columna derecha: items */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Ítems ({items.length})</CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setModalProductos(true)}>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setModalProductos(true)}>
                   <Package className="h-4 w-4 mr-2" />
                   Agregar Producto
                 </Button>
-                <Button variant="ghost" size="sm" onClick={agregarItemManual}>
+                <Button variant="ghost" size="sm" className="flex-1 sm:flex-none" onClick={agregarItemManual}>
                   <Plus className="h-4 w-4 mr-2" />
                   Manual
                 </Button>
@@ -715,16 +754,16 @@ export default function VentasPage() {
               ) : (
                 <div className="space-y-2">
                   {items.map(item => (
-                    <div key={item.id} className="flex gap-3 items-start p-3 border rounded-lg hover:bg-muted/30">
-                      <div className="flex-1 space-y-2">
+                    <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-start p-3 border rounded-lg hover:bg-muted/30">
+                      <div className="flex-1 space-y-2 min-w-0">
                         <Input
                           value={item.descripcion}
                           onChange={e => setItems(prev => prev.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
                           placeholder="Descripción del ítem"
                           className="h-8 text-sm"
                         />
-                        <div className="flex gap-2">
-                          <div className="w-24">
+                        <div className="grid grid-cols-3 gap-2 sm:flex">
+                          <div className="sm:w-24">
                             <Label className="text-xs">Cant.</Label>
                             <Input
                               type="number"
@@ -735,7 +774,7 @@ export default function VentasPage() {
                               onFocus={e => e.target.select()}
                             />
                           </div>
-                          <div className="w-32">
+                          <div className="sm:w-32">
                             <Label className="text-xs">Precio unit.</Label>
                             <Input
                               type="number"
@@ -747,7 +786,7 @@ export default function VentasPage() {
                               onFocus={e => e.target.select()}
                             />
                           </div>
-                          <div className="w-24">
+                          <div className="sm:w-24">
                             <Label className="text-xs">IVA %</Label>
                             <Select
                               value={item.iva.toString()}
@@ -766,15 +805,17 @@ export default function VentasPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right min-w-[80px]">
-                        <p className="font-bold text-sm">${item.total.toFixed(2)}</p>
-                        {item.ivaImporte > 0 && (
-                          <p className="text-xs text-muted-foreground">IVA: ${item.ivaImporte.toFixed(2)}</p>
-                        )}
+                      <div className="flex items-center justify-between sm:block sm:text-right sm:min-w-[80px] gap-2 border-t sm:border-0 pt-2 sm:pt-0">
+                        <div>
+                          <p className="font-bold text-sm">${item.total.toFixed(2)}</p>
+                          {item.ivaImporte > 0 && (
+                            <p className="text-xs text-muted-foreground">IVA: ${item.ivaImporte.toFixed(2)}</p>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => eliminarItem(item.id)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => eliminarItem(item.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
                     </div>
                   ))}
                 </div>
@@ -785,8 +826,24 @@ export default function VentasPage() {
       </div>
 
       {/* Modal búsqueda de productos */}
+      {items.length > 0 && clienteSeleccionado && (
+        <div className="lg:hidden fixed inset-x-3 z-40 bottom-[calc(4.5rem+env(safe-area-inset-bottom))]">
+          <Button
+            className="w-full shadow-lg h-12 text-base"
+            onClick={emitirFactura}
+            disabled={loading}
+          >
+            {loading ? (
+              <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Emitiendo...</>
+            ) : (
+              <><Receipt className="h-4 w-4 mr-2" />Emitir · ${totales.total.toFixed(2)}</>
+            )}
+          </Button>
+        </div>
+      )}
+
       <Dialog open={modalProductos} onOpenChange={v => { setModalProductos(v); if (!v) setProductoFocusIdx(0) }}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Buscar Producto</DialogTitle>
           </DialogHeader>
@@ -817,7 +874,7 @@ export default function VentasPage() {
                     <p className="text-xs text-muted-foreground font-mono">{p.codigo}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-sm">${p.precioVenta.toFixed(2)}</p>
+                    <p className="font-bold text-sm">{formatARS(p.precioVenta)}</p>
                     <p className="text-xs text-muted-foreground">
                       Stock: {p.stock} {p.unidad} · IVA {p.porcentajeIva}%
                     </p>
@@ -884,6 +941,6 @@ export default function VentasPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
     // Si es admin/jefe puede ver las tareas visibles de otros usuarios
     const esAdmin = ctx.auth.rol === "administrador"
     if (soloMias || !esAdmin) {
-      where.usuarioId = ctx.auth.usuarioId
+      where.usuarioId = ctx.auth.userId
     } else {
       // Admin ve sus tareas + las que otros marcaron visibleJefe
       where.OR = [
-        { usuarioId: ctx.auth.usuarioId },
+        { usuarioId: ctx.auth.userId },
         { visibleJefe: true },
       ]
     }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         prioridad,
         fechaVencimiento: fechaVencimiento ? new Date(fechaVencimiento) : null,
         visibleJefe,
-        usuarioId: ctx.auth.usuarioId,
+        usuarioId: ctx.auth.userId,
         empresaId: ctx.auth.empresaId,
       },
     })
@@ -127,7 +127,7 @@ export async function PATCH(request: NextRequest) {
       where: {
         id: parseInt(id),
         empresaId: ctx.auth.empresaId,
-        usuarioId: ctx.auth.usuarioId,
+        usuarioId: ctx.auth.userId,
       },
     })
     if (!existente) {
@@ -168,7 +168,7 @@ export async function DELETE(request: NextRequest) {
       where: {
         id: parseInt(id),
         empresaId: ctx.auth.empresaId,
-        usuarioId: ctx.auth.usuarioId,
+        usuarioId: ctx.auth.userId,
       },
     })
     if (!existente) {

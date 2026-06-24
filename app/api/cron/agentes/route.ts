@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   // Get all active empresas
   const empresas = await prisma.empresa.findMany({
-    where: { activa: true },
+    where: { deletedAt: null },
     select: { id: true, nombre: true },
   })
 

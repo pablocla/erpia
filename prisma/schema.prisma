@@ -100,6 +100,8 @@ model Empresa {
   mensajesWhatsApp  MensajePendienteWhatsApp[]
   chatIAHistorial   ChatIAHistorial[]
   agenteLogs        AgenteLog[]
+  turnos            Turno[]
+  servicios         Servicio[]
   // Maestros contables y financieros (Sprint Maestros)
   rubrosContables   RubroContable[]
   tiposAsiento      TipoAsiento[]
@@ -151,6 +153,22 @@ model Empresa {
   afipLogs             AfipWebserviceLog[]
   transferenciasDeposito TransferenciaDeposito[]
   jornadasFiscales       JornadaFiscal[]         @relation("JornadaFiscalEmpresa")
+  automationConfig     AutomationConfig?
+  automationExecutions AutomationExecution[]
+  automationPollQueues AutomationPollQueue[]
+  suscripciones        SuscripcionModulo[]
+  usageEvents          UsageEvent[]
+  posPlus              PosPlu[]                @relation("EmpresaPosPlus")
+  conexionesIntegracion ConexionIntegracion[]
+  solicitudesIntegracion SolicitudIntegracion[]
+  configuracionIANotificacion ConfiguracionIANotificacion?
+  agroGranos           AgroGrano[]
+  agroSilos            AgroSilo[]
+  agroPreciosPizarra   AgroPrecioPizarra[]
+  agroTicketsBalanza   AgroTicketBalanza[]
+  agroContratos        AgroContrato[]
+  agroLiquidaciones    AgroLiquidacion[]
+  agroLotes            AgroLote[]
 
   @@map("empresas")
 }
@@ -278,6 +296,7 @@ model Cliente {
   pedidosVenta     PedidoVenta[]
   paradasRuta      ParadaRuta[]
   movimientosEnvase MovimientoEnvase[]
+  agroContratos     AgroContrato[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -360,6 +379,11 @@ model Proveedor {
   ordenesPago      OrdenPago[]
   padronRegimenes  PadronRegimenProveedor[]
   notasDebito      NotaDebito[]
+  agroTickets      AgroTicketBalanza[]
+  agroContratos    AgroContrato[]
+  agroLiquidaciones AgroLiquidacion[]
+  agroLotes        AgroLote[]
+
   @@map("proveedores")
 }
 
@@ -600,6 +624,8 @@ model Usuario {
   password  String    // Hashed with bcrypt
   rol       String    @default("vendedor") // "administrador", "contador", "vendedor"
   activo    Boolean   @default(true)
+  esVirtual Boolean   @default(false)
+  automationApiKeyHash String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -609,6 +635,8 @@ model Usuario {
   vendedor  Vendedor?
   logs      LogActividad[]
   tareas    TareaPendiente[]
+  virtualWorkers AutomationVirtualWorker[]
+  solicitudesIntegracion SolicitudIntegracion[]
 
   @@map("usuarios")
 }
@@ -757,6 +785,7 @@ model Producto {
   /// Clasificación fiscal: determina IVA, exención, código NCM
   clasificacionFiscalId Int?
   clasificacionFiscal   ClasificacionFiscal? @relation(fields: [clasificacionFiscalId], references: [id])
+  posPlus               PosPlu[]             @relation("ProductoPosPlus")
 
   /// FIX C-004: código único por empresa
   @@unique([empresaId, codigo])
@@ -1252,6 +1281,12 @@ model Envio {
   remitoId         Int?
   remito           Remito?        @relation(fields: [remitoId], references: [id])
   paradaRuta       ParadaRuta?
+  pedidoVentaId    Int?
+  pedidoVenta      PedidoVenta?   @relation(fields: [pedidoVentaId], references: [id])
+  carrierIntegracionId String?
+  trackingExterno  String?
+  etiquetaUrl      String?
+  costoEnvio       Decimal?       @db.Decimal(12,2)
 
   @@map("envios")
 }
@@ -1967,6 +2002,8 @@ model Cheque {
   monto           Decimal   @db.Decimal(18, 2)
   fechaEmision    DateTime  @db.Date
   fechaVencimiento DateTime @db.Date
+  /// Nombre del banco librador
+  bancoNombre     String?
   /// CUIT del banco librador (para cheques de terceros)
   cuitBancoLibrador String?
   /// "cartera" | "depositado" | "endosado" | "rechazado" | "debitado" | "anulado"
@@ -1987,8 +2024,16 @@ model Cheque {
   proveedorId     Int?
   proveedor       Proveedor? @relation(fields: [proveedorId], references: [id])
 
+  /// Vinculación con recibo de cobranza u orden de pago
+  reciboId        Int?
+  recibo          Recibo?    @relation(fields: [reciboId], references: [id])
+  ordenPagoId     Int?
+  ordenPago       OrdenPago? @relation(fields: [ordenPagoId], references: [id])
+
   /// FIX A-001: índices para cartera de cheques
   @@index([estado, fechaVencimiento])
+  @@index([reciboId])
+  @@index([ordenPagoId])
   @@map("cheques")
 }
 
@@ -2408,6 +2453,7 @@ model PedidoVenta {
   lineas          LineaPedidoVenta[]
   listasPicking   ListaPicking[]
   remitos         Remito[]
+  envios          Envio[]
 
   /// FIX A-001: índices para gestión de pedidos
   @@index([empresaId, estado, createdAt])
@@ -2975,6 +3021,7 @@ model Recibo {
   items           ItemRecibo[]
   /// Detalle de retenciones sufridas (con régimen, certificado, base)
   retencionesDetalle RetencionRecibo[]
+  cheques         Cheque[]
 
   @@map("recibos")
 }
@@ -3043,6 +3090,7 @@ model OrdenPago {
 
   items           ItemOrdenPago[]
   retenciones     RetencionSICORE[]
+  cheques         Cheque[]
 
   @@map("ordenes_pago")
 }
@@ -3320,25 +3368,47 @@ model Profesional {
   @@map("profesionales")
 }
 
-model Turno {
-  id          Int       @id @default(autoincrement())
-  fecha       DateTime  @db.Date
-  horaInicio  String    /// "09:00"
-  horaFin     String    /// "09:30"
-  /// "pendiente" | "confirmado" | "en_curso" | "completado" | "cancelado" | "no_asistio"
-  estado      String    @default("pendiente")
-  motivo      String?
-  notas       String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model Servicio {
+  id              Int       @id @default(autoincrement())
+  nombre          String
+  duracionMinutos Int       @default(30)
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  profesionalId Int
-  profesional   Profesional @relation(fields: [profesionalId], references: [id])
-  clienteId     Int?
-  cliente       Cliente?    @relation(fields: [clienteId], references: [id])
+  empresaId       Int
+  empresa         Empresa   @relation(fields: [empresaId], references: [id])
+  turnos          Turno[]
+
+  @@map("servicios")
+}
+
+model Turno {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime  @db.Date
+  horaInicio      String    /// "09:00"
+  horaFin         String    /// "09:30"
+  /// "pendiente" | "confirmado" | "en_curso" | "completado" | "cancelado" | "no_asistio"
+  estado          String    @default("pendiente")
+  motivo          String?
+  notas           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  duracionMinutos Int       @default(30)
+  servicioId      Int?
+  servicio        Servicio?   @relation(fields: [servicioId], references: [id])
+  empresaId       Int
+  empresa         Empresa     @relation(fields: [empresaId], references: [id])
+
+  profesionalId   Int
+  profesional     Profesional @relation(fields: [profesionalId], references: [id])
+  clienteId       Int?
+  cliente         Cliente?    @relation(fields: [clienteId], references: [id])
 
   @@index([fecha])
   @@index([profesionalId])
+  @@index([empresaId])
   @@map("turnos")
 }
 
@@ -5842,6 +5912,7 @@ model TareaPendiente {
   fechaVencimiento DateTime? @db.Date
   /// false = solo el usuario la ve; true = visible para administradores/jefes
   visibleJefe      Boolean   @default(false)
+  origen           String    @default("manual")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -5852,4 +5923,418 @@ model TareaPendiente {
 
   @@index([usuarioId, completada])
   @@map("tareas_pendientes")
+}
+
+model AutomationConfig {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int      @unique
+  n8nBaseUrl    String?
+  n8nApiKeyEnc  String?  // cifrado
+  webhookSecret String   // HMAC compartido
+  activo        Boolean  @default(false)
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  eventMaps     AutomationEventMap[]
+  playbooks     AutomationPlaybook[]
+  virtualWorkers AutomationVirtualWorker[]
+
+  @@map("automation_config")
+}
+
+model AutomationEventMap {
+  id              Int @id @default(autoincrement())
+  configId        Int
+  eventKey          String  // STOCK_BAJO, VENTA_EMITIDA...
+  n8nWebhookUrl   String
+  activo          Boolean @default(true)
+  filtros         Json?   // condiciones extra
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  config          AutomationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, eventKey])
+  @@map("automation_event_maps")
+}
+
+model AutomationPlaybook {
+  id          Int @id @default(autoincrement())
+  configId    Int
+  playbookKey String
+  version     Int @default(1)
+  nombre      String
+  parametros  Json
+  activo      Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  config      AutomationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, playbookKey])
+  @@map("automation_playbooks")
+}
+
+model AutomationVirtualWorker {
+  id          Int      @id @default(autoincrement())
+  configId    Int
+  nombre      String
+  rol         String
+  playbooks   String[] // playbookKeys
+  cron        String?
+  usuarioId   Int?     // usuario técnico NOP vinculado
+  activo      Boolean  @default(true)
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  config      AutomationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  usuario     Usuario?         @relation(fields: [usuarioId], references: [id])
+
+  @@map("automation_virtual_workers")
+}
+
+model AutomationExecution {
+  id            BigInt   @id @default(autoincrement())
+  empresaId     Int
+  direction     String   // outbound | inbound
+  eventKey      String?
+  status        String   // ok | error | timeout
+  requestPayload  Json?
+  responsePayload Json?
+  durationMs    Int?
+  idempotencyKey String? @unique
+  createdAt     DateTime @default(now())
+
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, createdAt])
+  @@map("automation_executions")
+}
+
+model AutomationPollQueue {
+  id             BigInt    @id @default(autoincrement())
+  empresaId      Int
+  eventKey       String
+  envelope       Json
+  idempotencyKey String?
+  delivered      Boolean   @default(false)
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  empresa       Empresa   @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, delivered, createdAt])
+  @@map("automation_poll_queue")
+}
+
+model ProductoComercial {
+  id               Int                  @id @default(autoincrement())
+  sku              String               @unique
+  nombre           String
+  descripcion      String?
+  precioArs        Decimal              @db.Decimal(12, 2)
+  limiteEventosMes Int?
+  activo           Boolean              @default(true)
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  suscripciones    SuscripcionModulo[]
+
+  @@map("productos_comerciales")
+}
+
+model SuscripcionModulo {
+  id               Int               @id @default(autoincrement())
+  empresaId        Int
+  sku              String
+  activo           Boolean           @default(true)
+  vigenciaDesde    DateTime          @default(now())
+  vigenciaHasta    DateTime?
+  limiteEventosMes Int?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  empresa          Empresa           @relation(fields: [empresaId], references: [id])
+  producto         ProductoComercial @relation(fields: [sku], references: [sku])
+
+  @@unique([empresaId, sku])
+  @@index([empresaId, activo])
+  @@map("suscripciones_modulo")
+}
+
+model UsageEvent {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  sku        String
+  eventKey   String   @default("*")
+  mes        String
+  contador   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@unique([empresaId, sku, eventKey, mes])
+  @@index([empresaId, sku, mes])
+  @@map("usage_events")
+}
+
+model PosPlu {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  productoId  Int
+  orden       Int
+  color       String?
+  etiqueta    String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empresa     Empresa  @relation("EmpresaPosPlus", fields: [empresaId], references: [id])
+  producto    Producto @relation("ProductoPosPlus", fields: [productoId], references: [id])
+
+  @@unique([empresaId, productoId])
+  @@map("pos_plus")
+}
+
+model ConexionIntegracion {
+  id              Int                  @id @default(autoincrement())
+  empresaId       Int
+  integracionId   String
+  estado          String               @default("desconectado")
+  cuentaExterna   String?
+  credencialesEnc String?              @db.Text
+  configSync      Json?
+  activo          Boolean              @default(true)
+  ultimoError     String?              @db.Text
+  tokenExpiresAt  DateTime?
+  ultimaSyncAt    DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  empresa         Empresa              @relation(fields: [empresaId], references: [id])
+  logs            IntegracionSyncLog[]
+
+  @@unique([empresaId, integracionId])
+  @@map("conexion_integraciones")
+}
+
+model IntegracionSyncLog {
+  id             Int                 @id @default(autoincrement())
+  conexionId     Int
+  direccion      String
+  entidad        String
+  estado         String
+  registrosOk    Int                 @default(0)
+  registrosError Int                 @default(0)
+  mensaje        String?             @db.Text
+  createdAt      DateTime            @default(now())
+
+  conexion       ConexionIntegracion @relation(fields: [conexionId], references: [id], onDelete: Cascade)
+
+  @@map("integracion_sync_logs")
+}
+
+model SolicitudIntegracion {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  nombreSistema String
+  sitioWeb      String?
+  syncItems     String[]
+  descripcion   String?  @db.Text
+  emailContacto String
+  usuarioId     Int?
+  createdAt     DateTime @default(now())
+
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@map("solicitud_integraciones")
+}
+
+model ConfiguracionIANotificacion {
+  id        Int      @id @default(autoincrement())
+  empresaId Int      @unique
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@map("configuraciones_ia_notificaciones")
+}
+
+model AgroGrano {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  codigo    String
+  nombre    String
+  unidad    String   @default("tn")
+  iva       Float    @default(10.5)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
+  silos     AgroSilo[]
+  pizarras  AgroPrecioPizarra[]
+  tickets   AgroTicketBalanza[]
+  contratos AgroContrato[]
+
+  @@unique([empresaId, codigo])
+  @@map("agro_granos")
+}
+
+model AgroSilo {
+  id           Int      @id @default(autoincrement())
+  empresaId    Int
+  nombre       String
+  activo       Boolean  @default(true)
+  capacidadTn  Float
+  stockActualTn Float
+  granoId      Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  empresa      Empresa   @relation(fields: [empresaId], references: [id])
+  grano        AgroGrano? @relation(fields: [granoId], references: [id])
+  tickets      AgroTicketBalanza[]
+
+  @@unique([empresaId, nombre])
+  @@map("agro_silos")
+}
+
+model AgroPrecioPizarra {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  granoId   Int
+  posicion  String
+  precio    Float
+  moneda    String   @default("ARS")
+  fuente    String
+  variacion Float?
+  fechaData DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  grano     AgroGrano @relation(fields: [granoId], references: [id])
+
+  @@map("agro_precios_pizarra")
+}
+
+model AgroTicketBalanza {
+  id               Int      @id @default(autoincrement())
+  empresaId        Int
+  numero           String
+  tipo             String
+  granoId          Int
+  proveedorId      Int?
+  siloId           Int?
+  patente          String?
+  conductor        String?
+  pesoBruto        Float
+  tara             Float
+  pesoNeto         Float
+  humedad          Float?
+  impureza         Float?
+  proteina         Float?
+  factorCalidad    Float    @default(1.0)
+  contratoId       Int?
+  cartaPorteNumero String?
+  observaciones    String?  @db.Text
+  estado           String   @default("confirmado")
+  fecha            DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  empresa          Empresa       @relation(fields: [empresaId], references: [id])
+  grano            AgroGrano     @relation(fields: [granoId], references: [id])
+  proveedor        Proveedor?    @relation(fields: [proveedorId], references: [id])
+  silo             AgroSilo?     @relation(fields: [siloId], references: [id])
+  contrato         AgroContrato? @relation(fields: [contratoId], references: [id])
+
+  @@unique([empresaId, numero])
+  @@map("agro_tickets_balanza")
+}
+
+model AgroContrato {
+  id                  Int      @id @default(autoincrement())
+  empresaId           Int
+  numero              String   @unique
+  tipo                String
+  granoId             Int
+  proveedorId         Int?
+  clienteId           Int?
+  campana             String
+  toneladasPactadas   Float
+  toneladasEntregadas Float    @default(0)
+  precioPacto         Float?
+  moneda              String   @default("ARS")
+  fechaEntrega        DateTime?
+  observaciones       String?  @db.Text
+  estado              String   @default("abierto")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  empresa             Empresa       @relation(fields: [empresaId], references: [id])
+  grano               AgroGrano     @relation(fields: [granoId], references: [id])
+  proveedor           Proveedor?    @relation(fields: [proveedorId], references: [id])
+  cliente             Cliente?      @relation(fields: [clienteId], references: [id])
+  tickets             AgroTicketBalanza[]
+  liquidaciones       AgroLiquidacion[]
+
+  @@map("agro_contratos")
+}
+
+model AgroLiquidacion {
+  id                  Int      @id @default(autoincrement())
+  empresaId           Int
+  numero              String   @unique
+  contratoId          Int
+  proveedorId         Int
+  campana             String
+  toneladasLiquidadas   Float
+  precioUnitario      Float
+  importeBruto        Float
+  descuentoCalidad    Float    @default(0)
+  retencionGanancias  Float    @default(0)
+  percepcionIva       Float    @default(0)
+  importeNeto         Float
+  estado              String   @default("pendiente")
+  fechaEmision        DateTime @default(now())
+  observaciones       String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  empresa             Empresa      @relation(fields: [empresaId], references: [id])
+  contrato            AgroContrato @relation(fields: [contratoId], references: [id])
+  proveedor           Proveedor    @relation(fields: [proveedorId], references: [id])
+
+  @@map("agro_liquidaciones")
+}
+
+model AgroLote {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int
+  nombre          String
+  superficieHa    Float
+  geoJson         Json?
+  lat             Float?
+  lon             Float?
+  cultivoActual   String?
+  campana         String?
+  renspaProductor String?
+  proveedorId     Int?
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresa         Empresa    @relation(fields: [empresaId], references: [id])
+  proveedor       Proveedor? @relation(fields: [proveedorId], references: [id])
+
+  @@map("agro_lotes")
 }

@@ -21,6 +21,7 @@ const PLAN_BASE: CuentaSeed[] = [
   // ACTIVO — Nivel 1 (rubros)
   { codigo: "1", nombre: "Activo", tipo: "activo", categoria: "Activo", nivel: 1, imputable: false },
   { codigo: "1.1", nombre: "Caja", tipo: "activo", categoria: "Disponibilidades", nivel: 2, imputable: true },
+  { codigo: "1.1.5", nombre: "Cheques en Cartera", tipo: "activo", categoria: "Disponibilidades", nivel: 3, imputable: true },
   { codigo: "1.2", nombre: "Banco Cuenta Corriente", tipo: "activo", categoria: "Disponibilidades", nivel: 2, imputable: true },
   { codigo: "1.3", nombre: "Deudores por Ventas", tipo: "activo", categoria: "Créditos", nivel: 2, imputable: true },
   { codigo: "1.4", nombre: "Mercaderías", tipo: "activo", categoria: "Bienes de Cambio", nivel: 2, imputable: true },
@@ -44,6 +45,7 @@ const PLAN_BASE: CuentaSeed[] = [
   { codigo: "2.5", nombre: "IVA a Pagar", tipo: "pasivo", categoria: "Deudas Fiscales", nivel: 2, imputable: true },
   { codigo: "2.6", nombre: "Sueldos a Pagar", tipo: "pasivo", categoria: "Deudas Sociales", nivel: 2, imputable: true },
   { codigo: "2.7", nombre: "Cargas Sociales a Pagar", tipo: "pasivo", categoria: "Deudas Sociales", nivel: 2, imputable: true },
+  { codigo: "2.8", nombre: "Cheques a Pagar", tipo: "pasivo", categoria: "Deudas Comerciales", nivel: 2, imputable: true },
 
   // PATRIMONIO NETO
   { codigo: "3", nombre: "Patrimonio Neto", tipo: "patrimonio", categoria: "Patrimonio Neto", nivel: 1, imputable: false },
@@ -208,6 +210,7 @@ export function obtenerConfigAsientosPorDefecto(rubro: string): { tipoTransaccio
     // Cobros
     { tipoTransaccion: "cobro", campo: "caja", cuentaCodigo: "1.1", cuentaNombre: "Caja" },
     { tipoTransaccion: "cobro", campo: "banco", cuentaCodigo: "1.2", cuentaNombre: "Banco Cuenta Corriente" },
+    { tipoTransaccion: "cobro", campo: "cheques_cartera", cuentaCodigo: "1.1.5", cuentaNombre: "Cheques en Cartera" },
     { tipoTransaccion: "cobro", campo: "deudores", cuentaCodigo: "1.3", cuentaNombre: "Deudores por Ventas" },
     { tipoTransaccion: "cobro", campo: "ret_iva_sufrida", cuentaCodigo: "1.7.1", cuentaNombre: "Ret. IVA sufridas" },
     { tipoTransaccion: "cobro", campo: "ret_ganancias_sufrida", cuentaCodigo: "1.7.2", cuentaNombre: "Ret. Ganancias sufridas" },
@@ -215,6 +218,7 @@ export function obtenerConfigAsientosPorDefecto(rubro: string): { tipoTransaccio
     // Pagos
     { tipoTransaccion: "pago", campo: "proveedores", cuentaCodigo: "2.1", cuentaNombre: "Proveedores" },
     { tipoTransaccion: "pago", campo: "banco", cuentaCodigo: "1.2", cuentaNombre: "Banco Cuenta Corriente" },
+    { tipoTransaccion: "pago", campo: "cheques_a_pagar", cuentaCodigo: "2.8", cuentaNombre: "Cheques a Pagar" },
     { tipoTransaccion: "pago", campo: "ret_iva_depositar", cuentaCodigo: "2.4.1", cuentaNombre: "Ret. IVA a depositar" },
     { tipoTransaccion: "pago", campo: "ret_ganancias_depositar", cuentaCodigo: "2.4.2", cuentaNombre: "Ret. Ganancias a depositar" },
     { tipoTransaccion: "pago", campo: "ret_iibb_depositar", cuentaCodigo: "2.4.3", cuentaNombre: "Ret. IIBB a depositar" },

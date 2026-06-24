@@ -1,8 +1,8 @@
 /**
  * AI Service — Motor de IA para ERP Multi-Rubro
  *
- * Dual provider: Ollama (local, gratis) + Anthropic (cloud, fallback)
- * Auto-detect: si Ollama está vivo → local. Si no → cloud si hay API key. Si no → graceful skip.
+ * Triple provider: Ollama (local) → Gemini (cloud) → Anthropic (cloud fallback)
+ * Auto-detect: Ollama vivo → local. Si no → Gemini si hay API key. Si no → Anthropic.
  *
  * SEGURIDAD:
  * - Nunca envía datos sensibles (passwords, certificados AFIP) al LLM
@@ -15,6 +15,8 @@ import { getAIConfig, AI_MODELS, type AIConfig, type AIModelConfig } from "./ai-
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
+export type AIProvider = "ollama" | "gemini" | "anthropic" | "none"
+
 export interface AIMessage {
   role: "system" | "user" | "assistant"
   content: string
@@ -23,7 +25,7 @@ export interface AIMessage {
 export interface AIResponse {
   content: string
   model: string
-  provider: "ollama" | "anthropic" | "none"
+  provider: AIProvider
   tokensUsed?: number
   durationMs: number
 }
@@ -32,10 +34,12 @@ export interface AIJsonResponse<T = unknown> {
   data: T | null
   raw: string
   model: string
-  provider: "ollama" | "anthropic" | "none"
+  provider: AIProvider
   durationMs: number
   error?: string
 }
+
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 
 // ─── SERVICE ──────────────────────────────────────────────────────────────────
 
@@ -59,12 +63,15 @@ class AIServiceImpl {
   async isAvailable(): Promise<{ available: boolean; provider: string; model: string }> {
     if (!this.config.enabled) return { available: false, provider: "none", model: "disabled" }
 
-    if (await this.isOllamaAlive()) {
+    const resolved = await this.resolveProvider()
+    if (resolved === "ollama") {
       const model = this.getModelForTier("batch")
       return { available: true, provider: "ollama", model: model.ollamaTag }
     }
-
-    if (this.config.anthropicApiKey) {
+    if (resolved === "gemini") {
+      return { available: true, provider: "gemini", model: this.config.geminiModel }
+    }
+    if (resolved === "anthropic") {
       return { available: true, provider: "anthropic", model: this.config.anthropicModel }
     }
 
@@ -88,6 +95,9 @@ class AIServiceImpl {
 
     if (provider === "ollama") {
       return this.ollamaChat(messages, tier, start)
+    }
+    if (provider === "gemini") {
+      return this.geminiChat(messages, start)
     }
     if (provider === "anthropic") {
       return this.anthropicChat(messages, start)
@@ -153,11 +163,7 @@ class AIServiceImpl {
       if (!res.ok) {
         const err = await res.text().catch(() => "unknown")
         console.error(`[AI] Ollama error ${res.status}: ${err}`)
-        // Fallback to anthropic if available
-        if (this.config.anthropicApiKey) {
-          return this.anthropicChat(messages, start)
-        }
-        return { content: "", model: model.ollamaTag, provider: "ollama", durationMs: Date.now() - start }
+        return this.cloudFallback(messages, start)
       }
 
       const body = await res.json()
@@ -170,12 +176,88 @@ class AIServiceImpl {
       }
     } catch (err) {
       console.error("[AI] Ollama request failed:", err)
+      return this.cloudFallback(messages, start)
+    } finally {
+      this.activeCalls--
+    }
+  }
+
+  // ─── GEMINI ───────────────────────────────────────────────────────────
+
+  private async geminiChat(messages: AIMessage[], start: number): Promise<AIResponse> {
+    if (!this.config.geminiApiKey) {
+      return { content: "", model: "no_key", provider: "none", durationMs: Date.now() - start }
+    }
+
+    try {
+      const systemMsg = messages.find(m => m.role === "system")?.content || ""
+      const chatMsgs = messages.filter(m => m.role !== "system")
+
+      const body: Record<string, unknown> = {
+        contents: chatMsgs.map(m => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          temperature: this.config.temperature,
+          maxOutputTokens: this.config.maxTokens,
+        },
+      }
+
+      if (systemMsg) {
+        body.systemInstruction = { parts: [{ text: systemMsg }] }
+      }
+
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs)
+
+      const res = await fetch(
+        `${GEMINI_API_BASE}/models/${this.config.geminiModel}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": this.config.geminiApiKey,
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }
+      )
+
+      clearTimeout(timeout)
+
+      if (!res.ok) {
+        const err = await res.text().catch(() => "unknown")
+        console.error(`[AI] Gemini error ${res.status}: ${err}`)
+        if (this.config.anthropicApiKey) {
+          return this.anthropicChat(messages, start)
+        }
+        return { content: "", model: this.config.geminiModel, provider: "gemini", durationMs: Date.now() - start }
+      }
+
+      const responseBody = await res.json()
+      const content = responseBody.candidates?.[0]?.content?.parts
+        ?.map((p: { text?: string }) => p.text ?? "")
+        .join("") ?? ""
+
+      const usage = responseBody.usageMetadata
+      const tokensUsed = usage
+        ? (usage.promptTokenCount ?? 0) + (usage.candidatesTokenCount ?? 0)
+        : undefined
+
+      return {
+        content,
+        model: this.config.geminiModel,
+        provider: "gemini",
+        tokensUsed,
+        durationMs: Date.now() - start,
+      }
+    } catch (err) {
+      console.error("[AI] Gemini request failed:", err)
       if (this.config.anthropicApiKey) {
         return this.anthropicChat(messages, start)
       }
-      return { content: "", model: "error", provider: "ollama", durationMs: Date.now() - start }
-    } finally {
-      this.activeCalls--
+      return { content: "", model: "error", provider: "gemini", durationMs: Date.now() - start }
     }
   }
 
@@ -228,13 +310,34 @@ class AIServiceImpl {
 
   // ─── HELPERS ──────────────────────────────────────────────────────────
 
-  private async resolveProvider(): Promise<"ollama" | "anthropic" | "none"> {
-    if (this.config.provider === "ollama" || this.config.provider === "auto") {
-      if (await this.isOllamaAlive()) return "ollama"
+  private async cloudFallback(messages: AIMessage[], start: number): Promise<AIResponse> {
+    if (this.config.geminiApiKey) {
+      const gemini = await this.geminiChat(messages, start)
+      if (gemini.content) return gemini
     }
-    if (this.config.provider === "anthropic" || this.config.provider === "auto") {
-      if (this.config.anthropicApiKey) return "anthropic"
+    if (this.config.anthropicApiKey) {
+      return this.anthropicChat(messages, start)
     }
+    return { content: "", model: "no_provider", provider: "none", durationMs: Date.now() - start }
+  }
+
+  private async resolveProvider(): Promise<AIProvider> {
+    const { provider } = this.config
+
+    if (provider === "gemini") {
+      return this.config.geminiApiKey ? "gemini" : "none"
+    }
+    if (provider === "anthropic") {
+      return this.config.anthropicApiKey ? "anthropic" : "none"
+    }
+    if (provider === "ollama") {
+      return (await this.isOllamaAlive()) ? "ollama" : "none"
+    }
+
+    // auto: Ollama → Gemini → Anthropic
+    if (await this.isOllamaAlive()) return "ollama"
+    if (this.config.geminiApiKey) return "gemini"
+    if (this.config.anthropicApiKey) return "anthropic"
     return "none"
   }
 

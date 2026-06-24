@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import { registrarAsientoCompra } from "@/lib/contabilidad/factura-hooks"
 import { eventBus } from "@/lib/events/event-bus"
 import type { CompraRegistradaPayload } from "@/lib/events/types"

@@ -16,7 +16,7 @@ function score(cultivo?: string | null) {
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ loteId: string }> }) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { loteId } = await params

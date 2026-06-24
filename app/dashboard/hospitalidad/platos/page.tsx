@@ -15,6 +15,7 @@ import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useConfirm } from "@/hooks/use-confirm"
+import { formatARS } from "@/lib/format/currency"
 
 interface Categoria {
   id: number
@@ -264,7 +265,7 @@ export default function PlatosPage() {
               columns={[
                 { key: "producto" as any, header: "Código", sortable: true, cell: (p) => <span className="font-mono text-xs">{p.producto.codigo}</span>, exportFn: (p) => p.producto.codigo },
                 { key: "nombre" as any, header: "Plato", cell: (p) => p.producto.nombre, exportFn: (p) => p.producto.nombre },
-                { key: "precio" as any, header: "Precio", sortable: true, cell: (p) => `$${p.producto.precioVenta.toFixed(2)}`, exportFn: (p) => String(p.producto.precioVenta) },
+                { key: "precio" as any, header: "Precio", sortable: true, cell: (p) => formatARS(p.producto.precioVenta), exportFn: (p) => String(p.producto.precioVenta) },
                 { key: "receta" as any, header: "Receta", cell: (p) => `${p.receta?.componentes?.length ?? 0} insumos` },
                 { key: "acciones" as any, header: "Acciones", cell: (p) => <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); abrirEditar(p) }}>Editar</Button><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); desactivarPlato(p) }}><Trash2 className="h-4 w-4 text-red-500" /></Button></div> },
               ] as DataTableColumn<Plato>[]}

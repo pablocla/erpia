@@ -282,37 +282,57 @@ export default function CapacitacionPage() {
         </div>
       </section>
 
-      {/* Sección 3: Diagnóstico de Implementación */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
+      {/* Sección 3: Diagnóstico e Wiki Técnica */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Diagnóstico de Implementación</h2>
+            <h2 className="text-lg font-semibold">Implementación y Wiki Técnica</h2>
             <p className="text-xs text-muted-foreground">
-              Mapa visual de gaps: qué está implementado, qué falta y la prioridad de cierre
+              Mapa visual de gaps, guías de arquitectura y documentación técnica para analistas y desarrolladores
             </p>
           </div>
         </div>
-        <Link href="/dashboard/capacitacion/diagnostico">
-          <Card className="group transition-all duration-200 hover:shadow-lg hover:border-red-300/50 hover:-translate-y-0.5 cursor-pointer border-red-200/30 bg-gradient-to-r from-red-500/5 to-orange-500/5">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
-                <Target className="h-6 w-6 text-red-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold group-hover:text-red-600 transition-colors">Scorecard de 17 Módulos</h3>
-                <p className="text-xs text-muted-foreground">
-                  Diagramas de flujo end-to-end con nodos color-coded (✅ implementado, ⚠️ stub, ❌ faltante) — 
-                  4 gaps críticos, 13 altos, roadmap priorizado
-                </p>
-              </div>
-              <Badge variant="destructive" className="text-[10px] shrink-0">4 Críticos</Badge>
-              <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </CardContent>
-          </Card>
-        </Link>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/dashboard/capacitacion/diagnostico">
+            <Card className="group transition-all duration-200 hover:shadow-lg hover:border-red-300/50 hover:-translate-y-0.5 cursor-pointer border-red-200/30 bg-gradient-to-r from-red-500/5 to-orange-500/5 h-full">
+              <CardContent className="p-4 flex items-center gap-4 h-full">
+                <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                  <Target className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold group-hover:text-red-600 transition-colors">Scorecard de 17 Módulos</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Diagramas de flujo con nodos color-coded (✅ implementado, ⚠️ stub, ❌ faltante).
+                  </p>
+                </div>
+                <Badge variant="destructive" className="text-[10px] shrink-0">4 Gaps</Badge>
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/dashboard/documentacion">
+            <Card className="group transition-all duration-200 hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer border-primary/20 bg-gradient-to-r from-primary/5 to-violet-500/5 h-full">
+              <CardContent className="p-4 flex items-center gap-4 h-full">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <BookOpen className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold group-hover:text-primary transition-colors">Documentación Técnica (Wiki)</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Arquitectura, API endpoints, guías impositivas (AFIP/CAEA) y configuración de servidores.
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0 border-primary/30 text-primary uppercase">v1.0.0</Badge>
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
       </section>
 
       {/* CTA final */}

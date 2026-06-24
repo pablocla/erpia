@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     accion: body.accion_alerta,
     destinatarioId: body.destinatarioId,
     emailDestino: body.emailDestino,
+    telefonoDestino: body.telefonoDestino,
     frecuenciaHoras: body.frecuenciaHoras,
   })
   return NextResponse.json(regla, { status: 201 })

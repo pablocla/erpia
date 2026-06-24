@@ -36,7 +36,7 @@ agentRegistry.register(new OnboardingAgent())
 
 const EVENT_AGENT_MAP: Record<string, boolean> = {}
 
-function wireEventToAgents(event: ERPEvent<any>) {
+async function wireEventToAgents(event: ERPEvent<any>) {
   if (!event.empresaId) return
   // Fire-and-forget: don't block event pipeline
   agentRegistry.handleEvent(event.type, event.empresaId, event.payload).catch((err) => {

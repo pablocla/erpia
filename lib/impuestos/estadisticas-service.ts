@@ -12,8 +12,8 @@ export class EstadisticasService {
       },
     })
 
-    const totalVentas = facturas.reduce((sum, f) => sum + f.total, 0)
-    const totalIVA = facturas.reduce((sum, f) => sum + f.iva, 0)
+    const totalVentas = facturas.reduce((sum, f) => sum + Number(f.total), 0)
+    const totalIVA = facturas.reduce((sum, f) => sum + Number(f.iva), 0)
     const cantidadFacturas = facturas.length
 
     return {
@@ -34,8 +34,8 @@ export class EstadisticasService {
       },
     })
 
-    const totalCompras = compras.reduce((sum, c) => sum + c.total, 0)
-    const totalIVA = compras.reduce((sum, c) => sum + c.iva, 0)
+    const totalCompras = compras.reduce((sum, c) => sum + Number(c.total), 0)
+    const totalIVA = compras.reduce((sum, c) => sum + Number(c.iva), 0)
     const cantidadCompras = compras.length
 
     return {
@@ -63,7 +63,7 @@ export class EstadisticasService {
         },
       })
 
-      const total = facturas.reduce((sum, f) => sum + f.total, 0)
+      const total = facturas.reduce((sum, f) => sum + Number(f.total), 0)
 
       ventas.push({
         mes,
@@ -97,7 +97,7 @@ export class EstadisticasService {
         cantidad: 0,
       }
 
-      actual.total += factura.total
+      actual.total += Number(factura.total)
       actual.cantidad += 1
 
       clientesMap.set(clienteId, actual)

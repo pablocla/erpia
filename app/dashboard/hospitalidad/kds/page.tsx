@@ -184,7 +184,7 @@ export default function KDSPage() {
           {conectado ? (
             <Wifi className="h-4 w-4 text-emerald-400" />
           ) : (
-            <WifiOff className="h-4 w-4 text-red-400 animate-pulse" title="Sin conexión" />
+            <span title="Sin conexión"><WifiOff className="h-4 w-4 text-red-400 animate-pulse" /></span>
           )}
           <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={fetchComandas}>
             <RefreshCw className="h-4 w-4" />

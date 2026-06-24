@@ -61,6 +61,23 @@ class EventBus {
         exito = false
         errorMsg = err instanceof Error ? err.message : String(err)
         console.error(`[EventBus] Error in handler "${registration.handlerName}":`, errorMsg)
+        
+        const payloadObj = event.payload as any
+        const empresaId = payloadObj?.empresaId || payloadObj?.empresa?.id
+        if (empresaId && typeof empresaId === "number") {
+          import("@/lib/ops/sistema-log")
+            .then((m) =>
+              m.persistSistemaLog({
+                empresaId,
+                severidad: "error",
+                categoria: "funcional",
+                contexto: `handler:${registration.handlerName}`,
+                mensaje: `Fallo en handler ${registration.handlerName}: ${errorMsg}`,
+                metadata: { eventType: event.type },
+              })
+            )
+            .catch(() => {})
+        }
       }
 
       // Fire-and-forget log — don't block the event pipeline

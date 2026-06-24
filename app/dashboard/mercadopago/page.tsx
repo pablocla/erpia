@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { mercadoPagoEstadoLabel, mercadoPagoEstadoVariant } from "@/lib/ui/status-map"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -45,14 +46,6 @@ interface Resumen {
   cantidadAprobados: number
   pendientes: number
   comisionesMP: number
-}
-
-const ESTADO_COLORS: Record<string, string> = {
-  approved: "bg-emerald-500/15 text-emerald-600",
-  pending: "bg-amber-500/15 text-amber-600",
-  rejected: "bg-red-500/15 text-red-600",
-  refunded: "bg-blue-500/15 text-blue-600",
-  cancelled: "bg-gray-500/15 text-gray-600",
 }
 
 export default function MercadoPagoPage() {
@@ -104,18 +97,16 @@ export default function MercadoPagoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">MercadoPago</h1>
-          <p className="text-muted-foreground">
-            Cobros QR, checkout online y conciliación automática
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchData}>
-          <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="MercadoPago"
+        description="Cobros QR, checkout online y conciliación automática"
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchData}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
+          </Button>
+        }
+      />
 
       <Tabs defaultValue={config ? "dashboard" : "config"}>
         <TabsList>
@@ -194,10 +185,10 @@ export default function MercadoPagoPage() {
                     <div>
                       <p className="font-semibold">{tx.descripcion ?? `Pago #${tx.mpPaymentId}`}</p>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <Badge className={ESTADO_COLORS[tx.estado] ?? ""}>{tx.estado}</Badge>
+                        <StatusBadge variant={mercadoPagoEstadoVariant(tx.estado)} label={mercadoPagoEstadoLabel(tx.estado)} />
                         <span>{tx.medioPago}</span>
                         {tx.emailPagador && <span>{tx.emailPagador}</span>}
-                        {tx.conciliado && <Badge className="bg-emerald-500/15 text-emerald-600">Conciliado</Badge>}
+                        {tx.conciliado && <StatusBadge variant="success" label="Conciliado" />}
                       </div>
                     </div>
                     <div className="text-right">
@@ -239,6 +230,6 @@ export default function MercadoPagoPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

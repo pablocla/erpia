@@ -12,9 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Cpu, Plus, Wifi, WifiOff, AlertTriangle, Activity, Thermometer, Droplets, CheckCircle2, Settings2, Gauge, Shield, Wrench } from "lucide-react"
+import { Cpu, Plus, Wifi, WifiOff, AlertTriangle, Activity, Thermometer, Droplets, CheckCircle2, Settings2, Gauge, Shield, Wrench, Sparkles } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
+import { iotNivelVariant, iotNivelLabel, iotCalidadVariant, iotCalidadLabel, activoVariant, activoLabel } from "@/lib/ui/status-map"
+import { cn } from "@/lib/utils"
 
 interface LecturaIoT {
   id: number
@@ -80,12 +83,6 @@ const TIPO_ICONS: Record<string, React.ElementType> = {
   contador: Activity,
   scanner: Cpu,
   gps: Activity,
-}
-
-const NIVEL_BADGE: Record<string, string> = {
-  info: "bg-blue-100 text-blue-700",
-  warning: "bg-yellow-100 text-yellow-700",
-  critical: "bg-red-100 text-red-700",
 }
 
 const TIPO_OPTIONS = [
@@ -301,59 +298,39 @@ export default function IoTPage() {
   const alertasCriticas = alertas.filter((a) => a.nivel === "critical" && !a.resuelta).length
   const alertasWarning = alertas.filter((a) => a.nivel === "warning" && !a.resuelta).length
 
+  const kpiItems = [
+    { label: "Dispositivos activos", value: dispositivos.filter((d) => d.activo).length, icon: Cpu },
+    { label: "Conectados ahora", value: dispConectados, icon: Wifi, iconClassName: "text-[var(--status-success)]" },
+    { label: "Alertas críticas", value: alertasCriticas, icon: AlertTriangle, iconClassName: alertasCriticas > 0 ? "text-[var(--status-error)] animate-pulse" : "" },
+    { label: "Alertas warning", value: alertasWarning, icon: AlertTriangle, iconClassName: alertasWarning > 0 ? "text-[var(--status-warning)]" : "" },
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Cpu className="h-6 w-6 text-sky-500" />
-            IoT — Internet de las Cosas
-          </h1>
-          <p className="text-muted-foreground text-sm">Dispositivos conectados, telemetría y alertas en tiempo real</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => { setLecturaForm(initialLecturaForm); setError(""); setDialogLectura(true) }} className="gap-2">
-            <Activity className="h-4 w-4" /> Registrar Lectura
-          </Button>
-          <Button onClick={() => { setForm(initialForm); setError(""); setDialogDisp(true) }} className="gap-2">
-            <Plus className="h-4 w-4" /> Nuevo Dispositivo
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="IoT — Internet de las Cosas"
+        description="Dispositivos conectados, telemetría y alertas en tiempo real"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <Cpu className="h-3.5 w-3.5" />
+            Telemetría Industrial
+          </span>
+        }
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { setLecturaForm(initialLecturaForm); setError(""); setDialogLectura(true) }} className="gap-2">
+              <Activity className="h-4 w-4" /> Registrar Lectura
+            </Button>
+            <Button onClick={() => { setForm(initialForm); setError(""); setDialogDisp(true) }} className="gap-2">
+              <Plus className="h-4 w-4" /> Nuevo Dispositivo
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Dispositivos activos</p>
-            <p className="text-2xl font-bold">{dispositivos.filter((d) => d.activo).length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 flex justify-between items-start">
-            <div>
-              <p className="text-sm text-muted-foreground">Conectados ahora</p>
-              <p className="text-2xl font-bold text-green-600">{dispConectados}</p>
-            </div>
-            <Wifi className="h-5 w-5 text-green-500 mt-1" />
-          </CardContent>
-        </Card>
-        <Card className={alertasCriticas > 0 ? "border-red-300" : ""}>
-          <CardContent className="pt-4 flex justify-between items-start">
-            <div>
-              <p className="text-sm text-muted-foreground">Alertas críticas</p>
-              <p className={`text-2xl font-bold ${alertasCriticas > 0 ? "text-red-600" : ""}`}>{alertasCriticas}</p>
-            </div>
-            <AlertTriangle className={`h-5 w-5 mt-1 ${alertasCriticas > 0 ? "text-red-500" : "text-muted-foreground"}`} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Alertas warning</p>
-            <p className={`text-2xl font-bold ${alertasWarning > 0 ? "text-yellow-600" : ""}`}>{alertasWarning}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <KpiStrip items={kpiItems} columns={4} />
 
       {/* Alertas críticas destacadas */}
       {alertasCriticas > 0 && (
@@ -379,7 +356,7 @@ export default function IoTPage() {
             )}
           </TabsTrigger>
         </TabsList>
-
+ 
         {/* Tab Dispositivos */}
         <TabsContent value="dispositivos">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
@@ -392,7 +369,7 @@ export default function IoTPage() {
               const ultimaLectura = disp.lecturas[0]
               const alertasActivas = disp.alertas.filter((a) => !a.resuelta).length
               const estaConectado = disp.ultimaConexion && (ahora.getTime() - new Date(disp.ultimaConexion).getTime()) < 5 * 60 * 1000
-
+ 
               return (
                 <Card key={disp.id} className={estaConectado ? "border-green-200" : "border-muted"}>
                   <CardHeader className="pb-2">
@@ -475,7 +452,7 @@ export default function IoTPage() {
             })}
           </div>
         </TabsContent>
-
+ 
         {/* Tab Lecturas */}
         <TabsContent value="lecturas">
           <Card className="mt-4">
@@ -487,7 +464,7 @@ export default function IoTPage() {
                   { key: "dispositivo" as any, header: "Dispositivo", cell: (l) => <div><p className="font-medium text-sm">{l.dispositivo.nombre}</p><p className="text-xs text-muted-foreground">{l.dispositivo.codigo}</p></div>, exportFn: (l) => l.dispositivo.nombre },
                   { key: "tipo" as any, header: "Tipo", cell: (l) => <span className="capitalize text-sm">{l.dispositivo.tipo}</span> },
                   { key: "valor", header: "Valor", sortable: true, cell: (l) => <span className="font-bold">{l.valor} <span className="font-normal text-sm text-muted-foreground">{l.unidad}</span></span> },
-                  { key: "calidad", header: "Calidad", cell: (l) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${l.calidad === "ok" ? "bg-green-100 text-green-700" : l.calidad === "alerta" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{l.calidad}</span> },
+                  { key: "calidad", header: "Calidad", cell: (l) => <StatusBadge variant={iotCalidadVariant(l.calidad)} label={iotCalidadLabel(l.calidad)} /> },
                 ] as DataTableColumn<LecturaIoT>[]}
                 rowKey="id"
                 searchPlaceholder="Buscar lectura..."
@@ -499,7 +476,7 @@ export default function IoTPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
+ 
         {/* Tab Alertas */}
         <TabsContent value="alertas">
           <Card className="mt-4">
@@ -511,7 +488,7 @@ export default function IoTPage() {
                   { key: "dispositivo" as any, header: "Dispositivo", cell: (a) => <div><p className="font-medium text-sm">{a.dispositivo.nombre}</p><p className="text-xs text-muted-foreground">{a.dispositivo.codigo}</p></div>, exportFn: (a) => a.dispositivo.nombre },
                   { key: "tipo", header: "Tipo", cell: (a) => <span className="capitalize text-sm">{a.tipo}</span> },
                   { key: "mensaje", header: "Mensaje", cell: (a) => <span className="text-sm">{a.mensaje}</span> },
-                  { key: "nivel", header: "Nivel", sortable: true, cell: (a) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${NIVEL_BADGE[a.nivel] || "bg-gray-100 text-gray-700"}`}>{a.nivel}</span> },
+                  { key: "nivel", header: "Nivel", sortable: true, cell: (a) => <StatusBadge variant={iotNivelVariant(a.nivel)} label={iotNivelLabel(a.nivel)} /> },
                   { key: "acciones" as any, header: "Acciones", cell: (a) => !a.resuelta ? <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={(e) => { e.stopPropagation(); resolverAlerta(a.id) }}><CheckCircle2 className="h-3 w-3" /> Resolver</Button> : <span className="text-xs text-muted-foreground">Resuelta</span> },
                 ] as DataTableColumn<AlertaIoT>[]}
                 rowKey="id"
@@ -525,7 +502,7 @@ export default function IoTPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
+ 
       {/* Dialog Nuevo Dispositivo */}
       <Dialog open={dialogDisp} onOpenChange={setDialogDisp}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -541,7 +518,7 @@ export default function IoTPage() {
               <TabsTrigger value="normas" className="text-xs gap-1"><Shield className="h-3 w-3" />Normas</TabsTrigger>
               <TabsTrigger value="hardware" className="text-xs gap-1"><Wrench className="h-3 w-3" />Hardware</TabsTrigger>
             </TabsList>
-
+ 
             {/* Tab Básico */}
             <TabsContent value="basico" className="space-y-3 mt-3">
               <div className="grid grid-cols-2 gap-3">
@@ -572,7 +549,7 @@ export default function IoTPage() {
                 <Input value={form.zonaInstalacion} onChange={(e) => setForm({ ...form, zonaInstalacion: e.target.value })} placeholder="Zona 1 — Área clasificada" />
               </div>
             </TabsContent>
-
+ 
             {/* Tab Comunicación */}
             <TabsContent value="comunicacion" className="space-y-3 mt-3">
               <div className="grid grid-cols-2 gap-3">
@@ -609,7 +586,7 @@ export default function IoTPage() {
                 <Input type="number" value={form.intervaloMuestreo} onChange={(e) => setForm({ ...form, intervaloMuestreo: e.target.value })} placeholder="60" />
               </div>
             </TabsContent>
-
+ 
             {/* Tab Medición y Umbrales */}
             <TabsContent value="medicion" className="space-y-3 mt-3">
               <div className="grid grid-cols-2 gap-3">
@@ -660,7 +637,7 @@ export default function IoTPage() {
                 <Input type="number" step="0.001" value={form.offsetCalibracion} onChange={(e) => setForm({ ...form, offsetCalibracion: e.target.value })} placeholder="0.0" />
               </div>
             </TabsContent>
-
+ 
             {/* Tab Normas Industriales */}
             <TabsContent value="normas" className="space-y-3 mt-3">
               <div className="space-y-1">
@@ -704,7 +681,7 @@ export default function IoTPage() {
                 />
               </div>
             </TabsContent>
-
+ 
             {/* Tab Hardware */}
             <TabsContent value="hardware" className="space-y-3 mt-3">
               <div className="grid grid-cols-2 gap-3">
@@ -744,7 +721,7 @@ export default function IoTPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+ 
       {/* Dialog Registrar Lectura */}
       <Dialog open={dialogLectura} onOpenChange={setDialogLectura}>
         <DialogContent className="max-w-sm">
@@ -790,6 +767,6 @@ export default function IoTPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

@@ -1,10 +1,3 @@
-/**
- * CITI Ventas/Compras Service (RG 3685)
- *
- * Genera archivos CITI en formato AFIP con campos fijos.
- * Complementa el Libro IVA Digital (RG 4597) con formato legacy.
- */
-
 import { prisma } from "@/lib/prisma"
 
 // ─── CITI Ventas ────────────────────────────────────────────────────────────
@@ -102,7 +95,7 @@ export async function generarCITICompras(empresaId: number, periodo: string) {
     where: {
       empresaId,
       fecha: { gte: desde, lte: hasta },
-      estado: { not: "anulada" },
+      deletedAt: null,
     },
     include: {
       proveedor: { select: { cuit: true, nombre: true } },

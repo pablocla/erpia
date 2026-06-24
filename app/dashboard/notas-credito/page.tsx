@@ -33,6 +33,13 @@ import {
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
+import { AfipStatusBadge } from "@/components/fiscal/afip-status-badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { notaCreditoEstadoLabel, notaCreditoEstadoVariant } from "@/lib/ui/status-map"
+import type { PosAfipStatus } from "@/lib/pos/pos-afip-status"
+import { authFetch } from "@/lib/stores"
+import { useToast } from "@/hooks/use-toast"
 
 type NC = {
   id: number
@@ -71,7 +78,7 @@ type FacturaDetalle = {
   lineas: LineaFactura[]
 }
 
-const ESTADOS_NC = ["pendiente", "emitida", "anulada"]
+const ESTADOS_NC = ["pendiente", "pendiente_cae", "emitida", "anulada"]
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 }).format(v)
@@ -82,6 +89,7 @@ function formatPV(pv: number, n: number) {
 }
 
 export default function NotasCreditoPage() {
+  const { toast } = useToast()
   const [ncs, setNcs] = useState<NC[]>([])
   const [loading, setLoading] = useState(false)
   const [busqueda, setBusqueda] = useState("")
@@ -97,6 +105,9 @@ export default function NotasCreditoPage() {
   const [selectedLineaId, setSelectedLineaId] = useState<number | null>(null)
   const [cantidadNC, setCantidadNC] = useState("1")
   const [emitting, setEmitting] = useState(false)
+  const [ultimaEmision, setUltimaEmision] = useState<FiscalEmissionData | null>(null)
+  const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
+  const [reintentando, setReintentando] = useState(false)
   const [error, setError] = useState("")
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
@@ -111,13 +122,33 @@ export default function NotasCreditoPage() {
   const cargar = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/notas-credito", { headers })
+      const [res, resAfip] = await Promise.all([
+        fetch("/api/notas-credito", { headers }),
+        fetch("/api/afip/status", { headers }),
+      ])
       const data = await res.json()
       setNcs(Array.isArray(data.data) ? data.data : [])
+      if (resAfip.ok) setAfipStatus(await resAfip.json())
     } finally {
       setLoading(false)
     }
   }, [headers])
+
+  const reintentarCae = async () => {
+    setReintentando(true)
+    try {
+      const res = await authFetch("/api/afip/reintentar-cae", { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error AFIP", description: json.error })
+        return
+      }
+      toast({ title: "Sincronización AFIP", description: json.mensaje })
+      await cargar()
+    } finally {
+      setReintentando(false)
+    }
+  }
 
   const cargarFactura = useCallback(async () => {
     if (!facturaId) return
@@ -205,10 +236,28 @@ export default function NotasCreditoPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "Error al emitir NC")
+      if (!res.ok && res.status !== 202) {
+        setError(data.afipError || data.error || "Error al emitir NC")
         return
       }
+
+      setUltimaEmision({
+        success: data.afipOk ?? !!data.cae,
+        numero: data.numero,
+        tipo: data.tipo,
+        cae: data.cae,
+        vencimientoCAE: data.vencimientoCAE,
+        qrBase64: data.qrBase64,
+        error: data.afipError,
+        pendienteCae: data.estado === "pendiente_cae",
+      })
+
+      if (data.afipOk) {
+        toast({ title: "NC emitida en AFIP", description: `CAE ${data.cae}` })
+      } else if (data.estado === "pendiente_cae") {
+        toast({ title: "NC guardada — pendiente CAE", variant: "destructive" })
+      }
+
       setModal(false)
       setFacturaId("")
       setMotivo("")
@@ -224,27 +273,31 @@ export default function NotasCreditoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="dashboard-surface rounded-xl p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-2">
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Notas de Crédito"
+        description="Reversa fiscal, contable y de stock sobre facturas emitidas"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
             Gestión de ajustes y devoluciones
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Notas de Crédito</h1>
-          <p className="text-muted-foreground text-sm mt-1">Reversa fiscal, contable y de stock sobre facturas emitidas</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={cargar} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
-          </Button>
-          <Button onClick={() => setModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Nota de Crédito
-          </Button>
-        </div>
-      </div>
+          </span>
+        }
+        statusSlot={afipStatus ? <AfipStatusBadge status={afipStatus} /> : undefined}
+        actions={
+          <>
+            <Button variant="outline" onClick={cargar} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+            <Button onClick={() => setModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Nota de Crédito
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
@@ -264,11 +317,20 @@ export default function NotasCreditoPage() {
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" />Pendientes</p>
-            <p className="text-2xl font-bold">{ncs.filter((n) => n.estado === "pendiente").length}</p>
+            <p className="text-2xl font-bold">{ncs.filter((n) => n.estado === "pendiente" || n.estado === "pendiente_cae").length}</p>
             <p className="text-xs text-muted-foreground mt-1">Requieren atención</p>
           </CardContent>
         </Card>
       </div>
+
+      {ultimaEmision && (
+        <FiscalEmissionResult
+          data={ultimaEmision}
+          title="Última nota de crédito"
+          onRetry={ultimaEmision.pendienteCae ? reintentarCae : undefined}
+          retrying={reintentando}
+        />
+      )}
 
       <Card>
         <CardHeader className="pb-3">
@@ -294,7 +356,30 @@ export default function NotasCreditoPage() {
               { key: "factura" as any, header: "Factura origen", cell: (nc) => <span className="font-mono text-xs">{nc.factura ? `FAC ${nc.factura.tipo} ${formatPV(nc.factura.puntoVenta, nc.factura.numero)}` : "—"}</span> },
               { key: "motivo", header: "Motivo", cell: (nc) => <span className="text-muted-foreground max-w-[200px] truncate block">{nc.motivo}</span> },
               { key: "total", header: "Importe", align: "right", sortable: true, cell: (nc) => <span className="font-bold text-red-600">-{formatCurrency(nc.total)}</span> },
-              { key: "estado", header: "Estado", cell: (nc) => <Badge variant={nc.estado === "emitida" ? "default" : nc.estado === "anulada" ? "destructive" : "secondary"} className="text-xs">{nc.estado}</Badge> },
+              {
+                key: "estado",
+                header: "Estado",
+                cell: (nc) => (
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge
+                      variant={notaCreditoEstadoVariant(nc.estado)}
+                      label={notaCreditoEstadoLabel(nc.estado)}
+                    />
+                    {nc.estado === "pendiente_cae" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); void reintentarCae() }}
+                        disabled={reintentando}
+                        title="Reintentar CAE"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${reintentando ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
             ] as DataTableColumn<NC>[]}
             rowKey="id"
             searchPlaceholder="Buscar nota de crédito..."
@@ -410,6 +495,6 @@ export default function NotasCreditoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

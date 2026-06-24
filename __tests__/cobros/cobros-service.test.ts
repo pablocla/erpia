@@ -6,6 +6,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { mockPrismaClient } from "../setup"
 import { CobrosService } from "@/lib/cobros/cobros-service"
 
+vi.mock("@/lib/contabilidad/periodo-fiscal-service", () => ({
+  periodoFiscalService: {
+    validarPeriodoAbierto: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+
 const service = new CobrosService()
 
 beforeEach(() => {

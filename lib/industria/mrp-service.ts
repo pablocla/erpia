@@ -62,7 +62,7 @@ export async function ejecutarMRP(empresaId: number, horizonte: number = 30) {
       where: {
         empresaId,
         estado: { in: ["confirmado", "en_preparacion"] },
-        fechaEntrega: { lte: fechaHorizonte },
+        fechaEntregaEst: { lte: fechaHorizonte },
       },
       include: { lineas: true },
     })
@@ -71,13 +71,14 @@ export async function ejecutarMRP(empresaId: number, horizonte: number = 30) {
 
     for (const pedido of pedidos) {
       for (const linea of pedido.lineas) {
+        if (!linea.productoId) continue
         const actual = demandaPorProducto.get(linea.productoId) ?? {
           cantidad: 0,
-          fechaMin: pedido.fechaEntrega ?? new Date(),
+          fechaMin: pedido.fechaEntregaEst ?? new Date(),
         }
-        actual.cantidad += linea.cantidad - (linea.cantidadEntregada ?? 0)
-        if (pedido.fechaEntrega && pedido.fechaEntrega < actual.fechaMin) {
-          actual.fechaMin = pedido.fechaEntrega
+        actual.cantidad += Number(linea.cantidad) - Number(linea.cantidadEntregada ?? 0)
+        if (pedido.fechaEntregaEst && pedido.fechaEntregaEst < actual.fechaMin) {
+          actual.fechaMin = pedido.fechaEntregaEst
         }
         demandaPorProducto.set(linea.productoId, actual)
       }
@@ -116,19 +117,20 @@ export async function ejecutarMRP(empresaId: number, horizonte: number = 30) {
       if (!bom) continue
 
       for (const comp of bom.componentes) {
+        if (!comp.productoId) continue
         const cantidadNecesaria = comp.cantidad * sug.cantidad
-        const prodComp = productos.find((p) => p.id === comp.insumoId)
+        const prodComp = productos.find((p) => p.id === comp.productoId)
         if (!prodComp) continue
 
         if (prodComp.stock < cantidadNecesaria) {
           const faltante = cantidadNecesaria - prodComp.stock
           // Evitar duplicados
           const yaExiste = sugerencias.find(
-            (s) => s.productoId === comp.insumoId && s.tipo === "comprar",
+            (s) => s.productoId === comp.productoId && s.tipo === "comprar",
           )
           if (!yaExiste) {
             sugerencias.push({
-              productoId: comp.insumoId,
+              productoId: comp.productoId,
               tipo: "comprar",
               cantidad: Math.ceil(faltante),
               fechaNecesidad: sug.fechaNecesidad,

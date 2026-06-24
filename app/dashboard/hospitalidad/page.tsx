@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,9 +13,12 @@ import { Spinner } from "@/components/ui/spinner"
 import { useToast } from "@/hooks/use-toast"
 import {
   UtensilsCrossed, Users, Clock, Plus, Trash2,
-  CheckCircle2, Receipt, Coffee,
+  CheckCircle2, Receipt, Coffee, Sparkles,
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
+import { mesaEstadoVariant, mesaEstadoLabel } from "@/lib/ui/status-map"
+import { cn } from "@/lib/utils"
 
 type EstadoMesa = "libre" | "ocupada" | "reservada"
 
@@ -60,18 +63,6 @@ interface Salon {
 interface Cliente {
   id: number
   nombre: string
-}
-
-const ESTADO_COLORES: Record<string, string> = {
-  libre: "bg-green-100 border-green-300 text-green-800",
-  ocupada: "bg-blue-100 border-blue-300 text-blue-800",
-  reservada: "bg-yellow-100 border-yellow-300 text-yellow-800",
-}
-
-const ESTADO_LABELS: Record<string, string> = {
-  libre: "Libre",
-  ocupada: "Ocupada",
-  reservada: "Reservada",
 }
 
 export default function HospitalidadPage() {
@@ -161,7 +152,7 @@ export default function HospitalidadPage() {
         }),
       })
       if (res.ok) {
-        toast({ title: "Comanda registrada", description: `Mesa ${mesaSeleccionada.numero} actualizada.`, variant: "success" })
+        toast({ title: "Comanda registrada", description: `Mesa ${mesaSeleccionada.numero} actualizada.`, variant: "default" })
         setNuevoItem({ productoId: "", nombre: "", precio: "", cantidad: "1" })
         await cargarDatos()
         setVistaComanda(false)
@@ -197,7 +188,7 @@ export default function HospitalidadPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        toast({ title: "Comanda facturada", description: `Factura emitida con ID ${data.facturaId}.`, variant: "success" })
+        toast({ title: "Comanda facturada", description: `Factura emitida con ID ${data.facturaId}.`, variant: "default" })
         setClienteFacturarId("")
         setVistaComanda(false)
         await cargarDatos()
@@ -213,19 +204,28 @@ export default function HospitalidadPage() {
 
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
 
+  const kpiItems = [
+    { label: "Libres", value: resumen.libres, icon: Coffee, iconClassName: "text-[var(--status-success)]" },
+    { label: "Ocupadas", value: resumen.ocupadas, icon: Users, iconClassName: "text-[var(--status-info)]" },
+    { label: "Total mesas", value: resumen.totalMesas, icon: UtensilsCrossed },
+    { label: "Comandas abiertas", value: resumen.comandasAbiertas, icon: Clock, iconClassName: "text-[var(--status-warning)]" },
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-4 sm:flex sm:items-end sm:justify-between sm:space-y-0">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <UtensilsCrossed className="h-7 w-7" />
-            Hospitalidad
-          </h1>
-          <p className="text-muted-foreground">Gestion de mesas, comandas y sala</p>
-        </div>
-        <div className="flex flex-col gap-3 sm:items-end">
+    <PageShell>
+      <PageHeader
+        title="Hospitalidad"
+        description="Gestión de mesas, comandas y salón"
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <UtensilsCrossed className="h-3.5 w-3.5" />
+            Gastronomía
+          </span>
+        }
+        actions={
           <div className="flex flex-wrap gap-2 items-center">
-            <Label className="text-xs text-muted-foreground">Salon</Label>
+            <Label className="text-xs text-muted-foreground">Salón</Label>
             <Select value={selectedSalonId ? String(selectedSalonId) : "__all__"} onValueChange={(value) => setSelectedSalonId(value === "__all__" ? null : Number(value))}>
               <SelectTrigger className="h-8 text-xs min-w-[180px]">
                 <SelectValue />
@@ -239,20 +239,11 @@ export default function HospitalidadPage() {
             </Select>
             <Button variant="outline" size="sm" onClick={cargarDatos} className="h-8">Actualizar</Button>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium">{resumen.ocupadas} mesas ocupadas</p>
-            <p className="text-xs text-muted-foreground">{resumen.libres} libres de {resumen.totalMesas}</p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Libres</p><p className="text-2xl font-bold text-green-700">{resumen.libres}</p></CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Ocupadas</p><p className="text-2xl font-bold text-blue-700">{resumen.ocupadas}</p></CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Total mesas</p><p className="text-2xl font-bold">{resumen.totalMesas}</p></CardContent></Card>
-        <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Comandas abiertas</p><p className="text-2xl font-bold text-amber-700">{resumen.comandasAbiertas}</p></CardContent></Card>
-      </div>
+      <KpiStrip items={kpiItems} columns={4} />
 
       {/* Salones */}
       {salones.length > 1 && (
@@ -265,7 +256,7 @@ export default function HospitalidadPage() {
 
       {/* Mapa de mesas */}
       <Card>
-        <CardHeader><CardTitle>Salon {"\u2014"} Vista de Mesas</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Salón {"\u2014"} Vista de Mesas</CardTitle></CardHeader>
         <CardContent>
           {mesas.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -274,17 +265,29 @@ export default function HospitalidadPage() {
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {mesas.map(mesa => (
-                <button key={mesa.id} className={`border-2 rounded-xl p-3 text-center transition-all hover:shadow-md ${ESTADO_COLORES[mesa.estado] ?? ESTADO_COLORES.libre}`} onClick={() => abrirMesa(mesa)}>
-                  <p className="text-lg font-bold">Mesa {mesa.numero}</p>
-                  <div className="flex justify-center gap-1 my-1">
-                    {Array.from({ length: mesa.capacidad }).map((_, i) => (<Users key={i} className="h-3 w-3" />))}
-                  </div>
-                  <p className="text-xs font-medium">{ESTADO_LABELS[mesa.estado] ?? mesa.estado}</p>
-                  {mesa.comandas.length > 0 && mesa.comandas[0].mozo && <p className="text-xs opacity-70">{mesa.comandas[0].mozo}</p>}
-                  {mesa.comandas.length > 0 && <Badge className="mt-1 text-xs h-4">{mesa.comandas[0].lineas.length} items</Badge>}
-                </button>
-              ))}
+              {mesas.map(mesa => {
+                const variant = mesaEstadoVariant(mesa.estado)
+                const mesaColorClasses = `bg-[var(--status-${variant}-muted)] border-[var(--status-${variant}-border)] text-[var(--status-${variant}-foreground)]`
+                
+                return (
+                  <button 
+                    key={mesa.id} 
+                    className={cn(
+                      "border-2 rounded-xl p-3 text-center transition-all hover:shadow-md hover:scale-105", 
+                      mesaColorClasses
+                    )} 
+                    onClick={() => abrirMesa(mesa)}
+                  >
+                    <p className="text-lg font-bold">Mesa {mesa.numero}</p>
+                    <div className="flex justify-center gap-1 my-1">
+                      {Array.from({ length: mesa.capacidad }).map((_, i) => (<Users key={i} className="h-3 w-3" />))}
+                    </div>
+                    <p className="text-xs font-medium">{mesaEstadoLabel(mesa.estado)}</p>
+                    {mesa.comandas.length > 0 && mesa.comandas[0].mozo && <p className="text-xs opacity-70">{mesa.comandas[0].mozo}</p>}
+                    {mesa.comandas.length > 0 && <Badge className="mt-1 text-xs h-4">{mesa.comandas[0].lineas.length} items</Badge>}
+                  </button>
+                )
+              })}
             </div>
           )}
         </CardContent>
@@ -297,9 +300,10 @@ export default function HospitalidadPage() {
             <DialogTitle className="flex items-center gap-2">
               <UtensilsCrossed className="h-5 w-5" />
               Mesa {mesaSeleccionada?.numero}
-              <Badge className={ESTADO_COLORES[mesaSeleccionada?.estado ?? "libre"]}>
-                {ESTADO_LABELS[mesaSeleccionada?.estado ?? "libre"]}
-              </Badge>
+              <StatusBadge 
+                variant={mesaEstadoVariant(mesaSeleccionada?.estado ?? "libre")} 
+                label={mesaEstadoLabel(mesaSeleccionada?.estado ?? "libre")} 
+              />
             </DialogTitle>
           </DialogHeader>
 
@@ -344,7 +348,7 @@ export default function HospitalidadPage() {
               <div>
                 <p className="text-muted-foreground text-sm text-center py-4">Sin comanda abierta</p>
                 <div className="space-y-3 border-t pt-4">
-                  <h4 className="text-sm font-semibold">Agregar item rapido</h4>
+                  <h4 className="text-sm font-semibold">Agregar item rápido</h4>
                   <div className="grid grid-cols-3 gap-2">
                     <Select
                       value={nuevoItem.productoId || "__manual__"}
@@ -388,6 +392,6 @@ export default function HospitalidadPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

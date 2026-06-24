@@ -1144,7 +1144,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={s.ventasPorMes} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="mes" className="text-xs" tick={{ fontSize: 11 }} />

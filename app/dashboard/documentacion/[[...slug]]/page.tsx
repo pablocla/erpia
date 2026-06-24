@@ -1,46 +1,14 @@
 import * as fs from "fs"
 import * as path from "path"
 import matter from "gray-matter"
-import { marked } from "marked"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import DocClient from "@/components/docs/doc-client"
 import { ArrowLeft, BookOpen, Clock, Tag, User } from "lucide-react"
+import { loadMdx } from "@/lib/docs/load-mdx"
 
-const WORKSPACE = "C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina"
-const DOCS_DIR = path.join(WORKSPACE, "content", "docs")
-
-// Configure marked renderer for custom classes and anchors
-const renderer = {
-  heading(text: string, level: number) {
-    const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-    const levelClasses: Record<number, string> = {
-      1: "text-3xl font-extrabold text-foreground mb-6",
-      2: "text-xl font-bold text-foreground mt-8 mb-4 border-b pb-1 border-border/40",
-      3: "text-lg font-semibold text-foreground mt-6 mb-3",
-    }
-    const cls = levelClasses[level] || "text-base font-medium mt-4 mb-2"
-    return `<h${level} id="${id}" class="scroll-mt-20 group relative ${cls}">${text}<a href="#${id}" class="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-primary font-mono text-sm">#</a></h${level}>`
-  },
-  code(code: string, infostring: string | undefined) {
-    if (infostring === "mermaid") {
-      return `<pre class="mermaid bg-slate-900/50 p-4 rounded-xl border border-slate-800 my-6 overflow-x-auto text-center">${code}</pre>`
-    }
-    return `<pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 my-6 overflow-x-auto"><code class="language-${infostring || "plaintext"} text-slate-200 text-xs font-mono">${code}</code></pre>`
-  },
-  table(header: string, body: string) {
-    return `<div class="overflow-x-auto my-6"><table class="w-full text-left border-collapse border border-border"><thead class="bg-muted"><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>`
-  },
-  tablerow(content: string) {
-    return `<tr class="border-b border-border hover:bg-muted/30">${content}</tr>`
-  },
-  tablecell(content: string, flags: { header: boolean; align: string | null }) {
-    const tag = flags.header ? "th" : "td"
-    return `<${tag} class="p-3 border border-border text-xs">${content}</${tag}>`
-  }
-}
-
-marked.use({ renderer })
+const DOCS_DIR = path.join(process.cwd(), "content", "docs")
 
 interface SidebarItem {
   slug: string
@@ -67,27 +35,30 @@ function getSidebarItems(): SidebarCategory[] {
       if (stat.isDirectory()) {
         scanDir(fullPath, baseSlug ? `${baseSlug}/${file}` : file)
       } else if (file.endsWith(".mdx") || file.endsWith(".md")) {
-        const fileContent = fs.readFileSync(fullPath, "utf-8")
-        const { data } = matter(fileContent)
-        const slug = baseSlug 
-          ? `${baseSlug}/${file.replace(/\.mdx?$/, "")}`
-          : file.replace(/\.mdx?$/, "")
+        try {
+          const fileContent = fs.readFileSync(fullPath, "utf-8")
+          const { data } = matter(fileContent)
+          const fileSlug = file.replace(/\.mdx?$/, "")
+          const slug = baseSlug 
+            ? `${baseSlug}/${fileSlug}`
+            : fileSlug
+            
+          if (slug === "index") return // Skip root index as its own item
+
+          const parts = slug.split("/")
+          const catName = parts.length > 1 ? parts[0] : "General"
           
-        if (slug === "index") return // Skip root index as its own item
+          const item: SidebarItem = {
+            slug,
+            title: data.title || fileSlug,
+            audience: data.audience || "all"
+          }
 
-        const parts = slug.split("/")
-        const catName = parts.length > 1 ? parts[0] : "General"
-        
-        const item: SidebarItem = {
-          slug,
-          title: data.title || file.replace(/\.mdx?$/, ""),
-          audience: data.audience || "all"
-        }
-
-        if (!categories[catName]) {
-          categories[catName] = []
-        }
-        categories[catName].push(item)
+          if (!categories[catName]) {
+            categories[catName] = []
+          }
+          categories[catName].push(item)
+        } catch { /* ignore parsing errors of individual files during sidebar generation */ }
       }
     })
   }
@@ -104,13 +75,15 @@ export default async function DocumentacionPage({ params }: { params: Promise<{ 
   const { slug } = await params
   const currentSlugPath = slug ? slug.join("/") : "index"
   
-  let filePath = path.join(DOCS_DIR, `${currentSlugPath}.mdx`)
-  if (!fs.existsSync(filePath)) {
-    filePath = path.join(DOCS_DIR, `${currentSlugPath}.md`)
+  let doc
+  try {
+    doc = await loadMdx(currentSlugPath)
+  } catch (error) {
+    console.error("Error al cargar MDX:", error)
   }
 
   // Fallback if not found
-  if (!fs.existsSync(filePath)) {
+  if (!doc) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
@@ -125,15 +98,11 @@ export default async function DocumentacionPage({ params }: { params: Promise<{ 
     )
   }
 
-  const fileContent = fs.readFileSync(filePath, "utf-8")
-  const { data, content } = matter(fileContent)
-  const html = await marked.parse(content)
-
-  // Extract H2 and H3 for TOC
+  // Extract H2 and H3 for TOC from raw content
   const headingRegex = /^(##|###) +(.*)$/gm
   const toc: { level: number; text: string; id: string }[] = []
   let match
-  while ((match = headingRegex.exec(content)) !== null) {
+  while ((match = headingRegex.exec(doc.rawContent)) !== null) {
     const level = match[1].length
     const text = match[2].trim()
     const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-")
@@ -187,44 +156,44 @@ export default async function DocumentacionPage({ params }: { params: Promise<{ 
       <article className="flex-1 min-w-0 max-w-4xl bg-card/40 backdrop-blur-md rounded-2xl border p-6 md:p-8">
         {/* Meta badges */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {data.audience && (
+          {doc.audience && (
             <Badge variant="secondary" className="gap-1 text-[10px] uppercase">
-              <User className="h-3 w-3" /> {data.audience}
+              <User className="h-3 w-3" /> {doc.audience}
             </Badge>
           )}
-          {data.layer && (
+          {doc.layer && (
             <Badge variant="outline" className="text-[10px] uppercase border-primary/30 text-primary">
-              Capa: {data.layer}
+              Capa: {doc.layer}
             </Badge>
           )}
-          {data.last_verified && (
-            <Badge variant="ghost" className="gap-1 text-[10px] text-muted-foreground">
-              <Clock className="h-3 w-3" /> Verificado: {data.last_verified}
+          {doc.last_verified && (
+            <Badge variant="outline" className="gap-1 text-[10px] text-muted-foreground">
+              <Clock className="h-3 w-3" /> Verificado: {doc.last_verified}
             </Badge>
           )}
         </div>
 
         <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-foreground font-sans">
-          {data.title || "Documentación"}
+          {doc.title}
         </h1>
-        {data.description && (
+        {doc.description && (
           <p className="text-muted-foreground text-sm mb-6 border-b pb-4 border-border/40 italic">
-            {data.description}
+            {doc.description}
           </p>
         )}
 
         {/* Rendered HTML */}
         <div 
           className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed text-xs space-y-4"
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: doc.html }}
         />
 
         {/* Tags footer */}
-        {data.tags && Array.isArray(data.tags) && (
+        {doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0 && (
           <div className="flex items-center gap-2 mt-8 pt-4 border-t border-border/40">
             <Tag className="h-3.5 w-3.5 text-muted-foreground" />
             <div className="flex gap-1.5 flex-wrap">
-              {data.tags.map((tag: string) => (
+              {doc.tags.map((tag: string) => (
                 <Badge key={tag} variant="secondary" className="text-[10px]">
                   #{tag}
                 </Badge>

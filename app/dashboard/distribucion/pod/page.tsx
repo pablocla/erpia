@@ -171,7 +171,7 @@ export default function PODPage() {
     onRefresh: buscarHoja,
   }))
 
-  const buscarHoja = async () => {
+  async function buscarHoja() {
     if (!numeroHoja.trim()) return
     setLoading(true); setError("")
     try {

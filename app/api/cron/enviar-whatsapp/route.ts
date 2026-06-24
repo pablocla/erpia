@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const mensajes = await prisma.mensajePendienteWhatsApp.findMany({
       where: {
         estado: "aprobado",
-        prioridad: { gte: 8 },
+        prioridad: { gte: 7 },
       },
       orderBy: [{ prioridad: "desc" }, { createdAt: "asc" }],
       take: 20,

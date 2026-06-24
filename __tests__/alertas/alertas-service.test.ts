@@ -4,6 +4,30 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { mockPrismaClient } from "../setup"
+
+vi.mock("@/lib/ai/notificacion-ia-service", () => ({
+  crearAlertaIAConNotificacion: vi.fn().mockResolvedValue({ alerta: { id: 99 }, notificados: 1 }),
+}))
+
+vi.mock("@/lib/alertas/whatsapp-regla-dispatcher", () => ({
+  encolarWhatsAppDesdeRegla: vi.fn().mockResolvedValue(0),
+}))
+
+vi.mock("@/lib/ai/ia-notificacion-config", () => ({
+  getIANotificacionConfig: vi.fn().mockResolvedValue({
+    umbrales: {
+      stockCriticoProductos: 0,
+      diasCxcVencida: 30,
+      diasCxpVencida: 30,
+      ventaSemanalMinima: 100000,
+      diferenciaCajaMaxima: 10000,
+    },
+    prioridades: { notificarAlta: true, notificarMedia: true, notificarBaja: false },
+    destinatarios: [],
+    agentesNotificacion: {},
+    evaluarReglasEnCron: true,
+  }),
+}))
 import {
   crearReglaAlerta,
   listarReglasAlerta,
@@ -95,6 +119,10 @@ describe("Alertas Service", () => {
           tipoRegla: "stock_bajo",
           condicion: JSON.stringify({ operador: "mayor", valor: 0 }),
           activo: true,
+          frecuenciaHoras: 0,
+          destinatarioId: null,
+          emailDestino: null,
+          accion: "notificacion",
         },
       ])
       mockPrismaClient.producto.findMany.mockResolvedValue([
@@ -117,6 +145,10 @@ describe("Alertas Service", () => {
           tipoRegla: "cxc_vencida",
           condicion: JSON.stringify({ operador: "mayor", valor: 7 }),
           activo: true,
+          frecuenciaHoras: 0,
+          destinatarioId: null,
+          emailDestino: null,
+          accion: "notificacion",
         },
       ])
       mockPrismaClient.cuentaCobrar.count.mockResolvedValue(5)
@@ -128,6 +160,35 @@ describe("Alertas Service", () => {
       expect(result[0].mensaje).toContain("5 cuentas a cobrar vencidas")
     })
 
+    it("should encolar whatsapp when accion is whatsapp", async () => {
+      const { encolarWhatsAppDesdeRegla } = await import("@/lib/alertas/whatsapp-regla-dispatcher")
+
+      mockPrismaClient.reglaAlerta.findMany.mockResolvedValue([
+        {
+          id: 4,
+          nombre: "Stock WA",
+          tipoRegla: "stock_bajo",
+          condicion: JSON.stringify({ operador: "mayor", valor: 0, telefonoDestino: "11 5555-1234" }),
+          activo: true,
+          frecuenciaHoras: 0,
+          destinatarioId: null,
+          emailDestino: null,
+          accion: "whatsapp",
+        },
+      ])
+      mockPrismaClient.producto.findMany.mockResolvedValue([
+        { id: 1, nombre: "Crítico", stock: 1, stockMinimo: 10 },
+      ])
+      mockPrismaClient.reglaAlerta.update.mockResolvedValue({})
+      vi.mocked(encolarWhatsAppDesdeRegla).mockResolvedValue(1)
+
+      const result = await evaluarReglas(empresaId)
+
+      expect(result[0].disparada).toBe(true)
+      expect(result[0].whatsappEncolados).toBe(1)
+      expect(encolarWhatsAppDesdeRegla).toHaveBeenCalledOnce()
+    })
+
     it("should not trigger when no issues", async () => {
       mockPrismaClient.reglaAlerta.findMany.mockResolvedValue([
         {
@@ -136,6 +197,10 @@ describe("Alertas Service", () => {
           tipoRegla: "stock_bajo",
           condicion: JSON.stringify({ operador: "mayor", valor: 0 }),
           activo: true,
+          frecuenciaHoras: 0,
+          destinatarioId: null,
+          emailDestino: null,
+          accion: "notificacion",
         },
       ])
       mockPrismaClient.producto.findMany.mockResolvedValue([

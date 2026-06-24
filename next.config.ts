@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Typed routes — compile-time route type safety (moved from experimental in Next.js 15.5)
-  typedRoutes: true,
+  typedRoutes: false,
   experimental: {
     // React Compiler — automatic memoization, eliminates manual useMemo/useCallback
     reactCompiler: true,

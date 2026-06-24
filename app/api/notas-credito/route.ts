@@ -5,6 +5,7 @@ import { z } from "zod"
 import { onNCEmitida } from "@/lib/contabilidad/factura-hooks"
 import { eventBus } from "@/lib/events/event-bus"
 import type { NCEmitidaPayload } from "@/lib/events/types"
+import { emitirNotaCreditoAfip } from "@/lib/afip/emitir-nota-credito-afip"
 // Ensure event handlers are registered
 import "@/lib/stock/stock-service"
 import "@/lib/cc-cp/cuentas-service"
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
         subtotal,
         iva,
         total,
-        estado: "emitida",
+        estado: "pendiente_cae",
         facturaId: factura.id,
         clienteId: factura.clienteId,
         empresaId: ctx.auth.empresaId,
@@ -226,21 +227,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Trigger accounting hook
-    await onNCEmitida(nc.id)
+    const afip = await emitirNotaCreditoAfip(nc.id)
 
-    // Emit event for stock reentry + CC adjustment
-    await eventBus.emit<NCEmitidaPayload>({
-      type: "NC_EMITIDA",
-      payload: {
-        notaCreditoId: nc.id,
-        facturaId: factura.id,
-        clienteId: factura.clienteId,
-        total: nc.total,
-        motivo,
-      },
-      timestamp: new Date(),
-    })
+    if (afip.ok) {
+      await onNCEmitida(nc.id)
+      await eventBus.emit<NCEmitidaPayload>({
+        type: "NC_EMITIDA",
+        payload: {
+          notaCreditoId: nc.id,
+          facturaId: factura.id,
+          clienteId: factura.clienteId,
+          total: nc.total,
+          motivo,
+        },
+        timestamp: new Date(),
+      })
+    }
+
+    const ncActualizada = await prisma.notaCredito.findUnique({ where: { id: nc.id } })
 
     return NextResponse.json(
       {
@@ -249,7 +253,12 @@ export async function POST(request: NextRequest) {
         numero: nc.numero,
         puntoVenta: nc.puntoVenta,
         total: nc.total,
-        estado: nc.estado,
+        estado: ncActualizada?.estado ?? nc.estado,
+        cae: afip.cae,
+        vencimientoCAE: afip.vencimientoCAE,
+        qrBase64: afip.qrBase64,
+        afipOk: afip.ok,
+        afipError: afip.error,
       },
       { status: 201 },
     )

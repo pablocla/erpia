@@ -3,7 +3,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { agroService } from "@/lib/agro/agro-service"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { searchParams } = new URL(request.url)
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const body = await request.json()
@@ -42,3 +42,4 @@ export async function POST(request: NextRequest) {
   })
   return NextResponse.json(contrato, { status: 201 })
 }
+

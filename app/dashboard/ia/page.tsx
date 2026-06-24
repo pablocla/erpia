@@ -1,27 +1,35 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Bot, Send, AlertTriangle, CheckCircle, Clock, MessageSquare,
+  Bot, AlertTriangle, CheckCircle, Clock, MessageSquare,
   TrendingUp, RefreshCw, Sparkles, X, Edit, Check, Trash2,
-  Loader2, CircleDot, PhoneForwarded, Lock, Settings,
+  Loader2, CircleDot, PhoneForwarded, Lock, Settings, BellRing,
 } from "lucide-react"
 import Link from "next/link"
+import { ConfigNotificacionesPanel } from "@/components/ia/config-notificaciones-panel"
+import { AiChatPanel } from "@/components/ia/ai-chat-panel"
+import { PageShell, PageHeader } from "@/components/layout"
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface ChatMessage {
-  id?: number
-  role: "user" | "assistant"
-  content: string
-  createdAt?: string
+interface EntradaSeguimiento {
+  fecha: string
+  usuarioNombre: string
+  accion: string
+  nota?: string
+}
+
+interface AlertaSeguimiento {
+  estadoSeguimiento: string
+  asignadoANombre?: string
+  seguimiento: EntradaSeguimiento[]
 }
 
 interface Alerta {
@@ -34,6 +42,7 @@ interface Alerta {
   leida: boolean
   resuelta: boolean
   createdAt: string
+  seguimiento?: AlertaSeguimiento
 }
 
 interface MensajeWA {
@@ -64,20 +73,13 @@ function useAuthHeaders(): () => HeadersInit {
   }, [])
 }
 
-// ─── Quick Actions ────────────────────────────────────────────────────────────
-
-const QUICK_ACTIONS = [
-  { label: "¿Cómo estoy hoy?", icon: Sparkles },
-  { label: "¿Qué repongo?", icon: AlertTriangle },
-  { label: "¿Quién me debe?", icon: Clock },
-  { label: "Dame el reporte", icon: TrendingUp },
-]
-
 // ─── Root page ────────────────────────────────────────────────────────────────
 
-export default function IAPage() {
+function IAPageContent() {
   const [iaEnabled, setIaEnabled] = useState<boolean | null>(null)
   const authHeaders = useAuthHeaders()
+  const searchParams = useSearchParams()
+  const tabInicial = searchParams.get("tab") ?? "chat"
 
   useEffect(() => {
     fetch("/api/config/modulos", { headers: authHeaders() })
@@ -114,21 +116,20 @@ export default function IAPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <div className="flex items-center gap-3">
-        <Bot className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Asistente IA</h1>
-          <p className="text-sm text-muted-foreground">Inteligencia artificial integrada al negocio</p>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Asistente IA"
+        description="Consultá tu negocio, generá alertas y automatizá comunicaciones con datos reales del ERP."
+        icon={Bot}
+      />
 
-      <Tabs defaultValue="chat" className="flex-1">
-        <TabsList className="flex flex-wrap w-fit bg-transparent gap-2 p-0 h-auto">
+      <Tabs defaultValue={tabInicial} className="flex-1">
+        <TabsList className="flex w-full sm:w-fit max-w-full overflow-x-auto scrollbar-thin flex-nowrap sm:flex-wrap bg-transparent gap-2 p-0 h-auto pb-1">
           <TabsTrigger value="chat" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><MessageSquare className="h-4 w-4 mr-2" />Chat</TabsTrigger>
           <TabsTrigger value="alertas" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><AlertTriangle className="h-4 w-4 mr-2" />Alertas</TabsTrigger>
           <TabsTrigger value="whatsapp" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><PhoneForwarded className="h-4 w-4 mr-2" />WhatsApp</TabsTrigger>
           <TabsTrigger value="proyeccion" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><TrendingUp className="h-4 w-4 mr-2" />Proyección</TabsTrigger>
+          <TabsTrigger value="notificaciones" className="data-[state=active]:bg-muted data-[state=active]:shadow-none rounded-full px-4 py-2 border border-transparent data-[state=active]:border-border"><Settings className="h-4 w-4 mr-2" />Notificaciones</TabsTrigger>
         </TabsList>
 
         <TabsContent value="chat" className="mt-4">
@@ -143,120 +144,34 @@ export default function IAPage() {
         <TabsContent value="proyeccion" className="mt-4">
           <ProyeccionSection authHeaders={authHeaders} />
         </TabsContent>
+        <TabsContent value="notificaciones" className="mt-4">
+          <ConfigNotificacionesPanel authHeaders={authHeaders} />
+        </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }
 
 // ─── CHAT ─────────────────────────────────────────────────────────────────────
 
 function ChatSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const scrollEndRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    fetch("/api/ai/chat?limit=30", { headers: authHeaders() })
-      .then(r => r.json())
-      .then(d => { if (d.success) setMessages(d.data) })
-      .catch(() => {})
-  }, [authHeaders])
-
-  useEffect(() => {
-    scrollEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loading) return
-    const userMsg: ChatMessage = { role: "user", content: text.trim() }
-    setMessages(prev => [...prev, userMsg])
-    setInput("")
-    setLoading(true)
-
-    try {
-      const historial = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ mensaje: text.trim(), historial }),
-      })
-      const data = await res.json()
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: data.data?.respuesta ?? (data.error ?? "No pude procesar tu consulta."),
-      }])
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Error de conexión. Intentá de nuevo." }])
-    } finally {
-      setLoading(false)
-    }
-  }, [loading, messages, authHeaders])
-
   return (
-    <Card className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          Chat con tu negocio
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
-        <div className="flex flex-wrap gap-2">
-          {QUICK_ACTIONS.map(action => (
-            <Button key={action.label} variant="outline" size="sm" className="rounded-full"
-              onClick={() => sendMessage(action.label)} disabled={loading}>
-              <action.icon className="h-3 w-3 mr-1" />
-              {action.label}
-            </Button>
-          ))}
+    <AiChatPanel
+      variant="page"
+      authHeaders={authHeaders}
+      showCapabilitiesSidebar
+      header={(
+        <div className="px-4 py-3 border-b shrink-0">
+          <h2 className="font-semibold text-base flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            Chat con tu negocio
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Respuestas basadas en ventas, stock, clientes y caja de tu empresa.
+          </p>
         </div>
-
-        <ScrollArea className="flex-1 min-h-0 pr-2">
-          <div className="flex flex-col gap-3">
-            {messages.length === 0 && (
-              <div className="text-center text-muted-foreground py-12">
-                <Bot className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>Preguntame lo que quieras sobre tu negocio.</p>
-                <p className="text-xs mt-1">Conozco tus ventas, stock, clientes y más.</p>
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap shadow-sm ${
-                  msg.role === "user" ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900" : "bg-background border border-border"
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-4 py-2 text-sm flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Pensando...
-                </div>
-              </div>
-            )}
-            <div ref={scrollEndRef} />
-          </div>
-        </ScrollArea>
-
-        <form className="flex gap-2" onSubmit={e => { e.preventDefault(); sendMessage(input) }}>
-          <Input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Preguntá algo sobre tu negocio..."
-            disabled={loading}
-            className="flex-1"
-            maxLength={2000}
-          />
-          <Button type="submit" size="icon" disabled={loading || !input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      )}
+    />
   )
 }
 
@@ -266,11 +181,13 @@ function AlertasSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
   const [alertas, setAlertas] = useState<Alerta[]>([])
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [seguimientoId, setSeguimientoId] = useState<number | null>(null)
+  const [nota, setNota] = useState("")
 
   const fetchAlertas = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/ai/alertas?no_leidas=false", { headers: authHeaders() })
+      const res = await fetch("/api/ai/alertas?seguimiento=true", { headers: authHeaders() })
       const data = await res.json()
       if (data.success) setAlertas(data.data ?? [])
     } catch {}
@@ -291,14 +208,20 @@ function AlertasSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
     finally { setGenerating(false) }
   }
 
-  const markResolved = async (id: number) => {
+  const patchAlerta = async (id: number, body: Record<string, unknown>) => {
     await fetch("/api/ai/alertas", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ id, resuelta: true, leida: true }),
+      body: JSON.stringify({ id, ...body }),
     })
-    setAlertas(prev => prev.filter(a => a.id !== id))
+    await fetchAlertas()
   }
+
+  const markResolved = async (id: number) => {
+    await patchAlerta(id, { resuelta: true, leida: true, estadoSeguimiento: "resuelta" })
+  }
+
+  const alertaActiva = alertas.find((a) => a.id === seguimientoId)
 
   const priColor: Record<string, string> = {
     alta: "text-red-500", media: "text-yellow-500", baja: "text-green-500",
@@ -309,12 +232,19 @@ function AlertasSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">Alertas del día</h2>
-        <Button size="sm" onClick={generateNew} disabled={generating}>
-          {generating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
-          Generar alertas
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" asChild>
+            <Link href="/dashboard/centro-alertas">
+              <BellRing className="h-4 w-4 mr-1" /> Centro de alertas
+            </Link>
+          </Button>
+          <Button size="sm" onClick={generateNew} disabled={generating}>
+            {generating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            Generar alertas
+          </Button>
+        </div>
       </div>
 
       {loading && <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>}
@@ -347,15 +277,72 @@ function AlertasSection({ authHeaders }: { authHeaders: () => HeadersInit }) {
                   {alerta.accion && (
                     <p className="text-xs text-primary mt-1">💡 {alerta.accion}</p>
                   )}
+                  {alerta.seguimiento && (
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <Badge variant="outline" className="text-[10px]">
+                        {alerta.seguimiento.estadoSeguimiento}
+                      </Badge>
+                      {alerta.seguimiento.asignadoANombre && (
+                        <span className="text-[10px] text-muted-foreground">
+                          → {alerta.seguimiento.asignadoANombre}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => markResolved(alerta.id)} title="Marcar como resuelta">
-                  <Check className="h-4 w-4" />
-                </Button>
+                <div className="flex flex-col gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => setSeguimientoId(alerta.id)} title="Seguimiento">
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => markResolved(alerta.id)} title="Marcar como resuelta">
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {alertaActiva && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center justify-between">
+              Seguimiento: {alertaActiva.titulo}
+              <Button variant="ghost" size="icon" onClick={() => setSeguimientoId(null)}><X className="h-4 w-4" /></Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="outline"
+                onClick={() => patchAlerta(alertaActiva.id, { estadoSeguimiento: "en_revision", leida: true })}>
+                En revisión
+              </Button>
+              <Button size="sm" variant="outline"
+                onClick={() => patchAlerta(alertaActiva.id, { estadoSeguimiento: "descartada" })}>
+                Descartar
+              </Button>
+            </div>
+            <Textarea placeholder="Agregar nota de seguimiento..." value={nota} onChange={(e) => setNota(e.target.value)} rows={2} />
+            <Button size="sm" disabled={!nota.trim()}
+              onClick={async () => {
+                await patchAlerta(alertaActiva.id, { nota, leida: true })
+                setNota("")
+              }}>
+              Guardar nota
+            </Button>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {(alertaActiva.seguimiento?.seguimiento ?? []).slice().reverse().map((s, i) => (
+                <div key={i} className="text-xs border-l-2 border-muted pl-3 py-1">
+                  <span className="font-medium">{s.usuarioNombre}</span>
+                  <span className="text-muted-foreground"> · {new Date(s.fecha).toLocaleString("es-AR")}</span>
+                  {s.nota && <p className="text-muted-foreground mt-0.5">{s.nota}</p>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
@@ -602,5 +589,17 @@ function ProyeccionSection({ authHeaders }: { authHeaders: () => HeadersInit }) 
         </div>
       )}
     </div>
+  )
+}
+
+export default function IAPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <IAPageContent />
+    </Suspense>
   )
 }

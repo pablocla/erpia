@@ -19,6 +19,9 @@
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
 import { getCuentaLabel } from "@/lib/config/parametro-service"
+import { resolveCuentaPago } from "@/lib/contabilidad/medio-pago-cuentas"
+import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
+import { chequeService, type ChequeInput } from "@/lib/cheques/cheque-service"
 import type { OrdenPagoEmitidaPayload } from "@/lib/events/types"
 
 export interface PagoInput {
@@ -28,6 +31,7 @@ export interface PagoInput {
   medioPago: "transferencia" | "cheque" | "efectivo" | "tarjeta"
   fecha?: Date
   observaciones?: string
+  cheque?: ChequeInput
   retenciones?: {
     retencionIVA?: number
     retencionGanancias?: number
@@ -90,7 +94,17 @@ export class PagosService {
   }
 
   async registrarPago(input: PagoInput) {
-    const { proveedorId, empresaId, items, medioPago, fecha, observaciones, retenciones } = input
+    const { proveedorId, empresaId, items, medioPago, fecha, observaciones, retenciones, cheque } = input
+    const fechaOp = fecha ?? new Date()
+
+    await periodoFiscalService.validarPeriodoAbierto(fechaOp, empresaId)
+
+    if (medioPago === "cheque" && !cheque?.numero) {
+      throw new Error("Datos del cheque propio requeridos (número, fechas, cuenta emisora)")
+    }
+    if (medioPago === "cheque" && !cheque?.cuentaEmisorId) {
+      throw new Error("Cuenta bancaria emisora requerida para cheque propio")
+    }
 
     const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
     const retencionIVA = retenciones?.retencionIVA ?? 0
@@ -121,7 +135,7 @@ export class PagosService {
       select: { nombre: true, cuit: true },
     })
 
-    const fechaPago = fecha ?? new Date()
+    const fechaPago = fechaOp
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create OrdenPago with retenciones
@@ -205,22 +219,18 @@ export class PagosService {
       const movimientos: { cuenta: string; debe: number; haber: number }[] = []
 
       // Resolve account labels from DB config (professional plan de cuentas)
-      const [ctaProveedores, ctaCaja, ctaBanco, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
-        getCuentaLabel(empresaId, "pago", "proveedores", "2.1.1", "Proveedores"),
-        getCuentaLabel(empresaId, "pago", "caja", "1.1.1", "Caja Moneda Nacional"),
-        getCuentaLabel(empresaId, "pago", "banco", "1.1.3", "Banco Cuenta Corriente"),
+      const [ctaProveedores, ctaMedioPago, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
+        getCuentaLabel(empresaId, "pago", "proveedores", "2.1", "Proveedores"),
+        resolveCuentaPago(empresaId, medioPago),
         getCuentaLabel(empresaId, "pago", "ret_iva_depositar", "2.4.1", "Retenciones IVA a Depositar"),
         getCuentaLabel(empresaId, "pago", "ret_gan_depositar", "2.4.2", "Retenciones Ganancias a Depositar"),
         getCuentaLabel(empresaId, "pago", "ret_iibb_depositar", "2.4.3", "Retenciones IIBB a Depositar"),
       ])
 
-      // DEBE: extinguish accounts payable
       movimientos.push({ cuenta: ctaProveedores, debe: montoTotal, haber: 0 })
 
-      // HABER: cash/bank outflow
-      const cuentaBanco = medioPago === "efectivo" ? ctaCaja : ctaBanco
       if (netoPagado > 0) {
-        movimientos.push({ cuenta: cuentaBanco, debe: 0, haber: netoPagado })
+        movimientos.push({ cuenta: ctaMedioPago, debe: 0, haber: netoPagado })
       }
 
       // HABER: retenciones a depositar (pasivo — debemos ingresarlas a AFIP)
@@ -245,6 +255,15 @@ export class PagosService {
           movimientos: { create: movimientos },
         },
       })
+
+      if (medioPago === "cheque" && cheque) {
+        await chequeService.crearDesdePago(tx, {
+          ordenPagoId: op.id,
+          proveedorId,
+          cheque,
+          montoDefault: netoPagado,
+        })
+      }
 
       return op
     })

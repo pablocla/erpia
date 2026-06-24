@@ -61,6 +61,15 @@ const CORE_FEATURES: FeatureSeed[] = [
   { featureKey: FEATURES.CHEQUES, activado: true, grupo: "core", label: "Cheques", orden: 12, icono: "CreditCard" },
   { featureKey: FEATURES.CONCILIACION_BANCARIA, activado: true, grupo: "core", label: "Conciliación Bancaria", orden: 13, icono: "Landmark" },
   { featureKey: FEATURES.TRANSFERENCIAS, activado: true, grupo: "core", label: "Transferencias Bancarias", orden: 14, icono: "ArrowLeftRight" },
+  {
+    featureKey: FEATURES.CLAV_SHEETS,
+    activado: false,
+    grupo: "integracion",
+    label: "Clav Sheets (Reporting)",
+    orden: 40,
+    icono: "FileSpreadsheet",
+    descripcion: "Add-on: pivot, gráficos y export Excel",
+  },
 ]
 
 const RUBRO_FEATURES: Record<string, FeatureSeed[]> = {
@@ -240,7 +249,7 @@ export async function seedConfiguracionRubro(rubroId: number, rubroCodigo: strin
         descripcion: feat.descripcion ?? null,
         icono: feat.icono ?? null,
         orden: feat.orden,
-        parametros: feat.parametros ?? null,
+        parametros: (feat.parametros ?? null) as any,
       },
       update: {
         activado: feat.activado,
@@ -335,8 +344,8 @@ export async function seedWorkflowsRubro(rubroId: number, rubroCodigo: string): 
           orden: paso.orden,
           obligatorio: paso.obligatorio,
           requiereFeature: paso.requiereFeature ?? null,
-          parametros: paso.parametros ?? null,
-          condicion: paso.condicion ?? null,
+          parametros: (paso.parametros ?? null) as any,
+          condicion: (paso.condicion ?? null) as any,
         },
       })
       createdSteps.push({ stepKey: paso.stepKey, id: step.id })
@@ -369,7 +378,7 @@ export async function seedWorkflowsRubro(rubroId: number, rubroCodigo: string): 
               origenId: origenStep.id,
               destinoId: destinoStep.id,
               label: trans.label,
-              condicion: trans.condicion ?? null,
+              condicion: (trans.condicion ?? null) as any,
               prioridad: 1,
             },
           })

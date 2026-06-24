@@ -14,12 +14,15 @@ export interface PosAfipStatus {
 }
 
 export async function obtenerEstadoAfipPos(empresaId: number): Promise<PosAfipStatus> {
-  const [empresa, comprobantesSinCae, impresora] = await Promise.all([
+  const [empresa, facturasSinCae, ncSinCae, impresora] = await Promise.all([
     prisma.empresa.findUnique({
       where: { id: empresaId },
       select: { certificadoCRT: true, certificadoKEY: true },
     }),
     prisma.factura.count({
+      where: { empresaId, estado: "pendiente_cae" },
+    }),
+    prisma.notaCredito.count({
       where: { empresaId, estado: "pendiente_cae" },
     }),
     prisma.configuracionImpresora.findFirst({
@@ -28,6 +31,7 @@ export async function obtenerEstadoAfipPos(empresaId: number): Promise<PosAfipSt
     }),
   ])
 
+  const comprobantesSinCae = facturasSinCae + ncSinCae
   const certificadosConfigurados = Boolean(
     empresa?.certificadoCRT && empresa?.certificadoKEY
   )

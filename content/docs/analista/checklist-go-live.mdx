@@ -11,6 +11,9 @@ status: completo
 
 # Checklist Go-Live — Puesta en Marcha
 
+> Este checklist corresponde al proceso **CCA-070** dentro de la [metodología Claver Cloud (CCA)](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion).  
+> Completar el dossier del cliente (`docs/clientes/<empresaId>/DOSSIER.md`, plantilla en `_TEMPLATE/`) antes de firmar.
+
 Antes de entregar una instancia del ERP para su uso operativo real por parte del cliente, el analista técnico y el administrador de sistemas deben completar y firmar el siguiente checklist:
 
 - [ ] **Aprovisionamiento Impositivo**: Certificado de homologación AFIP reemplazado por el certificado de producción real.
@@ -20,3 +23,7 @@ Antes de entregar una instancia del ERP para su uso operativo real por parte del
 - [ ] **Cuentas de Usuarios & Roles**: Permisos de usuario asignados según el perfil (ej. Cajero, Administrador, Vendedor en ruta) con contraseñas seguras cambiadas en el primer inicio de sesión.
 - [ ] **Integraciones de Cobro**: Credenciales de producción de MercadoPago linkeadas (Access Token y PublicKey) para cobros QR en el mostrador del POS.
 - [ ] **WhatsApp Sender**: Conexión del canal corporativo de Twilio activada para el envío automatizado de comprobantes digitales de venta.
+- [ ] **Pack ONBOARD entregado**: URL de acceso, usuario admin, entorno AFIP actual y contacto analista (ver CCA-030).
+- [ ] **Backup pre go-live**: Job `backup_db` ejecutado y registrado en Centro de Operaciones.
+- [ ] **Acta UAT firmada**: Escenarios críticos aprobados en ambiente val/homologación (CCA-060).
+- [ ] **Pipeline val→prd** (Enterprise): Promoción de entorno completada sin errores en `OpsPipeline`.

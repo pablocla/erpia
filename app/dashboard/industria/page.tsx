@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { ordenProduccionEstadoLabel, ordenProduccionEstadoVariant } from "@/lib/ui/status-map"
 import { Factory, Plus, Search, Pencil, PlayCircle, PauseCircle, CheckCircle2, Layers } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
@@ -51,14 +53,6 @@ const ESTADOS_ORDEN: Record<string, { label: string; variant: "default" | "secon
   pausada: { label: "Pausada", variant: "outline" },
   terminada: { label: "Terminada", variant: "default" },
   anulada: { label: "Anulada", variant: "destructive" },
-}
-
-const ESTADO_COLORS: Record<string, string> = {
-  borrador: "bg-gray-100 text-gray-700",
-  en_proceso: "bg-blue-100 text-blue-700",
-  pausada: "bg-yellow-100 text-yellow-700",
-  terminada: "bg-green-100 text-green-700",
-  anulada: "bg-red-100 text-red-700",
 }
 
 const initialOrdenForm = {
@@ -179,19 +173,16 @@ export default function IndustriaPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Factory className="h-6 w-6 text-orange-500" />
-            Industria
-          </h1>
-          <p className="text-muted-foreground text-sm">Órdenes de producción y listas de materiales (BOM)</p>
-        </div>
-        <Button onClick={abrirDialogNuevaOrden} className="gap-2">
-          <Plus className="h-4 w-4" /> Nueva Orden
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Industria"
+        description="Órdenes de producción y listas de materiales (BOM)"
+        actions={
+          <Button onClick={abrirDialogNuevaOrden} className="gap-2">
+            <Plus className="h-4 w-4" /> Nueva Orden
+          </Button>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -237,7 +228,7 @@ export default function IndustriaPage() {
                   { key: "cantidad", header: "Cantidad", align: "right", sortable: true },
                   { key: "cantidadProd", header: "Producido", cell: (o) => { const progreso = o.cantidad > 0 ? Math.round((o.cantidadProd / o.cantidad) * 100) : 0; return <div className="flex items-center gap-2"><span>{o.cantidadProd}</span><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(progreso, 100)}%` }} /></div><span className="text-xs text-muted-foreground">{progreso}%</span></div> } },
                   { key: "fechaFinPlan", header: "Fecha plan", sortable: true, cell: (o) => o.fechaFinPlan ? new Date(o.fechaFinPlan).toLocaleDateString("es-AR") : "—" },
-                  { key: "estado", header: "Estado", cell: (o) => <span className={`px-2 py-0.5 rounded text-xs font-medium ${ESTADO_COLORS[o.estado] || "bg-gray-100 text-gray-700"}`}>{ESTADOS_ORDEN[o.estado]?.label || o.estado}</span> },
+                  { key: "estado", header: "Estado", cell: (o) => <StatusBadge variant={ordenProduccionEstadoVariant(o.estado)} label={ordenProduccionEstadoLabel(o.estado)} /> },
                   { key: "acciones" as any, header: "", cell: (o) => (
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                       {o.estado === "borrador" && <Button size="icon" variant="ghost" className="h-7 w-7 text-blue-600" title="Iniciar" onClick={() => cambiarEstado(o.id, "en_proceso")}><PlayCircle className="h-3.5 w-3.5" /></Button>}
@@ -394,6 +385,6 @@ export default function IndustriaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

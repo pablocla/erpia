@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { logError } from "@/lib/monitoring/error-logger"
 import { ventasService } from "@/lib/ventas/ventas-service"
+import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const lineaPedidoSchema = z.object({
@@ -90,13 +91,23 @@ export async function POST(request: NextRequest) {
           result = await ventasService.anularPedido(pedidoId, ctx.auth.empresaId)
           break
         case "facturar": {
-          const tipo = actionResult.data.tipo ?? "B"
+          const pedidoCtx = await prisma.pedidoVenta.findFirst({
+            where: { id: pedidoId, empresaId: ctx.auth.empresaId },
+            include: { cliente: { select: { condicionIva: true } } },
+          })
+          const { tipoFacturaSugerido } = await import("@/lib/pos/pos-tipo-factura")
+          const tipoLetra = tipoFacturaSugerido(pedidoCtx?.cliente?.condicionIva)
+          const tipo = actionResult.data.tipo ?? (tipoLetra === "ticket" ? "B" : tipoLetra)
           const tipoCbteMap: Record<string, number> = { A: 1, B: 6, C: 11 }
+          const empresaPv = await prisma.empresa.findUnique({
+            where: { id: ctx.auth.empresaId },
+            select: { puntoVenta: true },
+          })
           result = await ventasService.facturarPedido(pedidoId, {
             empresaId: ctx.auth.empresaId,
             tipo,
             tipoCbte: actionResult.data.tipoCbte ?? tipoCbteMap[tipo] ?? 6,
-            puntoVenta: actionResult.data.puntoVenta ?? 1,
+            puntoVenta: actionResult.data.puntoVenta ?? empresaPv?.puntoVenta ?? 1,
             cae: actionResult.data.cae,
             condicionPagoId: actionResult.data.condicionPagoId,
             depositoId: actionResult.data.depositoId ?? null,

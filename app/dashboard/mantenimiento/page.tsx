@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { mantenimientoEstadoLabel, mantenimientoEstadoVariant, prioridadLabel, prioridadVariant } from "@/lib/ui/status-map"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -64,20 +66,6 @@ interface Resumen {
   completadas: number
   planesActivos: number
   proximas: OrdenTrabajo[]
-}
-
-const ESTADO_COLORS: Record<string, string> = {
-  pendiente: "bg-amber-500/15 text-amber-600",
-  en_proceso: "bg-blue-500/15 text-blue-600",
-  completada: "bg-emerald-500/15 text-emerald-600",
-  cancelada: "bg-gray-500/15 text-gray-600",
-}
-
-const PRIORIDAD_COLORS: Record<string, string> = {
-  baja: "bg-gray-500/15 text-gray-600",
-  media: "bg-blue-500/15 text-blue-600",
-  alta: "bg-amber-500/15 text-amber-600",
-  urgente: "bg-red-500/15 text-red-600",
 }
 
 export default function MantenimientoPage() {
@@ -176,12 +164,11 @@ export default function MantenimientoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mantenimiento Preventivo</h1>
-          <p className="text-muted-foreground">Planes, órdenes de trabajo y tracking de activos</p>
-        </div>
+    <PageShell>
+      <PageHeader
+        title="Mantenimiento Preventivo"
+        description="Planes, órdenes de trabajo y tracking de activos"
+        actions={
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleGenerarPreventivas}>
             <Play className="mr-2 h-4 w-4" /> Generar OTs preventivas
@@ -257,7 +244,8 @@ export default function MantenimientoPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+        }
+      />
 
       {/* Resumen */}
       {resumen && (
@@ -300,8 +288,8 @@ export default function MantenimientoPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold">{ot.numero}</p>
-                        <Badge className={ESTADO_COLORS[ot.estado] ?? ""}>{ot.estado.replace("_", " ")}</Badge>
-                        <Badge className={PRIORIDAD_COLORS[ot.prioridad] ?? ""}>{ot.prioridad}</Badge>
+                        <StatusBadge variant={mantenimientoEstadoVariant(ot.estado)} label={mantenimientoEstadoLabel(ot.estado)} />
+                        <StatusBadge variant={prioridadVariant(ot.prioridad)} label={prioridadLabel(ot.prioridad)} />
                         <Badge variant="outline">{ot.tipo}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{ot.descripcion}</p>
@@ -361,6 +349,6 @@ export default function MantenimientoPage() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

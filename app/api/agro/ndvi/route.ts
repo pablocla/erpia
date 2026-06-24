@@ -25,7 +25,7 @@ function ndviEstado(ndvi: number) {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const lotes = await prisma.agroLote.findMany({
@@ -75,3 +75,4 @@ export async function GET(request: NextRequest) {
     lotes: data,
   })
 }
+

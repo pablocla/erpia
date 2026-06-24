@@ -319,7 +319,8 @@ export class FacturaService {
         Object.assign(comprobante, buildFceOpcionales(cbuFce, tipoTransferenciaFce))
       }
 
-      if (esFce && isFceNotaCreditoDebito(finalTipoCbte)) {
+      const esNcNd = [2, 3, 7, 8, 12, 13, 202, 203, 207, 208, 212, 213].includes(finalTipoCbte)
+      if (esNcNd) {
         let asociado = payload.facturaAsociada
         if (payload.facturaAsociadaId) {
           const facOrig = await prisma.factura.findFirst({
@@ -337,34 +338,110 @@ export class FacturaService {
         if (!asociado) {
           return {
             success: false,
-            error: "NC/ND FCE MiPyME requiere facturaAsociada o facturaAsociadaId",
+            error: "NC/ND requiere facturaAsociada o facturaAsociadaId",
           }
         }
-        Object.assign(
-          comprobante,
-          buildCbtesAsocFce({
-            Tipo: asociado.tipoCbte,
-            PtoVta: asociado.puntoVenta,
-            Nro: asociado.numero,
-            Cuit: empresa.cuit.replace(/\D/g, ""),
-            CbteFch: asociado.fecha
-              ? formatFechaAfip(asociado.fecha)
-              : this.formatearFecha(new Date()),
-          })
-        )
+        const cbteAsoc = {
+          Tipo: asociado.tipoCbte,
+          PtoVta: asociado.puntoVenta,
+          Nro: asociado.numero,
+          Cuit: empresa.cuit.replace(/\D/g, ""),
+          CbteFch: asociado.fecha
+            ? formatFechaAfip(asociado.fecha)
+            : this.formatearFecha(new Date()),
+        }
+        if (esFce && isFceNotaCreditoDebito(finalTipoCbte)) {
+          Object.assign(comprobante, buildCbtesAsocFce(cbteAsoc))
+        } else {
+          Object.assign(comprobante, { CbteAsoc: [cbteAsoc] })
+        }
       }
 
-      // 7. Emitir el comprobante en AFIP (con fallback offline)
-      let cae: string
-      let fechaCAE: string
+      // 7. Guardar factura localmente (Transacción Segura / Saga Pattern)
+      const facturaCreada = await prisma.$transaction(async (tx) => {
+        const factura = await tx.factura.create({
+          data: {
+            tipo: this.obtenerTipoFactura(finalTipoCbte),
+            tipoCbte: finalTipoCbte,
+            numero: nuevoNumero,
+            puntoVenta: finalPuntoVenta,
+            cae: null,
+            fechaCAE: null,
+            vencimientoCAE: null,
+            qrBase64: null,
+            estado: "pendiente_cae",
+            subtotal,
+            iva,
+            total,
+            totalPercepciones: impTrib,
+            totalRetenciones,
+            monedaOrigen,
+            tipoCambio,
+            cuitReceptor,
+            modalidadAuth: "CAE",
+            concepto,
+            netoExento,
+            netoNoGravado,
+            impInternosTotal: 0,
+            condicionIvaReceptor: payload.cliente.condicionIva,
+            fechaServicioDesde: concepto >= 2 ? payload.fechaServicioDesde : undefined,
+            fechaServicioHasta: concepto >= 2 ? payload.fechaServicioHasta : undefined,
+            fechaVtoPago: concepto >= 2 ? payload.fechaVtoPago : undefined,
+            empresaId: empresa.id,
+            clienteId: cliente.id,
+            lineas: {
+              create: payload.items.map((item) => {
+                const codigoAfipIva = this.ivaToCodigoAfip(item.iva)
+                return {
+                  descripcion: item.descripcion,
+                  cantidad: item.cantidad,
+                  productoId: item.productoId,
+                  precioUnitario: item.precioUnitario,
+                  porcentajeIva: item.iva,
+                  codigoAfipIva,
+                  subtotal: item.cantidad * item.precioUnitario,
+                  iva: (item.cantidad * item.precioUnitario * item.iva) / 100,
+                  total: item.cantidad * item.precioUnitario * (1 + item.iva / 100),
+                }
+              }),
+            },
+            tributos: tributos.length > 0 ? {
+              create: tributos.map((t) => ({
+                codigoAfip: t.Id,
+                descripcion: t.Desc,
+                baseImponible: t.BaseImp,
+                alicuota: t.Alic,
+                importe: t.Importe,
+                empresaId: empresa.id,
+              })),
+            } : undefined,
+          },
+        })
+
+        if (payload.remitoId) {
+          await tx.remito.updateMany({
+            where: { id: payload.remitoId, empresaId: empresa.id },
+            data: { facturaId: factura.id },
+          })
+        }
+        return factura
+      })
+
+      // 8. Emitir el comprobante en AFIP (con fallback offline)
+      let cae = ""
+      let fechaCAE = ""
       let modoOffline = false
 
       try {
         const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, finalPuntoVenta, comprobante, empresa.id)
 
-        // 8. Verificar respuesta AFIP
+        // 9. Verificar respuesta AFIP
         if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
           const errores = resultado.FeDetResp?.FECAEDetResponse?.Observaciones
+          await prisma.factura.update({
+            where: { id: facturaCreada.id },
+            data: { estado: "rechazada_afip" }
+          })
           return {
             success: false,
             error: `Error AFIP: ${JSON.stringify(errores)}`,
@@ -383,18 +460,23 @@ export class FacturaService {
           afipErr.message.toLowerCase().includes("timeout")
         )
 
-        if (!esErrorConectividad) throw afipErr  // error lógico → propagar
+        if (!esErrorConectividad) {
+           await prisma.factura.update({
+             where: { id: facturaCreada.id },
+             data: { estado: "rechazada_afip" }
+           })
+           throw afipErr  // error lógico → propagar
+        }
 
         modoOffline = true
-        cae = ""
-        fechaCAE = ""
         console.warn("[FacturaService] AFIP no disponible — guardando como PENDIENTE_CAE")
       }
 
-      // 9. Generar código QR con URL verificable por la app AFIP (solo si tenemos CAE)
+      // 10. Generar código QR y actualizar local
       const tipoDocReceptor = payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99)
       const nroDocReceptor  = payload.cliente.cuit || payload.cliente.dni || 0
       let qrBase64: string | null = null
+
       if (!modoOffline && cae) {
         const qrData = this.generarDatosQR(
           empresa.cuit,
@@ -410,73 +492,16 @@ export class FacturaService {
           nroDocReceptor,
         )
         qrBase64 = await QRCode.toDataURL(qrData)
-      }
 
-      // 10. Guardar la factura en la base de datos
-      const facturaCreada = await prisma.factura.create({
-        data: {
-          tipo: this.obtenerTipoFactura(finalTipoCbte),
-          tipoCbte: finalTipoCbte,
-          numero: nuevoNumero,
-          puntoVenta: finalPuntoVenta,
-          cae: modoOffline ? null : cae,
-          fechaCAE: modoOffline ? null : new Date(),
-          vencimientoCAE: modoOffline ? null : this.parsearFechaCAE(fechaCAE),
-          qrBase64,
-          estado: modoOffline ? "pendiente_cae" : "emitida",
-          subtotal,
-          iva,
-          total,
-          totalPercepciones: impTrib,
-          totalRetenciones,
-          monedaOrigen,
-          tipoCambio,
-          cuitReceptor,
-          modalidadAuth: "CAE",
-          concepto,
-          netoExento,
-          netoNoGravado,
-          impInternosTotal: 0,
-          condicionIvaReceptor: payload.cliente.condicionIva,
-          fechaServicioDesde: concepto >= 2 ? payload.fechaServicioDesde : undefined,
-          fechaServicioHasta: concepto >= 2 ? payload.fechaServicioHasta : undefined,
-          fechaVtoPago: concepto >= 2 ? payload.fechaVtoPago : undefined,
-          empresaId: empresa.id,
-          clienteId: cliente.id,
-          lineas: {
-            create: payload.items.map((item) => {
-              const codigoAfipIva = this.ivaToCodigoAfip(item.iva)
-              return {
-                descripcion: item.descripcion,
-                cantidad: item.cantidad,
-                productoId: item.productoId,
-                precioUnitario: item.precioUnitario,
-                porcentajeIva: item.iva,
-                codigoAfipIva,
-                subtotal: item.cantidad * item.precioUnitario,
-                iva: (item.cantidad * item.precioUnitario * item.iva) / 100,
-                total: item.cantidad * item.precioUnitario * (1 + item.iva / 100),
-              }
-            }),
-          },
-          // Persist tributos breakdown for Libro IVA Digital
-          tributos: tributos.length > 0 ? {
-            create: tributos.map((t) => ({
-              codigoAfip: t.Id,
-              descripcion: t.Desc,
-              baseImponible: t.BaseImp,
-              alicuota: t.Alic,
-              importe: t.Importe,
-              empresaId: empresa.id,
-            })),
-          } : undefined,
-        },
-      })
-
-      if (payload.remitoId) {
-        await prisma.remito.updateMany({
-          where: { id: payload.remitoId, empresaId: empresa.id },
-          data: { facturaId: facturaCreada.id },
+        await prisma.factura.update({
+          where: { id: facturaCreada.id },
+          data: {
+            cae,
+            fechaCAE: new Date(),
+            vencimientoCAE: this.parsearFechaCAE(fechaCAE),
+            qrBase64,
+            estado: "emitida",
+          }
         })
       }
 

@@ -37,6 +37,10 @@ import {
   Shield,
   UtensilsCrossed,
   Sparkles,
+  Bell,
+  Globe,
+  ClipboardList,
+  Cloud,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useUIStore } from "@/lib/stores/ui-store"
@@ -93,10 +97,19 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/agenda", label: "Agenda de Turnos", icon: CalendarDays, section: "Servicios", keywords: ["turno", "agenda", "cita"] },
   // IA
   { href: "/dashboard/ia", label: "Asistente IA", icon: Bot, section: "Inteligencia", keywords: ["ia", "ai", "chat", "asistente"] },
+  { href: "/dashboard/centro-alertas", label: "Centro de Alertas", icon: Bell, section: "Inteligencia", keywords: ["alerta", "alertas", "telegram", "whatsapp", "notificación"] },
+  { href: "/dashboard/conexiones", label: "Centro de Conexiones", icon: Globe, section: "Configuración", keywords: ["integración", "shopify", "mercado pago", "stripe", "conectar"] },
   { href: "/dashboard/onboarding", label: "Onboarding IA", icon: Sparkles, section: "Inteligencia", keywords: ["onboarding", "setup"] },
+  { href: "/dashboard/reportes", label: "Clav Sheets", icon: FileText, section: "Inteligencia", keywords: ["reportes", "pivot", "excel", "smartview", "sheets"] },
+  { href: "/dashboard/reportes/plantillas", label: "Plantillas Clav Sheets", icon: FileText, section: "Inteligencia", keywords: ["plantillas", "templates", "reportes", "galeria"] },
   // Config
   { href: "/dashboard/configuracion", label: "Parámetros", icon: Settings, section: "Configuración", keywords: ["config", "parámetro", "setting"] },
   { href: "/dashboard/usuarios", label: "Usuarios y Permisos", icon: Shield, section: "Configuración", keywords: ["usuario", "permiso", "rol"] },
+  // Claver Interno (analistas)
+  { href: "/dashboard/claver/operaciones", label: "Flota Claver Cloud", icon: Cloud, section: "Claver Interno", keywords: ["ops", "flota", "vps", "tenant", "claver"] },
+  { href: "/dashboard/claver/implementaciones", label: "Torre Implementaciones", icon: ClipboardList, section: "Claver Interno", keywords: ["cca", "onboarding", "implementación", "go-live"] },
+  { href: "/dashboard/claver/asignaciones", label: "Asignaciones Analistas", icon: Users, section: "Claver Interno", keywords: ["analista", "asignación", "cliente"] },
+  { href: "/dashboard/claver/reportes", label: "Reportes Claver", icon: BarChart3, section: "Claver Interno", keywords: ["reporte", "métricas", "claver"] },
 ]
 
 export function CommandPalette() {
@@ -104,6 +117,27 @@ export function CommandPalette() {
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
   const logout = useAuthStore((s) => s.logout)
+  const [docItems, setDocItems] = useState<any[]>([])
+
+  useEffect(() => {
+    if (!commandPaletteOpen) return
+
+    const fetchDocsIndex = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await fetch("/api/docs/index", { headers })
+        if (res.ok) {
+          const data = await res.json()
+          setDocItems(data)
+        }
+      } catch (err) {
+        console.error("Error al cargar el índice de la documentación en la paleta:", err)
+      }
+    }
+
+    fetchDocsIndex()
+  }, [commandPaletteOpen])
 
   // Keyboard shortcut: Cmd+K / Ctrl+K
   useEffect(() => {
@@ -180,6 +214,28 @@ export function CommandPalette() {
         ))}
 
         <CommandSeparator />
+
+        {/* Documentación Group */}
+        {docItems.length > 0 && (
+          <>
+            <CommandGroup heading="Documentación (Wiki)">
+              {docItems.map((doc) => (
+                <CommandItem
+                  key={doc.slug}
+                  value={`doc wiki ${doc.title} ${doc.description} ${doc.tags.join(" ")}`}
+                  onSelect={() => navigate(doc.href)}
+                >
+                  <BookOpen className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{doc.title}</span>
+                    <span className="text-xs text-muted-foreground font-light line-clamp-1">{doc.description}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {/* Theme actions */}
         <CommandGroup heading="Apariencia">

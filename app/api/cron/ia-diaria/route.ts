@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { generarAlertasInteligentes, generarMensajesWhatsApp, generarReporte } from "@/lib/ai"
+import { generarAlertasInteligentes, generarMensajesWhatsApp, generarReporte, isIAEnabled } from "@/lib/ai"
+import { crearAlertaIAConNotificacion } from "@/lib/ai/notificacion-ia-service"
+import { getIANotificacionConfig } from "@/lib/ai/ia-notificacion-config"
+import { evaluarReglas } from "@/lib/alertas/alertas-service"
 
 /**
  * GET /api/cron/ia-diaria — Daily AI job
@@ -42,25 +45,35 @@ export async function GET(request: Request) {
       }
 
       try {
-        // 1. Generate alerts
+        if (!(await isIAEnabled(empresa.id))) {
+          resultados.push(resultado)
+          continue
+        }
+
+        const iaConfig = await getIANotificacionConfig(empresa.id)
+
+        // 1. Generate AI alerts
         const alertas = await generarAlertasInteligentes(empresa.id)
         if (alertas.alertas.length > 0) {
-          await prisma.$transaction(
-            alertas.alertas.map(a =>
-              prisma.alertaIA.create({
-                data: {
-                  empresaId: empresa.id,
-                  tipo: a.tipo,
-                  prioridad: a.prioridad,
-                  titulo: a.titulo,
-                  descripcion: a.descripcion,
-                  accion: a.accion_sugerida ?? null,
-                  datos: a.datos ?? undefined,
-                },
-              })
-            )
-          )
+          for (const a of alertas.alertas) {
+            await crearAlertaIAConNotificacion({
+              empresaId: empresa.id,
+              tipo: a.tipo,
+              prioridad: a.prioridad as "alta" | "media" | "baja",
+              titulo: a.titulo,
+              descripcion: a.descripcion,
+              accion: a.accion_sugerida,
+              origen: "cron",
+              agenteId: "alertas-stock",
+            })
+          }
           resultado.alertas = alertas.alertas.length
+        }
+
+        // 1b. Evaluar reglas configurables del usuario
+        if (iaConfig.evaluarReglasEnCron) {
+          const reglas = await evaluarReglas(empresa.id)
+          resultado.alertas += reglas.filter((r) => r.disparada).length
         }
 
         // 2. Generate WhatsApp messages

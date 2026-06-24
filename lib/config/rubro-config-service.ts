@@ -279,6 +279,9 @@ export const FEATURES = {
   // Listas/Precios
   LISTAS_PRECIO: "listas_precio",
   MULTI_MONEDA: "multi_moneda",
+
+  // Reporting
+  CLAV_SHEETS: "clav_sheets",
 } as const
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]

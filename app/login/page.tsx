@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
 import { Button } from "@/components/ui/button"
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
+import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
 import { getHomePathForRol } from "@/lib/auth/home-redirect"
 
 export default function LoginPage() {
@@ -83,11 +84,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{BRAND_NAME}</CardTitle>
-          <CardDescription>Ingresa tus credenciales para acceder a la plataforma</CardDescription>
+          <CardDescription>
+            by {CLAVER_GROUP.name} — Ingresá tus credenciales para acceder
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -174,6 +177,15 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
+      <p className="mt-6 text-center text-sm text-muted-foreground space-x-3">
+        <Link href="/claver" className="text-primary hover:underline">
+          Grupo Claver
+        </Link>
+        <span>·</span>
+        <Link href="/claver/claverp" className="text-primary hover:underline">
+          Clavis
+        </Link>
+      </p>
     </div>
   )
 }

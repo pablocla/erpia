@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma"
 import { AgentBase } from "./agent-base"
 import { generarMensajesWhatsApp } from "../ai-business"
+import { getIANotificacionConfig } from "../ia-notificacion-config"
 import type { AgentConfig, AgentRunContext, AgentAction } from "./agent-types"
 
 export class VentasLeadsAgent extends AgentBase {
@@ -25,21 +26,31 @@ export class VentasLeadsAgent extends AgentBase {
 
   protected async execute(ctx: AgentRunContext) {
     const acciones: AgentAction[] = []
+    const iaConfig = await getIANotificacionConfig(ctx.empresaId)
+
+    if (iaConfig.agentesNotificacion["ventas-leads"] === false) {
+      return { resumen: "Agente de ventas/leads deshabilitado en configuración IA", acciones }
+    }
+
+    const autoReactivacion = iaConfig.whatsappReglasAutoAprobar !== false
+    const autoCobranza = iaConfig.whatsappCobranzaAutoAprobar === true
 
     // Generate messages for inactive clients
     const inactivos = await generarMensajesWhatsApp(ctx.empresaId, "inactivos")
 
     if (inactivos?.mensajes?.length) {
       for (const msg of inactivos.mensajes) {
+        if (!msg.telefono?.trim()) continue
+
         await prisma.mensajePendienteWhatsApp.create({
           data: {
             empresaId: ctx.empresaId,
             destinatario: msg.destinatario,
-            telefono: msg.telefono || "",
+            telefono: msg.telefono,
             mensaje: msg.mensaje,
             tipo: msg.tipo,
             prioridad: msg.prioridad,
-            estado: "pendiente",
+            estado: autoReactivacion ? "aprobado" : "pendiente",
           },
         })
 
@@ -56,12 +67,14 @@ export class VentasLeadsAgent extends AgentBase {
 
     if (cobranza?.mensajes?.length) {
       for (const msg of cobranza.mensajes) {
+        if (!msg.telefono?.trim()) continue
+
         const exists = await prisma.mensajePendienteWhatsApp.findFirst({
           where: {
             empresaId: ctx.empresaId,
             destinatario: msg.destinatario,
             tipo: "cobranza",
-            estado: "pendiente",
+            estado: { in: ["pendiente", "aprobado"] },
           },
         })
         if (exists) continue
@@ -70,11 +83,11 @@ export class VentasLeadsAgent extends AgentBase {
           data: {
             empresaId: ctx.empresaId,
             destinatario: msg.destinatario,
-            telefono: msg.telefono || "",
+            telefono: msg.telefono,
             mensaje: msg.mensaje,
             tipo: msg.tipo,
             prioridad: msg.prioridad,
-            estado: "pendiente",
+            estado: autoCobranza ? "aprobado" : "pendiente",
           },
         })
 

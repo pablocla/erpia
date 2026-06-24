@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,6 +15,8 @@ import {
 } from "@/components/ui/dialog"
 import { ClipboardList, Search, Loader2, Plus } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { tipoCuentaVariant, tipoCuentaLabel } from "@/lib/ui/status-map"
 
 interface Cuenta {
   id?: number
@@ -26,22 +27,6 @@ interface Cuenta {
   nivel?: number
   imputable?: boolean
   parentId?: number | null
-}
-
-const TIPO_COLORS: Record<string, string> = {
-  activo: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  pasivo: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  patrimonio: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  ingreso: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  egreso: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-}
-
-const TIPO_LABELS: Record<string, string> = {
-  activo: "Activo",
-  pasivo: "Pasivo",
-  patrimonio: "Patrimonio Neto",
-  ingreso: "Ingreso",
-  egreso: "Egreso",
 }
 
 const authHeaders = (): HeadersInit => ({
@@ -138,40 +123,51 @@ export default function PlanCuentasPage() {
   const posiblesPadres = cuentas.filter(c => c.imputable === false || (c.nivel != null && c.nivel < 3))
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="h-6 w-6 text-cyan-500" />
-          <div><h1 className="text-2xl font-bold">Plan de Cuentas</h1><p className="text-sm text-muted-foreground">{cuentas.length} cuentas contables</p></div>
-        </div>
-        <Button onClick={nuevaCuenta}><Plus className="h-4 w-4 mr-2" />Nueva Cuenta</Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Plan de Cuentas"
+        description="Estructura jerárquica de cuentas contables para la imputación de transacciones y armado de balances."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <ClipboardList className="h-3.5 w-3.5 text-primary/80" />
+            {cuentas.length} cuentas configuradas
+          </span>
+        }
+        actions={
+          <Button onClick={nuevaCuenta} className="gap-2">
+            <Plus className="h-4 w-4" /> Nueva Cuenta
+          </Button>
+        }
+      />
 
       {/* KPIs */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {tipos.map(t => (
-          <Card key={t} className="dashboard-surface">
-            <CardContent className="p-3 text-center">
-              <p className="text-xs text-muted-foreground">{TIPO_LABELS[t] ?? t}</p>
-              <p className="text-lg font-bold">{cuentas.filter(c => c.tipo === t).length}</p>
+          <Card key={t} className="backdrop-blur-sm bg-card/60 hover:shadow-sm transition-shadow">
+            <CardContent className="p-4 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{tipoCuentaLabel(t)}</p>
+              <p className="text-3xl font-bold mt-1 tracking-tight">{cuentas.filter(c => c.tipo === t).length}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card>
+      <Card className="backdrop-blur-sm bg-card/60 border-muted/40">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Cuentas</CardTitle>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <CardTitle className="text-base font-semibold">Cuentas Contables</CardTitle>
+            <div className="flex flex-wrap items-center gap-3">
               <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-                <SelectTrigger className="h-9 w-36 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 w-40 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos los tipos</SelectItem>
-                  {tipos.map(t => <SelectItem key={t} value={t}>{TIPO_LABELS[t] ?? t}</SelectItem>)}
+                  {tipos.map(t => <SelectItem key={t} value={t}>{tipoCuentaLabel(t)}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar..." className="pl-9 h-9 w-48 text-sm" value={busqueda} onChange={e => setBusqueda(e.target.value)} /></div>
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar..." className="pl-9 h-9 w-full sm:w-48 text-sm" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -184,23 +180,21 @@ export default function PlanCuentasPage() {
                 const cuentasCat = filtradas.filter(c => c.categoria === cat)
                 return (
                   <div key={cat}>
-                    <div className="bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground border-t">{cat}</div>
+                    <div className="bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground border-t tracking-wider uppercase">{cat}</div>
                     {cuentasCat.map(c => (
-                      <div key={c.codigo} className="flex items-center justify-between px-3 py-2 border-t hover:bg-muted/30 transition-colors text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-xs w-10">{c.codigo}</span>
-                          <span className="font-medium">{c.nombre}</span>
+                      <div key={c.codigo} className="flex items-center justify-between px-4 py-3 border-t hover:bg-muted/10 transition-colors text-sm">
+                        <div className="flex items-center gap-4">
+                          <span className="font-mono text-xs text-muted-foreground w-12">{c.codigo}</span>
+                          <span className="font-medium text-foreground">{c.nombre}</span>
                         </div>
-                        <Badge variant="outline" className={`text-[10px] ${TIPO_COLORS[c.tipo] ?? ""}`}>
-                          {TIPO_LABELS[c.tipo] ?? c.tipo}
-                        </Badge>
+                        <StatusBadge variant={tipoCuentaVariant(c.tipo)} label={tipoCuentaLabel(c.tipo)} />
                       </div>
                     ))}
                   </div>
                 )
               })}
               {filtradas.length === 0 && (
-                <p className="text-center text-sm text-muted-foreground py-8">No se encontraron cuentas</p>
+                <p className="text-center text-sm text-muted-foreground py-12">No se encontraron cuentas</p>
               )}
             </>
           )}
@@ -269,12 +263,12 @@ export default function PlanCuentasPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Switch checked={formData.imputable} onCheckedChange={v => set("imputable", v)} />
-              <Label>Imputable (permite asientos directos)</Label>
+              <Switch id="cc-imputable" checked={formData.imputable} onCheckedChange={v => set("imputable", v)} />
+              <Label htmlFor="cc-imputable">Imputable (permite asientos directos)</Label>
             </div>
-            {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
+            {errorMsg && <p className="text-sm text-red-600 font-medium">{errorMsg}</p>}
           </div>
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-3 mt-4">
             <Button variant="outline" onClick={() => setDialogAbierto(false)}>Cancelar</Button>
             <Button onClick={guardarCuenta} disabled={guardando || !formData.codigo || !formData.nombre || !formData.categoria}>
               {guardando ? "Creando..." : "Crear Cuenta"}
@@ -282,6 +276,6 @@ export default function PlanCuentasPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

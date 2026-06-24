@@ -14,6 +14,7 @@ import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
+import { CuitPadronLookup } from "@/components/fiscal/cuit-padron-lookup"
 
 interface Proveedor {
   id: number
@@ -282,6 +283,20 @@ export default function ProveedoresPage() {
                   value={form.cuit}
                   onChange={(e) => setForm({ ...form, cuit: e.target.value })}
                   placeholder="20-12345678-9"
+                />
+                <CuitPadronLookup
+                  cuit={form.cuit}
+                  onResult={(r) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      nombre: r.denominacion,
+                      cuit: r.cuit.replace(/(\d{2})(\d{8})(\d)/, "$1-$2-$3"),
+                      condicionIva: r.condicionIva,
+                      direccion: r.domicilioFiscal
+                        ? [r.domicilioFiscal.direccion, r.domicilioFiscal.localidad].filter(Boolean).join(", ")
+                        : prev.direccion,
+                    }))
+                  }}
                 />
               </div>
               <div className="space-y-2">

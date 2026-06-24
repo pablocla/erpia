@@ -14,8 +14,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import {
   Plus, Trash2, ShoppingCart, FileCheck, PackageCheck,
-  CheckCircle2, XCircle, AlertTriangle, Loader2, Eye,
+  CheckCircle2, XCircle, AlertTriangle, Loader2, Eye, Sparkles,
 } from "lucide-react"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { ordenCompraEstadoLabel, ordenCompraEstadoVariant } from "@/lib/ui/status-map"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -51,19 +53,10 @@ interface OrdenCompra {
   _count: { recepciones: number; compras: number }
 }
 
-const ESTADO_OC: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  borrador: { label: "Borrador", variant: "secondary" },
-  aprobada: { label: "Aprobada", variant: "default" },
-  enviada: { label: "Enviada", variant: "outline" },
-  parcial: { label: "Parcial", variant: "outline" },
-  recibida: { label: "Recibida", variant: "default" },
-  facturada: { label: "Facturada", variant: "default" },
-  anulada: { label: "Anulada", variant: "destructive" },
-}
-
 export default function ComprasPage() {
   const [tab, setTab] = useState("ordenes")
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const [filters, setFilters] = useState<FilterValues>({})
   const [ordenes, setOrdenes] = useState<OrdenCompra[]>([])
   const [totalOC, setTotalOC] = useState(0)
   const [loadingOC, setLoadingOC] = useState(false)
@@ -284,22 +277,25 @@ export default function ComprasPage() {
   }, [ordenes, filters])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShoppingCart className="h-6 w-6 text-primary" />
-            Compras
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Órdenes de compra, recepción de mercadería, factura de proveedor y 3-way matching.
-          </p>
-        </div>
-        <Button onClick={() => setCrearOcOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva OC
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Compras"
+        description="Órdenes de compra, recepción de mercadería, factura de proveedor y 3-way matching."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            <ShoppingCart className="h-3.5 w-3.5" />
+            Ciclo de compras
+          </span>
+        }
+        actions={
+          <Button onClick={() => setCrearOcOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva OC
+          </Button>
+        }
+      />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -319,7 +315,16 @@ export default function ComprasPage() {
                   { key: "proveedor" as any, header: "Proveedor", cell: (oc) => oc.proveedor?.nombre ?? oc.proveedor?.cuit ?? "—", exportFn: (oc) => oc.proveedor?.nombre ?? "" },
                   { key: "fechaEmision", header: "Fecha", sortable: true, cell: (oc) => new Date(oc.fechaEmision).toLocaleDateString("es-AR") },
                   { key: "total", header: "Total", align: "right", sortable: true, cell: (oc) => <span className="font-medium">{fmt(Number(oc.total))}</span> },
-                  { key: "estado", header: "Estado", cell: (oc) => { const est = ESTADO_OC[oc.estado] ?? { label: oc.estado, variant: "outline" as const }; return <Badge variant={est.variant}>{est.label}</Badge> } },
+                  {
+                    key: "estado",
+                    header: "Estado",
+                    cell: (oc) => (
+                      <StatusBadge
+                        variant={ordenCompraEstadoVariant(oc.estado)}
+                        label={ordenCompraEstadoLabel(oc.estado)}
+                      />
+                    ),
+                  },
                   { key: "_count" as any, header: "Recepciones", cell: (oc) => <span className="text-sm">{oc._count?.recepciones ?? 0}</span>, exportFn: (oc) => String(oc._count?.recepciones ?? 0) },
                   { key: "acciones" as any, header: "Acciones", align: "right", cell: (oc) => (
                     <div className="flex gap-1 justify-end">
@@ -618,6 +623,6 @@ export default function ComprasPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

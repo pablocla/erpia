@@ -70,23 +70,23 @@ export class IVAService {
     let netoNoGravado = 0
 
     facturas.forEach((factura) => {
-      total += factura.iva
-      base += factura.subtotal
-      totalPercepciones += factura.totalPercepciones ?? 0
-      netoExento += factura.netoExento ?? 0
-      netoNoGravado += factura.netoNoGravado ?? 0
+      total += Number(factura.iva)
+      base += Number(factura.subtotal)
+      totalPercepciones += Number(factura.totalPercepciones ?? 0)
+      netoExento += Number(factura.netoExento ?? 0)
+      netoNoGravado += Number(factura.netoNoGravado ?? 0)
 
       factura.lineas.forEach((linea: any) => {
         if (linea.porcentajeIva === 21) {
-          iva21 += linea.iva
+          iva21 += Number(linea.iva)
         } else if (linea.porcentajeIva === 10.5) {
-          iva105 += linea.iva
+          iva105 += Number(linea.iva)
         } else if (linea.porcentajeIva === 27) {
-          iva27 += linea.iva
+          iva27 += Number(linea.iva)
         } else if (linea.porcentajeIva === 5) {
-          iva5 += linea.iva
+          iva5 += Number(linea.iva)
         } else if (linea.porcentajeIva === 2.5) {
-          iva25 += linea.iva
+          iva25 += Number(linea.iva)
         }
       })
     })
@@ -118,23 +118,23 @@ export class IVAService {
     let netoNoGravado = 0
 
     compras.forEach((compra) => {
-      total += compra.iva
-      base += compra.subtotal
-      totalRetenciones += compra.totalRetenciones ?? 0
-      netoExento += compra.netoExento ?? 0
-      netoNoGravado += compra.netoNoGravado ?? 0
+      total += Number(compra.iva)
+      base += Number(compra.subtotal)
+      totalRetenciones += Number(compra.totalRetenciones ?? 0)
+      netoExento += Number(compra.netoExento ?? 0)
+      netoNoGravado += Number(compra.netoNoGravado ?? 0)
 
       compra.lineas.forEach((linea: any) => {
         if (linea.porcentajeIva === 21) {
-          iva21 += linea.iva
+          iva21 += Number(linea.iva)
         } else if (linea.porcentajeIva === 10.5) {
-          iva105 += linea.iva
+          iva105 += Number(linea.iva)
         } else if (linea.porcentajeIva === 27) {
-          iva27 += linea.iva
+          iva27 += Number(linea.iva)
         } else if (linea.porcentajeIva === 5) {
-          iva5 += linea.iva
+          iva5 += Number(linea.iva)
         } else if (linea.porcentajeIva === 2.5) {
-          iva25 += linea.iva
+          iva25 += Number(linea.iva)
         }
       })
     })
@@ -188,19 +188,19 @@ export class IVAService {
         cuit: factura.cliente.cuit,
         condicionIva: factura.cliente.condicionIva,
       },
-      neto: factura.subtotal,
-      netoExento: factura.netoExento ?? 0,
-      netoNoGravado: factura.netoNoGravado ?? 0,
-      iva: factura.iva,
-      percepciones: factura.totalPercepciones ?? 0,
+      neto: Number(factura.subtotal),
+      netoExento: Number(factura.netoExento ?? 0),
+      netoNoGravado: Number(factura.netoNoGravado ?? 0),
+      iva: Number(factura.iva),
+      percepciones: Number(factura.totalPercepciones ?? 0),
       tributos: (factura as any).tributos?.map((t: any) => ({
         descripcion: t.descripcion,
         codigoAfip: t.codigoAfip,
-        baseImponible: t.baseImponible,
+        baseImponible: Number(t.baseImponible),
         alicuota: t.alicuota,
-        importe: t.importe,
+        importe: Number(t.importe),
       })) ?? [],
-      total: factura.total + (factura.totalPercepciones ?? 0),
+      total: Number(factura.total) + Number(factura.totalPercepciones ?? 0),
       cae: factura.cae,
     }))
   }
@@ -239,19 +239,19 @@ export class IVAService {
         cuit: compra.proveedor.cuit,
         condicionIva: compra.proveedor.condicionIva,
       },
-      neto: compra.subtotal,
-      netoExento: compra.netoExento ?? 0,
-      netoNoGravado: compra.netoNoGravado ?? 0,
-      iva: compra.iva,
-      retenciones: compra.totalRetenciones ?? 0,
+      neto: Number(compra.subtotal),
+      netoExento: Number(compra.netoExento ?? 0),
+      netoNoGravado: Number(compra.netoNoGravado ?? 0),
+      iva: Number(compra.iva),
+      retenciones: Number(compra.totalRetenciones ?? 0),
       tributos: (compra as any).tributos?.map((t: any) => ({
         descripcion: t.descripcion,
         codigoAfip: t.codigoAfip,
-        baseImponible: t.baseImponible,
+        baseImponible: Number(t.baseImponible),
         alicuota: t.alicuota,
-        importe: t.importe,
+        importe: Number(t.importe),
       })) ?? [],
-      total: compra.total,
+      total: Number(compra.total),
     }))
   }
 
@@ -262,7 +262,7 @@ export class IVAService {
 
     libro.forEach((registro) => {
       const fecha = registro.fecha.toISOString().split("T")[0]
-      csv += `"${fecha}","${registro.tipo}",${registro.puntoVenta},${registro.numero},"${registro.cliente.nombre}","${registro.cliente.cuit || ""}","${registro.cliente.condicionIva}",${registro.neto},${registro.iva},${(registro as any).percepciones ?? 0},${registro.total},"${registro.cae}"\n`
+      csv += `"${fecha}","${registro.tipo}",${registro.puntoVenta},${registro.numero},"${registro.cliente.nombre}","${registro.cliente.cuit || ""}","${registro.cliente.condicionIva}",${registro.neto},${registro.iva},${(registro as any).percepciones ?? 0},${registro.total},"${registro.cae || ""}"\n`
     })
 
     return csv
@@ -318,12 +318,6 @@ export class IVAService {
   /**
    * Libro IVA Digital - Ventas (RG 4597/2019)
    * Fixed-width text file per AFIP specification for PORTAL IVA import.
-   *
-   * Fields (in order): fecha, tipo_cbte, pto_venta, nro_cbte_desde, nro_cbte_hasta,
-   *   cod_doc_comprador, nro_doc_comprador, apellido_nombre, imp_total, imp_tot_conc,
-   *   imp_neto_no_gravado, imp_op_exentas, percepciones_iva, percepciones_nacionales,
-   *   percepciones_iibb, percepciones_municipales, imp_internos, moneda, tipo_cambio,
-   *   cant_alicuotas, cod_operacion, otros_tributos, fecha_vto_pago
    */
   async generarLibroIVADigitalVentas(mes: number, anio: number, empresaId?: number): Promise<string> {
     const libro = await this.generarLibroIVAVentas(mes, anio, empresaId)
@@ -468,7 +462,6 @@ export class IVAService {
   }
 
   private formatMontoAFIP(monto: number): string {
-    // AFIP format: 15 positions, 2 decimal places, no separator, right-aligned with zeros
     const cents = Math.round(Math.abs(monto) * 100)
     return cents.toString().padStart(15, "0")
   }
@@ -491,7 +484,6 @@ export class IVAService {
 
   private agruparIVAPorAlicuota(reg: any): Record<number, { base: number; importe: number }> {
     const result: Record<number, { base: number; importe: number }> = {}
-    // From tributos data if available, otherwise infer from totals
     const neto = reg.neto - (reg.netoExento ?? 0) - (reg.netoNoGravado ?? 0)
     if (neto > 0) {
       result[21] = { base: neto, importe: reg.iva ?? 0 }

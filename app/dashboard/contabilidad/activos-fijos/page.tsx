@@ -5,24 +5,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import {
   Plus, Building2, Car, Monitor, Wrench, Home, Lightbulb,
-  TrendingDown, Calendar, Ban, BarChart3,
+  TrendingDown, Calendar, Ban, BarChart3, Sparkles
 } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { type DateRange } from "react-day-picker"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { activoFijoEstadoVariant, activoFijoEstadoLabel } from "@/lib/ui/status-map"
 
 interface ActivoFijo {
   id: number
@@ -51,12 +51,6 @@ const CATEGORIAS = [
   { value: "hardware", label: "Hardware", icon: Monitor },
   { value: "intangible", label: "Intangible", icon: Lightbulb },
 ]
-
-const ESTADO_COLOR: Record<string, string> = {
-  activo: "bg-green-600",
-  totalmente_amortizado: "bg-orange-500",
-  dado_de_baja: "bg-red-500",
-}
 
 export default function ActivosFijosPage() {
   const [activos, setActivos] = useState<ActivoFijo[]>([])
@@ -197,56 +191,62 @@ export default function ActivosFijosPage() {
   const fmt = (n: number) => n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Activos Fijos</h1>
-          <p className="text-muted-foreground">Bienes de uso, depreciación y amortización</p>
-        </div>
-        <div className="flex gap-2">
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
-          <Button variant="outline" onClick={() => setDepDialogOpen(true)}>
-            <TrendingDown className="mr-2 h-4 w-4" /> Correr Depreciación
-          </Button>
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Activo
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Activos Fijos"
+        description="Gestión de bienes de uso, amortización acumulada y depreciación lineal automática."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Building2 className="h-3.5 w-3.5 text-primary/80" />
+            {activos.length} activos fijos
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <Button variant="outline" onClick={() => setDepDialogOpen(true)} className="gap-2">
+              <TrendingDown className="h-4 w-4" /> Depreciación
+            </Button>
+            <Button onClick={() => setDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" /> Nuevo Activo
+            </Button>
+          </div>
+        }
+      />
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-      {success && <Alert><AlertDescription className="text-green-600">{success}</AlertDescription></Alert>}
+      {success && <Alert><AlertDescription className="text-[var(--status-success-foreground)]">{success}</AlertDescription></Alert>}
 
       {/* Summary cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="backdrop-blur-sm bg-card/60">
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Valor Original Total</p>
-            <p className="text-2xl font-bold">${fmt(totalValorCompra)}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Valor Original Total</p>
+            <p className="text-2xl font-bold mt-1">${fmt(totalValorCompra)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-sm bg-card/60">
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Valor en Libros</p>
-            <p className="text-2xl font-bold">${fmt(totalValorLibros)}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Valor en Libros</p>
+            <p className="text-2xl font-bold mt-1">${fmt(totalValorLibros)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-sm bg-card/60">
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Amortización Acumulada</p>
-            <p className="text-2xl font-bold text-orange-600">${fmt(totalAmortAcum)}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Amortización Acumulada</p>
+            <p className="text-2xl font-bold mt-1 text-[var(--status-warning-foreground)]">${fmt(totalAmortAcum)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="backdrop-blur-sm bg-card/60">
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Activos en Uso</p>
-            <p className="text-2xl font-bold">{activosActivos} / {activos.length}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Activos en Uso</p>
+            <p className="text-2xl font-bold mt-1">{activosActivos} / {activos.length}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
           <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -266,20 +266,125 @@ export default function ActivosFijosPage() {
       </div>
 
       {/* Table */}
-      <Card>
+      <Card className="backdrop-blur-sm bg-card/60 border-muted/40">
         <CardContent className="pt-4">
           <DataTable<ActivoFijo>
             data={activosFiltrados}
             columns={[
-              { key: "descripcion", header: "Descripción", sortable: true, cell: (a) => { const catInfo = CATEGORIAS.find(c => c.value === a.categoria); const CatIcon = catInfo?.icon ?? Building2; return <div className="flex items-center gap-2"><CatIcon className="h-4 w-4 text-muted-foreground" /><div><div className="font-medium">{a.descripcion}</div>{a.identificador && <div className="text-xs text-muted-foreground">{a.identificador}</div>}</div></div> } },
-              { key: "categoria", header: "Categoría", sortable: true, cell: (a) => <span className="capitalize">{CATEGORIAS.find(c => c.value === a.categoria)?.label ?? a.categoria}</span> },
-              { key: "fechaCompra", header: "F. Compra", sortable: true, cell: (a) => new Date(a.fechaCompra).toLocaleDateString("es-AR") },
-              { key: "valorCompra", header: "V. Original", sortable: true, cell: (a) => <span className="text-right block">${fmt(Number(a.valorCompra))}</span> },
-              { key: "valorLibros", header: "V. Libros", sortable: true, cell: (a) => <span className="text-right block font-medium">${fmt(Number(a.valorLibros))}</span> },
-              { key: "amortizacionAcumulada" as any, header: "% Amort.", cell: (a) => { const pctAmort = Number(a.valorCompra) > 0 ? ((Number(a.amortizacionAcumulada) || 0) / (Number(a.valorCompra) - Number(a.valorResidual))) * 100 : 0; return <div className="flex items-center gap-2"><Progress value={Math.min(100, pctAmort)} className="h-2 w-16" /><span className="text-xs">{Math.round(pctAmort)}%</span></div> } },
-              { key: "estado", header: "Estado", sortable: true, cell: (a) => <Badge className={ESTADO_COLOR[a.estado]}>{a.estado.replace("_", " ")}</Badge> },
-              { key: "acciones" as any, header: "Acciones", cell: (a) => <div className="flex gap-1"><Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); verCuadro(a.id) }} title="Cuadro de amortización"><BarChart3 className="h-3 w-3" /></Button>{a.estado === "activo" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-red-600" title="Dar de baja"><Ban className="h-3 w-3" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Dar de baja: {a.descripcion}</AlertDialogTitle><AlertDialogDescription>Valor en libros actual: ${fmt(Number(a.valorLibros))}. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><Textarea placeholder="Motivo de baja (opcional)" value={bajaMotivo} onChange={e => setBajaMotivo(e.target.value)} /><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => darDeBaja(a.id)}>Dar de Baja</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div> },
-            ] as DataTableColumn<ActivoFijo>[]}
+              {
+                key: "descripcion",
+                header: "Descripción",
+                sortable: true,
+                cell: (a) => {
+                  const catInfo = CATEGORIAS.find(c => c.value === a.categoria);
+                  const CatIcon = catInfo?.icon ?? Building2;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <CatIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <div className="font-medium text-foreground">{a.descripcion}</div>
+                        {a.identificador && <div className="text-xs text-muted-foreground">{a.identificador}</div>}
+                      </div>
+                    </div>
+                  );
+                }
+              },
+              {
+                key: "categoria",
+                header: "Categoría",
+                sortable: true,
+                cell: (a) => <span className="capitalize">{CATEGORIAS.find(c => c.value === a.categoria)?.label ?? a.categoria}</span>
+              },
+              {
+                key: "fechaCompra",
+                header: "F. Compra",
+                sortable: true,
+                cell: (a) => new Date(a.fechaCompra).toLocaleDateString("es-AR")
+              },
+              {
+                key: "valorCompra",
+                header: "V. Original",
+                sortable: true,
+                cell: (a) => <span className="text-right block font-mono text-xs">${fmt(Number(a.valorCompra))}</span>
+              },
+              {
+                key: "valorLibros",
+                header: "V. Libros",
+                sortable: true,
+                cell: (a) => <span className="text-right block font-medium font-mono text-xs">${fmt(Number(a.valorLibros))}</span>
+              },
+              {
+                key: "amortizacionAcumulada" as any,
+                header: "% Amort.",
+                cell: (a) => {
+                  const pctAmort = Number(a.valorCompra) > 0 ? ((Number(a.amortizacionAcumulada) || 0) / (Number(a.valorCompra) - Number(a.valorResidual))) * 100 : 0;
+                  return (
+                    <div className="flex items-center gap-2">
+                      <Progress value={Math.min(100, pctAmort)} className="h-2 w-16" />
+                      <span className="text-xs font-mono">{Math.round(pctAmort)}%</span>
+                    </div>
+                  );
+                }
+              },
+              {
+                key: "estado",
+                header: "Estado",
+                sortable: true,
+                cell: (a) => (
+                  <StatusBadge
+                    variant={activoFijoEstadoVariant(a.estado)}
+                    label={activoFijoEstadoLabel(a.estado)}
+                  />
+                )
+              },
+              {
+                key: "acciones" as any,
+                header: "Acciones",
+                cell: (a) => (
+                  <div className="flex gap-1 justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); verCuadro(a.id) }}
+                      title="Cuadro de amortización"
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" />
+                    </Button>
+                    {a.estado === "activo" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            title="Dar de baja"
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Dar de baja: {a.descripcion}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Valor en libros actual: ${fmt(Number(a.valorLibros))}. Esta acción no se puede deshacer y registrará la pérdida contable correspondiente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <Textarea
+                            placeholder="Motivo de baja (opcional)"
+                            value={bajaMotivo}
+                            onChange={e => setBajaMotivo(e.target.value)}
+                          />
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => darDeBaja(a.id)}>Dar de Baja</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                )
+              },
+            ]}
             rowKey="id"
             searchPlaceholder="Buscar activo fijo..."
             searchKeys={["descripcion", "categoria", "estado"]}
@@ -376,7 +481,7 @@ export default function ActivosFijosPage() {
             </div>
 
             {depResultado && (
-              <Card>
+              <Card className="backdrop-blur-sm bg-card/60">
                 <CardContent className="pt-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm">Activos procesados:</span>
@@ -432,7 +537,7 @@ export default function ActivosFijosPage() {
                   { key: "depreciacion", header: "Depreciación", cell: (r: any) => <span className="text-right block">${fmt(r.depreciacion)}</span> },
                   { key: "acumulada", header: "Acumulada", cell: (r: any) => <span className="text-right block">${fmt(r.acumulada)}</span> },
                   { key: "valorLibros", header: "Valor Libros", cell: (r: any) => <span className="text-right block font-medium">${fmt(r.valorLibros)}</span> },
-                ] as DataTableColumn<any>[]}
+                ]}
                 rowKey="mes"
                 exportFilename="cuadro-amortizacion"
                 compact
@@ -441,6 +546,6 @@ export default function ActivosFijosPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

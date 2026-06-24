@@ -5,9 +5,10 @@
  * to suggest automatic purchase orders before stockouts.
  */
 
-import { prisma } from "@/lib/prisma"
 import { AgentBase } from "./agent-base"
 import { predecirCompras } from "../analyzers"
+import { crearAlertaIAConNotificacion } from "../notificacion-ia-service"
+import { getIANotificacionConfig } from "../ia-notificacion-config"
 import type { AgentConfig, AgentRunContext, AgentAction } from "./agent-types"
 
 export class ComprasPredictiveAgent extends AgentBase {
@@ -37,17 +38,21 @@ export class ComprasPredictiveAgent extends AgentBase {
     const semana = result.reposiciones.filter((r) => r.urgencia === "esta_semana")
     const proxima = result.reposiciones.filter((r) => r.urgencia === "proxima_semana")
 
+    const iaConfig = await getIANotificacionConfig(ctx.empresaId)
+    const notificar = iaConfig.agentesNotificacion["compras-predictivo"] !== false
+
     for (const repo of result.reposiciones) {
-      await prisma.alertaIA.create({
-        data: {
-          empresaId: ctx.empresaId,
-          tipo: "stock_critico",
-          prioridad: repo.urgencia === "inmediata" ? "alta" : repo.urgencia === "esta_semana" ? "media" : "baja",
-          titulo: `Reponer: ${repo.productoNombre}`,
-          descripcion: `Stock actual: ${repo.stockActual}. Demanda semanal estimada: ${repo.demandaSemanal}. Se agota en ~${repo.diasHastaQuiebre} días.`,
-          accion: `Comprar ${repo.cantidadSugerida} unidades a ${repo.proveedorSugerido || "proveedor habitual"}`,
-          datos: repo as any,
-        },
+      await crearAlertaIAConNotificacion({
+        empresaId: ctx.empresaId,
+        tipo: "stock_critico",
+        prioridad: repo.urgencia === "inmediata" ? "alta" : repo.urgencia === "esta_semana" ? "media" : "baja",
+        titulo: `Reponer: ${repo.productoNombre}`,
+        descripcion: `Stock actual: ${repo.stockActual}. Consumo semanal estimado: ${repo.consumoSemanal}. Cobertura de stock: ${repo.diasCobertura} días.`,
+        accion: `Comprar ${repo.cantidadSugerida} unidades al proveedor habitual`,
+        origen: "ia_agente",
+        agenteId: "compras-predictivo",
+        notificar,
+        datosExtra: repo as Record<string, unknown>,
       })
 
       acciones.push({

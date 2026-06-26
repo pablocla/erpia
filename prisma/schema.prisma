@@ -6402,3 +6402,42 @@ model AgroLote {
 
   @@map("agro_lotes")
 }
+
+// Pipeline comercial de plataforma (CEO / analistas Claver — sin tenant)
+model ComercialPipelineLead {
+  id            Int       @id @default(autoincrement())
+  nombre        String
+  negocio       String?
+  telefono      String?
+  email         String?
+  localidad     String?
+  rubro         String?
+  origen        String    @default("calle") // calle | referido | web | feria | whatsapp
+  etapa         String    @default("prospecto") // prospecto | visita | trial | cerrado | provisionado | descartado
+  valorEstimado Float?
+  proximaAccion String?
+  proximaFecha  DateTime?
+  notas         String?   @db.Text
+  empresaId     Int?
+  creadoPor     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([etapa])
+  @@index([creadoPor])
+  @@map("comercial_pipeline_leads")
+}
+
+model CeoTareaProgreso {
+  id           Int       @id @default(autoincrement())
+  operador     String
+  taskCodigo   String
+  completada   Boolean   @default(false)
+  completadaAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([operador, taskCodigo])
+  @@index([operador])
+  @@map("ceo_tarea_progreso")
+}

@@ -3,7 +3,7 @@ import {
   BookOpen,
   Building2,
   CreditCard,
-  Home,
+  LayoutDashboard,
   Network,
   PlusSquare,
   Server,
@@ -30,9 +30,14 @@ export type NavSection = {
 
 export const navSections: NavSection[] = [
   {
+    label: "CEO",
+    items: [
+      { name: "Centro de mando", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+    ],
+  },
+  {
     label: "Plataforma",
     items: [
-      { name: "Inicio", href: "/claver-cloud", icon: Home, exact: true },
       { name: "Super Admin", href: "/claver-cloud/superadmin", icon: Shield },
       {
         name: "Tenants",

@@ -96,7 +96,7 @@ export function useAuth() {
       setAuthTokenCookie(data.token)
       setToken(data.token)
       setUsuario(data.usuario)
-      return { success: true, usuario: data.usuario }
+      return { success: true, usuario: data.usuario, token: data.token as string }
     }
 
     return { success: false, error: data.error }

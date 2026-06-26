@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
+import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -62,7 +63,8 @@ export default function RegisterPage() {
       }
 
       loginConToken(data.token, data.usuario)
-      router.push("/dashboard")
+      const dest = await resolvePostLoginPathAsync(data.token, data.usuario.rol)
+      router.push(dest)
     } catch {
       setError("Error de conexión")
     } finally {

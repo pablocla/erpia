@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 
 const NAV_LINKS = [
+  { href: "/claver", label: "Grupo Claver" },
   { href: "#funcionalidades", label: "Funcionalidades" },
   { href: "#precios", label: "Precios" },
   { href: "#integraciones", label: "Integraciones" },
@@ -37,7 +38,7 @@ export function EcommerceNav() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/ecommerce">
+        <Link href="/claver/ecommerce">
           <BrandLogo size="sm" theme={scrolled ? "light" : "light"} variant="claverp-full" />
         </Link>
 

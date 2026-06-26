@@ -144,7 +144,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               <li><Link href="/claver/claverp" className="hover:text-white">Producto</Link></li>
               <li><Link href="/claver/claverp/modulos" className="hover:text-white">Módulos</Link></li>
               <li><Link href="/claver/claverp/precios" className="hover:text-white">Precios</Link></li>
-              <li><Link href="/claver/claverp/ecommerce" className="hover:text-white">Ecommerce</Link></li>
+              <li><Link href="/claver/ecommerce" className="hover:text-white">Ecommerce</Link></li>
             </ul>
           </div>
           <div>

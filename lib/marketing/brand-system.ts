@@ -152,8 +152,11 @@ export const CLAVER_ROUTES = {
   claverp: "/claver/claverp",
   claverpModulos: "/claver/claverp/modulos",
   claverpSolution: (slug: string) => `/claver/claverp/${slug}`,
+  ecommerce: "/claver/ecommerce",
   marca: "/claver/marca",
   cloud: "/claver-cloud",
+  login: "/login",
+  dashboard: "/dashboard",
 } as const
 
 export const CLAVER_NAV = [
@@ -161,7 +164,7 @@ export const CLAVER_NAV = [
   { href: "/claver/claverp", label: "Clavis" },
   { href: "/claver-cloud", label: "Claver Cloud" },
   { href: "/claver/claverp/pos-afip", label: "POS & AFIP" },
-  { href: "/claver/claverp/ecommerce", label: "Ecommerce" },
+  { href: "/claver/ecommerce", label: "Ecommerce" },
   { href: "/claver/claverp/distribuidoras", label: "Distribuidoras" },
   { href: "/claver/claverp/precios", label: "Precios" },
   { href: "/claver/marca", label: "Marca" },

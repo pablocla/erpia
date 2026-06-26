@@ -64,6 +64,13 @@ const nextConfig: NextConfig = {
     },
   },
 
+  async redirects() {
+    return [
+      { source: "/ecommerce", destination: "/claver/ecommerce", permanent: true },
+      { source: "/claver/claverp/ecommerce", destination: "/claver/ecommerce", permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {

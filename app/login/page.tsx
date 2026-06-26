@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
-import { getHomePathForRol } from "@/lib/auth/home-redirect"
+import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
 
 function LoginPageContent() {
   const router = useRouter()
@@ -22,12 +22,9 @@ function LoginPageContent() {
   const nextPath = searchParams.get("next")
   const { login, loginConToken } = useAuth()
 
-  function redirectAfterLogin(rol: string) {
-    if (nextPath && nextPath.startsWith("/")) {
-      router.push(nextPath)
-      return
-    }
-    router.push(getHomePathForRol(rol))
+  async function redirectAfterLogin(token: string, rol: string) {
+    const dest = await resolvePostLoginPathAsync(token, rol, nextPath)
+    router.push(dest)
   }
 
   const [email, setEmail] = useState("")
@@ -55,7 +52,7 @@ function LoginPageContent() {
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
-          redirectAfterLogin(data.usuario.rol)
+          await redirectAfterLogin(data.token, data.usuario.rol)
           return
         }
       } catch {
@@ -63,8 +60,8 @@ function LoginPageContent() {
       }
     }
 
-    if (resultado.success && resultado.usuario) {
-      redirectAfterLogin(resultado.usuario.rol)
+    if (resultado.success && resultado.usuario && resultado.token) {
+      await redirectAfterLogin(resultado.token, resultado.usuario.rol)
     } else {
       setError(resultado.error || "Error al iniciar sesión")
       setCargando(false)
@@ -83,7 +80,7 @@ function LoginPageContent() {
       const data = await res.json()
       if (data.success && data.token) {
         loginConToken(data.token, data.usuario)
-        redirectAfterLogin(data.usuario.rol)
+        await redirectAfterLogin(data.token, data.usuario.rol)
       } else {
         setError(data.error || "Error al iniciar sesión demo")
       }

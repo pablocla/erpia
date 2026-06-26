@@ -58,7 +58,7 @@ export default function ClavERPConexionesPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="border-white/30 text-white hover:bg-white/10">
-                <Link href="/ecommerce#integraciones">Ver e-commerce</Link>
+                <Link href="/claver/ecommerce#integraciones">Ver e-commerce</Link>
               </Button>
             </div>
           </MotionFadeDown>

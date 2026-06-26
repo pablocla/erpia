@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,17 @@ import { getHomePathForRol } from "@/lib/auth/home-redirect"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get("next")
   const { login, loginConToken } = useAuth()
+
+  function redirectAfterLogin(rol: string) {
+    if (nextPath && nextPath.startsWith("/")) {
+      router.push(nextPath)
+      return
+    }
+    router.push(getHomePathForRol(rol))
+  }
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rubro, setRubro] = useState("salon_belleza")
@@ -44,7 +54,7 @@ export default function LoginPage() {
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
-          router.push(getHomePathForRol(data.usuario.rol))
+          redirectAfterLogin(data.usuario.rol)
           return
         }
       } catch {
@@ -53,7 +63,7 @@ export default function LoginPage() {
     }
 
     if (resultado.success && resultado.usuario) {
-      router.push(getHomePathForRol(resultado.usuario.rol))
+      redirectAfterLogin(resultado.usuario.rol)
     } else {
       setError(resultado.error || "Error al iniciar sesión")
       setCargando(false)
@@ -72,7 +82,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (data.success && data.token) {
         loginConToken(data.token, data.usuario)
-        router.push(getHomePathForRol(data.usuario.rol))
+        redirectAfterLogin(data.usuario.rol)
       } else {
         setError(data.error || "Error al iniciar sesión demo")
       }

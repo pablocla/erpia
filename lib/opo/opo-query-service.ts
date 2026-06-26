@@ -6,8 +6,18 @@ import {
   PROTHEUS_DEMO_PRODUCTS,
 } from "./protheus-demo"
 import { getEmpresaNombre, getOpoConfig } from "./opo-config-service"
+import { queryProtheusEntity } from "./protheus-rest-client"
 import { fetchRemoteDiscovery, isRemoteAgentConfigured, queryRemoteAgent } from "./remote-agent"
 import type { OpoCanonicalEntity, OpoQueryInput } from "./types"
+
+function isRestDirectConfigured(config: Awaited<ReturnType<typeof getOpoConfig>>): boolean {
+  return Boolean(
+    config.restDirectUrl?.trim() &&
+      config.restAuthUser?.trim() &&
+      config.restAuthPassword?.trim() &&
+      (config.accesoCanal === "rest_directo" || config.conector === "rest"),
+  )
+}
 
 function filterDemo<T extends Record<string, unknown>>(rows: T[], search?: string) {
   if (!search?.trim()) return rows
@@ -42,6 +52,21 @@ export async function executeOpoQuery(empresaId: number, input: OpoQueryInput) {
 
   if (config.origen === "clavis_db") {
     return queryClavisEntity(empresaId, input)
+  }
+
+  if (isRestDirectConfigured(config)) {
+    const mapping = config.entityMappings?.find((m) => m.entity === input.entity)
+    if (mapping?.lectura?.endpoint) {
+      return queryProtheusEntity(
+        {
+          baseUrl: config.restDirectUrl!,
+          user: config.restAuthUser!,
+          password: config.restAuthPassword!,
+        },
+        mapping,
+        { limit: input.limit, search: input.search },
+      )
+    }
   }
 
   if (isRemoteAgentConfigured(config)) {

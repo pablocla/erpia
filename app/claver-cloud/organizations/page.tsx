@@ -57,9 +57,9 @@ export default function ClaverOrganizationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Organizations</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
           <p className="text-muted-foreground flex items-center gap-2 mt-1">
-            Tenant Fleet Overview
+            Vista de flota de organizaciones
             <Badge variant="outline" className="bg-amber-500/10 text-amber-800 border-amber-300">
               {CLAVER_GROUP.name} Ops · {scope === "all" ? "Acceso total" : "Asignados"}
             </Badge>
@@ -111,10 +111,10 @@ export default function ClaverOrganizationsPage() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button asChild size="sm" variant="default">
-                  <Link href={`/claver-cloud/tenants/${c.id}`}>Super Admin</Link>
+                  <Link href={`/claver-cloud/tenants/${c.id}`}>Panel tenant</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/claver-cloud/operations/${c.id}`}>Ops</Link>
+                  <Link href={`/claver-cloud/operations/${c.id}`}>Operaciones</Link>
                 </Button>
               </div>
             </CardContent>
@@ -124,7 +124,7 @@ export default function ClaverOrganizationsPage() {
 
       {clientes.length === 0 && !loading && (
         <p className="text-sm text-muted-foreground text-center py-12">
-          No tenants assigned to your account.
+          No hay tenants asignados a tu cuenta.
         </p>
       )}
     </div>

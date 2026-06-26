@@ -21,8 +21,10 @@ import {
   UserCog,
   XCircle,
   Zap,
+  Link2,
 } from "lucide-react"
 import { CustomPlaybooksEditor } from "@/components/claver-cloud/custom-playbooks-editor"
+import { LegacyBridgeWizard } from "@/components/claver-cloud/legacy-bridge-wizard"
 import { PlaybooksPanel } from "@/components/claver-cloud/playbooks-panel"
 import { TenantBillingPanel } from "@/components/claver-cloud/tenant-billing-panel"
 import { TenantConfigPanel } from "@/components/claver-cloud/tenant-config-panel"
@@ -310,6 +312,10 @@ export default function ClaverTenantSuperAdminPage() {
           <TabsTrigger value="productos">Productos ({data.productosCatalogo})</TabsTrigger>
           <TabsTrigger value="packs">Packs ({data.packs.length})</TabsTrigger>
           <TabsTrigger value="readiness">Readiness</TabsTrigger>
+          <TabsTrigger value="legacy-bridge">
+            <Link2 className="h-3 w-3 mr-1 inline" />
+            Legacy Bridge
+          </TabsTrigger>
           <TabsTrigger value="config">
             <Settings2 className="h-3 w-3 mr-1 inline" />
             Parametrización
@@ -455,6 +461,10 @@ export default function ClaverTenantSuperAdminPage() {
               </CardContent>
             </Card>
           ))}
+        </TabsContent>
+
+        <TabsContent value="legacy-bridge" className="mt-4">
+          <LegacyBridgeWizard empresaId={Number(empresaId)} />
         </TabsContent>
 
         <TabsContent value="config" className="mt-4">

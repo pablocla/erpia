@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
         id: true,
         nombre: true,
         razonSocial: true,
+        cuit: true,
         rubro: true,
         entorno: true,
         entornoAfip: true,

@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Activity, Building2, RefreshCw, Server, Shield, AlertTriangle } from "lucide-react"
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  RefreshCw,
+  Server,
+} from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { navSections } from "@/lib/claver-cloud/nav-config"
 
 type PlataformaMetricas = {
   clientes: number
@@ -43,66 +51,88 @@ export default function ClaverCloudHomePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Console Home</h1>
-          <p className="text-muted-foreground">Claver Cloud Platform Overview</p>
+          <h1 className="text-3xl font-bold tracking-tight">Claver Cloud</h1>
+          <p className="text-muted-foreground">Consola de operaciones, tenants y Protheus / OPO</p>
         </div>
         <Button variant="outline" onClick={cargar} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          Actualizar
         </Button>
       </div>
-
-      <Button asChild>
-        <Link href="/claver-cloud/superadmin">
-          <Shield className="h-4 w-4 mr-2" />
-          Abrir Super Admin Dashboard
-        </Link>
-      </Button>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tenants</CardTitle>
+            <CardTitle className="text-sm font-medium">Tenants activos</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{plataforma?.clientes ?? "—"}</div>
-            <p className="text-xs text-muted-foreground">Active organizations</p>
+            <p className="text-xs text-muted-foreground">Organizaciones en la flota</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Environments in Error</CardTitle>
+            <CardTitle className="text-sm font-medium">Entornos en error</CardTitle>
             <Server className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-500">{plataforma?.entornosEnError ?? "—"}</div>
-            <p className="text-xs text-muted-foreground">Requires immediate attention</p>
+            <p className="text-xs text-muted-foreground">Requieren atención inmediata</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">SLA Breaches</CardTitle>
+            <CardTitle className="text-sm font-medium">SLA vencidos</CardTitle>
             <AlertTriangle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-500">{plataforma?.slaVencidos ?? "—"}</div>
-            <p className="text-xs text-muted-foreground">Tickets exceeding SLA</p>
+            <p className="text-xs text-muted-foreground">Tickets fuera de SLA</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Platform MTTR</CardTitle>
+            <CardTitle className="text-sm font-medium">MTTR plataforma</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{plataforma?.mttrHoras ?? "—"}h</div>
-            <p className="text-xs text-muted-foreground">Mean Time To Recovery</p>
+            <p className="text-xs text-muted-foreground">Tiempo medio de recuperación</p>
           </CardContent>
         </Card>
       </div>
-      
-      {/* Additional dashboard widgets can be added here in the future (e.g. recent alerts, quick actions) */}
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {navSections.map((section) => (
+          <Card key={section.label}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{section.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {section.items
+                .filter((item) => item.href !== "/claver-cloud")
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center justify-between rounded-md px-2 py-2 text-sm hover:bg-muted transition-colors group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4 text-muted-foreground" />
+                      {item.name}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Tip: usá la barra de búsqueda arriba para ir directo al panel de un tenant por ID, CUIT o nombre.
+      </p>
     </div>
   )
 }

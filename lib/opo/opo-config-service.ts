@@ -5,6 +5,7 @@ import {
   setFeature,
 } from "@/lib/config/rubro-config-service"
 import { prisma } from "@/lib/prisma"
+import { PROTHEUS_DEFAULT_MAPPINGS, resolveAccesoCanal } from "./entity-mappings-default"
 import type { ModoErp, OpoConector, OpoOrigen, OpoTenantConfig } from "./types"
 
 export const OPO_SKU = "bridge.opo_studio"
@@ -18,6 +19,18 @@ const DEFAULT_CONFIG: OpoTenantConfig = {
   baseUrl: "",
   agentApiKey: "",
   sqlViewPrefix: "vw_opo_",
+  accesoCanal: "rest_directo",
+  sqlModo: "direct",
+  restDirectUrl: "",
+  restAuthUser: "",
+  restAuthPassword: "",
+  sqlServer: "",
+  sqlPort: 1433,
+  sqlDatabase: "",
+  sqlUser: "",
+  sqlPassword: "",
+  tableSuffix: "010",
+  entityMappings: PROTHEUS_DEFAULT_MAPPINGS,
 }
 
 function mergeConfig(raw: Record<string, unknown> | undefined): OpoTenantConfig {
@@ -31,6 +44,34 @@ function mergeConfig(raw: Record<string, unknown> | undefined): OpoTenantConfig 
     agentApiKey: typeof raw.agentApiKey === "string" ? raw.agentApiKey : DEFAULT_CONFIG.agentApiKey,
     sqlViewPrefix:
       typeof raw.sqlViewPrefix === "string" ? raw.sqlViewPrefix : DEFAULT_CONFIG.sqlViewPrefix,
+    accesoCanal:
+      (raw.accesoCanal as OpoTenantConfig["accesoCanal"]) ??
+      resolveAccesoCanal(
+        (raw.conector as OpoConector) ?? DEFAULT_CONFIG.conector,
+        typeof raw.baseUrl === "string" ? raw.baseUrl : undefined,
+        typeof raw.restDirectUrl === "string" ? raw.restDirectUrl : undefined,
+      ),
+    sqlModo: (raw.sqlModo as OpoTenantConfig["sqlModo"]) ?? DEFAULT_CONFIG.sqlModo,
+    restDirectUrl:
+      typeof raw.restDirectUrl === "string" ? raw.restDirectUrl : DEFAULT_CONFIG.restDirectUrl,
+    restAuthUser:
+      typeof raw.restAuthUser === "string" ? raw.restAuthUser : DEFAULT_CONFIG.restAuthUser,
+    restAuthPassword:
+      typeof raw.restAuthPassword === "string"
+        ? raw.restAuthPassword
+        : DEFAULT_CONFIG.restAuthPassword,
+    entityMappings: Array.isArray(raw.entityMappings)
+      ? (raw.entityMappings as OpoTenantConfig["entityMappings"])
+      : DEFAULT_CONFIG.entityMappings,
+    bridgeTestedAt:
+      typeof raw.bridgeTestedAt === "string" ? raw.bridgeTestedAt : undefined,
+    bridgeTestOk: typeof raw.bridgeTestOk === "boolean" ? raw.bridgeTestOk : undefined,
+    sqlServer: typeof raw.sqlServer === "string" ? raw.sqlServer : DEFAULT_CONFIG.sqlServer,
+    sqlPort: typeof raw.sqlPort === "number" ? raw.sqlPort : DEFAULT_CONFIG.sqlPort,
+    sqlDatabase: typeof raw.sqlDatabase === "string" ? raw.sqlDatabase : DEFAULT_CONFIG.sqlDatabase,
+    sqlUser: typeof raw.sqlUser === "string" ? raw.sqlUser : DEFAULT_CONFIG.sqlUser,
+    sqlPassword: typeof raw.sqlPassword === "string" ? raw.sqlPassword : DEFAULT_CONFIG.sqlPassword,
+    tableSuffix: typeof raw.tableSuffix === "string" ? raw.tableSuffix : DEFAULT_CONFIG.tableSuffix,
   }
 }
 
@@ -56,6 +97,20 @@ export async function patchOpoConfig(
       baseUrl: next.baseUrl ?? "",
       agentApiKey: next.agentApiKey ?? "",
       sqlViewPrefix: next.sqlViewPrefix ?? "vw_opo_",
+      accesoCanal: next.accesoCanal,
+      sqlModo: next.sqlModo,
+      restDirectUrl: next.restDirectUrl ?? "",
+      restAuthUser: next.restAuthUser ?? "",
+      restAuthPassword: next.restAuthPassword ?? "",
+      entityMappings: next.entityMappings ?? PROTHEUS_DEFAULT_MAPPINGS,
+      bridgeTestedAt: next.bridgeTestedAt,
+      bridgeTestOk: next.bridgeTestOk,
+      sqlServer: next.sqlServer ?? "",
+      sqlPort: next.sqlPort ?? 1433,
+      sqlDatabase: next.sqlDatabase ?? "",
+      sqlUser: next.sqlUser ?? "",
+      sqlPassword: next.sqlPassword ?? "",
+      tableSuffix: next.tableSuffix ?? "010",
       activo: next.activo,
     },
   })

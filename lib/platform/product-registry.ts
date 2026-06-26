@@ -76,6 +76,8 @@ function fromPremium(sku: string): ProductoHorizontal | null {
 
 const ALMACEN_ROSARIO_NAV = ["/dashboard/almacen", "/dashboard/pos"]
 
+const ENGANCHE_SKUS = new Set(ENGANCHES.map((e) => e.sku))
+
 export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
   fromEnganche(ENGANCHES.find((e) => e.sku === "pos.fiado_barrio")!, ["/dashboard/fiado", "/dashboard/pos"]),
   fromEnganche(ENGANCHES.find((e) => e.sku === "intang.cobranzas_wa")!, ["/dashboard/cuentas-cobrar"]),
@@ -193,8 +195,6 @@ export interface ProductoPack {
   skus: string[]
   precioPackArs: number
 }
-
-const ENGANCHE_SKUS = new Set(ENGANCHES.map((e) => e.sku))
 
 export const PACKS_HORIZONTALES: ProductoPack[] = MARKETPLACE_BUNDLES.filter(
   (b) =>

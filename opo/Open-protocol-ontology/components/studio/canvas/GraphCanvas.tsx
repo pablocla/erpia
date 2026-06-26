@@ -14,7 +14,7 @@ import CanvasEmptyState from './CanvasEmptyState';
 import ContextMenu from './ContextMenu';
 import RestExplorer from '../RestExplorer';
 import { toast } from 'sonner';
-import { Brain, Database, Globe } from 'lucide-react';
+import { Brain, Database, Globe, Cpu } from 'lucide-react';
 import { EntityAttribute } from '@/lib/studio/studioTypes';
 // (no NodeChatInterface here: mosaico expands inside the AgentNode body for simultaneous visible diagram + per-agent chats)
 
@@ -237,7 +237,7 @@ export default function GraphCanvas() {
 
   // ---- FIX 1: Auto-Discover (Universal + REST) ----
   const [isDiscoverOpen, setIsDiscoverOpen] = useState(false);
-  const [discoverTab, setDiscoverTab] = useState<'sql' | 'rest'>('sql');
+  const [discoverTab, setDiscoverTab] = useState<'sql' | 'rest' | 'sql-translator'>('sql');
   const [dbDriver, setDbDriver] = useState('postgresql');
   const [discoverUrl, setDiscoverUrl] = useState('');
   const [tableFilter, setTableFilter] = useState(''); // GROK UX: glob filter e.g. SF*,SA* to scan only relevant tables in huge DBs (Protheus 2000+ tables)
@@ -246,10 +246,54 @@ export default function GraphCanvas() {
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [isEnriching, setIsEnriching] = useState(false);
 
+  // SQL Translator States
+  const [sqlTranslatorInput, setSqlTranslatorInput] = useState('');
+  const [sqlTranslatorResult, setSqlTranslatorResult] = useState<any>(null);
+  const [sqlTranslatorType, setSqlTranslatorType] = useState<'ontology' | 'data'>('ontology');
+  const [isTranslatingSql, setIsTranslatingSql] = useState(false);
+
   const handleAutoDiscover = useCallback(() => {
     setDiscoverTab('sql');
     setIsDiscoverOpen(true);
   }, []);
+
+  const executeSqlTranslation = async () => {
+    if (!sqlTranslatorInput.trim()) {
+      toast.error('Por favor, ingresá una consulta SQL.');
+      return;
+    }
+    setIsTranslatingSql(true);
+    const toastId = toast.loading('Analizando y traduciendo consulta SQL...');
+    try {
+      const res = await fetch('/api/studio/sql-to-ontology', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sql: sqlTranslatorInput,
+          connectionString: discoverUrl || undefined,
+          companySuffix,
+          mode: dbDriver === 'totvs-protheus' && !protheusSimulateDelta ? 'live' : 'mock',
+          generateType: sqlTranslatorType,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSqlTranslatorResult(data);
+        toast.success(
+          data.type === 'ontology'
+            ? 'Ontología y mapeo de tablas generados con éxito.'
+            : 'Consulta ejecutada y datos mapeados semánticamente.',
+          { id: toastId }
+        );
+      } else {
+        toast.error(data.error || 'Error al traducir la consulta SQL.', { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`, { id: toastId });
+    } finally {
+      setIsTranslatingSql(false);
+    }
+  };
 
   const executeDiscover = async () => {
     const isProtheus = dbDriver === 'totvs-protheus';
@@ -520,6 +564,12 @@ Usa los datos del ontology actual.`;
               >
                 <Globe className="w-4 h-4" /> <span>REST API Explorer</span>
               </button>
+              <button 
+                onClick={() => setDiscoverTab('sql-translator')}
+                className={`flex-1 py-4 text-sm font-semibold flex items-center justify-center space-x-2 transition-colors ${discoverTab === 'sql-translator' ? 'text-violet-400 border-b-2 border-violet-400 bg-violet-900/10' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'}`}
+              >
+                <Cpu className="w-4 h-4" /> <span>SQL Plug & Play Translator</span>
+              </button>
             </div>
 
             {/* Content Area */}
@@ -634,10 +684,114 @@ Usa los datos del ontology actual.`;
               {discoverTab === 'rest' && (
                 <RestExplorer onAnalyze={(body) => handleOllamaAnalyze(body, 'infer-rest')} />
               )}
+
+              {discoverTab === 'sql-translator' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[50vh]">
+                  {/* Left Column: SQL Input & Controls */}
+                  <div className="flex flex-col space-y-4">
+                    <div className="space-y-1.5">
+                      <h3 className="text-lg font-semibold text-white">Traductor SQL Semántico (Plug & Play)</h3>
+                      <p className="text-xs text-neutral-400">
+                        Escribí cualquier consulta SQL. El sistema analizará las relaciones (SX9) y parámetros (SX6) para generar el mapa ontológico o recuperar datos mapeados.
+                      </p>
+                    </div>
+
+                    <div className="flex-1 flex flex-col space-y-1.5">
+                      <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Consulta SQL</label>
+                      <textarea
+                        value={sqlTranslatorInput}
+                        onChange={(e) => setSqlTranslatorInput(e.target.value)}
+                        placeholder="SELECT * FROM SC5010 SC5 INNER JOIN SA1010 SA1 ON SC5.C5_CLIENTE = SA1.A1_COD WHERE SC5.D_E_L_E_T_ = ' '"
+                        className="flex-1 w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-sm focus:outline-none focus:border-violet-500 text-neutral-200 font-mono resize-none min-h-[150px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between border border-neutral-800 bg-neutral-900/30 p-3 rounded-lg">
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-xs text-neutral-300 font-medium cursor-pointer">
+                          <input
+                            type="radio"
+                            name="translatorType"
+                            checked={sqlTranslatorType === 'ontology'}
+                            onChange={() => setSqlTranslatorType('ontology')}
+                            className="text-violet-600 focus:ring-violet-500"
+                          />
+                          Generar Ontología (Markdown)
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-neutral-300 font-medium cursor-pointer">
+                          <input
+                            type="radio"
+                            name="translatorType"
+                            checked={sqlTranslatorType === 'data'}
+                            onChange={() => setSqlTranslatorType('data')}
+                            className="text-violet-600 focus:ring-violet-500"
+                          />
+                          Datos Mapeados (JSON)
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() => { setIsDiscoverOpen(false); setSqlTranslatorResult(null); }}
+                        className="px-4 py-2 text-sm font-medium text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded transition-colors"
+                      >
+                        Cerrar
+                      </button>
+                      <button
+                        onClick={executeSqlTranslation}
+                        disabled={isTranslatingSql}
+                        className="px-6 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded transition-colors flex items-center space-x-2 shadow-lg shadow-violet-900/20"
+                      >
+                        {isTranslatingSql ? (
+                          <><span className="animate-spin">⏳</span><span>Generando...</span></>
+                        ) : (
+                          <><Cpu className="w-4 h-4"/><span>Generar</span></>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Results Display */}
+                  <div className="border border-neutral-800 rounded-lg bg-neutral-900/20 p-4 flex flex-col h-full overflow-hidden">
+                    <div className="flex items-center justify-between border-b border-neutral-800 pb-2 mb-3">
+                      <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Resultado de la Traducción</span>
+                      {sqlTranslatorResult && (
+                        <button
+                          onClick={() => {
+                            const content = sqlTranslatorResult.type === 'ontology'
+                              ? sqlTranslatorResult.document
+                              : JSON.stringify(sqlTranslatorResult.mappedRows, null, 2);
+                            navigator.clipboard.writeText(content);
+                            toast.success('Copiado al portapapeles');
+                          }}
+                          className="text-[10px] text-violet-400 hover:text-violet-300 font-mono"
+                        >
+                          Copiar Contenido
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-auto font-mono text-xs text-neutral-300">
+                      {sqlTranslatorResult ? (
+                        sqlTranslatorResult.type === 'ontology' ? (
+                          <pre className="whitespace-pre-wrap font-sans leading-relaxed text-left">{sqlTranslatorResult.document}</pre>
+                        ) : (
+                          <pre className="whitespace-pre-wrap text-left">{JSON.stringify(sqlTranslatorResult.mappedRows, null, 2)}</pre>
+                        )
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-neutral-500 italic">
+                          Ingresá la consulta SQL y hacé clic en Generar para visualizar el resultado.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Absolute close button for rest tab */}
-            {discoverTab === 'rest' && (
+            {/* Absolute close button for rest & translator tabs */}
+            {(discoverTab === 'rest' || discoverTab === 'sql-translator') && (
               <button 
                 onClick={() => setIsDiscoverOpen(false)}
                 className="absolute top-4 right-4 bg-neutral-800 hover:bg-neutral-700 text-white p-1.5 rounded-full z-10"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { clearAuthTokenCookie, setAuthTokenCookie } from "@/lib/auth/token-cookie"
 
 interface Usuario {
   id: number
@@ -19,6 +20,7 @@ export function useAuth() {
     // Cargar token del localStorage
     const tokenGuardado = localStorage.getItem("token")
     if (tokenGuardado) {
+      setAuthTokenCookie(tokenGuardado)
       setToken(tokenGuardado)
       cargarUsuario(tokenGuardado)
     } else {
@@ -46,6 +48,7 @@ export function useAuth() {
         }
         // Token inválido and refresh failed, clean up and redirect to login
         localStorage.removeItem("token")
+        clearAuthTokenCookie()
         setToken(null)
         if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
           window.location.href = "/login"
@@ -90,6 +93,7 @@ export function useAuth() {
 
     if (data.success) {
       localStorage.setItem("token", data.token)
+      setAuthTokenCookie(data.token)
       setToken(data.token)
       setUsuario(data.usuario)
       return { success: true, usuario: data.usuario }
@@ -100,12 +104,14 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("token")
+    clearAuthTokenCookie()
     setToken(null)
     setUsuario(null)
   }
 
   const loginConToken = (tokenNuevo: string, usuarioData: Usuario) => {
     localStorage.setItem("token", tokenNuevo)
+    setAuthTokenCookie(tokenNuevo)
     setToken(tokenNuevo)
     setUsuario(usuarioData)
   }

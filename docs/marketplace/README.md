@@ -8,6 +8,7 @@ Este índice cubre el ciclo completo del marketplace de automatizaciones y servi
 
 | Rol | Documentos clave |
 |-----|------------------|
+| **Vendedor en calle / monotributo** | [**roadmap-venta-vendedor-calle**](../comercial/roadmap-venta-vendedor-calle.md) |
 | Comercial / onboarding | [01-onboarding-cliente](./01-onboarding-cliente.md) |
 | Cliente (tenant) | [02-activacion-producto](./02-activacion-producto.md) |
 | Analista Claver | [04-torre-analista-claver-cloud](./04-torre-analista-claver-cloud.md), [06-runbooks-por-producto](./06-runbooks-por-producto.md) |

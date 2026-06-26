@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { ThemeCustomizer } from "@/components/theme-customizer"
 import { ContextualHelp } from "@/components/contextual-help"
@@ -32,6 +32,7 @@ import {
   Menu,
   Cloud,
 } from "lucide-react"
+import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
@@ -134,6 +135,10 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
     void cargarTickets()
     const interval = setInterval(() => void cargarTickets(), 120_000)
     return () => clearInterval(interval)
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    performLogoutAndRedirect("/login")
   }, [])
 
   useEffect(() => {
@@ -378,7 +383,13 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              className="gap-2 text-destructive focus:text-destructive cursor-pointer"
+              onSelect={(e) => {
+                e.preventDefault()
+                handleLogout()
+              }}
+            >
               <LogOut className="h-4 w-4" />
               Cerrar Sesión
             </DropdownMenuItem>

@@ -4,17 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AlertTriangle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { parseJwtPayload } from "@/lib/auth/session-client"
 import { useAuthStore } from "@/lib/stores"
-
-function parseJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const part = token.split(".")[1]
-    if (!part) return null
-    return JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")))
-  } catch {
-    return null
-  }
-}
 
 export function ImpersonationBanner() {
   const token = useAuthStore((s) => s.token)

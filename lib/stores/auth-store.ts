@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
+import { clearAuthTokenCookie } from "@/lib/auth/token-cookie"
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AUTH STORE — Centralized authentication state (Zustand)
@@ -50,6 +51,10 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem("token")
           localStorage.removeItem("user")
           localStorage.removeItem("erp-auth")
+          sessionStorage.removeItem("claver-cloud-verified")
+          sessionStorage.removeItem("claver_analyst_token")
+          sessionStorage.removeItem("claver_analyst_user")
+          clearAuthTokenCookie()
         }
       },
 

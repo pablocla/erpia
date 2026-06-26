@@ -3,7 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ExternalLink, LayoutDashboard, Menu, Server } from "lucide-react"
+import { ExternalLink, LayoutDashboard, LogOut, Menu, Server } from "lucide-react"
+import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -65,9 +66,9 @@ function ShellFooterLinks() {
   return (
     <div className="border-t border-border/60 p-3 space-y-1">
       <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8" asChild>
-        <Link href="/dashboard">
+        <Link href="/claver-cloud/organizations">
           <LayoutDashboard className="h-3.5 w-3.5" />
-          Volver al ERP
+          Tenants · impersonar ERP
         </Link>
       </Button>
       <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8 text-muted-foreground" asChild>
@@ -75,6 +76,15 @@ function ShellFooterLinks() {
           <ExternalLink className="h-3.5 w-3.5" />
           Grupo Claver
         </Link>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full justify-start gap-2 text-xs h-8 text-destructive hover:text-destructive"
+        onClick={() => performLogoutAndRedirect("/login")}
+      >
+        <LogOut className="h-3.5 w-3.5" />
+        Cerrar sesión
       </Button>
     </div>
   )

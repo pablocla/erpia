@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { isImpersonatingSession, performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -641,7 +642,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarSearch, setSidebarSearch] = useState("")
   const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
+
   const role = user?.rol
   const userId = user?.id ?? null
   const pathname = usePathname()
@@ -662,6 +663,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
       .catch(() => setIsClaverAnalyst(false))
   }, [mounted])
+
+  // Analistas operan en Cloud; el ERP solo vía impersonación de tenant
+  useEffect(() => {
+    if (!mounted || !isClaverAnalyst) return
+    if (isImpersonatingSession()) return
+    router.replace("/claver-cloud")
+  }, [mounted, isClaverAnalyst, router])
 
   useEffect(() => {
     if (!compactShell) {
@@ -689,9 +697,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname, addRecentPage])
 
   const handleLogout = useCallback(() => {
-    logout()
-    router.replace("/login")
-  }, [logout, router])
+    performLogoutAndRedirect("/login")
+  }, [])
 
   const authHeaders = useCallback((): HeadersInit => {
     const token = localStorage.getItem("token")

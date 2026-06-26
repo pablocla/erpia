@@ -43,8 +43,9 @@ import {
   Cloud,
 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
-import { useAuthStore } from "@/lib/stores/auth-store"
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    COMMAND PALETTE — Spotlight-style navigation (Cmd+K / Ctrl+K)
@@ -117,7 +118,6 @@ export function CommandPalette() {
   const router = useRouter()
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
-  const logout = useAuthStore((s) => s.logout)
   const [docItems, setDocItems] = useState<any[]>([])
 
   useEffect(() => {
@@ -283,9 +283,8 @@ export function CommandPalette() {
         <CommandGroup heading="Sesión">
           <CommandItem
             onSelect={() => {
-              logout()
               setCommandPaletteOpen(false)
-              router.push("/login")
+              performLogoutAndRedirect("/login")
             }}
           >
             <LogOut className="mr-2 h-4 w-4" />

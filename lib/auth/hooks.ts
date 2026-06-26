@@ -104,6 +104,9 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("token")
+    sessionStorage.removeItem("claver-cloud-verified")
+    sessionStorage.removeItem("claver_analyst_token")
+    sessionStorage.removeItem("claver_analyst_user")
     clearAuthTokenCookie()
     setToken(null)
     setUsuario(null)

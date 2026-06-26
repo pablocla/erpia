@@ -29,7 +29,7 @@ import {
 } from "@/components/almacen/almacen-modulos-grid"
 import { AlmacenModuloPanel } from "@/components/almacen/almacen-modulo-panel"
 import { VISIBILIDAD_MENSAJE, ALMACEN_ROSARIO_BUNDLE_ID } from "@/lib/almacen-rosario/comercial"
-import { MARKETPLACE_BUNDLES } from "@/lib/marketplace"
+import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 
 type ValeActivo = {
   id: number

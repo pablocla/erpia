@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { CreditCard, ExternalLink, Loader2 } from "lucide-react"
-import { TENANT_PLAN_LIMITS, type TenantPlanId } from "@/lib/ops/tenant-plan-service"
+import { TENANT_PLAN_LIMITS, type TenantPlanId } from "@/lib/ops/tenant-plan-limits"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

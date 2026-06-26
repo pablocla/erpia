@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Loader2, Play, Plus, Trash2, Wand2 } from "lucide-react"
-import { ANALYST_PLAYBOOKS } from "@/lib/ops/analyst-playbooks"
+import { ANALYST_PLAYBOOKS } from "@/lib/ops/analyst-playbooks-catalog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

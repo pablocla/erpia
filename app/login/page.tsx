@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
 import { getHomePathForRol } from "@/lib/auth/home-redirect"
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get("next")
@@ -207,5 +207,24 @@ export default function LoginPage() {
         </span>
       </p>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>{BRAND_NAME}</CardTitle>
+              <CardDescription>Cargando…</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   )
 }

@@ -7,8 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import type { TenantPlanId } from "@/lib/ops/tenant-plan-service"
-import { TENANT_PLAN_LIMITS } from "@/lib/ops/tenant-plan-service"
+import type { TenantPlanId } from "@/lib/ops/tenant-plan-limits"
+import { TENANT_PLAN_LIMITS } from "@/lib/ops/tenant-plan-limits"
 
 export type SkuCatalogItem = {
   sku: string

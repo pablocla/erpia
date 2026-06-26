@@ -9,13 +9,12 @@ import {
   AUTOPOOL_ENTRIES,
   AUTOPOOL_NICHOS,
   AUTOPOOL_TIPOS,
-  INTANGIBLE_PREMIUM_7,
-  PREMIUM_7_BUNDLE_ID,
-  MARKETPLACE_BUNDLES,
   type AutopoolNichoId,
   type AutopoolTipoId,
   type AutopoolCertLevel,
-} from "@/lib/marketplace"
+} from "@/lib/marketplace/autopool-manifest"
+import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
+import { INTANGIBLE_PREMIUM_7, PREMIUM_7_BUNDLE_ID } from "@/lib/marketplace/intangible-premium-7"
 import { CLAVER_SERVICE_LINES } from "@/lib/marketing/claver-services-catalog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

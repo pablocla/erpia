@@ -21,8 +21,8 @@ import {
 import { CloudPageHeader } from "@/components/claver-cloud/cloud-page-header"
 import { SkuPicker, type SkuCatalogItem } from "@/components/claver-cloud/sku-picker"
 import { cloudAuthHeaders } from "@/lib/claver-cloud/auth-headers"
-import type { TenantPlanId } from "@/lib/ops/tenant-plan-service"
-import { TENANT_PLAN_LIMITS } from "@/lib/ops/tenant-plan-service"
+import type { TenantPlanId } from "@/lib/ops/tenant-plan-limits"
+import { TENANT_PLAN_LIMITS } from "@/lib/ops/tenant-plan-limits"
 import { cn } from "@/lib/utils"
 
 const STEPS = [

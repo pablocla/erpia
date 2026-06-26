@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Check, Lock, Store, Unlock } from "lucide-react"
-import { MARKETPLACE_BUNDLES } from "@/lib/marketplace"
+import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import {
   ALMACEN_ROSARIO_BUNDLE_ID,
   ALMACEN_ROSARIO_CASOS,

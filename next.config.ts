@@ -34,6 +34,8 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Drivers SQL solo en runtime Node (Protheus introspection) — no bundlear en webpack
+  serverExternalPackages: ["mssql", "tedious"],
   eslint: {
     // ESLint not required for demo build
     ignoreDuringBuilds: true,

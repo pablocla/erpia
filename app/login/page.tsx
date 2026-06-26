@@ -29,6 +29,7 @@ export default function LoginPage() {
     }
     router.push(getHomePathForRol(rol))
   }
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rubro, setRubro] = useState("salon_belleza")
@@ -187,14 +188,23 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
-      <p className="mt-6 text-center text-sm text-muted-foreground space-x-3">
-        <Link href="/claver" className="text-primary hover:underline">
-          Grupo Claver
-        </Link>
-        <span>·</span>
-        <Link href="/claver/claverp" className="text-primary hover:underline">
-          Clavis
-        </Link>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <Link href="/claver" className="text-primary hover:underline">
+            Grupo Claver
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/claver/claverp" className="text-primary hover:underline">
+            Clavis
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/claver-cloud" className="text-primary hover:underline">
+            Claver Cloud
+          </Link>
+        </span>
+        <span className="mt-2 block text-xs text-muted-foreground/80">
+          Claver Cloud es acceso analistas — iniciá sesión con tu cuenta Claver
+        </span>
       </p>
     </div>
   )

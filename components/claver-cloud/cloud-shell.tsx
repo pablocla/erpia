@@ -2,141 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
-import { Building2, Menu, Search, Server } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { ExternalLink, LayoutDashboard, Menu, Server } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { CloudBreadcrumbs } from "@/components/claver-cloud/cloud-breadcrumbs"
+import { TenantSearch } from "@/components/claver-cloud/tenant-search"
 import { cn } from "@/lib/utils"
 import { isNavItemActive, navSections } from "@/lib/claver-cloud/nav-config"
-
-type TenantHit = {
-  id: number
-  nombre: string
-  razonSocial: string
-  cuit?: string | null
-}
-
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem("token")
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-function TenantSearch() {
-  const router = useRouter()
-  const [query, setQuery] = React.useState("")
-  const [tenants, setTenants] = React.useState<TenantHit[]>([])
-  const [open, setOpen] = React.useState(false)
-  const [loaded, setLoaded] = React.useState(false)
-  const containerRef = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        const res = await fetch("/api/claver/ops/clientes", { headers: authHeaders() })
-        if (!res.ok) return
-        const data = (await res.json()) as { data?: TenantHit[] }
-        if (!cancelled) {
-          setTenants(Array.isArray(data.data) ? data.data : [])
-          setLoaded(true)
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  React.useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
-  }, [])
-
-  const q = query.trim().toLowerCase()
-  const results =
-    q.length < 1
-      ? []
-      : tenants
-          .filter((t) => {
-            const idMatch = String(t.id).includes(q)
-            const nameMatch =
-              t.nombre.toLowerCase().includes(q) ||
-              t.razonSocial.toLowerCase().includes(q)
-            const cuitMatch = t.cuit?.replace(/-/g, "").includes(q.replace(/-/g, ""))
-            return idMatch || nameMatch || cuitMatch
-          })
-          .slice(0, 8)
-
-  const goToTenant = (id: number) => {
-    setOpen(false)
-    setQuery("")
-    router.push(`/claver-cloud/tenants/${id}`)
-  }
-
-  return (
-    <div ref={containerRef} className="relative ml-auto flex-1 md:grow-0 w-full sm:w-auto">
-      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-      <Input
-        type="search"
-        placeholder="Buscar tenant por ID, CUIT o nombre…"
-        className="w-full rounded-lg bg-background pl-8 md:w-[280px] lg:w-[360px]"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && results[0]) {
-            e.preventDefault()
-            goToTenant(results[0].id)
-          }
-          if (e.key === "Escape") setOpen(false)
-        }}
-      />
-      {open && q.length > 0 && (
-        <div className="absolute top-full z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
-          {!loaded ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Cargando tenants…</p>
-          ) : results.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Sin resultados para &quot;{query}&quot;</p>
-          ) : (
-            <ul className="max-h-64 overflow-auto py-1">
-              {results.map((t) => (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                    onClick={() => goToTenant(t.id)}
-                  >
-                    <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span>
-                      <span className="font-medium">{t.nombre}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        ID {t.id}
-                        {t.cuit ? ` · CUIT ${t.cuit}` : ""} · {t.razonSocial}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
 
 function NavLinks({
   pathname,
@@ -150,7 +24,7 @@ function NavLinks({
   return (
     <>
       {navSections.map((section) => (
-        <div key={section.label} className={compact ? "grid gap-3" : "mb-4"}>
+        <div key={section.label} className={compact ? "grid gap-2" : "mb-4"}>
           <p
             className={cn(
               "px-3 font-semibold uppercase tracking-wider text-muted-foreground",
@@ -167,16 +41,16 @@ function NavLinks({
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg transition-all hover:text-primary",
-                  compact ? "gap-4 px-2.5 py-1 text-base" : "px-3 py-2 text-sm",
+                  "flex items-center gap-3 rounded-lg transition-all",
+                  compact ? "gap-4 px-2.5 py-1.5 text-base" : "px-3 py-2 text-sm",
                   active
                     ? compact
-                      ? "text-foreground font-medium"
-                      : "bg-muted text-primary font-medium"
-                    : "text-muted-foreground",
+                      ? "text-violet-300 font-medium"
+                      : "bg-violet-500/10 text-violet-300 font-medium"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                 )}
               >
-                <item.icon className={compact ? "h-5 w-5" : "h-4 w-4"} />
+                <item.icon className={compact ? "h-5 w-5" : "h-4 w-4 shrink-0"} />
                 {item.name}
               </Link>
             )
@@ -187,46 +61,80 @@ function NavLinks({
   )
 }
 
+function ShellFooterLinks() {
+  return (
+    <div className="border-t border-border/60 p-3 space-y-1">
+      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8" asChild>
+        <Link href="/dashboard">
+          <LayoutDashboard className="h-3.5 w-3.5" />
+          Volver al ERP
+        </Link>
+      </Button>
+      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8 text-muted-foreground" asChild>
+        <Link href="/claver">
+          <ExternalLink className="h-3.5 w-3.5" />
+          Grupo Claver
+        </Link>
+      </Button>
+    </div>
+  )
+}
+
 export function CloudShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-foreground dark">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 mt-0 sm:mt-4">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <Button size="icon" variant="outline" className="sm:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Abrir menú</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="sm:max-w-xs dark overflow-y-auto">
-            <Link
-              href="/claver-cloud"
-              onClick={() => setMobileOpen(false)}
-              className="mb-6 flex items-center gap-2 font-semibold"
-            >
-              <Server className="h-5 w-5" />
-              Claver Cloud
-            </Link>
-            <nav className="grid gap-2">
-              <NavLinks pathname={pathname} compact onNavigate={() => setMobileOpen(false)} />
-            </nav>
-          </SheetContent>
-        </Sheet>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-3">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button size="icon" variant="outline" className="sm:hidden shrink-0">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Abrir menú</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="sm:max-w-xs dark w-[280px] overflow-y-auto">
+              <Link
+                href="/claver-cloud"
+                onClick={() => setMobileOpen(false)}
+                className="mb-6 flex items-center gap-2 font-semibold"
+              >
+                <Server className="h-5 w-5 text-violet-400" />
+                Claver Cloud
+              </Link>
+              <nav className="grid gap-1">
+                <NavLinks pathname={pathname} compact onNavigate={() => setMobileOpen(false)} />
+              </nav>
+              <div className="mt-6">
+                <ShellFooterLinks />
+              </div>
+            </SheetContent>
+          </Sheet>
 
-        <div className="flex-1 sm:hidden" />
+          <div className="hidden sm:block min-w-0 flex-1">
+            <CloudBreadcrumbs />
+          </div>
 
-        <TenantSearch />
+          <TenantSearch className="ml-auto w-full max-w-[360px]" />
+        </div>
+        <div className="mt-2 sm:hidden">
+          <CloudBreadcrumbs />
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden sm:flex w-64 flex-col border-r bg-background shrink-0">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <aside className="hidden sm:flex w-60 flex-col border-r border-border/60 bg-sidebar/50 shrink-0">
+          <div className="flex h-14 items-center border-b border-border/60 px-4 lg:h-[56px]">
             <Link href="/claver-cloud" className="flex items-center gap-2 font-semibold">
-              <Server className="h-5 w-5" />
-              <span>Claver Cloud</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15">
+                <Server className="h-4 w-4 text-violet-400" />
+              </div>
+              <div className="leading-tight">
+                <span className="block text-sm">Claver Cloud</span>
+                <span className="block text-[10px] font-normal text-muted-foreground">Torre de operaciones</span>
+              </div>
             </Link>
           </div>
           <div className="flex-1 overflow-auto py-3">
@@ -234,9 +142,10 @@ export function CloudShell({ children }: { children: React.ReactNode }) {
               <NavLinks pathname={pathname} />
             </nav>
           </div>
+          <ShellFooterLinks />
         </aside>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">{children}</main>
+        <main className="cloud-main flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>
   )

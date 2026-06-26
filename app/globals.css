@@ -1134,3 +1134,27 @@
 [data-touch-mode="true"] {
   --spacing-unit: 1.15;
 }
+
+/* ─── Claver Cloud — torre analistas (violet accent, familia Claver) ─────── */
+[data-shell="cloud"].dark {
+  --primary: oklch(0.62 0.2 295);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.62 0.2 295);
+  --sidebar-primary: oklch(0.62 0.2 295);
+  --chart-1: oklch(0.62 0.2 295);
+  --accent: oklch(0.22 0.04 295);
+  --accent-foreground: oklch(0.92 0.02 295);
+}
+
+.cloud-platform {
+  background:
+    radial-gradient(ellipse 80% 50% at 0% 0%, oklch(0.25 0.08 295 / 0.35), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, oklch(0.2 0.06 260 / 0.25), transparent 45%),
+    var(--background);
+}
+
+.cloud-main {
+  max-width: 1400px;
+  margin-inline: auto;
+  width: 100%;
+}

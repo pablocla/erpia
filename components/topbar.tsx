@@ -30,6 +30,7 @@ import {
   Sparkles,
   CheckSquare,
   Menu,
+  Cloud,
 } from "lucide-react"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
@@ -50,6 +51,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [afipLabel, setAfipLabel] = useState<string | null>(null)
   const [ticketsAbiertos, setTicketsAbiertos] = useState(0)
+  const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
 
   const handleMarkRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -135,6 +137,17 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   }, [])
 
   useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    fetch("/api/claver/analista/status", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
+      .catch(() => setIsClaverAnalyst(false))
+  }, [])
+
+  useEffect(() => {
     const cargarTareas = async () => {
       const token = localStorage.getItem("token")
       if (!token) return
@@ -194,6 +207,29 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
         </Button>
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+
+        {isClaverAnalyst && (
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs hidden md:inline-flex text-violet-600 hover:text-violet-700 hover:bg-violet-500/10"
+                  asChild
+                >
+                  <Link href="/claver-cloud">
+                    <Cloud className="h-3.5 w-3.5" />
+                    <span>Cloud</span>
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Torre Claver Cloud — provisioning y operaciones</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
           <Link href="/dashboard/caja">
@@ -333,6 +369,14 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
                 Mi Perfil
               </Link>
             </DropdownMenuItem>
+            {isClaverAnalyst && (
+              <DropdownMenuItem asChild>
+                <Link href="/claver-cloud" className="gap-2 text-violet-600 focus:text-violet-600">
+                  <Cloud className="h-4 w-4" />
+                  Claver Cloud
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
               <LogOut className="h-4 w-4" />

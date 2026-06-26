@@ -153,6 +153,7 @@ export const CLAVER_ROUTES = {
   claverpModulos: "/claver/claverp/modulos",
   claverpSolution: (slug: string) => `/claver/claverp/${slug}`,
   marca: "/claver/marca",
+  cloud: "/claver-cloud",
 } as const
 
 export const CLAVER_NAV = [

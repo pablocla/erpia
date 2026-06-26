@@ -80,7 +80,11 @@ export function ClaverMatrixHub() {
               const inner = (
                 <Card
                   className={`group h-full transition hover:-translate-y-1 hover:shadow-lg ${
-                    line.id === "claverp" ? "ring-2 ring-blue-500/40 border-blue-200" : "border-slate-200/80"
+                    line.id === "claverp"
+                      ? "ring-2 ring-blue-500/40 border-blue-200"
+                      : line.id === "clavercloud"
+                        ? "ring-2 ring-violet-500/40 border-violet-200"
+                        : "border-slate-200/80"
                   }`}
                 >
                   <CardHeader>

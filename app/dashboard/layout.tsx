@@ -92,6 +92,7 @@ import {
   Server,
   Link2,
   LayoutGrid,
+  Cloud,
 } from "lucide-react"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
@@ -393,6 +394,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     label: "Claver Interno",
     color: "text-violet-500",
     items: [
+      { href: "/claver-cloud", icon: Cloud, label: "Claver Cloud", badge: "Torre", claverAnalystOnly: true },
       { href: "/dashboard/claver/operaciones", icon: Server, label: "Flota de clientes", claverAnalystOnly: true },
       { href: "/dashboard/claver/implementaciones", icon: ClipboardList, label: "Implementaciones", claverAnalystOnly: true },
       { href: "/dashboard/claver/asignaciones", icon: Users, label: "Asignaciones", claverAnalystOnly: true },

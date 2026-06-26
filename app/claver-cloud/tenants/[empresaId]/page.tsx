@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   Building2,
@@ -193,15 +193,39 @@ export default function ClaverTenantSuperAdminPage() {
   }
 
   const { empresa, readiness, proyecto } = data
+  const searchParams = useSearchParams()
+  const recienProvisionado = searchParams.get("provisioned") === "1"
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      {recienProvisionado && (
+        <Card className="border-emerald-500/40 bg-emerald-500/10">
+          <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              <span>
+                <strong>Organización creada.</strong> Activá más servicios en la pestaña Marketplace o seguí el proyecto CCA.
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {proyecto && (
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/claver-cloud/implementation/${proyecto.id}`}>Ver implementación</Link>
+                </Button>
+              )}
+              <Button size="sm" asChild>
+                <Link href="/claver-cloud/marketplace">Ir al marketplace</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
             <Link href="/claver-cloud/organizations">
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Organizations
+              Organizaciones
             </Link>
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">

@@ -7,11 +7,16 @@ import {
   AlertTriangle,
   ArrowRight,
   Building2,
-  RefreshCw,
+  CreditCard,
+  PlusSquare,
   Server,
+  Shield,
+  Store,
+  Target,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { CloudPageHeader } from "@/components/claver-cloud/cloud-page-header"
+import { cloudAuthHeaders } from "@/lib/claver-cloud/auth-headers"
 import { navSections } from "@/lib/claver-cloud/nav-config"
 
 type PlataformaMetricas = {
@@ -19,13 +24,16 @@ type PlataformaMetricas = {
   entornosEnError: number
   slaVencidos: number
   mttrHoras: number
-  jobs30d: { porEstado: Record<string, number> }
 }
 
-function authHeaders(): HeadersInit {
-  const token = localStorage.getItem("token")
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
+const quickActions = [
+  { href: "/claver-cloud/provisioning/new", label: "Nueva organización", desc: "Cliente + servicios + CCA", icon: PlusSquare, primary: true },
+  { href: "/claver-cloud/superadmin", label: "Super Admin", desc: "Vista de flota", icon: Shield },
+  { href: "/claver-cloud/organizations", label: "Organizaciones", desc: "Todos los tenants", icon: Building2 },
+  { href: "/claver-cloud/marketplace", label: "Marketplace", desc: "Activar servicios", icon: Store },
+  { href: "/claver-cloud/implementation", label: "Implementación", desc: "Proyectos CCA", icon: Target },
+  { href: "/claver-cloud/billing", label: "Facturación", desc: "MRR y planes", icon: CreditCard },
+]
 
 export default function ClaverCloudHomePage() {
   const [plataforma, setPlataforma] = useState<PlataformaMetricas | null>(null)
@@ -34,10 +42,8 @@ export default function ClaverCloudHomePage() {
   const cargar = async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/claver/ops/metricas", { headers: authHeaders() })
-      if (res.ok) {
-        setPlataforma(await res.json())
-      }
+      const res = await fetch("/api/claver/ops/metricas", { headers: cloudAuthHeaders() })
+      if (res.ok) setPlataforma(await res.json())
     } finally {
       setLoading(false)
     }
@@ -48,32 +54,28 @@ export default function ClaverCloudHomePage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Claver Cloud</h1>
-          <p className="text-muted-foreground">Consola de operaciones, tenants y Protheus / OPO</p>
-        </div>
-        <Button variant="outline" onClick={cargar} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <CloudPageHeader
+        title="Torre de operaciones"
+        description="Consola de operaciones, tenants, marketplace y Protheus / OPO — una organización, infinitos servicios."
+        onRefresh={cargar}
+        loading={loading}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tenants activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Organizaciones</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{plataforma?.clientes ?? "—"}</div>
-            <p className="text-xs text-muted-foreground">Organizaciones en la flota</p>
+            <p className="text-xs text-muted-foreground">Tenants en la flota</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entornos en error</CardTitle>
+            <CardTitle className="text-sm font-medium">Entornos con error</CardTitle>
             <Server className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -101,6 +103,31 @@ export default function ClaverCloudHomePage() {
             <p className="text-xs text-muted-foreground">Tiempo medio de recuperación</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Accesos rápidos</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {quickActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className={`group flex items-start gap-3 rounded-lg border p-4 transition ${
+                action.primary
+                  ? "border-violet-500/50 bg-violet-500/10 hover:bg-violet-500/15"
+                  : "hover:border-violet-500/40 hover:bg-violet-500/5"
+              }`}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20">
+                <action.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-medium">{action.label}</p>
+                <p className="text-xs text-muted-foreground">{action.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

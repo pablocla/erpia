@@ -106,6 +106,7 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/configuracion", label: "Parámetros", icon: Settings, section: "Configuración", keywords: ["config", "parámetro", "setting"] },
   { href: "/dashboard/usuarios", label: "Usuarios y Permisos", icon: Shield, section: "Configuración", keywords: ["usuario", "permiso", "rol"] },
   // Claver Interno (analistas)
+  { href: "/claver-cloud", label: "Claver Cloud", icon: Cloud, section: "Claver Interno", keywords: ["cloud", "torre", "saas", "provisioning", "marketplace", "superadmin"] },
   { href: "/dashboard/claver/operaciones", label: "Flota Claver Cloud", icon: Cloud, section: "Claver Interno", keywords: ["ops", "flota", "vps", "tenant", "claver"] },
   { href: "/dashboard/claver/implementaciones", label: "Torre Implementaciones", icon: ClipboardList, section: "Claver Interno", keywords: ["cca", "onboarding", "implementación", "go-live"] },
   { href: "/dashboard/claver/asignaciones", label: "Asignaciones Analistas", icon: Users, section: "Claver Interno", keywords: ["analista", "asignación", "cliente"] },

@@ -6,27 +6,28 @@ import { Plus, Server, CheckCircle2, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CloudPageHeader } from "@/components/claver-cloud/cloud-page-header"
 
 export default function ProvisioningListPage() {
-  const { data: orders, isLoading } = useAuthFetch<any[]>("/api/claver-cloud/provisioning/orders")
+  const { data: orders, isLoading, mutate } = useAuthFetch<any[]>("/api/claver-cloud/provisioning/orders")
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Provisioning</h2>
-          <p className="text-muted-foreground mt-1">
-            Gestión de altas automáticas de clientes y aprovisionamiento de tenants.
-          </p>
-        </div>
-        <Link href="/claver-cloud/provisioning/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Nueva Orden
+    <div className="space-y-6">
+      <CloudPageHeader
+        title="Provisioning"
+        description="Historial de altas automáticas: empresa, entornos, usuario admin y servicios del marketplace."
+        onRefresh={() => mutate()}
+        loading={isLoading}
+        actions={
+          <Button size="sm" asChild>
+            <Link href="/claver-cloud/provisioning/new">
+              <Plus className="mr-2 h-4 w-4" /> Nueva organización
+            </Link>
           </Button>
-        </Link>
-      </div>
+        }
+      />
 
-      <div className="border rounded-lg bg-card">
+      <div className="border rounded-xl bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground bg-muted/50 uppercase border-b">
@@ -72,7 +73,7 @@ export default function ProvisioningListPage() {
                     <td className="px-4 py-3">
                       <span className="font-semibold">{order.planHosting}</span>
                       {order.skus && order.skus.length > 0 && (
-                        <div className="text-xs text-muted-foreground">+{order.skus.length} add-ons</div>
+                        <div className="text-xs text-muted-foreground">+{order.skus.length} servicio{order.skus.length !== 1 ? "s" : ""}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">

@@ -7,6 +7,7 @@ import {
   Wrench,
   BarChart3,
   Network,
+  Cloud,
 } from "lucide-react"
 
 export interface ClaverServiceLine {
@@ -23,6 +24,18 @@ export interface ClaverServiceLine {
 
 /** Líneas de negocio del grupo Claver — Clavis es la flagship disponible */
 export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
+  {
+    id: "clavercloud",
+    name: "Claver Cloud",
+    tagline: "Torre SaaS multi-tenant",
+    description:
+      "Provisioning, marketplace de SKUs, implementación CCA y super admin. Cada empresa activa solo los servicios que necesita — de POS a logística, IA o bridge legacy.",
+    icon: Cloud,
+    gradient: "from-violet-600 to-indigo-900",
+    href: "/claver-cloud",
+    status: "disponible",
+    features: ["Marketplace infinito de módulos", "Provisioning automático", "Torre de analistas", "Billing MRR"],
+  },
   {
     id: "claverp",
     name: "Clavis",

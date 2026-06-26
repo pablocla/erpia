@@ -11,11 +11,27 @@ export async function GET(request: NextRequest) {
     if (!ctx.ok) return ctx.response
 
     const scope = await getAnalystEmpresaScope(ctx.auth.email)
-    const where =
+    const q = request.nextUrl.searchParams.get("q")?.trim()
+    const takeParam = request.nextUrl.searchParams.get("take")
+    const take = takeParam ? Math.min(parseInt(takeParam, 10) || 50, 50) : undefined
+
+    const scopeWhere =
       scope.mode === "assigned" ? { id: { in: scope.empresaIds } } : {}
+
+    let where: Record<string, unknown> = { ...scopeWhere }
+    if (q) {
+      const or: Record<string, unknown>[] = [
+        { nombre: { contains: q, mode: "insensitive" } },
+        { razonSocial: { contains: q, mode: "insensitive" } },
+        { cuit: { contains: q, mode: "insensitive" } },
+      ]
+      if (/^\d+$/.test(q)) or.push({ id: parseInt(q, 10) })
+      where = { ...scopeWhere, OR: or }
+    }
 
     const empresas = await db.empresa.findMany({
       where,
+      take,
       select: {
         id: true,
         nombre: true,

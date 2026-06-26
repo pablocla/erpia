@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, UserPlus } from "lucide-react"
+import { Trash2, UserPlus, Users } from "lucide-react"
+import { CloudPageHeader } from "@/components/claver-cloud/cloud-page-header"
 
 type Asignacion = {
   id: number
@@ -109,31 +110,30 @@ export default function AsignacionesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analyst Assignments</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage which Claver analysts have access to operate which tenants.
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              New Assignment
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Tenant to Analyst</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCrear} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Tenant</label>
-                <Select value={empresaId} onValueChange={setEmpresaId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tenant..." />
-                  </SelectTrigger>
+      <CloudPageHeader
+        icon={Users}
+        eyebrow="Configuración"
+        title="Asignaciones de analistas"
+        description="Definí qué analistas Claver pueden operar cada organización. Sin asignación, el analista ve toda la flota."
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Nueva asignación
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Asignar organización a analista</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCrear} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Organización</label>
+                  <Select value={empresaId} onValueChange={setEmpresaId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Elegir organización…" />
+                    </SelectTrigger>
                   <SelectContent>
                     {empresas.map((e) => (
                       <SelectItem key={e.id} value={String(e.id)}>
@@ -144,58 +144,59 @@ export default function AsignacionesPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Analyst Email</label>
-                <Input 
-                  type="email" 
-                  placeholder="analista@claver.cloud" 
+                <label className="text-sm font-medium">Email del analista</label>
+                <Input
+                  type="email"
+                  placeholder="analista@claver.cloud"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Assigned Role</label>
+                <label className="text-sm font-medium">Rol asignado</label>
                 <Select value={rol} onValueChange={setRol}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="lead">Lead / Account Manager</SelectItem>
-                    <SelectItem value="soporte">Technical Support</SelectItem>
-                    <SelectItem value="implementacion">Implementation</SelectItem>
-                    <SelectItem value="dba">Database Admin</SelectItem>
+                    <SelectItem value="soporte">Soporte técnico</SelectItem>
+                    <SelectItem value="implementacion">Implementación</SelectItem>
+                    <SelectItem value="dba">DBA</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full">Save Assignment</Button>
+              <Button type="submit" className="w-full">Guardar asignación</Button>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Analyst</TableHead>
-                <TableHead>Tenant</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Analista</TableHead>
+                <TableHead>Organización</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-16" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    Loading...
+                    Cargando…
                   </TableCell>
                 </TableRow>
               ) : asignaciones.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    No assignments configured. Super-analysts can view all tenants.
+                    Sin asignaciones. Los super-analistas ven toda la flota.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -206,9 +207,9 @@ export default function AsignacionesPage() {
                     <TableCell className="capitalize">{a.rolAsignacion}</TableCell>
                     <TableCell>
                       {a.activo ? (
-                        <Badge variant="outline" className="text-emerald-600 bg-emerald-50">Active</Badge>
+                        <Badge variant="outline" className="text-emerald-600 bg-emerald-50">Activa</Badge>
                       ) : (
-                        <Badge variant="secondary">Inactive</Badge>
+                        <Badge variant="secondary">Inactiva</Badge>
                       )}
                     </TableCell>
                     <TableCell>

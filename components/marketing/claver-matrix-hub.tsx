@@ -49,6 +49,16 @@ export function ClaverMatrixHub() {
               </Button>
               <Button
                 size="lg"
+                className="bg-violet-600 hover:bg-violet-500 text-white"
+                asChild
+              >
+                <Link href="/claver-cloud">
+                  Claver Cloud
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
                 variant="outline"
                 className="border-white/20 bg-white/5 hover:bg-white/10"
                 asChild

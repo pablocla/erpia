@@ -73,6 +73,18 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
             >
               <Link href="/claver">Grupo {CLAVER_GROUP.name}</Link>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={
+                navDark
+                  ? "border-violet-400/40 text-violet-200 hover:bg-violet-500/15 hover:text-white"
+                  : "border-violet-300 text-violet-700 hover:bg-violet-50"
+              }
+              asChild
+            >
+              <Link href="/claver-cloud">Claver Cloud</Link>
+            </Button>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-500" asChild>
               <Link href="/login">
                 Demo Clavis
@@ -104,6 +116,9 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
                   {item.label}
                 </Link>
               ))}
+              <Button variant="outline" className="mt-2 border-violet-400/40 text-violet-200" asChild>
+                <Link href="/claver-cloud">Claver Cloud</Link>
+              </Button>
               <Button className="mt-2" asChild>
                 <Link href="/login">Demo Clavis</Link>
               </Button>
@@ -136,6 +151,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Claver</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/claver" className="hover:text-white">Matriz</Link></li>
+              <li><Link href="/claver-cloud" className="hover:text-white">Claver Cloud</Link></li>
               <li><Link href="/claver/marca" className="hover:text-white">Identidad</Link></li>
               <li><Link href="/login" className="hover:text-white">Demo</Link></li>
             </ul>

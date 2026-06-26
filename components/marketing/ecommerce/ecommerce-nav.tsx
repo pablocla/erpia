@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "#integraciones", label: "Integraciones" },
   { href: "#faq", label: "FAQ" },
   { href: "/claver/claverp", label: "Clavis" },
+  { href: "/claver-cloud", label: "Claver Cloud" },
 ]
 
 export function EcommerceNav() {
@@ -53,6 +54,9 @@ export function EcommerceNav() {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
+          <Button variant="ghost" size="sm" className="text-violet-700 hover:text-violet-900" asChild>
+            <Link href="/claver-cloud">Claver Cloud</Link>
+          </Button>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/tienda?empresaId=1">Ver demo tienda</Link>
           </Button>

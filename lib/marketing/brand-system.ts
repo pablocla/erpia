@@ -159,6 +159,7 @@ export const CLAVER_ROUTES = {
 export const CLAVER_NAV = [
   { href: "/claver", label: "Claver" },
   { href: "/claver/claverp", label: "Clavis" },
+  { href: "/claver-cloud", label: "Claver Cloud" },
   { href: "/claver/claverp/pos-afip", label: "POS & AFIP" },
   { href: "/claver/claverp/ecommerce", label: "Ecommerce" },
   { href: "/claver/claverp/distribuidoras", label: "Distribuidoras" },

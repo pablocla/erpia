@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, Number(params.get("limit") || 50)))
     const skip = (page - 1) * limit
 
-    const where: Record<string, unknown> = whereEmpresa(ctx.auth.empresaId)
+    const where: Record<string, unknown> = {
+      ordenCompra: { empresaId: ctx.auth.empresaId },
+    }
     if (ordenCompraId) where.ordenCompraId = Number(ordenCompraId)
 
     const [recepciones, total] = await Promise.all([
@@ -74,7 +76,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
     }
 
-    const recepcion = await comprasService.registrarRecepcion(validacion.data)
+    const recepcion = await comprasService.registrarRecepcion({
+      ...validacion.data,
+      empresaId: ctx.auth.empresaId,
+    })
     return NextResponse.json(recepcion, { status: 201 })
   } catch (error) {
     console.error("Error en POST recepción:", error)

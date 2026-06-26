@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
@@ -13,8 +13,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await request.json()
     const { estado, cantidadProd, fechaInicio, fechaFinReal, observaciones } = body
 
+    // ── TENANT ISOLATION ──
+    const existente = await prisma.ordenProduccion.findFirst({
+      where: { id, empresaId: ctx.auth.empresaId },
+      select: { id: true },
+    })
+    if (!existente) return NextResponse.json({ error: "Orden de producción no encontrada" }, { status: 404 })
+
     const orden = await prisma.ordenProduccion.update({
-      where: { id },
+      where: { id: existente.id },
       data: {
         ...(estado && { estado }),
         ...(cantidadProd !== undefined && { cantidadProd }),
@@ -37,13 +44,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const id = parseInt((await params).id)
     if (isNaN(id)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-    await prisma.ordenProduccion.update({ where: { id }, data: { estado: "anulada" } })
+    // ── TENANT ISOLATION ──
+    const existente = await prisma.ordenProduccion.findFirst({
+      where: { id, empresaId: ctx.auth.empresaId },
+      select: { id: true },
+    })
+    if (!existente) return NextResponse.json({ error: "Orden de producción no encontrada" }, { status: 404 })
+
+    await prisma.ordenProduccion.update({ where: { id: existente.id }, data: { estado: "anulada" } })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error al anular orden de producción:", error)

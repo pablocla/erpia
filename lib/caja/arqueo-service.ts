@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { assertCajaEmpresa } from "@/lib/auth/tenant-validate"
 
 interface DatosArqueo {
   efectivoDeclarado: number
@@ -22,8 +23,8 @@ export class ArqueoCajaService {
    * Sums system movements by medio de pago and compares with declared amounts.
    */
   async realizarArqueo(cajaId: number, empresaId: number, datos: DatosArqueo) {
-    const caja = await prisma.caja.findUnique({
-      where: { id: cajaId },
+    const caja = await prisma.caja.findFirst({
+      where: { id: cajaId, empresaId },
       include: { movimientos: true },
     })
     if (!caja) throw new Error("Caja no encontrada")
@@ -102,9 +103,10 @@ export class ArqueoCajaService {
   /**
    * List arqueos for a caja
    */
-  async listarPorCaja(cajaId: number) {
+  async listarPorCaja(cajaId: number, empresaId: number) {
+    await assertCajaEmpresa(cajaId, empresaId)
     return prisma.arqueoCaja.findMany({
-      where: { cajaId },
+      where: { cajaId, empresaId },
       orderBy: { fecha: "desc" },
     })
   }

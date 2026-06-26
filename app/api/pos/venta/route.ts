@@ -19,6 +19,17 @@ import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 import { solicitarCaeFactura } from "@/lib/afip/solicitar-cae-factura"
 import { obtenerEstadoAfipPos } from "@/lib/pos/pos-afip-status"
 import { letraDesdeTipoCbte, resolverTipoCbtePos } from "@/lib/pos/pos-tipo-factura"
+import {
+  validarFiadoPos,
+  incrementarDeudaCliente,
+  enviarNotificacionFiado,
+} from "@/lib/fiado/fiado-service"
+import { canUseSku } from "@/lib/platform/entitlements"
+import { assertClienteEmpresa } from "@/lib/auth/tenant-validate"
+import { descontarStockCombo } from "@/lib/pos/pos-catalogo-grupos"
+import { registrarVentaStockCero } from "@/lib/almacen-rosario/stock-cero-service"
+import { buscarValeActivo, aplicarCobroVale } from "@/lib/almacen-rosario/vale-dinero-service"
+import { RETAIL_EXTENSION_SKUS } from "@/lib/almacen-rosario/retail-skus"
 import { z } from "zod"
 
 // ──────────────────────────────────────────────────────────────
@@ -43,8 +54,10 @@ const pagoSchema = z.object({
     "cheque",
     "qr",
     "cuenta_corriente",
+    "vale",
   ]),
   monto: z.number().positive(),
+  numeroVale: z.string().min(1).optional(),
 })
 
 const ventaPosSchema = z.object({
@@ -57,6 +70,8 @@ const ventaPosSchema = z.object({
   /** Array de pagos — permite split payment */
   pagos: z.array(pagoSchema).min(1),
   descuentoGlobal: z.number().min(0).max(100).default(0),
+  /** Propina opcional (gastronomía) — se suma al total sin IVA adicional */
+  propina: z.number().min(0).default(0),
   /** Si true (default), resuelve precio desde listas del cliente/empresa */
   usarListaPrecios: z.boolean().default(true),
   observaciones: z.string().optional(),
@@ -133,10 +148,12 @@ export async function POST(request: NextRequest) {
 
     const facturaClienteId = clienteId
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: facturaClienteId },
-      select: { condicionIva: true, esGranEmpresa: true, cuit: true, dni: true },
-    })
+    let cliente: { condicionIva: string | null; esGranEmpresa: boolean | null; cuit: string | null; dni: string | null }
+    try {
+      cliente = await assertClienteEmpresa(facturaClienteId, empresaId)
+    } catch {
+      return NextResponse.json({ error: "Cliente no encontrado en esta empresa" }, { status: 400 })
+    }
 
     // ── 3. Siguiente número de factura ───────────────────────
     const esTicket = data.tipoFactura === "ticket"
@@ -182,7 +199,8 @@ export async function POST(request: NextRequest) {
       return { ...l, precioUnitario, neto, iva, total }
     })
 
-    const totalVenta = parseFloat((subtotal + totalIva).toFixed(2))
+    const propina = data.propina ?? 0
+    const totalVenta = parseFloat((subtotal + totalIva + propina).toFixed(2))
     const totalPagado = data.pagos.reduce((s, p) => s + p.monto, 0)
     const vuelto = parseFloat(Math.max(0, totalPagado - totalVenta).toFixed(2))
 
@@ -197,7 +215,73 @@ export async function POST(request: NextRequest) {
 
     const letraFactura = esTicket ? "TK" : letraDesdeTipoCbte(tipoCbteFinal)
 
+    const pagosVale = data.pagos.filter((p) => p.medio === "vale")
+    if (pagosVale.length > 0) {
+      const valeAcceso = await canUseSku(empresaId, "pos.vale_dinero")
+      if (!valeAcceso.ok) {
+        return NextResponse.json({ error: "Vale de dinero no activo en esta empresa" }, { status: 403 })
+      }
+      for (const p of pagosVale) {
+        if (!p.numeroVale?.trim()) {
+          return NextResponse.json({ error: "Ingresá el número del vale para cobrar" }, { status: 400 })
+        }
+        try {
+          const vale = await buscarValeActivo(empresaId, p.numeroVale)
+          if (!vale) {
+            return NextResponse.json({ error: `Vale ${p.numeroVale} no encontrado` }, { status: 400 })
+          }
+          if (p.monto > vale.saldoRestante + 0.01) {
+            return NextResponse.json(
+              {
+                error: `El vale ${vale.numero} solo tiene $${vale.saldoRestante.toLocaleString("es-AR")} disponibles`,
+                disponible: vale.saldoRestante,
+              },
+              { status: 400 },
+            )
+          }
+        } catch (e) {
+          return NextResponse.json(
+            { error: e instanceof Error ? e.message : "Vale inválido" },
+            { status: 400 },
+          )
+        }
+      }
+    }
+
+    const pagoCtaCtePre = data.pagos.find((p) => p.medio === "cuenta_corriente")
+    if (pagoCtaCtePre) {
+      if (!facturaClienteId) {
+        return NextResponse.json(
+          { error: "Seleccioná un cliente para vender a fiado (cuenta corriente)" },
+          { status: 400 },
+        )
+      }
+      const validacion = await validarFiadoPos(empresaId, facturaClienteId, pagoCtaCtePre.monto)
+      if (!validacion.ok) {
+        return NextResponse.json(
+          {
+            error: validacion.error,
+            deudaActual: validacion.deudaActual,
+            limite: validacion.limite,
+            disponible: validacion.disponible,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
     // ── 5. Transacción atómica ───────────────────────────────
+    let saldoNuevoFiado: number | undefined
+    let cuentaCobrarFiadoId: number | undefined
+
+    const stockCeroActivo = (await canUseSku(empresaId, "pos.stock_cero_alert")).ok
+    const eventosStockCero: Array<{
+      productoId: number
+      productoNombre: string
+      cantidad: number
+      stockAntes: number
+    }> = []
+
     const result = await prisma.$transaction(async (tx) => {
       const ultimaFactura = await tx.factura.findFirst({
         where: {
@@ -225,39 +309,73 @@ export async function POST(request: NextRequest) {
           estado: esTicket ? "ticket" : "pendiente_cae",
           condicionIvaReceptor: cliente?.condicionIva ?? undefined,
           observaciones: data.observaciones,
+          ...(propina > 0 ? { netoNoGravado: parseFloat(propina.toFixed(2)) } : {}),
           lineas: {
-            create: lineasCalculadas.map((l) => ({
-              productoId: l.productoId,
-              descripcion: l.descripcion,
-              cantidad: l.cantidad,
-              precioUnitario: l.precioUnitario,
-              porcentajeIva: l.porcentajeIva,
-              descuento: l.descuento,
-              subtotal: l.neto,
-              iva: l.iva,
-              total: l.total,
-            })),
+            create: [
+              ...lineasCalculadas.map((l) => ({
+                productoId: l.productoId,
+                descripcion: l.descripcion,
+                cantidad: l.cantidad,
+                precioUnitario: l.precioUnitario,
+                porcentajeIva: l.porcentajeIva,
+                descuento: l.descuento,
+                subtotal: l.neto,
+                iva: l.iva,
+                total: l.total,
+              })),
+              ...(propina > 0
+                ? [{
+                    descripcion: "Propina",
+                    cantidad: 1,
+                    precioUnitario: propina,
+                    porcentajeIva: 0,
+                    descuento: 0,
+                    subtotal: propina,
+                    iva: 0,
+                    total: propina,
+                  }]
+                : []),
+            ],
           },
         },
         include: { lineas: true },
       })
 
-      // 5b. Ajustar stock
+      // 5b. Ajustar stock (combo BOM o producto directo)
       for (const l of lineasCalculadas) {
         if (!l.productoId) continue
-        const producto = await tx.producto.findUnique({
-          where: { id: l.productoId },
+        const descontadoCombo = await descontarStockCombo(
+          tx,
+          empresaId,
+          l.productoId,
+          l.cantidad,
+        )
+        if (descontadoCombo) continue
+
+        const producto = await tx.producto.findFirst({
+          where: { id: l.productoId, empresaId },
           select: { stock: true, nombre: true },
         })
-        if (!producto) continue
-        const stockNuevo = producto.stock - l.cantidad
-        if (stockNuevo < 0) {
+        if (!producto) {
+          throw new Error(`Producto ${l.productoId} no pertenece a esta empresa`)
+        }
+        const stockAntes = producto.stock
+        const stockNuevo = stockAntes - l.cantidad
+        if (stockNuevo < 0 && !stockCeroActivo) {
           throw new Error(`Stock insuficiente para el producto ${producto.nombre}. Stock actual: ${producto.stock}, requerido: ${l.cantidad}`)
         }
         await tx.producto.update({
           where: { id: l.productoId },
           data: { stock: stockNuevo },
         })
+        if (stockCeroActivo && stockAntes <= 0) {
+          eventosStockCero.push({
+            productoId: l.productoId,
+            productoNombre: producto.nombre,
+            cantidad: l.cantidad,
+            stockAntes,
+          })
+        }
         await tx.movimientoStock.create({
           data: {
             empresaId,
@@ -269,8 +387,9 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // 5c. MovimientoCaja por cada medio de pago
+      // 5c. MovimientoCaja por cada medio de pago (vale no ingresa efectivo)
       for (const pago of data.pagos) {
+        if (pago.medio === "vale") continue
         await tx.movimientoCaja.create({
           data: {
             cajaId: caja.id,
@@ -283,8 +402,29 @@ export async function POST(request: NextRequest) {
         })
       }
 
+      // 5c2. Cobro de vales de dinero
+      for (const pago of pagosVale) {
+        if (!pago.numeroVale) continue
+        await aplicarCobroVale(
+          {
+            empresaId,
+            numero: pago.numeroVale,
+            monto: pago.monto,
+            facturaId: factura.id,
+            referencia: `FAC-${data.tipoFactura}-${siguienteNumero}`,
+          },
+          tx as unknown as Parameters<typeof aplicarCobroVale>[1],
+        )
+      }
+
       // 5d. Si hay mesa → cerrar comanda y liberar mesa
       if (data.mesaId) {
+        const mesa = await tx.mesa.findFirst({
+          where: { id: data.mesaId, salon: { empresaId } },
+        })
+        if (!mesa) {
+          throw new Error("Mesa no encontrada en esta empresa")
+        }
         const comanda = await tx.comanda.findFirst({
           where: { mesaId: data.mesaId, estado: { not: "cerrada" } },
         })
@@ -303,7 +443,7 @@ export async function POST(request: NextRequest) {
       // 5e. Si pago con cuenta corriente → registrar en CuentaCobrar
       const pagoCtaCte = data.pagos.find((p) => p.medio === "cuenta_corriente")
       if (pagoCtaCte && clienteId) {
-        await tx.cuentaCobrar.create({
+        const cc = await tx.cuentaCobrar.create({
           data: {
             clienteId,
             facturaId: factura.id,
@@ -316,10 +456,16 @@ export async function POST(request: NextRequest) {
             observaciones: `Venta POS FAC-${data.tipoFactura}-${siguienteNumero}`,
           },
         })
+        cuentaCobrarFiadoId = cc.id
+        saldoNuevoFiado = await incrementarDeudaCliente(tx, clienteId, pagoCtaCte.monto)
       }
 
       return factura
     })
+
+    for (const ev of eventosStockCero) {
+      void registrarVentaStockCero({ empresaId, ...ev, facturaId: result.id })
+    }
 
     // ── 6. Asiento contable (fuera de la tx atómica para no bloquearla) ───
     void onFacturaEmitida(result.id, empresaId)
@@ -329,6 +475,7 @@ export async function POST(request: NextRequest) {
     let vencimientoCAE: string | undefined
     let afipError: string | undefined
     let estadoFinal = result.estado
+    let modalidadAuth: string = "CAE"
 
     if (!esTicket) {
       const afip = await solicitarCaeFactura(result.id)
@@ -343,20 +490,51 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const esFce = !esTicket && [201, 206, 211].includes(tipoCbteFinal)
+    const facturaFinal = await prisma.factura.findUnique({
+      where: { id: result.id },
+      select: { modalidadAuth: true, tipoCbte: true, estado: true },
+    })
+    if (facturaFinal?.modalidadAuth) modalidadAuth = facturaFinal.modalidadAuth
+    if (facturaFinal?.estado) estadoFinal = facturaFinal.estado
+
+    const tipoCbteResp = facturaFinal?.tipoCbte ?? tipoCbteFinal
+    const esFce = !esTicket && [201, 206, 211].includes(tipoCbteResp)
+    const esExportacion = !esTicket && [19, 20, 21].includes(tipoCbteResp)
+
+    const numeroCompleto = esTicket
+      ? `TK-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`
+      : `${result.tipo}-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`
+
+    if (pagoCtaCtePre && saldoNuevoFiado !== undefined && facturaClienteId) {
+      void enviarNotificacionFiado({
+        empresaId,
+        clienteId: facturaClienteId,
+        facturaId: result.id,
+        cuentaCobrarId: cuentaCobrarFiadoId,
+        numeroCompleto,
+        lineas: lineasCalculadas.map((l) => ({
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          total: l.total,
+        })),
+        totalVenta,
+        saldoNuevo: saldoNuevoFiado,
+      }).catch((err) => console.error("[Fiado] Error notificación:", err))
+    }
 
     return NextResponse.json(
       {
         ok: true,
         facturaId: result.id,
         tipo: result.tipo,
-        tipoCbte: tipoCbteFinal,
+        tipoCbte: tipoCbteResp,
         esFce,
+        esExportacion,
+        modalidadAuth,
+        pendienteCae: estadoFinal === "pendiente_cae",
         numero: result.numero,
         puntoVenta: result.puntoVenta,
-        numeroCompleto: esTicket
-          ? `TK-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`
-          : `${result.tipo}-${String(result.puntoVenta).padStart(5, "0")}-${String(result.numero).padStart(8, "0")}`,
+        numeroCompleto,
         total: totalVenta,
         totalPagado,
         vuelto,
@@ -389,7 +567,7 @@ export async function GET(request: NextRequest) {
 
     const empresaId = ctx.auth.empresaId
 
-    const [caja, afip, ventasHoy] = await Promise.all([
+    const [caja, afip, ventasHoy, fiadoAcceso, envasesAcceso, valesAcceso, ...retailAccesos] = await Promise.all([
       prisma.caja.findFirst({
         where: { empresaId, estado: "abierta" },
         include: {
@@ -406,7 +584,15 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         },
       }),
+      canUseSku(empresaId, "pos.fiado_barrio"),
+      canUseSku(empresaId, "pos.envases_gaseosas"),
+      canUseSku(empresaId, "pos.vale_dinero"),
+      ...RETAIL_EXTENSION_SKUS.map((sku) => canUseSku(empresaId, sku)),
     ])
+
+    const retailActivo = Object.fromEntries(
+      RETAIL_EXTENSION_SKUS.map((sku, i) => [sku, retailAccesos[i]?.ok ?? false]),
+    )
 
     return NextResponse.json({
       cajaAbierta: !!caja,
@@ -416,6 +602,10 @@ export async function GET(request: NextRequest) {
       ultimosMovimientos: caja?.movimientos ?? [],
       ventasHoy,
       afip,
+      fiadoActivo: fiadoAcceso.ok,
+      envasesActivo: envasesAcceso.ok,
+      valesActivo: valesAcceso.ok,
+      retailActivo,
     })
   } catch (error) {
     console.error("Error al obtener estado POS:", error)

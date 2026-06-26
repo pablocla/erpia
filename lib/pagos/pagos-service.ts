@@ -32,6 +32,7 @@ export interface PagoInput {
   fecha?: Date
   observaciones?: string
   cheque?: ChequeInput
+  chequesTercerosIds?: number[]
   retenciones?: {
     retencionIVA?: number
     retencionGanancias?: number
@@ -94,7 +95,7 @@ export class PagosService {
   }
 
   async registrarPago(input: PagoInput) {
-    const { proveedorId, empresaId, items, medioPago, fecha, observaciones, retenciones, cheque } = input
+    const { proveedorId, empresaId, items, medioPago, fecha, observaciones, retenciones, cheque, chequesTercerosIds } = input
     const fechaOp = fecha ?? new Date()
 
     await periodoFiscalService.validarPeriodoAbierto(fechaOp, empresaId)
@@ -119,7 +120,9 @@ export class PagosService {
 
     // Validate all CP exist and have sufficient balance
     for (const item of items) {
-      const cp = await prisma.cuentaPagar.findUnique({ where: { id: item.cuentaPagarId } })
+      const cp = await prisma.cuentaPagar.findFirst({ 
+        where: { id: item.cuentaPagarId, proveedor: { empresaId } } 
+      })
       if (!cp) throw new Error(`CuentaPagar ${item.cuentaPagarId} no encontrada`)
       if (Number(cp.saldo) < item.monto) {
         throw new Error(`Monto $${item.monto} excede saldo $${cp.saldo} en CP #${item.cuentaPagarId}`)
@@ -160,6 +163,13 @@ export class PagosService {
           },
         },
       })
+
+      // Endosar cheques de terceros seleccionados
+      if (chequesTercerosIds && chequesTercerosIds.length > 0) {
+        for (const chequeId of chequesTercerosIds) {
+          await chequeService.endosarChequeTercero(chequeId, op.id, proveedorId, empresaId, tx)
+        }
+      }
 
       // 2. Create SICORE retention records for each applicable tax
       // Link to RegimenRetencion maestro when available

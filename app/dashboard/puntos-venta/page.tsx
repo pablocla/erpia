@@ -21,6 +21,7 @@ import { Plus, Pencil, Store, Star, CheckCircle, XCircle } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { authFetch } from "@/lib/stores"
 
 interface PuntoVenta {
   id: number
@@ -59,7 +60,7 @@ export default function PuntosVentaPage() {
   const cargar = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/puntos-venta?activo=false")
+      const res = await authFetch("/api/puntos-venta?activo=false")
       if (res.ok) setItems(await res.json())
     } finally {
       setLoading(false)
@@ -105,7 +106,7 @@ export default function PuntosVentaPage() {
     const url    = editando ? `/api/puntos-venta/${editando.id}` : "/api/puntos-venta"
     const method = editando ? "PATCH" : "POST"
 
-    const res = await fetch(url, {
+    const res = await authFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -118,7 +119,7 @@ export default function PuntosVentaPage() {
   }
 
   async function toggleActivo(pv: PuntoVenta) {
-    await fetch(`/api/puntos-venta/${pv.id}`, {
+    await authFetch(`/api/puntos-venta/${pv.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activo: !pv.activo }),

@@ -32,6 +32,10 @@ const clienteUpdateSchema = z.object({
   fechaNacimiento: z.string().optional().nullable(),
   observaciones: z.string().optional().nullable(),
   limiteCredito: z.number().min(0).optional(),
+  fiadoHabilitado: z.boolean().optional(),
+  emailNotificacionFiado: z.string().email().optional().or(z.literal("")).nullable(),
+  emailNotificacionFiado2: z.string().email().optional().or(z.literal("")).nullable(),
+  notificarClienteFiado: z.boolean().optional(),
   descuentoPct: z.number().min(0).max(100).optional(),
   diasGraciaExtra: z.number().int().min(0).optional(),
   monedaHabitual: z.enum(["pesos", "dolares", "euros"]).optional(),
@@ -73,9 +77,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const clienteId = Number(id)
+    if (isNaN(clienteId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+
     const db = prisma as any
     const cliente = await db.cliente.findFirst({
-      where: whereEmpresa(ctx.auth.empresaId, { id: Number(id) }),
+      where: whereEmpresa(ctx.auth.empresaId, { id: clienteId }),
       include: { ...CLIENTE_INCLUDES, cuentasCobrar: { where: { saldo: { gt: 0 } }, take: 20 } },
     })
 

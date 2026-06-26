@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (body.action === "aprobar") {
       const v = aprobarSchema.safeParse(body)
       if (!v.success) return NextResponse.json({ error: "Datos inválidos", detalles: v.error.errors }, { status: 400 })
-      const oc = await comprasService.aprobarOrdenCompra(v.data.ordenCompraId)
+      const oc = await comprasService.aprobarOrdenCompra(v.data.ordenCompraId, ctx.auth.empresaId)
       return NextResponse.json(oc)
     }
 

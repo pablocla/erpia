@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { PrinterService } from "@/lib/printer/printer-service"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 
 export async function POST(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const auth = await getAuthContext(request)
+    if (!auth.ok) return auth.response
 
     const { facturaId } = await request.json()
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const printerService = new PrinterService()
-    const resultado = await printerService.imprimirFactura(facturaId)
+    const resultado = await printerService.imprimirFactura(facturaId, auth.auth.empresaId)
 
     if (!resultado.success) {
       return NextResponse.json({ error: resultado.error }, { status: 400 })

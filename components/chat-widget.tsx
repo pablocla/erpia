@@ -35,12 +35,6 @@ export function ChatWidget() {
     return () => window.removeEventListener("keydown", handler)
   }, [chatOpen, setChatOpen])
 
-  useEffect(() => {
-    if (!chatOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => { document.body.style.overflow = prev }
-  }, [chatOpen])
 
   if (!chatOpen) return null
 
@@ -54,10 +48,11 @@ export function ChatWidget() {
       <div
         className={cn(
           "fixed z-[60] flex flex-col bg-background border border-border shadow-2xl transition-all duration-200",
-          "inset-0 rounded-none sm:inset-auto sm:bottom-20 sm:right-4 sm:rounded-xl",
+          "inset-0 rounded-none",
+          "sm:inset-auto sm:right-5 sm:bottom-5 sm:top-auto sm:rounded-xl",
           expanded
-            ? "sm:w-[min(560px,calc(100vw-2rem))] sm:h-[min(700px,85dvh)]"
-            : "sm:w-[min(400px,calc(100vw-2rem))] sm:h-[min(560px,80dvh)]",
+            ? "sm:w-[min(560px,calc(100vw-2rem))] sm:h-[min(700px,calc(100dvh-6rem))]"
+            : "sm:w-[min(400px,calc(100vw-2rem))] sm:h-[min(560px,calc(100dvh-6rem))]",
         )}
         role="dialog"
         aria-label="Asistente IA"
@@ -68,7 +63,7 @@ export function ChatWidget() {
         showCapabilitiesSidebar={false}
         className="h-full rounded-none sm:rounded-xl overflow-hidden"
         header={(
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3">
             <div className="flex items-center gap-2 min-w-0">
               <div className="relative shrink-0">
                 <Bot className="h-5 w-5 text-primary" />

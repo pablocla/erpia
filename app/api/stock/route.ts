@@ -122,6 +122,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
   }
 
+  if (data.depositoId) {
+    const deposito = await prisma.deposito.findFirst({
+      where: whereEmpresa(ctx.auth.empresaId, { id: data.depositoId }),
+    })
+    if (!deposito) {
+      return NextResponse.json({ error: "Depósito no encontrado" }, { status: 404 })
+    }
+  }
+
   const { stockService } = await import("@/lib/stock/stock-service")
   await stockService.ajustarStockManual(
     data.productoId,

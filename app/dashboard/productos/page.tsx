@@ -74,6 +74,13 @@ export default function ProductosPage() {
   const [error, setError] = useState("")
   const [guardando, setGuardando] = useState(false)
   const [filters, setFilters] = useState<FilterValues>({})
+
+  // Bulk Edit
+  const [bulkEditMode, setBulkEditMode] = useState<"precio" | "categoria" | null>(null)
+  const [bulkEditIds, setBulkEditIds] = useState<number[]>([])
+  const [bulkValor, setBulkValor] = useState("")
+  const [aplicandoBulk, setAplicandoBulk] = useState(false)
+
   const { toast } = useToast()
 
   const authHeaders = useCallback((): Record<string, string> => {
@@ -138,6 +145,42 @@ export default function ProductosPage() {
     setForm(initialForm)
     setError("")
     setDialogOpen(true)
+  }
+
+  const aplicarBulkEdit = async () => {
+    if (bulkEditIds.length === 0) return
+    setAplicandoBulk(true)
+    try {
+      if (bulkEditMode === "precio") {
+        const factor = 1 + (toNumber(bulkValor) / 100)
+        await Promise.all(bulkEditIds.map(async (id) => {
+          const prod = productos.find(p => p.id === id)
+          if (!prod) return
+          const nuevoPrecio = Number(prod.precioVenta) * factor
+          return fetch(`/api/productos/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ precioVenta: nuevoPrecio })
+          })
+        }))
+      } else if (bulkEditMode === "categoria") {
+        const catId = bulkValor ? parseInt(bulkValor) : null
+        await Promise.all(bulkEditIds.map(id => fetch(`/api/productos/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ categoriaId: catId })
+        })))
+      }
+      toast({ title: "Actualización masiva", description: "Se actualizaron los productos", variant: "default" })
+      setBulkEditMode(null)
+      setBulkValor("")
+      setBulkEditIds([])
+      cargarProductos()
+    } catch {
+      toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
+    } finally {
+      setAplicandoBulk(false)
+    }
   }
 
   const guardarProducto = async () => {
@@ -449,25 +492,33 @@ export default function ProductosPage() {
             searchKeys={["codigo", "nombre"]}
             selectable
             bulkActions={(selected, clear) => (
-              <>
-                <Button variant="outline" size="sm" onClick={() => {
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground mr-2">{selected.length} ítems</span>
+                <Button size="sm" variant="outline" onClick={() => { setBulkEditIds(selected.map(s => s.id)); setBulkEditMode("precio"); }}>
+                  Aumentar %
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setBulkEditIds(selected.map(s => s.id)); setBulkEditMode("categoria"); }}>
+                  Cambiar Categoría
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => {
                   const h = "codigo,nombre,precioVenta,precioCompra,stock,unidad,activo"
                   const rows = selected.map((p) => [p.codigo, p.nombre, p.precioVenta, p.precioCompra, p.stock, p.unidad, p.activo ? "Activo" : "Inactivo"].map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
                   const blob = new Blob(["\uFEFF" + [h, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" })
                   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "productos-seleccionados.csv"; a.click()
                   clear()
                 }}>
-                  <Download className="h-4 w-4 mr-1" /> Exportar ({selected.length})
+                  <Download className="h-4 w-4 mr-1" /> Exportar CSV
                 </Button>
-                <Button variant="outline" size="sm" onClick={async () => {
-                  const activos = selected.filter((p) => p.activo)
-                  if (!activos.length) return
-                  await Promise.all(activos.map((p) => fetch(`/api/productos/${p.id}`, { method: "DELETE", headers: authHeaders() })))
-                  cargarProductos(); clear()
+                <Button size="sm" variant="outline" onClick={async () => {
+                  const estado = !selected[0].activo
+                  await Promise.all(selected.map(p => fetch(`/api/productos/${p.id}`, { method: "PATCH", body: JSON.stringify({ activo: estado }), headers: authHeaders() })))
+                  cargarProductos()
+                  clear()
                 }}>
-                  <ToggleRight className="h-4 w-4 mr-1" /> Desactivar ({selected.filter((p) => p.activo).length})
+                  <ToggleRight className="h-4 w-4 mr-1" /> Activar/Desactivar
                 </Button>
-              </>
+                <Button size="sm" variant="ghost" onClick={clear}>Cancelar</Button>
+              </div>
             )}
             exportFilename="productos"
             loading={loading}
@@ -708,6 +759,41 @@ export default function ProductosPage() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Modal Bulk Edit */}
+      <Dialog open={bulkEditMode !== null} onOpenChange={(o) => !o && setBulkEditMode(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {bulkEditMode === "precio" ? "Aumento Masivo de Precios" : "Cambio de Categoría"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">Aplicando a {bulkEditIds.length} productos.</p>
+            {bulkEditMode === "precio" ? (
+              <div className="space-y-2">
+                <Label>Porcentaje de aumento (%)</Label>
+                <Input type="number" step="0.01" value={bulkValor} onChange={(e) => setBulkValor(e.target.value)} placeholder="Ej: 15" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Nueva categoría</Label>
+                <Select value={bulkValor} onValueChange={setBulkValor}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent>
+                    {categorias.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.nombre}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setBulkEditMode(null)}>Cancelar</Button>
+            <Button onClick={aplicarBulkEdit} disabled={aplicandoBulk || !bulkValor}>{aplicandoBulk ? "Procesando..." : "Aplicar"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog />
     </PageShell>
   )

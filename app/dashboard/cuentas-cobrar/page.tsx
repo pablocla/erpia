@@ -30,6 +30,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -95,7 +96,7 @@ export default function CuentasCobrarPage() {
   const [loadingRecibos, setLoadingRecibos] = useState(false)
 
   // Modal cobro
-  const [modalCobro, setModalCobro] = useState<CC | null>(null)
+  const [modalCobro, setModalCobro] = useState<CC[]>([])
   const [montoCobro, setMontoCobro] = useState("")
   const [medioPago, setMedioPago] = useState("efectivo")
   const [obsCobro, setObsCobro] = useState("")
@@ -120,7 +121,7 @@ export default function CuentasCobrarPage() {
       if (clienteFiltro !== "todos") params.set("clienteId", clienteFiltro)
       const res = await fetch(`/api/cuentas-cobrar?${params}`, { headers: authHeaders() })
       const data = await res.json()
-      setCuentas(Array.isArray(data.data) ? data.data : [])
+      setCuentas(parseApiList(data))
       setResumen(data.resumen ?? null)
     } finally {
       setLoading(false)
@@ -149,7 +150,7 @@ export default function CuentasCobrarPage() {
       if (clienteFiltro !== "todos") params.set("clienteId", clienteFiltro)
       const res = await fetch(`/api/recibos?${params}`, { headers: authHeaders() })
       const data = await res.json()
-      setRecibos(Array.isArray(data.data) ? data.data : [])
+      setRecibos(parseApiList(data))
     } finally {
       setLoadingRecibos(false)
     }
@@ -167,9 +168,10 @@ export default function CuentasCobrarPage() {
     return matchBusqueda
   })
 
-  const abrirCobro = (cc: CC) => {
-    setModalCobro(cc)
-    setMontoCobro(String(cc.saldo))
+  const abrirCobro = (ccs: CC[]) => {
+    setModalCobro(ccs)
+    const totalSaldo = ccs.reduce((acc, cc) => acc + cc.saldo, 0)
+    setMontoCobro(String(totalSaldo))
     setMedioPago("efectivo")
     setObsCobro("")
     setChequeNumero("")
@@ -180,8 +182,13 @@ export default function CuentasCobrarPage() {
     setErrorCobro("")
   }
 
+  const copiarLinkPago = (cc: CC) => {
+    const texto = `Hola ${cc.cliente?.nombre}, te compartimos el link de pago por el saldo pendiente de ${formatCurrency(cc.saldo)} correspondiente a la ${cc.factura ? `Factura ${cc.factura.tipo} ${formatPV(cc.factura.puntoVenta, cc.factura.numero)}` : `CC #${cc.id}`}. \n\nPuedes abonarlo aquí: https://link.mercadopago.com.ar/tuempresa`
+    navigator.clipboard.writeText(texto)
+  }
+
   const registrarCobro = async () => {
-    if (!modalCobro) return
+    if (modalCobro.length === 0) return
     setErrorCobro("")
     const monto = parseFloat(montoCobro)
     if (!monto || monto <= 0) { setErrorCobro("Monto inválido"); return }
@@ -192,9 +199,14 @@ export default function CuentasCobrarPage() {
 
     setCobrando(true)
     try {
+      const items = modalCobro.map((cc) => ({
+        cuentaCobrarId: cc.id,
+        monto: modalCobro.length === 1 ? monto : cc.saldo, 
+      }))
+
       const payload: Record<string, unknown> = {
-        cuentaCobrarId: modalCobro.id,
-        monto,
+        clienteId: modalCobro[0].cliente?.id,
+        items,
         medioPago,
         observaciones: obsCobro.trim() || undefined,
       }
@@ -216,7 +228,7 @@ export default function CuentasCobrarPage() {
       })
       const data = await res.json()
       if (!res.ok) { setErrorCobro(data.error || "Error al registrar cobro"); return }
-      setModalCobro(null)
+      setModalCobro([])
       await Promise.all([cargar(), cargarRecibos()])
     } finally {
       setCobrando(false)
@@ -331,12 +343,36 @@ export default function CuentasCobrarPage() {
               { key: "montoOriginal", header: "Total", align: "right", sortable: true, cell: (c) => <span className="font-medium">{formatCurrency(c.montoOriginal)}</span> },
               { key: "saldo", header: "Saldo", align: "right", sortable: true, cell: (c) => <span className="font-bold text-primary">{formatCurrency(c.saldo)}</span> },
               { key: "estado", header: "Estado", cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span> } },
-              { key: "acciones" as any, header: "", cell: (c) => c.estado !== "pagada" && c.saldo > 0 ? <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); abrirCobro(c) }}>Registrar cobro</Button> : null },
+              { key: "acciones" as any, header: "", cell: (c) => c.estado !== "pagada" && c.saldo > 0 ? (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); abrirCobro([c]) }}>Cobrar</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs text-green-600 border-green-200 hover:bg-green-50" onClick={(e) => { e.stopPropagation(); copiarLinkPago(c) }}>
+                    Link Pago
+                  </Button>
+                </div>
+              ) : null },
             ] as DataTableColumn<CC>[]}
             rowKey="id"
             searchPlaceholder="Buscar cuenta..."
             searchKeys={["id"]}
             selectable
+            bulkActions={(selected, clearSelection) => {
+              const allSameClient = selected.every(s => s.cliente?.id === selected[0].cliente?.id)
+              const total = selected.reduce((sum, s) => sum + s.saldo, 0)
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">{selected.length} seleccionadas</span>
+                  {!allSameClient ? (
+                    <span className="text-sm text-red-500 font-medium">Debe ser el mismo cliente</span>
+                  ) : (
+                    <Button size="sm" onClick={() => abrirCobro(selected)}>
+                      Cobrar seleccionadas ({formatCurrency(total)})
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={clearSelection}>Cancelar</Button>
+                </div>
+              )
+            }}
             exportFilename="cuentas-cobrar"
             loading={loading}
             emptyMessage="No hay cuentas para mostrar"
@@ -381,22 +417,27 @@ export default function CuentasCobrarPage() {
       </Card>
 
       {/* Modal cobro */}
-      <Dialog open={!!modalCobro} onOpenChange={() => setModalCobro(null)}>
+      <Dialog open={modalCobro.length > 0} onOpenChange={() => setModalCobro([])}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Registrar Cobro</DialogTitle></DialogHeader>
-          {modalCobro && (
+          <DialogHeader><DialogTitle>{modalCobro.length > 1 ? "Cobro Masivo" : "Registrar Cobro"}</DialogTitle></DialogHeader>
+          {modalCobro.length > 0 && (
             <div className="space-y-3 py-2">
               {errorCobro && <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">{errorCobro}</div>}
               <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                <p className="font-semibold">{modalCobro.cliente?.nombre}</p>
-                <p className="text-muted-foreground">
-                  {modalCobro.factura ? `FAC ${modalCobro.factura.tipo} ${formatPV(modalCobro.factura.puntoVenta, modalCobro.factura.numero)}` : `CC #${modalCobro.id}`}
-                </p>
-                <p>Saldo: <span className="font-bold text-primary">{formatCurrency(modalCobro.saldo)}</span></p>
+                <p className="font-semibold">{modalCobro[0].cliente?.nombre}</p>
+                {modalCobro.length === 1 ? (
+                  <p className="text-muted-foreground">
+                    {modalCobro[0].factura ? `FAC ${modalCobro[0].factura.tipo} ${formatPV(modalCobro[0].factura.puntoVenta, modalCobro[0].factura.numero)}` : `CC #${modalCobro[0].id}`}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">{modalCobro.length} comprobantes seleccionados</p>
+                )}
+                <p>Saldo total: <span className="font-bold text-primary">{formatCurrency(modalCobro.reduce((sum, c) => sum + c.saldo, 0))}</span></p>
               </div>
               <div className="space-y-1.5">
                 <Label>Importe a cobrar</Label>
-                <Input type="number" step="0.01" value={montoCobro} onChange={(e) => setMontoCobro(e.target.value)} />
+                <Input type="number" step="0.01" value={montoCobro} onChange={(e) => setMontoCobro(e.target.value)} disabled={modalCobro.length > 1} />
+                {modalCobro.length > 1 && <p className="text-xs text-muted-foreground">En cobros masivos se cancela el total de los saldos.</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>Forma de pago</Label>
@@ -444,7 +485,7 @@ export default function CuentasCobrarPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalCobro(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setModalCobro([])}>Cancelar</Button>
             <Button onClick={registrarCobro} disabled={cobrando}>{cobrando ? "Procesando..." : "Confirmar Cobro"}</Button>
           </DialogFooter>
         </DialogContent>

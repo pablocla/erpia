@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { ordenCompraEstadoLabel, ordenCompraEstadoVariant } from "@/lib/ui/status-map"
+import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -91,7 +92,7 @@ export default function ComprasPage() {
       const token = localStorage.getItem("token")
       const res = await fetch("/api/proveedores", { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
-      setProveedores(Array.isArray(data) ? data : data.data ?? [])
+      setProveedores(parseApiList<Proveedor>(data))
     } catch { /* non-blocking */ }
   }, [])
 
@@ -101,7 +102,7 @@ export default function ComprasPage() {
       const token = localStorage.getItem("token")
       const res = await fetch("/api/compras/ordenes", { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
-      setOrdenes(data.data ?? [])
+      setOrdenes(parseApiList(data))
       setTotalOC(data.total ?? 0)
     } catch {
       toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar las OC" })

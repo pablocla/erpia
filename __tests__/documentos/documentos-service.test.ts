@@ -4,6 +4,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { mockPrismaClient } from "../setup"
+
+vi.mock("@/lib/documentos/documentos-storage", () => ({
+  eliminarArchivoStorage: vi.fn().mockResolvedValue(undefined),
+}))
 import {
   adjuntarDocumento,
   listarDocumentos,
@@ -92,11 +96,17 @@ describe("Documentos Adjuntos Service", () => {
 
   describe("eliminarDocumento", () => {
     it("should delete an existing document", async () => {
-      mockPrismaClient.documentoAdjunto.findFirst.mockResolvedValue({ id: 7, empresaId })
+      mockPrismaClient.documentoAdjunto.findFirst.mockResolvedValue({
+        id: 7,
+        empresaId,
+        storageKey: "docs/factura.pdf",
+      })
       mockPrismaClient.documentoAdjunto.delete.mockResolvedValue({ id: 7 })
 
+      const { eliminarArchivoStorage } = await import("@/lib/documentos/documentos-storage")
       const result = await eliminarDocumento(empresaId, 7)
 
+      expect(eliminarArchivoStorage).toHaveBeenCalledWith("docs/factura.pdf")
       expect(result.id).toBe(7)
     })
 

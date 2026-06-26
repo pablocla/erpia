@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Activity, Building2, RefreshCw, Server, Shield, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -50,6 +51,13 @@ export default function ClaverCloudHomePage() {
           Refresh
         </Button>
       </div>
+
+      <Button asChild>
+        <Link href="/claver-cloud/superadmin">
+          <Shield className="h-4 w-4 mr-2" />
+          Abrir Super Admin Dashboard
+        </Link>
+      </Button>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

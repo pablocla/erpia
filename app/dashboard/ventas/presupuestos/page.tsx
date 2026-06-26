@@ -20,6 +20,8 @@ import {
   ArrowRightCircle, Trash2, Filter,
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { useToast } from "@/hooks/use-toast"
+import { getAuthHeaders } from "@/lib/stores/auth-store"
 
 interface Cliente { id: number; nombre: string; cuit?: string }
 interface Linea {
@@ -54,6 +56,7 @@ const ESTADOS_COLOR: Record<string, string> = {
 }
 
 export default function PresupuestosPage() {
+  const { toast } = useToast()
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [filtroEstado, setFiltroEstado] = useState("todos")
@@ -76,7 +79,10 @@ export default function PresupuestosPage() {
 
   useEffect(() => {
     cargar()
-    fetch("/api/clientes").then(r => r.json()).then(d => setClientes(d.data ?? d)).catch(() => {})
+    fetch("/api/clientes?take=500", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((d) => setClientes(Array.isArray(d.data) ? d.data : []))
+      .catch(() => {})
   }, [filtroEstado])
 
   useKeyboardShortcuts(erpShortcuts({
@@ -88,10 +94,15 @@ export default function PresupuestosPage() {
     try {
       const params = new URLSearchParams()
       if (filtroEstado !== "todos") params.set("estado", filtroEstado)
-      const res = await fetch(`/api/ventas/presupuestos?${params}`)
+      const res = await fetch(`/api/ventas/presupuestos?${params}`, { headers: getAuthHeaders() })
       const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Error al cargar")
       setPresupuestos(json.data ?? [])
-    } catch { setError("Error al cargar presupuestos") }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al cargar presupuestos"
+      setError(msg)
+      toast({ variant: "destructive", title: "Presupuestos", description: msg })
+    }
     setLoading(false)
   }
 
@@ -126,7 +137,7 @@ export default function PresupuestosPage() {
     try {
       const res = await fetch("/api/ventas/presupuestos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           clienteId: parseInt(clienteId),
           fechaVencimiento: fechaVenc || undefined,
@@ -140,12 +151,18 @@ export default function PresupuestosPage() {
           })),
         }),
       })
-      if (!res.ok) throw new Error((await res.json()).error)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Error al crear")
       setSuccess("Presupuesto creado exitosamente")
+      toast({ title: "Presupuesto creado", description: json.numero ?? "" })
       setDialogOpen(false)
       resetForm()
       cargar()
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al crear"
+      setError(msg)
+      toast({ variant: "destructive", title: "Error", description: msg })
+    }
   }
 
   function resetForm() {
@@ -161,19 +178,25 @@ export default function PresupuestosPage() {
     try {
       const res = await fetch("/api/ventas/presupuestos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ action, presupuestoId }),
       })
-      if (!res.ok) throw new Error((await res.json()).error)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Error en la acción")
       const msg = action === "convertir"
         ? "Presupuesto convertido a Pedido de Venta"
         : action === "duplicar"
           ? "Presupuesto duplicado"
           : `Presupuesto ${action === "enviar" ? "enviado" : action === "aceptar" ? "aceptado" : "rechazado"}`
       setSuccess(msg)
+      toast({ title: "Listo", description: msg })
       if (detalle?.id === presupuestoId) setDetalle(null)
       cargar()
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error"
+      setError(msg)
+      toast({ variant: "destructive", title: "Error", description: msg })
+    }
   }
 
   return (

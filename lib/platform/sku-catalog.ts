@@ -1,4 +1,5 @@
 import { FEATURES } from "@/lib/config/rubro-config-service"
+import { MARKETPLACE_CATALOG } from "@/lib/marketplace/marketplace-catalog"
 
 /** SKU comercial → feature técnica NOP */
 export const SKU_TO_FEATURE: Record<string, string> = {
@@ -18,6 +19,12 @@ export const SKU_TO_FEATURE: Record<string, string> = {
   "ops.morning_commander": FEATURES.AGENTES_IA,
   "sheets.lite": FEATURES.CLAV_SHEETS,
   "sheets.pro": FEATURES.CLAV_SHEETS,
+  "bridge.opo_studio": FEATURES.OPO_STUDIO,
+}
+
+// Inyectar todos los del marketplace automáticamente usando el SKU como feature name (o podes hardcodear)
+for (const item of MARKETPLACE_CATALOG) {
+  SKU_TO_FEATURE[item.sku] = item.sku 
 }
 
 export const AUTOMATION_SKU = "automation.n8n_hub"

@@ -13,6 +13,7 @@ import type { TES } from "@/lib/tes/tes-config"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { tesTipoVariant, tesTipoLabel, activoVariant, activoLabel } from "@/lib/ui/status-map"
+import { authFetch } from "@/lib/stores"
 
 export default function TESPage() {
   const [tesList, setTesList] = useState<TES[]>([])
@@ -24,7 +25,7 @@ export default function TESPage() {
   const [simResultado, setSimResultado] = useState<Record<string, unknown> | null>(null)
 
   useEffect(() => {
-    fetch("/api/tes")
+    authFetch("/api/tes")
       .then((r) => r.json())
       .then((data) => {
         setTesList(Array.isArray(data) ? data : (data.tes ?? []))
@@ -38,7 +39,7 @@ export default function TESPage() {
 
   const simular = async (tes: TES) => {
     setTesSeleccionado(tes)
-    const res = await fetch("/api/tes", {
+    const res = await authFetch("/api/tes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tesCodigo: tes.codigo, subtotalNeto: parseFloat(simSubtotal) }),

@@ -12,7 +12,9 @@ import {
   Search,
   Server,
   Settings,
+  Shield,
   Target,
+  Store,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,10 +24,12 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { name: "Home", href: "/claver-cloud", icon: Home },
-  { name: "Organizations", href: "/claver-cloud/organizations", icon: Building2 },
+  { name: "Super Admin", href: "/claver-cloud/superadmin", icon: Shield },
+  { name: "Tenants", href: "/claver-cloud/organizations", icon: Building2 },
   { name: "Provisioning", href: "/claver-cloud/provisioning", icon: PlusSquare },
   { name: "Operations", href: "/claver-cloud/operations", icon: Server },
   { name: "Implementation", href: "/claver-cloud/implementation", icon: Target },
+  { name: "Marketplace", href: "/claver-cloud/marketplace", icon: Store },
   { name: "Billing", href: "/claver-cloud/billing", icon: CreditCard },
   { name: "Settings", href: "/claver-cloud/settings", icon: Settings },
 ]

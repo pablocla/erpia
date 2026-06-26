@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (accion === "cargar_conteo") {
-      await tomaInventarioService.cargarConteo(body.tomaId, body.conteos)
+      await tomaInventarioService.cargarConteo(body.tomaId, auth.auth.empresaId, body.conteos)
       return NextResponse.json({ success: true })
     }
 
     if (accion === "procesar") {
-      const result = await tomaInventarioService.procesar(body.tomaId)
+      const result = await tomaInventarioService.procesar(body.tomaId, auth.auth.empresaId)
       return NextResponse.json({ success: true, ...result })
     }
 

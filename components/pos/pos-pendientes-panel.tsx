@@ -11,9 +11,11 @@ import {
   listarVentasSuspendidas,
   eliminarVentaSuspendida,
 } from "@/lib/pos/ventas-suspendidas"
+import { mensajeCajaBloqueada, type CajaMotivo } from "@/lib/pos/pos-feedback"
 
 interface PosPendientesPanelProps {
   cajaOk: boolean | null
+  cajaMotivo?: CajaMotivo | null
   onRecuperar: (venta: VentaSuspendida) => void
   onSuspender?: () => void
   puedeSuspender?: boolean
@@ -21,6 +23,7 @@ interface PosPendientesPanelProps {
 
 export function PosPendientesPanel({
   cajaOk,
+  cajaMotivo = null,
   onRecuperar,
   onSuspender,
   puedeSuspender = false,
@@ -74,10 +77,15 @@ export function PosPendientesPanel({
       {cajaOk === false && (
         <div className="mx-3 mb-2 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[10px] text-destructive">
           <Lock className="h-3 w-3 shrink-0" />
-          <span>Caja cerrada —</span>
-          <Link href="/dashboard/caja" className="underline font-medium">
-            Abrir caja
-          </Link>
+          <span>{mensajeCajaBloqueada(cajaMotivo)}</span>
+          {cajaMotivo === "cerrada" && (
+            <>
+              <span>—</span>
+              <Link href="/dashboard/caja" className="underline font-medium">
+                Abrir caja
+              </Link>
+            </>
+          )}
         </div>
       )}
 

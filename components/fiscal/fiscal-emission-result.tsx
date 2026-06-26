@@ -17,6 +17,9 @@ export interface FiscalEmissionData {
   error?: string
   pendienteCae?: boolean
   esFce?: boolean
+  esExportacion?: boolean
+  esTicket?: boolean
+  modalidadAuth?: "CAE" | "CAEA" | "NINGUNA"
 }
 
 interface FiscalEmissionResultProps {
@@ -105,6 +108,15 @@ export function FiscalEmissionResult({
               {data.esFce && (
                 <Badge className="bg-amber-500/90 text-amber-950 text-[10px]">FCE MiPyME</Badge>
               )}
+              {data.esExportacion && (
+                <Badge variant="outline" className="text-[10px]">Exportación</Badge>
+              )}
+              {data.modalidadAuth === "CAEA" && (
+                <Badge className="bg-violet-600/90 text-[10px]">CAEA</Badge>
+              )}
+              {data.esTicket && (
+                <Badge variant="destructive" className="text-[10px]">Sin CAE</Badge>
+              )}
             </div>
             {data.numero != null && (
               <p className="text-sm flex items-center gap-1.5">
@@ -116,7 +128,9 @@ export function FiscalEmissionResult({
               </p>
             )}
             <p className="text-sm">
-              <span className="text-muted-foreground">CAE:</span>{" "}
+              <span className="text-muted-foreground">
+                {data.modalidadAuth === "CAEA" ? "CAEA:" : "CAE:"}
+              </span>{" "}
               <span className="font-mono font-medium">{data.cae}</span>
             </p>
             {data.vencimientoCAE && (

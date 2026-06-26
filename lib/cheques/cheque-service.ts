@@ -201,6 +201,36 @@ export class ChequeService {
   }
 
   /**
+   * Endosa un cheque de terceros entregándolo a un proveedor en una Orden de Pago.
+   */
+  async endosarChequeTercero(chequeId: number, ordenPagoId: number, proveedorId: number, empresaId: number, txClient?: any) {
+    const db = txClient ?? prisma
+    const cheque = await db.cheque.findFirst({
+      where: {
+        id: chequeId,
+        tipoCheque: "tercero",
+        estado: "cartera",
+        OR: [
+          { recibo: { cliente: { empresaId } } },
+          { cliente: { empresaId } }
+        ]
+      }
+    })
+
+    if (!cheque) throw new Error("Cheque de tercero en cartera no encontrado")
+
+    return db.cheque.update({
+      where: { id: chequeId },
+      data: {
+        estado: "endosado",
+        ordenPagoId,
+        proveedorId,
+        updatedAt: new Date(),
+      }
+    })
+  }
+
+  /**
    * Marca cheque rechazado y re-débita la cuenta corriente del cliente.
    */
   async rechazar(chequeId: number, empresaId: number, observaciones?: string) {
@@ -253,10 +283,28 @@ export class ChequeService {
         },
       })
 
-      // Re-débito en cuenta corriente: nueva CC por cheque rechazado
+      // Nota de Débito Interna por Cheque Rechazado
+      const nd = await tx.factura.create({
+        data: {
+          empresaId,
+          clienteId,
+          tipo: "ND_INTERNA",
+          tipoCbte: 99, // Código interno
+          numero: chequeId,
+          puntoVenta: 0,
+          subtotal: monto,
+          iva: 0,
+          total: monto,
+          estado: "aprobado",
+          observaciones: `ND Interna por Cheque Rechazado N° ${cheque.numero}`,
+        },
+      })
+
+      // Re-débito en cuenta corriente vinculada a la ND
       const cc = await tx.cuentaCobrar.create({
         data: {
           clienteId,
+          facturaId: nd.id,
           numeroCuota: 1,
           montoOriginal: monto,
           saldo: monto,

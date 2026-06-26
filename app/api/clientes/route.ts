@@ -37,6 +37,10 @@ const clienteSchema = z.object({
   observaciones: z.string().optional().nullable(),
   // ─── Financiero ───────────────────────────────────────────────────────
   limiteCredito: z.number().min(0).default(0),
+  fiadoHabilitado: z.boolean().default(false),
+  emailNotificacionFiado: z.string().email().optional().or(z.literal("")).nullable(),
+  emailNotificacionFiado2: z.string().email().optional().or(z.literal("")).nullable(),
+  notificarClienteFiado: z.boolean().default(false),
   descuentoPct: z.number().min(0).max(100).default(0),
   diasGraciaExtra: z.number().int().min(0).default(0),
   monedaHabitual: z.enum(["pesos", "dolares", "euros"]).default("pesos"),

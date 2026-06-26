@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { chequeService, TRANSICIONES_CHEQUE } from "@/lib/cheques/cheque-service"
+import { chequeEmpresaWhere } from "@/lib/auth/tenant-validate"
 import { z } from "zod"
 
 const patchSchema = z.object({
@@ -95,7 +96,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Transiciones simples (endosado, anulado, etc.)
     if (parsed.data.estado) {
-      const current = await prisma.cheque.findUnique({ where: { id: chequeId }, select: { estado: true } })
+      const current = await prisma.cheque.findFirst({
+        where: { id: chequeId, ...chequeEmpresaWhere(empresaId) },
+        select: { estado: true },
+      })
       if (!current) return NextResponse.json({ error: "Cheque no encontrado" }, { status: 404 })
 
       if (!chequeService.validarTransicion(current.estado, parsed.data.estado)) {
@@ -105,6 +109,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         }, { status: 400 })
       }
     }
+
+    const owned = await prisma.cheque.findFirst({
+      where: { id: chequeId, ...chequeEmpresaWhere(empresaId) },
+    })
+    if (!owned) return NextResponse.json({ error: "Cheque no encontrado" }, { status: 404 })
 
     const cheque = await prisma.cheque.update({
       where: { id: chequeId },

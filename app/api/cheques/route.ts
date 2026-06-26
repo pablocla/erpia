@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
+import {
+  assertClienteEmpresa,
+  assertProveedorEmpresa,
+  assertCuentaBancoEmpresa,
+  chequeEmpresaWhere,
+} from "@/lib/auth/tenant-validate"
 import { z } from "zod"
 
 const chequeSchema = z.object({
@@ -42,34 +48,32 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || ""
     const vencimientoProximo = searchParams.get("vencimientoProximo") === "true"
 
-    const where: Record<string, unknown> = {}
+    const and: Record<string, unknown>[] = [chequeEmpresaWhere(ctx.auth.empresaId)]
 
-    if (estado) where.estado = estado
-    if (tipo) where.tipoCheque = tipo
+    if (estado) and.push({ estado })
+    if (tipo) and.push({ tipoCheque: tipo })
 
     if (vencimientoProximo) {
       const hoy = new Date()
       const en7dias = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000)
-      where.fechaVencimiento = { lte: en7dias, gte: hoy }
-      where.estado = { in: ["cartera", "depositado"] }
+      and.push({
+        fechaVencimiento: { lte: en7dias, gte: hoy },
+        estado: { in: ["cartera", "depositado"] },
+      })
     }
 
     if (search.trim()) {
-      where.OR = [
-        { numero: { contains: search, mode: "insensitive" } },
-        { cliente: { nombre: { contains: search, mode: "insensitive" } } },
-        { proveedor: { nombre: { contains: search, mode: "insensitive" } } },
-        { observaciones: { contains: search, mode: "insensitive" } },
-      ]
+      and.push({
+        OR: [
+          { numero: { contains: search, mode: "insensitive" } },
+          { cliente: { nombre: { contains: search, mode: "insensitive" } } },
+          { proveedor: { nombre: { contains: search, mode: "insensitive" } } },
+          { observaciones: { contains: search, mode: "insensitive" } },
+        ],
+      })
     }
 
-    // Filter by empresa through cliente or proveedor
-    where.OR = [
-      { cliente: { empresaId: ctx.auth.empresaId } },
-      { proveedor: { empresaId: ctx.auth.empresaId } },
-      { cuentaDeposito: { empresaId: ctx.auth.empresaId } },
-      { cuentaEmisor: { empresaId: ctx.auth.empresaId } },
-    ]
+    const where = { AND: and }
 
     const cheques = await prisma.cheque.findMany({
       where,
@@ -115,6 +119,12 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: parsed.error.flatten() }, { status: 400 })
     }
+
+    const empresaId = ctx.auth.empresaId
+    if (parsed.data.clienteId) await assertClienteEmpresa(parsed.data.clienteId, empresaId)
+    if (parsed.data.proveedorId) await assertProveedorEmpresa(parsed.data.proveedorId, empresaId)
+    if (parsed.data.cuentaDepositoId) await assertCuentaBancoEmpresa(parsed.data.cuentaDepositoId, empresaId)
+    if (parsed.data.cuentaEmisorId) await assertCuentaBancoEmpresa(parsed.data.cuentaEmisorId, empresaId)
 
     const cheque = await prisma.cheque.create({
       data: {

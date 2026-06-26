@@ -37,7 +37,7 @@ export async function calcularKPIs(empresaId: number): Promise<KPIResult[]> {
 
   kpis.push({
     codigo: "VENTA_DIA",
-    nombre: "Venta del día",
+    nombre: "Ventas del día",
     valor: Number(ventasDia._sum.total ?? 0),
     unidad: "ARS",
     meta: null,

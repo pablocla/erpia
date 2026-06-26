@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   ArrowRight,
+  ArrowLeftRight,
   CheckCircle2,
   Database,
   Play,
@@ -74,6 +75,19 @@ type ErrorFuncional = {
   createdAt: string
 }
 
+type EntornoSyncStatus = {
+  entornos: Array<{
+    codigo: string
+    snapshotAt: string | null
+    snapshotBy: string | null
+    lastSyncFrom: string | null
+    lastSyncAt: string | null
+  }>
+  puedePromoverValAPrd: boolean
+  puedeRefrescarValDesdePrd: boolean
+  mensaje?: string
+}
+
 type Overview = {
   entornos: Entorno[]
   jobs: OpsJob[]
@@ -114,6 +128,7 @@ interface OpsConsoleProps {
 
 export function OpsConsole({ mode, empresaId, empresaNombre, backHref }: OpsConsoleProps) {
   const [data, setData] = useState<Overview | null>(null)
+  const [syncStatus, setSyncStatus] = useState<EntornoSyncStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
@@ -133,11 +148,41 @@ export function OpsConsole({ mode, empresaId, empresaNombre, backHref }: OpsCons
     }
   }, [baseUrl, mode])
 
+  const cargarSync = useCallback(async () => {
+    if (mode !== "analyst" || !empresaId) return
+    try {
+      const res = await fetch(`/api/claver/ops/${empresaId}/sync`, { headers: authHeaders() })
+      if (res.ok) setSyncStatus(await res.json())
+    } catch {
+      /* ignore */
+    }
+  }, [mode, empresaId])
+
   useEffect(() => {
     void cargar()
-    const t = setInterval(() => void cargar(), 8000)
+    void cargarSync()
+    const t = setInterval(() => {
+      void cargar()
+      void cargarSync()
+    }, 8000)
     return () => clearInterval(t)
-  }, [cargar])
+  }, [cargar, cargarSync])
+
+  const syncAction = async (action: string, extra?: Record<string, unknown>) => {
+    if (!empresaId) return
+    setActionLoading(action)
+    try {
+      await fetch(`/api/claver/ops/${empresaId}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action, ...extra }),
+      })
+      await cargarSync()
+      await cargar()
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   const dispararJob = async (tipo: OpsJobTipo, entornoId?: number) => {
     setActionLoading(tipo)
@@ -278,6 +323,70 @@ export function OpsConsole({ mode, empresaId, empresaNombre, backHref }: OpsCons
           ))}
         </CardContent>
       </Card>
+
+      {mode === "analyst" && syncStatus && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ArrowLeftRight className="h-4 w-4 text-primary" />
+              Sincronización de entornos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {syncStatus.mensaje && (
+              <p className="text-sm text-amber-700 bg-amber-500/10 border border-amber-300/50 rounded-md px-3 py-2">
+                {syncStatus.mensaje}
+              </p>
+            )}
+            <div className="grid gap-2 sm:grid-cols-3 text-xs">
+              {syncStatus.entornos.map((e) => (
+                <div key={e.codigo} className="border rounded-md p-2 space-y-1">
+                  <p className="font-medium uppercase">{e.codigo}</p>
+                  <p className="text-muted-foreground">
+                    Snapshot:{" "}
+                    {e.snapshotAt ? new Date(e.snapshotAt).toLocaleString("es-AR") : "—"}
+                  </p>
+                  {e.lastSyncAt && (
+                    <p className="text-muted-foreground">
+                      Último sync desde {e.lastSyncFrom}: {new Date(e.lastSyncAt).toLocaleString("es-AR")}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              VAL es el workspace del analista (snapshot aislado). Promover aplica a la base live (PRD).
+              Refrescar copia producción hacia VAL sin tocar operación real.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!!actionLoading}
+                onClick={() => syncAction("capture", { codigo: "val" })}
+              >
+                Capturar VAL
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                disabled={!!actionLoading || !syncStatus.puedePromoverValAPrd}
+                onClick={() => syncAction("promote_val_prd")}
+              >
+                Promover VAL → PRD
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={!!actionLoading || !syncStatus.puedeRefrescarValDesdePrd}
+                onClick={() => syncAction("refresh_val_from_prd")}
+              >
+                Refrescar VAL ← PRD
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

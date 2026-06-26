@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { StockService } from "@/lib/stock/stock-service"
+import { assertDepositoEmpresa } from "@/lib/auth/tenant-validate"
 
 const stockService = new StockService()
 
@@ -16,6 +17,8 @@ export class TomaInventarioService {
    * Pre-loads all products with their current system stock.
    */
   async crear(depositoId: number, empresaId: number): Promise<{ id: number; numero: string }> {
+    await assertDepositoEmpresa(depositoId, empresaId)
+
     // Generate next numero
     const ultimo = await prisma.tomaInventario.findFirst({
       where: { empresaId },
@@ -52,9 +55,10 @@ export class TomaInventarioService {
    */
   async cargarConteo(
     tomaId: number,
+    empresaId: number,
     conteos: { lineaId: number; stockContado: number; observaciones?: string }[]
   ): Promise<void> {
-    const toma = await prisma.tomaInventario.findUnique({ where: { id: tomaId } })
+    const toma = await prisma.tomaInventario.findFirst({ where: { id: tomaId, empresaId } })
     if (!toma || toma.estado === "procesada" || toma.estado === "anulada") {
       throw new Error("Toma de inventario no editable")
     }
@@ -68,11 +72,16 @@ export class TomaInventarioService {
     }
 
     for (const conteo of conteos) {
+      const linea = await prisma.lineaTomaInventario.findFirst({
+        where: { id: conteo.lineaId, tomaInventarioId: tomaId },
+      })
+      if (!linea) throw new Error(`Línea ${conteo.lineaId} no pertenece a esta toma`)
+
       await prisma.lineaTomaInventario.update({
         where: { id: conteo.lineaId },
         data: {
           stockContado: conteo.stockContado,
-          diferencia: conteo.stockContado - (await prisma.lineaTomaInventario.findUnique({ where: { id: conteo.lineaId } }))!.stockSistema,
+          diferencia: conteo.stockContado - linea.stockSistema,
           observaciones: conteo.observaciones,
         },
       })
@@ -82,9 +91,9 @@ export class TomaInventarioService {
   /**
    * Process the inventory count — generates stock adjustments for all differences.
    */
-  async procesar(tomaId: number): Promise<{ ajustesGenerados: number }> {
-    const toma = await prisma.tomaInventario.findUnique({
-      where: { id: tomaId },
+  async procesar(tomaId: number, empresaId: number): Promise<{ ajustesGenerados: number }> {
+    const toma = await prisma.tomaInventario.findFirst({
+      where: { id: tomaId, empresaId },
       include: { lineas: true },
     })
     if (!toma) throw new Error("Toma no encontrada")

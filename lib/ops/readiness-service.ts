@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getProyectoPorEmpresa } from "@/lib/ops/implementacion-service"
+import { getIntegracionesHealthItems } from "@/lib/ops/integration-health-service"
 
 export type ReadinessEstado = "ok" | "warn" | "fail"
 
@@ -17,6 +18,7 @@ export interface ReadinessReport {
   score: number
   items: ReadinessItem[]
   rubroChecks: ReadinessItem[]
+  integraciones: ReadinessItem[]
 }
 
 function scoreFromItems(items: ReadinessItem[]): number {
@@ -143,7 +145,9 @@ export async function getEmpresaReadiness(empresaId: number): Promise<ReadinessR
     },
   ]
 
-  const allItems = [...items, ...rubroChecks]
+  const integraciones = await getIntegracionesHealthItems(empresaId)
+
+  const allItems = [...items, ...rubroChecks, ...integraciones]
   const fails = allItems.filter((i) => i.estado === "fail")
   const listoGoLive =
     fails.length === 0 &&
@@ -158,5 +162,6 @@ export async function getEmpresaReadiness(empresaId: number): Promise<ReadinessR
     score: scoreFromItems(allItems),
     items,
     rubroChecks,
+    integraciones,
   }
 }

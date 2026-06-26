@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { parseApiList } from "@/lib/api/parse-list-response"
 
 type ListaPrecio = {
   id: number
@@ -93,10 +94,10 @@ export default function ListasPrecioPage() {
       const dataProductos = await resProductos.json()
       const dataClientes = await resClientes.json()
 
-      const listasData = Array.isArray(dataListas.data) ? dataListas.data : []
+      const listasData = parseApiList<ListaPrecio>(dataListas)
       setListas(listasData)
-      setProductos(Array.isArray(dataProductos) ? dataProductos : [])
-      setClientes(Array.isArray(dataClientes) ? dataClientes : [])
+      setProductos(parseApiList<Producto>(dataProductos))
+      setClientes(parseApiList<Cliente>(dataClientes))
 
       if (!listaActivaId && listasData.length > 0) {
         setListaActivaId(String(listasData[0].id))

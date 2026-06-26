@@ -15,11 +15,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
-    const paciente = await historiaClinicaService.obtenerPaciente(Number(id))
+    const pacienteId = Number(id)
+    if (isNaN(pacienteId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+
+    // ── TENANT ISOLATION: verify patient belongs to this empresa via client ──
+    const paciente = await prisma.paciente.findFirst({
+      where: { id: pacienteId, cliente: { empresaId: ctx.auth.empresaId } },
+      include: {
+        cliente: true,
+        consultas: {
+          orderBy: { fecha: "desc" },
+          take: 20,
+        },
+      },
+    })
     if (!paciente) return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 })
 
     // Full consultation history
-    const consultas = await historiaClinicaService.listarConsultas(Number(id), 1, 100)
+    const consultas = await historiaClinicaService.listarConsultas(pacienteId, 1, 100)
 
     return NextResponse.json({ ...paciente, historialConsultas: consultas.consultas })
   } catch (error) {
@@ -34,8 +47,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const pacienteId = Number(id)
+    if (isNaN(pacienteId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+
+    // ── TENANT ISOLATION: verify patient belongs to this empresa via client ──
+    const existing = await prisma.paciente.findFirst({
+      where: { id: pacienteId, cliente: { empresaId: ctx.auth.empresaId } },
+      select: { id: true },
+    })
+    if (!existing) return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 })
+
     const body = await request.json()
-    const paciente = await historiaClinicaService.actualizarPaciente(Number(id), body)
+    const paciente = await historiaClinicaService.actualizarPaciente(existing.id, body)
     return NextResponse.json(paciente)
   } catch (error: any) {
     if (error.message?.includes("no encontrado")) {
@@ -52,8 +75,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const pacienteId = Number(id)
+    if (isNaN(pacienteId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+
+    // ── TENANT ISOLATION ──
     const paciente = await prisma.paciente.findFirst({
-      where: { id: Number(id), empresaId: ctx.auth.empresaId },
+      where: { id: pacienteId, cliente: { empresaId: ctx.auth.empresaId } },
     })
     if (!paciente) return NextResponse.json({ error: "Paciente no encontrado" }, { status: 404 })
 

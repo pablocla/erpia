@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
+import { PosDevolucionDialog } from "@/components/pos/pos-devolucion-dialog"
 
 interface VentaHoy {
   facturaId: number
@@ -54,6 +55,8 @@ export function PosVentasHoyDrawer({
   const [anulando, setAnulando] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [facturaAnular, setFacturaAnular] = useState<VentaHoy | null>(null)
+  const [devolucionOpen, setDevolucionOpen] = useState(false)
+  const [facturaDevolver, setFacturaDevolver] = useState<VentaHoy | null>(null)
   const [ventas, setVentas] = useState<VentaHoy[]>([])
 
   const cargar = useCallback(async () => {
@@ -221,14 +224,27 @@ export function PosVentasHoyDrawer({
                       )}
                     </div>
                     {v.anulable && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-[10px] shrink-0"
-                        onClick={() => pedirAnular(v)}
-                      >
-                        Anular
-                      </Button>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px]"
+                          onClick={() => {
+                            setFacturaDevolver(v)
+                            setDevolucionOpen(true)
+                          }}
+                        >
+                          Devolver
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[10px]"
+                          onClick={() => pedirAnular(v)}
+                        >
+                          Anular
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))
@@ -237,6 +253,18 @@ export function PosVentasHoyDrawer({
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <PosDevolucionDialog
+        facturaId={facturaDevolver?.facturaId ?? null}
+        numeroCompleto={facturaDevolver?.numeroCompleto}
+        open={devolucionOpen}
+        onOpenChange={setDevolucionOpen}
+        authHeaders={authHeaders}
+        onDevuelto={() => {
+          void cargar()
+          onAnulada?.()
+        }}
+      />
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-sm">

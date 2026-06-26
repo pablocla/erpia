@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 const schema = z.object({
   analistaEmail: z.string().email(),
   empresaId: z.number(),
-  rolAsignacion: z.enum(["lead", "soporte", "implementacion", "dba"]).default("soporte"),
+  rolAsignacion: z.enum(["lead", "soporte", "implementacion", "dba", "marketplace"]).default("soporte"),
   activo: z.boolean().optional(),
 })
 

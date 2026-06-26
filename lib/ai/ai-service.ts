@@ -335,10 +335,23 @@ class AIServiceImpl {
     }
 
     // auto: Ollama → Gemini → Anthropic
-    if (await this.isOllamaAlive()) return "ollama"
+    // En producción cloud (Vercel) no hay Ollama local: ir directo a Gemini/Anthropic.
+    if (this.shouldProbeOllama() && (await this.isOllamaAlive())) return "ollama"
     if (this.config.geminiApiKey) return "gemini"
     if (this.config.anthropicApiKey) return "anthropic"
     return "none"
+  }
+
+  private shouldProbeOllama(): boolean {
+    if (this.config.provider !== "auto") return this.config.provider === "ollama"
+    if (process.env.AI_SKIP_OLLAMA === "true") return false
+    if (
+      process.env.NODE_ENV === "production" &&
+      (this.config.geminiApiKey || this.config.anthropicApiKey)
+    ) {
+      return false
+    }
+    return true
   }
 
   private async isOllamaAlive(): Promise<boolean> {

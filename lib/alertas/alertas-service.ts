@@ -56,6 +56,8 @@ export async function listarReglasAlerta(empresaId: number) {
 }
 
 export async function toggleReglaAlerta(empresaId: number, reglaId: number, activo: boolean) {
+  const regla = await prisma.reglaAlerta.findFirst({ where: { id: reglaId, empresaId } })
+  if (!regla) throw new Error("Regla no encontrada")
   return prisma.reglaAlerta.update({
     where: { id: reglaId },
     data: { activo },
@@ -63,9 +65,7 @@ export async function toggleReglaAlerta(empresaId: number, reglaId: number, acti
 }
 
 export async function eliminarReglaAlerta(empresaId: number, reglaId: number) {
-  const regla = await prisma.reglaAlerta.findFirst({
-    where: { id: reglaId, empresaId },
-  })
+  const regla = await prisma.reglaAlerta.findFirst({ where: { id: reglaId, empresaId } })
   if (!regla) throw new Error("Regla no encontrada")
   return prisma.reglaAlerta.delete({ where: { id: reglaId } })
 }

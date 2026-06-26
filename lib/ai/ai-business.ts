@@ -9,6 +9,7 @@
  */
 
 import { z } from "zod"
+import { describeAIUnavailableReason } from "./ai-config"
 import { aiService, type AIMessage } from "./ai-service"
 import { buildEmpresaContexto, type EmpresaContexto } from "./context-builder"
 import { buildSystemPrompt } from "./system-prompts"
@@ -100,7 +101,7 @@ export async function chatConNegocio(
   historial: Array<{ role: "user" | "assistant"; content: string }> = []
 ): Promise<string> {
   const status = await aiService.isAvailable()
-  if (!status.available) return "El asistente IA no está disponible. Verificá que Ollama esté corriendo."
+  if (!status.available) return describeAIUnavailableReason()
 
   try {
     const contexto = await buildEmpresaContexto(empresaId)

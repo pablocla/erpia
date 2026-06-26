@@ -56,6 +56,7 @@ import { MipymeFceConfig } from "@/components/fiscal/mipyme-fce-config"
 import { AfipConnectionTest } from "@/components/fiscal/afip-connection-test"
 import { CaeaPanel } from "@/components/fiscal/caea-panel"
 import { CaeaConfigPanel } from "@/components/fiscal/caea-config-panel"
+import { FiscalEmisionConfigPanel } from "@/components/fiscal/fiscal-emision-config-panel"
 
 type SectionKey =
   | "empresa"
@@ -1261,51 +1262,14 @@ function ConfiguracionPageContent() {
         {/* ── IMPRESIÓN ── */}
         {seccionActiva === "impresion" && (
           <div className="space-y-4">
+            <FiscalEmisionConfigPanel puedeEditar={puedeEditarConfig} />
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Impresora fiscal</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Modelo</Label>
-                  <Select defaultValue="ninguna">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ninguna">Sin impresora fiscal</SelectItem>
-                      <SelectItem value="hasar">Hasar</SelectItem>
-                      <SelectItem value="epson">Epson TM</SelectItem>
-                      <SelectItem value="bematech">Bematech</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Puerto / IP</Label>
-                  <Input placeholder="COM1 o 192.168.1.100:9100" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Ticket / Comprobante</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  { label: "Imprimir automáticamente al facturar", value: false },
-                  { label: "Incluir QR AFIP en el ticket", value: true },
-                  { label: "Mostrar logo de la empresa", value: true },
-                  { label: "Impresión en PDF además del ticket físico", value: true },
-                ].map((op, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-                    <span className="text-sm">{op.label}</span>
-                    <Toggle value={op.value} onChange={() => {}} disabled={!puedeEditarConfig} />
-                  </div>
-                ))}
-                <div className="pt-3 border-t border-border">
-                  <Link href="/dashboard/configuracion/reportes" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
-                    <span>Administrar layouts de reporte</span>
-                    <span aria-hidden="true">→</span>
-                  </Link>
-                </div>
+              <CardContent className="p-4 text-xs text-muted-foreground">
+                Configurá la impresora activa (IP/puerto USB) desde{" "}
+                <Link href="/api/impresion/configurar-impresora" className="text-primary underline">
+                  API de impresión
+                </Link>{" "}
+                o el módulo de conexiones. Hasar y Epson usan ESC/POS con QR fiscal RG 4291.
               </CardContent>
             </Card>
           </div>

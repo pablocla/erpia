@@ -42,6 +42,7 @@ export class AgendaService {
     horaInicio: string
     horaFin: string
     profesionalId: number
+    empresaId: number
     clienteId?: number
     motivo?: string
     notas?: string
@@ -50,6 +51,7 @@ export class AgendaService {
     const conflicto = await prisma.turno.findFirst({
       where: {
         profesionalId: data.profesionalId,
+        empresaId: data.empresaId,
         fecha: new Date(data.fecha),
         estado: { notIn: ["cancelado", "no_asistio"] },
         OR: [
@@ -68,6 +70,7 @@ export class AgendaService {
         horaInicio: data.horaInicio,
         horaFin: data.horaFin,
         profesionalId: data.profesionalId,
+        empresaId: data.empresaId,
         clienteId: data.clienteId,
         motivo: data.motivo,
         notas: data.notas,

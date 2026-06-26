@@ -5,6 +5,7 @@ import { registrarAsientoCompra } from "@/lib/contabilidad/factura-hooks"
 import { eventBus } from "@/lib/events/event-bus"
 import type { CompraRegistradaPayload } from "@/lib/events/types"
 import { comprasService } from "@/lib/compras/compras-service"
+import { assertProveedorEmpresa } from "@/lib/auth/tenant-validate"
 import "@/lib/stock/stock-service"
 import "@/lib/cc-cp/cuentas-service"
 import { z } from "zod"
@@ -100,9 +101,11 @@ export async function POST(request: NextRequest) {
       monedaOrigen, tipoCambio, caeProveedor, ordenCompraId,
     } = validacion.data
 
+    await assertProveedorEmpresa(proveedorId, ctx.auth.empresaId)
+
     // ── 3-way matching (OC vs Recepción vs Factura) ──────────────────────
     if (ordenCompraId) {
-      const matchResult = await comprasService.threeWayMatch(ordenCompraId, items)
+      const matchResult = await comprasService.threeWayMatch(ordenCompraId, ctx.auth.empresaId, items)
       if (!matchResult.ok) {
         return NextResponse.json(
           { error: "3-way match fallido", discrepancias: matchResult.discrepancias },
@@ -121,7 +124,10 @@ export async function POST(request: NextRequest) {
           { token: "", sign: "" }, // Auth tokens injected by middleware in production
           process.env.CUIT_EMPRESA ?? "",
           {
-            cuitEmisor: (await prisma.proveedor.findUnique({ where: { id: proveedorId }, select: { cuit: true } }))?.cuit ?? "",
+            cuitEmisor: (await prisma.proveedor.findFirst({
+              where: { id: proveedorId, empresaId: ctx.auth.empresaId },
+              select: { cuit: true },
+            }))?.cuit ?? "",
             ptoVta: parseInt(puntoVenta, 10),
             cbeTipo: tipo === "A" ? 1 : tipo === "B" ? 6 : 11,
             cbeNro: parseInt(numero, 10),

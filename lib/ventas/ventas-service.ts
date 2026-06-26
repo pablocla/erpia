@@ -108,6 +108,33 @@ export class VentasService {
     return pedido
   }
 
+  async clonarPedido(pedidoId: number, empresaId: number) {
+    const original = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
+      include: { lineas: true }
+    })
+    if (!original) throw new Error("Pedido original no encontrado")
+
+    const { clienteId, vendedorId, condicionPagoId, canalVentaId, observaciones } = original
+    const lineas = original.lineas.map(l => ({
+      productoId: l.productoId ?? undefined,
+      descripcion: l.descripcion ?? "",
+      cantidad: Number(l.cantidad),
+      precioUnitario: Number(l.precioUnitario)
+    }))
+
+    return this.crearPedidoVenta({
+      clienteId,
+      empresaId,
+      vendedorId: vendedorId ?? undefined,
+      condicionPagoId: condicionPagoId ?? undefined,
+      canalVentaId: canalVentaId ?? undefined,
+      observaciones: (observaciones || "") + " (Clon)",
+      lineas,
+      usarListaPrecios: false
+    })
+  }
+
   async confirmarPedido(pedidoId: number, empresaId: number) {
     const pedido = await prisma.pedidoVenta.findFirst({
       where: { id: pedidoId, empresaId },

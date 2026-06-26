@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Topbar } from "@/components/topbar"
+import { ImpersonationBanner } from "@/components/ops/impersonation-banner"
 import { CajasAbiertasAlert } from "@/components/caja/cajas-abiertas-alert"
 import { DraftAlert } from "@/components/ventas/draft-alert"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -78,6 +79,7 @@ import {
   Banknote,
   Search,
   Bot,
+  Network,
   GraduationCap,
   Target,
   Calculator,
@@ -112,6 +114,8 @@ interface MenuItem {
   allowedUsers?: string[]
   allowedRubros?: Rubro[]
   claverAnalystOnly?: boolean
+  /** SKU horizontal — oculta si el producto no está activo */
+  skuKey?: string
 }
 
 const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuItem[] }[] = [
@@ -158,11 +162,16 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     moduloKey: "ventas",
     items: [
       { href: "/dashboard/pos", icon: Store, label: "Punto de Venta (POS)", permisoModulo: "pos", featureKey: "pos" },
+      { href: "/dashboard/almacen", icon: Warehouse, label: "Almacén Rosario", permisoModulo: "pos" },
+      { href: "/dashboard/almacen/guia", icon: BookOpen, label: "Guía Almacén", permisoModulo: "pos" },
+      { href: "/dashboard/apps", icon: Sparkles, label: "App Store" },
       { href: "/dashboard/pos/cierre", icon: BarChart3, label: "Cierre X / Z", permisoModulo: "pos" },
       { href: "/dashboard/ventas", icon: Receipt, label: "Facturación", permisoModulo: "ventas" },
       { href: "/dashboard/ventas/pedidos", icon: ClipboardList, label: "Pedidos de Venta", permisoModulo: "pedidos_venta" },
       { href: "/dashboard/ventas/presupuestos", icon: FileCheck, label: "Presupuestos", permisoModulo: "presupuestos" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes", permisoModulo: "clientes" },
+      { href: "/dashboard/clientes/retencion", icon: Target, label: "Retención y LTV", permisoModulo: "clientes" },
+      { href: "/dashboard/fiado", icon: BookOpen, label: "Libreta Fiado", permisoModulo: "clientes", skuKey: "pos.fiado_barrio" },
       { href: "/dashboard/listas-precio", icon: ListOrdered, label: "Listas de Precio", permisoModulo: "productos" },
       { href: "/dashboard/notas-credito", icon: FileMinus, label: "Notas Crédito/Débito", permisoModulo: "notas_credito" },
       { href: "/dashboard/facturacion-recurrente", icon: Repeat, label: "Facturación Recurrente", permisoModulo: "ventas" },
@@ -262,6 +271,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     moduloKey: "ia",
     items: [
       { href: "/dashboard/ia", icon: Bot, label: "Asistente IA", featureKey: "ia" },
+      { href: "/dashboard/apps/opo", icon: Network, label: "OPO Studio", skuKey: "bridge.opo_studio" },
     ],
   },
   {
@@ -551,11 +561,14 @@ function canRenderMenuItem(
   role: string | undefined,
   modulosActivos: Record<string, boolean> | null,
   features: Record<string, boolean> | null,
+  productosSku: Record<string, boolean> | null,
   userId: string | null,
   rubro: Rubro,
   isClaverAnalyst: boolean,
 ) {
   if (item.claverAnalystOnly && !isClaverAnalyst) return false
+
+  if (item.skuKey && productosSku && productosSku[item.skuKey] !== true) return false
 
   if (["administrador", "admin", "dueno"].includes(role || "")) return true
 
@@ -621,6 +634,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mounted, setMounted] = useState(false)
   const [modulosActivos, setModulosActivos] = useState<Record<string, boolean> | null>(null)
   const [featuresActivas, setFeaturesActivas] = useState<Record<string, boolean> | null>(null)
+  const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [sidebarSearch, setSidebarSearch] = useState("")
   const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
@@ -706,6 +720,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [authHeaders])
 
+  const cargarProductosSku = useCallback(async () => {
+    try {
+      const res = await fetch("/api/platform/productos", { headers: authHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.mapa && typeof data.mapa === "object") {
+        setProductosSku(data.mapa as Record<string, boolean>)
+      }
+    } catch {
+      setProductosSku(null)
+    }
+  }, [authHeaders])
+
   const cargarFeatures = useCallback(async () => {
     try {
       const res = await fetch("/api/config/features", {
@@ -731,21 +758,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     cargarModulos()
     cargarRubro()
     cargarFeatures()
-    // Re-fetch when config page saves changes
+    cargarProductosSku()
     const handler = () => {
       cargarModulos()
       cargarFeatures()
+      cargarProductosSku()
     }
     window.addEventListener("modulos-updated", handler)
-    return () => window.removeEventListener("modulos-updated", handler)
-  }, [cargarModulos, cargarRubro, cargarFeatures])
+    window.addEventListener("productos-updated", handler)
+    return () => {
+      window.removeEventListener("modulos-updated", handler)
+      window.removeEventListener("productos-updated", handler)
+    }
+  }, [cargarModulos, cargarRubro, cargarFeatures, cargarProductosSku])
 
   const isAdmin = ["administrador", "admin", "dueno"].includes(role || "")
 
   const modulosFiltrados = MODULOS.map((modulo) => ({
     ...modulo,
     items: modulo.items.filter((item) =>
-      canRenderMenuItem(item, role, modulosActivos, featuresActivas, userId, rubro, isClaverAnalyst),
+      canRenderMenuItem(item, role, modulosActivos, featuresActivas, productosSku, userId, rubro, isClaverAnalyst),
     ),
   })).filter((modulo) => {
     // Always show sections without a moduloKey if they still have visible items
@@ -860,6 +892,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full rounded-tl-xl border-t border-l border-border/30 bg-background/40 backdrop-blur-sm sm:mt-1.5 sm:ml-1.5 shadow-[-4px_-4px_24px_rgba(0,0,0,0.02)]">
+        <ImpersonationBanner />
         <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
         <main className={cn("flex-1 bg-surface/30", isPosShell ? "overflow-hidden" : "overflow-auto")}>
           <div className={cn(isPosShell ? "h-full p-0" : "p-3 sm:p-6 dashboard-main-pb")}>

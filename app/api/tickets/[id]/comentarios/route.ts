@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { notifyStakeholdersRespuestaTicket } from "@/lib/ops/ops-notificaciones"
 import { prisma } from "@/lib/prisma"
 
 const comentarioSchema = z.object({
@@ -34,6 +35,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         autor: ctx.auth.email,
       },
     })
+
+    void notifyStakeholdersRespuestaTicket({
+      empresaId: ctx.auth.empresaId,
+      ticketId,
+      numero: ticket.numero,
+      titulo: ticket.titulo,
+      autorEmail: ctx.auth.email,
+      texto: validacion.data.texto,
+    }).catch(() => {})
 
     return NextResponse.json(comentario, { status: 201 })
   } catch (error: any) {

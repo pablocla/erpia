@@ -41,6 +41,7 @@ describe("VentasService", () => {
         ],
       }
 
+      mockPrismaClient.cliente.findFirst.mockResolvedValue({ id: 1, empresaId: 1 })
       mockPrismaClient.pedidoVenta.create.mockResolvedValue({
         id: 1,
         numero: "PV-000001",

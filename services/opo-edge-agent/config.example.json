@@ -1,0 +1,58 @@
+{
+  "host": "0.0.0.0",
+  "port": 4077,
+  "apiKey": "cambiar-esta-clave-segura",
+  "organizationName": "Mi Empresa S.A.",
+  "erpName": "TOTVS Protheus",
+  "erpVersion": "12.1",
+  "routing": "hybrid",
+  "tableSuffix": "010",
+  "sql": {
+    "enabled": true,
+    "server": "192.168.1.50",
+    "port": 1433,
+    "database": "PROTHEUS",
+    "user": "usuario_sql",
+    "password": "clave_sql",
+    "encrypt": false,
+    "trustServerCertificate": true
+  },
+  "rest": {
+    "enabled": false,
+    "baseUrl": "http://192.168.1.60:8080/rest",
+    "authHeader": "Authorization",
+    "authToken": "Bearer TOKEN_PROTHEUS"
+  },
+  "entities": {
+    "Customer": {
+      "source": "sql",
+      "nativeTable": "SA1",
+      "sql": "SELECT TOP (@limit) RTRIM(A1_COD)+RTRIM(A1_LOJA) AS id, RTRIM(A1_CGC) AS partyId, RTRIM(A1_NREDUZ) AS tradeName, RTRIM(A1_NOME) AS legalName, A1_SALDUP AS outstandingBalance FROM SA1{{SUFFIX}} WHERE D_E_L_E_T_ <> '*' AND (@search = '' OR A1_NOME LIKE '%'+@search+'%' OR A1_CGC LIKE '%'+@search+'%') ORDER BY A1_COD"
+    },
+    "Product": {
+      "source": "sql",
+      "nativeTable": "SB1",
+      "sql": "SELECT TOP (@limit) RTRIM(B1_COD) AS id, RTRIM(B1_COD) AS sku, RTRIM(B1_DESC) AS name, B1_PRV1 AS unitPrice, B1_ESTSEG AS stock FROM SB1{{SUFFIX}} WHERE D_E_L_E_T_ <> '*' AND (@search = '' OR B1_DESC LIKE '%'+@search+'%' OR B1_COD LIKE '%'+@search+'%') ORDER BY B1_COD"
+    },
+    "Invoice": {
+      "source": "sql",
+      "nativeTable": "SF2",
+      "sql": "SELECT TOP (@limit) RTRIM(F2_DOC)+RTRIM(F2_SERIE) AS id, RTRIM(F2_DOC) AS number, RTRIM(F2_SERIE) AS series, F2_EMISSAO AS issueDate, F2_VALBRUT AS grandTotal, RTRIM(F2_CLIENTE)+RTRIM(F2_LOJA) AS customerId FROM SF2{{SUFFIX}} WHERE D_E_L_E_T_ <> '*' ORDER BY F2_EMISSAO DESC"
+    },
+    "Supplier": {
+      "source": "sql",
+      "nativeTable": "SA2",
+      "sql": "SELECT TOP (@limit) RTRIM(A2_COD)+RTRIM(A2_LOJA) AS id, RTRIM(A2_NOME) AS legalName, RTRIM(A2_CGC) AS partyId FROM SA2{{SUFFIX}} WHERE D_E_L_E_T_ <> '*' AND (@search = '' OR A2_NOME LIKE '%'+@search+'%') ORDER BY A2_COD"
+    },
+    "Order": {
+      "source": "rest",
+      "nativeTable": "SC5",
+      "path": "/salesOrders",
+      "method": "GET",
+      "queryParams": {
+        "pageSize": "@limit",
+        "search": "@search"
+      }
+    }
+  }
+}

@@ -14,9 +14,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const vendedorId = parseInt(id)
+    if (isNaN(vendedorId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-    const vendedor = await prisma.vendedor.findUnique({
-      where: { id: parseInt(id) },
+    // ── TENANT ISOLATION ──
+    const vendedor = await (prisma as any).vendedor.findFirst({
+      where: { id: vendedorId, usuario: { empresaId: ctx.auth.empresaId } },
       include: {
         _count: { select: { facturas: true } },
       },
@@ -36,13 +39,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
-    const body = await request.json()
+    const vendedorId = parseInt(id)
+    if (isNaN(vendedorId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-    const existing = await prisma.vendedor.findUnique({
-      where: { id: parseInt(id) },
+    // ── TENANT ISOLATION ──
+    const existing = await (prisma as any).vendedor.findFirst({
+      where: { id: vendedorId, usuario: { empresaId: ctx.auth.empresaId } },
     })
     if (!existing) return NextResponse.json({ error: "Vendedor no encontrado" }, { status: 404 })
 
+    const body = await request.json()
     const updatable = ["nombre", "email", "telefono", "comisionPct", "activo"]
     const data: Record<string, unknown> = {}
     for (const key of updatable) {
@@ -67,9 +73,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (!ctx.ok) return ctx.response
 
     const { id } = await params
+    const vendedorId = parseInt(id)
+    if (isNaN(vendedorId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-    const existing = await prisma.vendedor.findUnique({
-      where: { id: parseInt(id) },
+    // ── TENANT ISOLATION ──
+    const existing = await (prisma as any).vendedor.findFirst({
+      where: { id: vendedorId, usuario: { empresaId: ctx.auth.empresaId } },
     })
     if (!existing) return NextResponse.json({ error: "Vendedor no encontrado" }, { status: 404 })
 

@@ -5,11 +5,17 @@
  * DTE types: Factura Electrónica (33), Factura Exenta (34), Boleta (39), NC (61), ND (56)
  * Withholdings: Ret. Honorarios (10%), Ret. IVA construcción (19%)
  *
- * Status: STUB — rates and basic calculation implemented.
- * TODO: full SII DTE integration, LibroDTE, RCV, boleta flow
+ * Cálculo IVA + generación DTE: ver `lib/tes/fiscal/cl-sii-dte.ts`
  */
 
 import type { CountryTaxAdapter, TaxInput, TaxBreakdown, TaxResultItem } from "../types"
+
+export {
+  CL_DTE_TIPOS,
+  generarDteXml,
+  validarRutChile,
+  solicitarTimbradoSii,
+} from "../fiscal/cl-sii-dte"
 
 const CL_IVA_RATE = 19
 

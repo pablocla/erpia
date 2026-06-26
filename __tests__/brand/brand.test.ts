@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest"
 import { resolveSidebarBranding, BRAND_FULL, isCustomAppName } from "@/lib/brand"
 
-describe("brand — ClavERP by Claver", () => {
-  it("usa ClavERP por defecto", () => {
+describe("brand — Clavis by Claver", () => {
+  it("usa Clavis por defecto", () => {
     const r = resolveSidebarBranding(null)
-    expect(r.title).toBe("ClavERP")
+    expect(r.title).toBe("Clavis")
     expect(r.subtitle).toBe("by Claver")
     expect(r.showLiveIndicator).toBe(true)
   })
@@ -18,6 +18,6 @@ describe("brand — ClavERP by Claver", () => {
 
   it("trata ERP Argentina como plataforma no custom", () => {
     expect(isCustomAppName("ERP Argentina")).toBe(false)
-    expect(resolveSidebarBranding("ERP Argentina").title).toBe("ClavERP")
+    expect(resolveSidebarBranding("ERP Argentina").title).toBe("Clavis")
   })
 })

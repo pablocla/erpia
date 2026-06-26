@@ -6,7 +6,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe("ArqueoCajaService", () => {
   it("realizarArqueo calcula diferencia por medio de pago", async () => {
-    mockPrismaClient.caja.findUnique.mockResolvedValue({
+    mockPrismaClient.caja.findFirst.mockResolvedValue({
       id: 1,
       movimientos: [
         { medioPago: "efectivo", monto: 5000 },
@@ -31,7 +31,7 @@ describe("ArqueoCajaService", () => {
   })
 
   it("aprueba arqueo sin diferencia", async () => {
-    mockPrismaClient.caja.findUnique.mockResolvedValue({
+    mockPrismaClient.caja.findFirst.mockResolvedValue({
       id: 2,
       movimientos: [{ medioPago: "efectivo", monto: 1000 }],
     })

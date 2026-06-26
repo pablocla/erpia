@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id } = await params
     const cajaId = parseInt(id, 10)
-    const arqueos = await arqueoCajaService.listarPorCaja(cajaId)
+    const arqueos = await arqueoCajaService.listarPorCaja(cajaId, auth.auth.empresaId)
     return NextResponse.json({ success: true, arqueos })
   } catch (error: any) {
     return NextResponse.json({ error: error.message ?? "Error" }, { status: 500 })

@@ -200,4 +200,54 @@ describe("WorkflowEngine", () => {
       }),
     )
   })
+
+  it("pausa workflow en paso approval", async () => {
+    mockPrisma.empresa.findUnique.mockResolvedValue({ rubroId: 1, rubro: "TEST" })
+    mockPrisma.workflowRubro.findFirst.mockResolvedValue({
+      id: 4,
+      version: 1,
+      pasos: [
+        {
+          id: 40,
+          stepKey: "aprob_gerente",
+          nombre: "Aprobación gerente",
+          tipo: "approval",
+          accion: null,
+          orden: 1,
+          requiereFeature: null,
+          condicion: null,
+          parametros: { titulo: "OC > $1M", rolRequerido: "gerente" },
+          timeoutSeg: 0,
+          transicionesSalida: [],
+        },
+        {
+          id: 41,
+          stepKey: "emitir_oc",
+          nombre: "Emitir OC",
+          tipo: "service_call",
+          accion: "testAction.paso2",
+          orden: 2,
+          requiereFeature: null,
+          condicion: null,
+          parametros: null,
+          timeoutSeg: 0,
+          transicionesSalida: [],
+        },
+      ],
+    })
+    mockPrisma.workflowInstancia.create.mockResolvedValue({ id: 400 })
+    mockPrisma.workflowInstancia.update.mockResolvedValue({})
+    mockPrisma.workflowPasoLog.create.mockResolvedValue({})
+
+    const engine = new WorkflowEngine(1)
+    const result = await engine.ejecutar("compra", { total: 1_200_000 })
+
+    expect(result.estado).toBe("pausado")
+    expect(result.contexto.approvalPending).toBeDefined()
+    expect(mockPrisma.workflowInstancia.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ estado: "pausado", stepActual: "aprob_gerente" }),
+      }),
+    )
+  })
 })

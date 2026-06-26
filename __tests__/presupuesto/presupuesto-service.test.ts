@@ -50,8 +50,10 @@ describe("Presupuesto Service", () => {
         { montoPresupuestado: 500000 },
       ])
       mockPrismaClient.presupuestoGasto.update.mockResolvedValue({ id: 1 })
+      mockPrismaClient.presupuestoGasto.findFirst.mockResolvedValue({ id: 1, empresaId: 1 })
 
       const result = await agregarLineaPresupuesto({
+        empresaId: 1,
         presupuestoId: 1,
         mes: 3,
         montoPresupuestado: 500000,

@@ -9,6 +9,7 @@ import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { type DateRange } from "react-day-picker"
+import { authFetch } from "@/lib/stores"
 
 interface Movimiento {
   id: number
@@ -46,7 +47,7 @@ export default function MovimientosStockPage() {
     try {
       const params = new URLSearchParams()
       if (filtroTipo !== "todos") params.set("tipo", filtroTipo)
-      const res = await fetch(`/api/productos/movimientos?${params}`)
+      const res = await authFetch(`/api/productos/movimientos?${params}`)
       const data = await res.json()
       if (data.success) {
         setMovimientos(data.movimientos ?? [])

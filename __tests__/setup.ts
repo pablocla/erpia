@@ -86,6 +86,7 @@ const prismaModels = [
   "automationPollQueue",
   "productoComercial",
   "suscripcionModulo",
+  "featureEmpresa",
   "usageEvent",
   "conexionIntegracion",
   "integracionSyncLog",
@@ -99,6 +100,11 @@ const prismaModels = [
   "actaImplementacion",
   "reporteDefinicion",
   "reporteCatalogoCampo",
+  // Marketplace
+  "marketplaceOrden",
+  "marketplaceProvisionJob",
+  "marketplaceTareaAnalista",
+  "fiadoNotificacionLog",
 ]
 
 for (const model of prismaModels) {

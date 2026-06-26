@@ -23,7 +23,7 @@ const pedidoSchema = z.object({
 })
 
 const actionSchema = z.object({
-  action: z.enum(["confirmar", "picking", "remito", "anular", "facturar"]),
+  action: z.enum(["confirmar", "picking", "remito", "anular", "facturar", "clonar"]),
   pedidoId: z.number().int().positive(),
   depositoId: z.number().int().positive().optional(),
   // Datos para facturación (solo cuando action=facturar)
@@ -89,6 +89,9 @@ export async function POST(request: NextRequest) {
           break
         case "anular":
           result = await ventasService.anularPedido(pedidoId, ctx.auth.empresaId)
+          break
+        case "clonar":
+          result = await ventasService.clonarPedido(pedidoId, ctx.auth.empresaId)
           break
         case "facturar": {
           const pedidoCtx = await prisma.pedidoVenta.findFirst({

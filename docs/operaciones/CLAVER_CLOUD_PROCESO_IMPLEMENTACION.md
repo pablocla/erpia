@@ -51,6 +51,14 @@ npx tsx -e "import { ensureDemoAutomationSubscription } from './lib/platform/com
 npx tsx scripts/ops-run-job.ts
 ```
 
+## Diagramas de flujo
+
+| Documento | Contenido |
+|-----------|-----------|
+| [00-ciclo-completo](../marketplace/00-ciclo-completo.md) | Maestro comercial → impl → postventa |
+| [VAL_PRD_ACTIVACION](./VAL_PRD_ACTIVACION.md) | VAL, sync, pipeline, go-live |
+| Wiki embebida | Gates CCA + provisioning en MDX |
+
 ## Referencias TOTVS
 
 - **MIT 001** — Metodología de Implementação TOTVS (fases, actas, matriz requerimientos)

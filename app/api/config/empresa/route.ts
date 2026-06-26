@@ -30,6 +30,9 @@ const empresaUpdateSchema = z.object({
   rubro: z.string().optional(),
   condicionIva: z.string().optional(),
   paisFiscal: z.string().optional(),
+  emailDuenoAlmacen: z.string().email().optional().or(z.literal("")).nullable(),
+  fiadoRequiereLimite: z.boolean().optional(),
+  fiadoNotificarWhatsApp: z.boolean().optional(),
 })
 
 export async function PUT(request: NextRequest) {

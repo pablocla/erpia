@@ -282,6 +282,9 @@ export const FEATURES = {
 
   // Reporting
   CLAV_SHEETS: "clav_sheets",
+
+  // Bridge / ontología legacy
+  OPO_STUDIO: "bridge_opo_studio",
 } as const
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]

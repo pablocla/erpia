@@ -1,0 +1,18 @@
+{
+  "name": "clavis-opo-edge-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Puente OPO liviano para PC con VPN — enruta SQL y REST Protheus hacia Clavis",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs",
+    "start:config": "node index.mjs --config config.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "mssql": "^11.0.1"
+  }
+}

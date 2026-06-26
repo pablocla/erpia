@@ -1,34 +1,39 @@
 import { type NextRequest, NextResponse } from "next/server"
-import {
-  verificarAutenticacion,
-  verificarRol,
-  crearRespuestaNoAutorizado,
-  crearRespuestaForbidden,
-} from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await verificarAutenticacion(request)
-
-    if (!auth.autenticado) {
-      return crearRespuestaNoAutorizado(auth.error)
-    }
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     // Solo administradores pueden modificar usuarios
-    if (!verificarRol(auth.usuario, ["administrador"])) {
-      return crearRespuestaForbidden("Solo administradores pueden modificar usuarios")
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden modificar usuarios" }, { status: 403 })
     }
 
     const userId = Number.parseInt((await params).id)
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+    }
+
+    // ── TENANT ISOLATION: verify target user belongs to same empresa ──
+    const target = await prisma.usuario.findFirst({
+      where: { id: userId, empresaId: ctx.auth.empresaId },
+    })
+    if (!target) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
     const body = await request.json()
 
+    // Whitelist: only allow safe fields — block empresaId, email, etc.
     const usuario = await prisma.usuario.update({
-      where: { id: userId },
+      where: { id: target.id },
       data: {
-        nombre: body.nombre,
-        rol: body.rol,
-        activo: body.activo,
+        ...(body.nombre !== undefined && { nombre: body.nombre }),
+        ...(body.rol !== undefined && { rol: body.rol }),
+        ...(body.activo !== undefined && { activo: body.activo }),
       },
     })
 
@@ -50,26 +55,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await verificarAutenticacion(request)
-
-    if (!auth.autenticado) {
-      return crearRespuestaNoAutorizado(auth.error)
-    }
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     // Solo administradores pueden eliminar usuarios
-    if (!verificarRol(auth.usuario, ["administrador"])) {
-      return crearRespuestaForbidden("Solo administradores pueden eliminar usuarios")
+    if (ctx.auth.rol !== "administrador") {
+      return NextResponse.json({ error: "Solo administradores pueden eliminar usuarios" }, { status: 403 })
     }
 
     const userId = Number.parseInt((await params).id)
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 })
+    }
 
     // No permitir que el usuario se elimine a sí mismo
-    if (userId === auth.usuario.userId) {
+    if (userId === ctx.auth.userId) {
       return NextResponse.json({ error: "No puedes eliminar tu propio usuario" }, { status: 400 })
     }
 
+    // ── TENANT ISOLATION: verify target user belongs to same empresa ──
+    const target = await prisma.usuario.findFirst({
+      where: { id: userId, empresaId: ctx.auth.empresaId },
+    })
+    if (!target) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
+    }
+
     await prisma.usuario.delete({
-      where: { id: userId },
+      where: { id: target.id },
     })
 
     return NextResponse.json({

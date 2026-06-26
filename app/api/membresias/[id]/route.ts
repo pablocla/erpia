@@ -9,21 +9,30 @@ import { z } from "zod"
  */
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await getAuthContext(request)
-  if (!ctx.ok) return ctx.response
+  try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
-  const { id } = await params
-  const membresia = await prisma.membresia.findUnique({
-    where: { id: Number(id) },
-    include: {
-      plan: true,
-      cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
-    },
-  })
+    const { id } = await params
+    const membresiaId = Number(id)
+    if (isNaN(membresiaId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-  if (!membresia) return NextResponse.json({ error: "Membresía no encontrada" }, { status: 404 })
+    // ── TENANT ISOLATION ──
+    const membresia = await (prisma as any).membresia.findFirst({
+      where: { id: membresiaId, cliente: { empresaId: ctx.auth.empresaId } },
+      include: {
+        plan: true,
+        cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
+      },
+    })
 
-  return NextResponse.json({ success: true, membresia })
+    if (!membresia) return NextResponse.json({ error: "Membresía no encontrada" }, { status: 404 })
+
+    return NextResponse.json({ success: true, membresia })
+  } catch (error) {
+    console.error("Error al obtener membresía:", error)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+  }
 }
 
 const actualizarSchema = z.object({
@@ -31,33 +40,51 @@ const actualizarSchema = z.object({
 })
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await getAuthContext(request)
-  if (!ctx.ok) return ctx.response
+  try {
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
-  const { id } = await params
-  const body = await request.json()
-  const { accion } = actualizarSchema.parse(body)
+    const { id } = await params
+    const membresiaId = Number(id)
+    if (isNaN(membresiaId)) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
 
-  const { membresiasService } = await import("@/lib/membresias/membresias-service")
+    // ── TENANT ISOLATION: verify membership belongs to this empresa ──
+    const existing = await (prisma as any).membresia.findFirst({
+      where: { id: membresiaId, cliente: { empresaId: ctx.auth.empresaId } },
+      select: { id: true },
+    })
+    if (!existing) return NextResponse.json({ error: "Membresía no encontrada" }, { status: 404 })
 
-  let result
-  switch (accion) {
-    case "renovar":
-      result = await membresiasService.renovarMembresia(Number(id))
-      break
-    case "suspender":
-      result = await membresiasService.suspenderMembresia(Number(id))
-      break
-    case "cancelar":
-      result = await membresiasService.cancelarMembresia(Number(id))
-      break
-    case "reactivar":
-      result = await prisma.membresia.update({
-        where: { id: Number(id) },
-        data: { estado: "activa" },
-      })
-      break
+    const body = await request.json()
+    const { accion } = actualizarSchema.parse(body)
+
+    const { membresiasService } = await import("@/lib/membresias/membresias-service")
+
+    let result
+    switch (accion) {
+      case "renovar":
+        result = await membresiasService.renovarMembresia(existing.id)
+        break
+      case "suspender":
+        result = await membresiasService.suspenderMembresia(existing.id)
+        break
+      case "cancelar":
+        result = await membresiasService.cancelarMembresia(existing.id)
+        break
+      case "reactivar":
+        result = await prisma.membresia.update({
+          where: { id: existing.id },
+          data: { estado: "activa" },
+        })
+        break
+    }
+
+    return NextResponse.json({ success: true, membresia: result })
+  } catch (error: any) {
+    if (error?.issues) {
+      return NextResponse.json({ error: "Acción inválida" }, { status: 400 })
+    }
+    console.error("Error al actualizar membresía:", error)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
-
-  return NextResponse.json({ success: true, membresia: result })
 }

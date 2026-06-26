@@ -92,6 +92,29 @@ function resolveGeminiApiKey(): string | null {
   return process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || null
 }
 
+/** Mensaje de ayuda cuando el asistente no puede conectarse a ningún proveedor. */
+export function describeAIUnavailableReason(): string {
+  const config = getAIConfig()
+
+  if (!config.enabled) {
+    return "El asistente IA está deshabilitado. Activá AI_ENABLED=true en las variables de entorno."
+  }
+  if (config.provider === "gemini" && !config.geminiApiKey) {
+    return "Falta la API key de Gemini. En Vercel agregá GOOGLE_GENERATIVE_AI_API_KEY o GEMINI_API_KEY."
+  }
+  if (config.provider === "anthropic" && !config.anthropicApiKey) {
+    return "Falta ANTHROPIC_API_KEY en las variables de entorno."
+  }
+  if (config.provider === "ollama") {
+    return "Ollama no responde. Iniciá Ollama localmente o cambiá AI_PROVIDER a gemini."
+  }
+  if (!config.geminiApiKey && !config.anthropicApiKey) {
+    return "No hay proveedor de IA en el servidor. En Vercel: AI_PROVIDER=gemini y GOOGLE_GENERATIVE_AI_API_KEY."
+  }
+
+  return "El asistente IA no está disponible en este momento."
+}
+
 export function getAIConfig(): AIConfig {
   return {
     provider: (process.env.AI_PROVIDER as AIConfig["provider"]) || "auto",

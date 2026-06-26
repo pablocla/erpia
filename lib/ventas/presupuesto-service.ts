@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
 import { VentasService } from "@/lib/ventas/ventas-service"
 import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
+import { assertClienteEmpresa } from "@/lib/auth/tenant-validate"
 
 export interface PresupuestoInput {
   clienteId: number
@@ -32,7 +33,36 @@ export interface PresupuestoInput {
 export class PresupuestoService {
   private ventasService = new VentasService()
 
+  private async siguienteNumero(empresaId: number): Promise<string> {
+    const ultimo = await prisma.presupuesto.findFirst({
+      where: { empresaId },
+      orderBy: { id: "desc" },
+      select: { id: true },
+    })
+    return `PRES-${String((ultimo?.id ?? 0) + 1).padStart(6, "0")}`
+  }
+
+  private async assertPresupuesto(
+    empresaId: number,
+    id: number,
+    include?: object,
+  ) {
+    const pres = await prisma.presupuesto.findFirst({
+      where: { id, empresaId },
+      ...(include ? { include } : {}),
+    })
+    if (!pres) throw new Error("Presupuesto no encontrado")
+    return pres as any
+  }
+
   async crear(input: PresupuestoInput) {
+    await assertClienteEmpresa(input.clienteId, input.empresaId)
+
+    for (const l of input.lineas) {
+      if (!l.descripcion?.trim()) throw new Error("Cada línea debe tener descripción")
+      if ((l.precioUnitario ?? 0) <= 0) throw new Error("Cada línea debe tener precio mayor a cero")
+    }
+
     const usarLista = input.usarListaPrecios !== false
     const lineasConPrecio = usarLista
       ? await resolverPreciosLineas(
@@ -41,7 +71,7 @@ export class PresupuestoService {
             cantidad: l.cantidad,
             precioUnitario: l.precioUnitario,
           })),
-          { empresaId: input.empresaId, clienteId: input.clienteId }
+          { empresaId: input.empresaId, clienteId: input.clienteId },
         )
       : input.lineas.map((l) => ({
           productoId: l.productoId,
@@ -49,8 +79,7 @@ export class PresupuestoService {
           precioUnitario: l.precioUnitario ?? 0,
         }))
 
-    const ultimo = await prisma.presupuesto.findFirst({ orderBy: { id: "desc" } })
-    const numero = `PRES-${String((ultimo?.id ?? 0) + 1).padStart(6, "0")}`
+    const numero = await this.siguienteNumero(input.empresaId)
 
     let subtotal = 0
     const lineasData = input.lineas.map((l, i) => {
@@ -96,9 +125,15 @@ export class PresupuestoService {
     })
   }
 
-  async listar(filtros: { clienteId?: number; estado?: string; page?: number; limit?: number }) {
-    const { clienteId, estado, page = 1, limit = 20 } = filtros
-    const where: any = {}
+  async listar(filtros: {
+    empresaId: number
+    clienteId?: number
+    estado?: string
+    page?: number
+    limit?: number
+  }) {
+    const { empresaId, clienteId, estado, page = 1, limit = 20 } = filtros
+    const where: Record<string, unknown> = { empresaId }
     if (clienteId) where.clienteId = clienteId
     if (estado) where.estado = estado
 
@@ -116,17 +151,24 @@ export class PresupuestoService {
     return { data, total, page, limit }
   }
 
-  async obtener(id: number) {
-    return prisma.presupuesto.findUnique({
-      where: { id },
-      include: { lineas: { include: { producto: true } }, cliente: true, vendedor: true, listaPrecio: true, condicionPago: true },
+  async obtener(empresaId: number, id: number) {
+    return prisma.presupuesto.findFirst({
+      where: { id, empresaId },
+      include: {
+        lineas: { include: { producto: true } },
+        cliente: true,
+        vendedor: true,
+        listaPrecio: true,
+        condicionPago: true,
+      },
     })
   }
 
-  async enviar(id: number) {
-    const pres = await prisma.presupuesto.findUnique({ where: { id } })
-    if (!pres) throw new Error("Presupuesto no encontrado")
-    if (pres.estado !== "borrador") throw new Error(`No se puede enviar un presupuesto en estado '${pres.estado}'`)
+  async enviar(empresaId: number, id: number) {
+    const pres = await this.assertPresupuesto(empresaId, id)
+    if (pres.estado !== "borrador") {
+      throw new Error(`No se puede enviar un presupuesto en estado '${pres.estado}'`)
+    }
 
     return prisma.presupuesto.update({
       where: { id },
@@ -135,12 +177,8 @@ export class PresupuestoService {
     })
   }
 
-  async aceptar(id: number) {
-    const pres = await prisma.presupuesto.findUnique({
-      where: { id },
-      include: { lineas: true },
-    })
-    if (!pres) throw new Error("Presupuesto no encontrado")
+  async aceptar(empresaId: number, id: number) {
+    const pres = await this.assertPresupuesto(empresaId, id)
     if (pres.estado !== "enviado" && pres.estado !== "borrador") {
       throw new Error(`No se puede aceptar un presupuesto en estado '${pres.estado}'`)
     }
@@ -160,9 +198,8 @@ export class PresupuestoService {
     return updated
   }
 
-  async rechazar(id: number) {
-    const pres = await prisma.presupuesto.findUnique({ where: { id } })
-    if (!pres) throw new Error("Presupuesto no encontrado")
+  async rechazar(empresaId: number, id: number) {
+    const pres = await this.assertPresupuesto(empresaId, id)
     if (pres.estado !== "enviado" && pres.estado !== "borrador") {
       throw new Error(`No se puede rechazar un presupuesto en estado '${pres.estado}'`)
     }
@@ -174,13 +211,9 @@ export class PresupuestoService {
     })
   }
 
-  /**
-   * Convert accepted presupuesto → PedidoVenta
-   * Transitions presupuesto to "facturado" (meaning it's been converted)
-   */
-  async convertirAPedido(id: number) {
-    const pres = await prisma.presupuesto.findUnique({
-      where: { id },
+  async convertirAPedido(empresaId: number, id: number) {
+    const pres = await prisma.presupuesto.findFirst({
+      where: { id, empresaId },
       include: { lineas: { include: { producto: true } } },
     })
     if (!pres) throw new Error("Presupuesto no encontrado")
@@ -210,9 +243,9 @@ export class PresupuestoService {
     return pedido
   }
 
-  async duplicar(id: number) {
-    const pres = await prisma.presupuesto.findUnique({
-      where: { id },
+  async duplicar(empresaId: number, id: number) {
+    const pres = await prisma.presupuesto.findFirst({
+      where: { id, empresaId },
       include: { lineas: true },
     })
     if (!pres) throw new Error("Presupuesto no encontrado")

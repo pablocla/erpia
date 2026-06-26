@@ -6,11 +6,16 @@
  * IEPS: Impuesto Especial sobre Producción y Servicios (tabaco, bebidas, etc.)
  * CFDI: Comprobante Fiscal Digital por Internet (4.0)
  *
- * Status: STUB — rates and basic calculation implemented.
- * TODO: full CFDI 4.0 XML generation, timbrado PAC, cancelación, complementos de pago
+ * Cálculo IVA/ISR + CFDI 4.0: ver `lib/tes/fiscal/mx-cfdi40.ts`
  */
 
 import type { CountryTaxAdapter, TaxInput, TaxBreakdown, TaxResultItem } from "../types"
+
+export {
+  MX_USO_CFDI,
+  generarCfdi40Xml,
+  solicitarTimbradoCfdi,
+} from "../fiscal/mx-cfdi40"
 
 const MX_IVA_GENERAL = 16
 const MX_IVA_TASA_0 = 0

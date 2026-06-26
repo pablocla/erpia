@@ -1,0 +1,160 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+:root {
+  /* Default light mode overrides (we force dark mode anyway, but good to have) */
+  --ifm-color-primary: #10b981;
+  --ifm-color-primary-dark: #059669;
+  --ifm-color-primary-darker: #047857;
+  --ifm-color-primary-darkest: #064e3b;
+  --ifm-color-primary-light: #34d399;
+  --ifm-color-primary-lighter: #6ee7b7;
+  --ifm-color-primary-lightest: #a7f3d0;
+  --ifm-code-font-size: 90%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  
+  /* Font override to match OPO */
+  --ifm-font-family-base: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ifm-font-family-monospace: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* OPO Dark Mode Branding */
+[data-theme='dark'] {
+  /* Emerald 500 Primary */
+  --ifm-color-primary: #10b981;
+  --ifm-color-primary-dark: #059669;
+  --ifm-color-primary-darker: #047857;
+  --ifm-color-primary-darkest: #064e3b;
+  --ifm-color-primary-light: #34d399;
+  --ifm-color-primary-lighter: #6ee7b7;
+  --ifm-color-primary-lightest: #a7f3d0;
+  --docusaurus-highlighted-code-line-bg: rgba(16, 185, 129, 0.1);
+  
+  /* Background #0a0a0a to match OPO Next.js layout */
+  --ifm-background-color: #0a0a0a;
+  --ifm-background-surface-color: #0f0f0f;
+  
+  /* Navbar and Footer backgrounds */
+  --ifm-navbar-background-color: rgba(10, 10, 10, 0.95);
+  --ifm-footer-background-color: #070707;
+  
+  /* Text Colors */
+  --ifm-font-color-base: #cbd5e1; /* Slate 300 */
+}
+
+/* Subtle border lines to match slate-800 from Next.js */
+[data-theme='dark'] .navbar {
+  border-bottom: 1px solid #1e293b;
+  backdrop-filter: blur(8px);
+}
+[data-theme='dark'] .footer {
+  border-top: 1px solid #1e293b;
+}
+[data-theme='dark'] .menu__link {
+  color: #94a3b8; /* Slate 400 */
+}
+[data-theme='dark'] .menu__link:hover,
+[data-theme='dark'] .menu__link--active {
+  color: #f8fafc; /* Slate 50 */
+}
+
+/* Sidebar hover animation */
+.theme-doc-sidebar-item-link {
+  transition: all 0.2s ease-in-out;
+}
+.theme-doc-sidebar-item-link:hover {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+  color: #10b981 !important;
+  padding-left: 1.25rem !important;
+}
+
+/* Badges/Pills for tags */
+.opo-badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.opo-badge-protheus {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.opo-badge-sap {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.opo-badge-beta {
+  background-color: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Tables styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+table th {
+  background-color: #111827 !important;
+  color: #10b981 !important;
+  border-bottom: 2px solid #1f2937 !important;
+  font-weight: 600;
+}
+table td, table th {
+  padding: 0.75rem;
+  border: 1px solid #1f2937 !important;
+}
+table tr:nth-child(even) {
+  background-color: #0f172a !important;
+}
+
+/* Landing Page Hero and Custom Cards */
+.opo-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 2rem;
+  text-align: center;
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, transparent 60%);
+}
+.opo-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+.opo-card {
+  background-color: rgba(15, 15, 15, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+.opo-card:hover {
+  border-color: #10b981;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15);
+}
+.opo-card h3 {
+  color: #10b981;
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.opo-card p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}

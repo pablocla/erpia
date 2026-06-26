@@ -8,7 +8,7 @@ const lineaSchema = z.object({
   productoId: z.number().int().positive().optional(),
   descripcion: z.string().min(1),
   cantidad: z.number().positive(),
-  precioUnitario: z.number().positive().optional(),
+  precioUnitario: z.number().min(0).optional(),
   descuentoPct: z.number().min(0).max(100).optional(),
 })
 
@@ -38,8 +38,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 
+    const empresaId = ctx.auth.empresaId
+
     if (id) {
-      const pres = await presupuestoService.obtener(parseInt(id, 10))
+      const pres = await presupuestoService.obtener(empresaId, parseInt(id, 10))
       if (!pres) return NextResponse.json({ error: "No encontrado" }, { status: 404 })
       return NextResponse.json(pres)
     }
@@ -50,6 +52,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") ?? "20", 10)
 
     const result = await presupuestoService.listar({
+      empresaId,
       clienteId: clienteId ? parseInt(clienteId, 10) : undefined,
       estado: estado ?? undefined,
       page,
@@ -77,23 +80,24 @@ export async function POST(request: NextRequest) {
     const actionResult = actionSchema.safeParse(body)
     if (actionResult.success) {
       const { action, presupuestoId } = actionResult.data
-      let result: any
+      const empresaId = ctx.auth.empresaId
+      let result: unknown
 
       switch (action) {
         case "enviar":
-          result = await presupuestoService.enviar(presupuestoId)
+          result = await presupuestoService.enviar(empresaId, presupuestoId)
           break
         case "aceptar":
-          result = await presupuestoService.aceptar(presupuestoId)
+          result = await presupuestoService.aceptar(empresaId, presupuestoId)
           break
         case "rechazar":
-          result = await presupuestoService.rechazar(presupuestoId)
+          result = await presupuestoService.rechazar(empresaId, presupuestoId)
           break
         case "convertir":
-          result = await presupuestoService.convertirAPedido(presupuestoId)
+          result = await presupuestoService.convertirAPedido(empresaId, presupuestoId)
           break
         case "duplicar":
-          result = await presupuestoService.duplicar(presupuestoId)
+          result = await presupuestoService.duplicar(empresaId, presupuestoId)
           break
       }
 

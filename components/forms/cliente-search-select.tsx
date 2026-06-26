@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { Search } from "lucide-react"
+import { parseApiList } from "@/lib/api/parse-list-response"
 
 export interface ClienteOption {
   id: number
@@ -37,7 +38,7 @@ export function ClienteSearchSelect({
     if (!token) return
     fetch("/api/clientes", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
-      .then((data) => setClientes(Array.isArray(data) ? data : []))
+      .then((data) => setClientes(parseApiList<ClienteOption>(data)))
       .catch(() => setClientes([]))
   }, [])
 

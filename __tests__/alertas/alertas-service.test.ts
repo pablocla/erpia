@@ -82,6 +82,7 @@ describe("Alertas Service", () => {
 
   describe("toggleReglaAlerta", () => {
     it("should toggle active state", async () => {
+      mockPrismaClient.reglaAlerta.findFirst.mockResolvedValue({ id: 1, empresaId })
       mockPrismaClient.reglaAlerta.update.mockResolvedValue({ id: 1 })
 
       await toggleReglaAlerta(empresaId, 1, false)

@@ -17,11 +17,7 @@ import {
 } from "./ai-chat-constants"
 import { AiCapabilitiesPanel } from "./ai-capabilities-panel"
 import { AiMessageContent } from "./ai-message-content"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+
 
 export interface AiChatPanelProps {
   variant?: "page" | "widget"
@@ -52,7 +48,7 @@ export function AiChatPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [historyLoaded, setHistoryLoaded] = useState(false)
-  const [showHelp, setShowHelp] = useState(variant === "widget")
+  const [showHelp, setShowHelp] = useState(false)
   const [stickToBottom, setStickToBottom] = useState(true)
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -171,17 +167,21 @@ export function AiChatPanel({
         <div className="flex items-center justify-between gap-2 mb-2">
           <p className="text-xs text-muted-foreground font-medium">Acciones rápidas</p>
           {variant === "widget" && (
-            <Collapsible open={showHelp} onOpenChange={setShowHelp}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                  <Info className="h-3.5 w-3.5" />
-                  Qué puede hacer
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <AiCapabilitiesPanel compact onSelectPrompt={sendMessage} />
-              </CollapsibleContent>
-            </Collapsible>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("h-7 text-xs gap-1", showHelp && "text-primary bg-primary/10")}
+              onClick={() => {
+                const next = !showHelp
+                setShowHelp(next)
+                if (next) {
+                  setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }), 50)
+                }
+              }}
+            >
+              <Info className="h-3.5 w-3.5" />
+              {showHelp ? "Ocultar ayuda" : "Qué puede hacer"}
+            </Button>
           )}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -210,6 +210,22 @@ export function AiChatPanel({
         aria-live="polite"
         aria-relevant="additions"
       >
+        {/* Panel de ayuda — dentro del scroll para no empujar el input */}
+        {showHelp && variant === "widget" && (
+          <div className="mb-4 border border-dashed border-border/80 rounded-xl p-3 bg-muted/20">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-primary" />
+                Capacidades del asistente
+              </h4>
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setShowHelp(false)}>
+                Ocultar
+              </Button>
+            </div>
+            <AiCapabilitiesPanel compact onSelectPrompt={sendMessage} />
+          </div>
+        )}
+
         {!historyLoaded && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

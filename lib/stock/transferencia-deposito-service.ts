@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { assertDepositoEmpresa, assertProductoEmpresa } from "@/lib/auth/tenant-validate"
 
 interface LineaTransferencia {
   productoId: number
@@ -26,6 +27,12 @@ export class TransferenciaDepositoService {
   ): Promise<{ id: number; numero: string }> {
     if (depositoOrigenId === depositoDestinoId) {
       throw new Error("Origen y destino no pueden ser el mismo depósito")
+    }
+
+    await assertDepositoEmpresa(depositoOrigenId, empresaId)
+    await assertDepositoEmpresa(depositoDestinoId, empresaId)
+    for (const linea of lineas) {
+      await assertProductoEmpresa(linea.productoId, empresaId)
     }
 
     // Validate stock availability
@@ -79,6 +86,7 @@ export class TransferenciaDepositoService {
         // Audit trail
         await tx.movimientoStock.create({
           data: {
+            empresaId,
             tipo: "transferencia_salida",
             cantidad: -linea.cantidad,
             motivo: `Transferencia ${numero} → Dep. destino #${depositoDestinoId}`,
@@ -88,6 +96,7 @@ export class TransferenciaDepositoService {
         })
         await tx.movimientoStock.create({
           data: {
+            empresaId,
             tipo: "transferencia_entrada",
             cantidad: linea.cantidad,
             motivo: `Transferencia ${numero} ← Dep. origen #${depositoOrigenId}`,

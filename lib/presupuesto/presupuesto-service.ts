@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { assertPresupuestoGastoEmpresa } from "@/lib/auth/tenant-validate"
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CONTROL PRESUPUESTARIO — Presupuesto vs Ejecutado vs Comprometido
@@ -27,6 +28,7 @@ export async function crearPresupuesto(params: {
 // ─── Agregar línea presupuestaria ───────────────────────────────────────────
 
 export async function agregarLineaPresupuesto(params: {
+  empresaId: number
   presupuestoId: number
   cuentaContableId?: number
   centroCostoId?: number
@@ -34,6 +36,8 @@ export async function agregarLineaPresupuesto(params: {
   montoPresupuestado: number
   observaciones?: string
 }) {
+  await assertPresupuestoGastoEmpresa(params.presupuestoId, params.empresaId)
+
   const linea = await prisma.lineaPresupuestoGasto.create({
     data: {
       presupuestoId: params.presupuestoId,

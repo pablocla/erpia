@@ -48,6 +48,43 @@ flowchart LR
     G --> C[CCA-080 Cierre + Hipercare]
 ```
 
+### CCA con gates (no avanzar sin entregable)
+
+```mermaid
+flowchart TB
+    A[CCA-030 Tenant + entornos + admin] -->|obligatorio| B[CCA-040 Parametrización en VAL]
+    B --> C[CCA-050 Integraciones]
+    C --> D[CCA-060 UAT acta firmada]
+    D -->|aprobado| E[Pipeline VAL→PRD + Go-Live]
+    E --> F[CCA-080 Hipercare]
+    A -.->|falta| X[Bloqueado]
+    D -.->|rechazado| B
+```
+
+### Provisioning (CCA-030)
+
+```mermaid
+flowchart LR
+    P[/claver-cloud/provisioning/new] --> E[Empresa + CUIT]
+    E --> ENT[ensureTenantEntornos dev/val/prd]
+    ENT --> ADM[Usuario admin + email ONBOARD]
+    ADM --> CCA[ProyectoImplementacion]
+    CCA --> HC[Healthcheck ops]
+```
+
+### VAL → PRD
+
+Detalle: `docs/operaciones/VAL_PRD_ACTIVACION.md`
+
+```mermaid
+flowchart LR
+    VAL[Parametrizar en VAL homologación] --> SNAP[Capturar snapshot VAL]
+    SNAP --> UAT[UAT CCA-060]
+    UAT --> SYNC[Promover VAL→PRD]
+    SYNC --> PIPE[Pipeline ops 7 pasos]
+    PIPE --> AFIP[entornoAfip producción]
+```
+
 | Código | Nombre | Entregable principal | Responsable |
 |--------|--------|----------------------|-------------|
 | **CCA-001** | Metodología (este doc) | Procedimiento vigente | Líder implementación |

@@ -66,7 +66,7 @@ interface Proyeccion {
 
 // ─── Hook compartido de auth ──────────────────────────────────────────────────
 
-function useAuthHeaders(): () => HeadersInit {
+function useAuthHeaders(): () => Record<string, string> {
   return useCallback(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
     return token ? { Authorization: `Bearer ${token}` } : {}
@@ -120,7 +120,6 @@ function IAPageContent() {
       <PageHeader
         title="Asistente IA"
         description="Consultá tu negocio, generá alertas y automatizá comunicaciones con datos reales del ERP."
-        icon={Bot}
       />
 
       <Tabs defaultValue={tabInicial} className="flex-1">

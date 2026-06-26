@@ -142,6 +142,15 @@ export default function FacturacionRecurrentePage() {
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ accion: "procesar" }),
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast({
+          title: "Error en emisión recurrente",
+          description: err.error ?? "No se pudo procesar el lote",
+          variant: "destructive",
+        })
+        return
+      }
       const json = await res.json()
       const emitidas = (json.facturas ?? []) as ResultadoEmision[]
       setUltimaEmision(

@@ -176,6 +176,31 @@ export function CommandPalette() {
       <CommandList>
         <CommandEmpty>No se encontraron resultados.</CommandEmpty>
 
+        <CommandGroup heading="Acciones Rápidas">
+          <CommandItem value="nuevo pedido de venta accion rapida" onSelect={() => navigate("/dashboard/ventas/pedidos")}>
+            <ShoppingCart className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Nuevo Pedido de Venta</span>
+            <CommandShortcut>NP</CommandShortcut>
+          </CommandItem>
+          <CommandItem value="nuevo presupuesto accion rapida" onSelect={() => navigate("/dashboard/ventas/presupuestos")}>
+            <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Nuevo Presupuesto</span>
+            <CommandShortcut>NPR</CommandShortcut>
+          </CommandItem>
+          <CommandItem value="nuevo cliente accion rapida" onSelect={() => navigate("/dashboard/clientes")}>
+            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Nuevo Cliente</span>
+            <CommandShortcut>NC</CommandShortcut>
+          </CommandItem>
+          <CommandItem value="nuevo producto accion rapida" onSelect={() => navigate("/dashboard/productos")}>
+            <Package className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Nuevo Producto</span>
+            <CommandShortcut>NPROD</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+        
+        <CommandSeparator />
+
         {/* Recent pages */}
         {recentPages.length > 0 && (
           <CommandGroup heading="Recientes">

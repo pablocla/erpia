@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { eliminarArchivoStorage } from "@/lib/documentos/documentos-storage"
 
 export type EntidadTipo =
   | "factura"
@@ -98,7 +99,9 @@ export async function eliminarDocumento(empresaId: number, documentoId: number) 
   })
   if (!doc) throw new Error("Documento no encontrado")
 
-  // TODO: eliminar del storage (supabase.storage.from('docs').remove([doc.storageKey]))
+  if (doc.storageKey) {
+    await eliminarArchivoStorage(doc.storageKey)
+  }
 
   return prisma.documentoAdjunto.delete({
     where: { id: documentoId },

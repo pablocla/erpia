@@ -91,7 +91,7 @@ describe("COTService - Código de Operación de Transporte (ARBA)", () => {
           producto: {
             peso: 1, // 10kg
             pesoUnidad: "kg",
-            precioBase: 8000, // $80.000 total (supera $45.000)
+            precioVenta: 8000, // $80.000 total (supera $45.000)
           },
         },
       ],

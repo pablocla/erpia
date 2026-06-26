@@ -30,6 +30,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -120,7 +121,7 @@ export default function CuentasPagarPage() {
       if (proveedorFiltro !== "todos") params.set("proveedorId", proveedorFiltro)
       const res = await fetch(`/api/cuentas-pagar?${params}`, { headers: authHeaders() })
       const data = await res.json()
-      setCuentas(Array.isArray(data.data) ? data.data : [])
+      setCuentas(parseApiList(data))
       setResumen(data.resumen ?? null)
     } finally {
       setLoading(false)
@@ -153,7 +154,7 @@ export default function CuentasPagarPage() {
       if (proveedorFiltro !== "todos") params.set("proveedorId", proveedorFiltro)
       const res = await fetch(`/api/ordenes-pago?${params}`, { headers: authHeaders() })
       const data = await res.json()
-      setOrdenesPago(Array.isArray(data.data) ? data.data : [])
+      setOrdenesPago(parseApiList(data))
     } finally {
       setLoadingOrdenes(false)
     }

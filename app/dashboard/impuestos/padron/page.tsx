@@ -15,6 +15,7 @@ import { Upload, Search, Database, FileSpreadsheet, CheckCircle2, XCircle, Alert
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { authFetch } from "@/lib/stores"
 
 interface PadronEntry {
   id: number
@@ -86,8 +87,8 @@ export default function PadronIIBBPage() {
       params.set("take", "50")
 
       const [listRes, statsRes] = await Promise.all([
-        fetch(`/api/impuestos/padron?${params}`),
-        fetch("/api/impuestos/padron?vista=estadisticas"),
+        authFetch(`/api/impuestos/padron?${params}`),
+        authFetch("/api/impuestos/padron?vista=estadisticas"),
       ])
 
       if (listRes.ok) {
@@ -107,7 +108,7 @@ export default function PadronIIBBPage() {
     setImporting(true)
     setImportResult(null)
     try {
-      const res = await fetch("/api/impuestos/padron", {
+      const res = await authFetch("/api/impuestos/padron", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -130,7 +131,7 @@ export default function PadronIIBBPage() {
     setBuscando(true)
     setConsultaResult(null)
     try {
-      const res = await fetch("/api/impuestos/padron", {
+      const res = await authFetch("/api/impuestos/padron", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "consultar", cuit: consultaCuit }),

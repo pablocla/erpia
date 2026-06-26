@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DataTable } from "@/components/data-table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, Package, Truck, FileText, RefreshCw } from "lucide-react"
+import { CheckCircle2, Package, Truck, FileText, RefreshCw, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
 import { authFetch } from "@/lib/stores"
@@ -203,9 +203,13 @@ export default function PedidosPage() {
                 cell: (pedido) => {
                   const actions = [] as Array<{ label: string; action: string; icon: any }>
                   if (pedido.estado === "borrador") actions.push({ label: "Confirmar", action: "confirmar", icon: <CheckCircle2 className="h-4 w-4" /> })
-                  if (pedido.estado === "confirmado") actions.push({ label: "Picking", action: "picking", icon: <Package className="h-4 w-4" /> })
+                  if (pedido.estado === "confirmado") {
+                    actions.push({ label: "Picking", action: "picking", icon: <Package className="h-4 w-4" /> })
+                    actions.push({ label: "Facturar", action: "facturar", icon: <FileText className="h-4 w-4" /> })
+                  }
                   if (pedido.estado === "en_picking") actions.push({ label: "Remito", action: "remito", icon: <Truck className="h-4 w-4" /> })
                   if (pedido.estado === "remitido") actions.push({ label: "Facturar", action: "facturar", icon: <FileText className="h-4 w-4" /> })
+                  actions.push({ label: "Clonar", action: "clonar", icon: <Copy className="h-4 w-4" /> })
                   return (
                     <div className="flex flex-wrap gap-2">
                       {actions.map((item) => (

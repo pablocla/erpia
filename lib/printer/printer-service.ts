@@ -1,72 +1,42 @@
 import { prisma } from "@/lib/prisma"
 import { HasarPrinter } from "./hasar-printer"
 import { EpsonPrinter } from "./epson-printer"
-import type { TicketData, PrinterResponse, PrinterConfig } from "./printer-interface"
+import type { PrinterResponse, PrinterConfig } from "./printer-interface"
+import { buildTicketLegalFromFactura } from "@/lib/fiscal/ticket-legal"
+import { getFiscalEmissionConfig } from "@/lib/fiscal/emission-config"
 
 export class PrinterService {
-  async imprimirFactura(facturaId: number): Promise<PrinterResponse> {
+  async imprimirFactura(facturaId: number, empresaId?: number): Promise<PrinterResponse> {
     try {
-      // Obtener la factura completa
       const factura = await prisma.factura.findUnique({
         where: { id: facturaId },
-        include: {
-          empresa: true,
-          cliente: true,
-          lineas: true,
-        },
+        select: { empresaId: true },
       })
 
       if (!factura) {
         return { success: false, error: "Factura no encontrada" }
       }
 
-      // Obtener la impresora activa
+      const eid = empresaId ?? factura.empresaId
+      if (empresaId && factura.empresaId !== empresaId) {
+        return { success: false, error: "Factura no pertenece a la empresa" }
+      }
+
+      const ticketData = await buildTicketLegalFromFactura(facturaId)
+      if (!ticketData) {
+        return { success: false, error: "No se pudieron cargar los datos del comprobante" }
+      }
+
       const impresora = await prisma.configuracionImpresora.findFirst({
-        where: { activa: true },
+        where: { empresaId: eid, activa: true },
       })
 
       if (!impresora) {
-        return { success: false, error: "No hay impresora configurada" }
+        return { success: false, error: "No hay impresora configurada para esta empresa" }
       }
 
-      // Preparar los datos del ticket
-      const ticketData: TicketData = {
-        empresa: {
-          nombre: factura.empresa.nombre,
-          razonSocial: factura.empresa.razonSocial,
-          cuit: factura.empresa.cuit,
-          direccion: factura.empresa.direccion || "",
-          puntoVenta: factura.puntoVenta,
-        },
-        factura: {
-          tipo: factura.tipo,
-          numero: factura.numero,
-          fecha: factura.createdAt,
-          cae: factura.cae || "",
-          vencimientoCAE: factura.vencimientoCAE || new Date(),
-        },
-        cliente: {
-          nombre: factura.cliente.nombre,
-          cuit: factura.cliente.cuit || undefined,
-          dni: factura.cliente.dni || undefined,
-          condicionIva: factura.cliente.condicionIva,
-        },
-        items: factura.lineas.map((linea) => ({
-          descripcion: linea.descripcion,
-          cantidad: linea.cantidad,
-          precioUnitario: Number(linea.precioUnitario),
-          iva: Number(linea.porcentajeIva),
-          total: Number(linea.total),
-        })),
-        totales: {
-          subtotal: Number(factura.subtotal),
-          iva: Number(factura.iva),
-          total: Number(factura.total),
-        },
-        qrBase64: factura.qrBase64 || undefined,
-      }
+      const emissionConfig = await getFiscalEmissionConfig(eid)
 
-      // Seleccionar el driver de impresora correcto
       const printerConfig: PrinterConfig = {
         id: impresora.id,
         nombre: impresora.nombre,
@@ -79,19 +49,16 @@ export class PrinterService {
         activa: impresora.activa,
       }
 
-      let resultado: PrinterResponse
+      const printOpts = { incluirQr: emissionConfig.incluirQrTicket }
 
       if (printerConfig.marca === "hasar") {
-        const printer = new HasarPrinter(printerConfig)
-        resultado = await printer.imprimirTicket(ticketData)
-      } else if (printerConfig.marca === "epson") {
-        const printer = new EpsonPrinter(printerConfig)
-        resultado = await printer.imprimirTicket(ticketData)
-      } else {
-        return { success: false, error: "Marca de impresora no soportada" }
+        return new HasarPrinter(printerConfig).imprimirTicket(ticketData, printOpts)
+      }
+      if (printerConfig.marca === "epson") {
+        return new EpsonPrinter(printerConfig).imprimirTicket(ticketData, printOpts)
       }
 
-      return resultado
+      return { success: false, error: "Marca de impresora no soportada" }
     } catch (error) {
       console.error("Error en PrinterService:", error)
       return {
@@ -102,10 +69,7 @@ export class PrinterService {
   }
 
   async detectarImpresoras(): Promise<PrinterConfig[]> {
-    // En producción, aquí se detectarían las impresoras conectadas
-    // usando librerías como node-usb o escaneando la red
-
-    const impresorasDetectadas: PrinterConfig[] = [
+    return [
       {
         id: 0,
         nombre: "Hasar SMH/P-441",
@@ -127,7 +91,5 @@ export class PrinterService {
         activa: false,
       },
     ]
-
-    return impresorasDetectadas
   }
 }

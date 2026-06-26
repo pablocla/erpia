@@ -1,8 +1,24 @@
 import { prisma } from "@/lib/prisma"
 import { persistSistemaLog } from "@/lib/ops/sistema-log"
 import { emailService } from "@/lib/email/email-service"
+import { emailLayout } from "@/lib/email/email-templates"
 import { telegramService } from "@/lib/telegram/telegram-service"
 import { getTelegramChatId } from "@/lib/telegram/telegram-vinculo"
+import { STAKEHOLDER_ROLE } from "@/lib/auth/stakeholder-guard"
+
+async function resolveAnalistaEmails(empresaId: number): Promise<string[]> {
+  const db = prisma as any
+  const asignaciones = await db.analistaAsignacion.findMany({
+    where: { empresaId, activo: true },
+    select: { analistaEmail: true },
+  })
+  const emails = asignaciones.map((a: { analistaEmail: string }) => a.analistaEmail)
+  if (emails.length === 0) {
+    const raw = process.env.CLAVER_ANALYST_EMAILS ?? ""
+    emails.push(...raw.split(",").map((e) => e.trim()).filter(Boolean))
+  }
+  return emails
+}
 
 async function getAnalystChatIds(emails: string[]): Promise<string[]> {
   const db = prisma as any
@@ -200,6 +216,98 @@ export async function notifyAnalistasEntornoCaido(input: {
   } catch (err) {
     console.error("Error enviando alertas Telegram para entorno caído:", err)
   }
+}
+
+export async function notifyAnalistasComentarioStakeholder(input: {
+  empresaId: number
+  ticketId: number
+  numero: string
+  titulo: string
+  stakeholderEmail: string
+  texto: string
+}) {
+  const emails = await resolveAnalistaEmails(input.empresaId)
+
+  await persistSistemaLog({
+    empresaId: input.empresaId,
+    severidad: "info",
+    categoria: "soporte",
+    contexto: `ticket:${input.ticketId}`,
+    mensaje: `Comentario stakeholder en ${input.numero}`,
+    metadata: { stakeholderEmail: input.stakeholderEmail, notifyEmails: emails },
+  })
+
+  if (emails.length === 0) return
+
+  const excerpt = input.texto.length > 200 ? `${input.texto.slice(0, 200)}…` : input.texto
+  const cloudUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/claver-cloud/operations/${input.empresaId}`
+
+  void emailService.enviar({
+    to: emails,
+    subject: `[Claver Cloud] Comentario cliente — Ticket #${input.numero}`,
+    html: emailLayout(`
+      <h2>Nuevo comentario del cliente</h2>
+      <p>El stakeholder <strong>${input.stakeholderEmail}</strong> comentó en el ticket <strong>#${input.numero}</strong> (${input.titulo}).</p>
+      <blockquote style="border-left:3px solid #ccc;padding-left:12px;margin:12px 0;color:#444">${excerpt}</blockquote>
+      <p><a href="${cloudUrl}">Ver en Claver Cloud</a></p>
+    `, { preheader: `Comentario en ticket ${input.numero}` }),
+    text: `Comentario de ${input.stakeholderEmail} en #${input.numero}: ${excerpt}`,
+  }).catch(() => {})
+
+  try {
+    const chatIds = await getAnalystChatIds(emails)
+    const text = `<b>💬 [Claver Cloud] Comentario cliente</b>\n\nTicket <b>#${input.numero}</b> — ${input.titulo}\n\n<b>De:</b> ${input.stakeholderEmail}\n<b>Mensaje:</b> ${excerpt}`
+    for (const chatId of chatIds) {
+      void telegramService.sendMessage(chatId, text, "HTML").catch(() => {})
+    }
+  } catch (err) {
+    console.error("Error enviando Telegram comentario stakeholder:", err)
+  }
+}
+
+export async function notifyStakeholdersRespuestaTicket(input: {
+  empresaId: number
+  ticketId: number
+  numero: string
+  titulo: string
+  autorEmail: string
+  texto: string
+}) {
+  const db = prisma as any
+  const stakeholders = await db.usuario.findMany({
+    where: { empresaId: input.empresaId, rol: STAKEHOLDER_ROLE, activo: true },
+    select: { email: true, nombre: true },
+  })
+  if (stakeholders.length === 0) return
+
+  const excerpt = input.texto.length > 200 ? `${input.texto.slice(0, 200)}…` : input.texto
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/claver-cliente/tickets/${input.ticketId}`
+
+  for (const st of stakeholders) {
+    const html = emailLayout(`
+      <h2>Respuesta en tu ticket</h2>
+      <p>Hola ${st.nombre}, hay una nueva respuesta en el ticket <strong>#${input.numero}</strong> (${input.titulo}).</p>
+      <p><strong>${input.autorEmail}</strong> escribió:</p>
+      <blockquote style="border-left:3px solid #ccc;padding-left:12px;margin:12px 0;color:#444">${excerpt}</blockquote>
+      <p><a href="${portalUrl}">Ver ticket en el portal</a></p>
+    `, { preheader: `Respuesta en ticket ${input.numero}` })
+
+    void emailService.enviar({
+      to: st.email,
+      subject: `Respuesta en ticket #${input.numero} — Claver`,
+      html,
+      text: `Nueva respuesta en #${input.numero} de ${input.autorEmail}: ${excerpt}\n\n${portalUrl}`,
+    }).catch(() => {})
+  }
+
+  await persistSistemaLog({
+    empresaId: input.empresaId,
+    severidad: "info",
+    categoria: "soporte",
+    contexto: `ticket:${input.ticketId}`,
+    mensaje: `Respuesta enviada a stakeholders de ${input.numero}`,
+    metadata: { autor: input.autorEmail, stakeholderEmails: stakeholders.map((s: { email: string }) => s.email) },
+  })
 }
 
 export async function notifyAnalistasTicketSlaBreach(input: {

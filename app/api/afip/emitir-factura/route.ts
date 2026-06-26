@@ -154,6 +154,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: resultado.error }, { status: 400 })
     }
 
+    const facturaDb = resultado.facturaId
+      ? await prisma.factura.findUnique({
+          where: { id: resultado.facturaId },
+          select: { tipoCbte: true, modalidadAuth: true },
+        })
+      : null
+
     return NextResponse.json({
       success: true,
       facturaId: resultado.facturaId,
@@ -164,6 +171,9 @@ export async function POST(request: NextRequest) {
       qrBase64: resultado.qrBase64,
       pendienteCAE: resultado.pendienteCAE ?? false,
       advertencia: resultado.advertencia,
+      esFce: facturaDb ? [201, 206, 211].includes(facturaDb.tipoCbte) : false,
+      esExportacion: facturaDb ? [19, 20, 21].includes(facturaDb.tipoCbte) : false,
+      modalidadAuth: facturaDb?.modalidadAuth ?? "CAE",
     })
   } catch (error) {
     console.error("Error en endpoint emitir-factura:", error)

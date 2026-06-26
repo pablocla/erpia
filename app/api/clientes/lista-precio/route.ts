@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 const schema = z.object({
@@ -10,8 +10,8 @@ const schema = z.object({
 
 export async function PATCH(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const auth = await getAuthContext(request)
+    if (!auth.ok) return auth.response
 
     const body = await request.json()
     const parsed = schema.safeParse(body)
@@ -20,9 +20,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { listaPrecioId, clienteIds } = parsed.data
+    const { empresaId } = auth.auth
+
+    if (listaPrecioId != null) {
+      const lista = await prisma.listaPrecio.findFirst({
+        where: { id: listaPrecioId, empresaId },
+      })
+      if (!lista) {
+        return NextResponse.json({ error: "Lista de precio no encontrada" }, { status: 404 })
+      }
+    }
 
     const result = await prisma.cliente.updateMany({
-      where: { id: { in: clienteIds } },
+      where: { id: { in: clienteIds }, empresaId },
       data: { listaPrecioId },
     })
 

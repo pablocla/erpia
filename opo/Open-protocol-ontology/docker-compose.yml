@@ -1,0 +1,54 @@
+services:
+  opo-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opo-studio
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-secretredispassword}@redis:6379
+      - OPO_VAULT_SECRET=${OPO_VAULT_SECRET}
+      - OPO_DB_PATH=/app/data/opo.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - opo_data:/app/data
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - opo-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: opo-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-secretredispassword}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-secretredispassword}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opo-network
+
+volumes:
+  opo_data:
+  redis_data:
+
+networks:
+  opo-network:
+    driver: bridge

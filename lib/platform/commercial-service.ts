@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { AUTOMATION_SKU, SHEETS_LITE_SKU, SHEETS_PRO_SKU } from "./sku-catalog"
+import { seedMarketplaceCatalog } from "@/lib/marketplace/seed-marketplace"
 
 export function currentUsageMonth(date = new Date()): string {
   const y = date.getUTCFullYear()
@@ -80,6 +81,8 @@ export async function seedCommercialCatalog() {
       },
     })
   }
+
+  await seedMarketplaceCatalog()
 }
 
 export async function ensureDemoAutomationSubscription(empresaId: number) {
@@ -194,6 +197,7 @@ export async function upsertSuscripcion(
     activo?: boolean
     vigenciaHasta?: Date | null
     limiteEventosMes?: number | null
+    metadata?: Record<string, unknown>
   }
 ) {
   await seedCommercialCatalog()
@@ -205,11 +209,13 @@ export async function upsertSuscripcion(
       activo: data.activo ?? true,
       vigenciaHasta: data.vigenciaHasta ?? null,
       limiteEventosMes: data.limiteEventosMes ?? null,
+      metadata: data.metadata ?? undefined,
     },
     update: {
       activo: data.activo,
       vigenciaHasta: data.vigenciaHasta,
       limiteEventosMes: data.limiteEventosMes,
+      ...(data.metadata !== undefined && { metadata: data.metadata }),
     },
     include: { producto: true },
   })

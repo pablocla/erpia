@@ -106,8 +106,8 @@ export default function CRMPage() {
   const [showNewLead, setShowNewLead] = useState(false)
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
-
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (token) headers.Authorization = `Bearer ${token}`
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {

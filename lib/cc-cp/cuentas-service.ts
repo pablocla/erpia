@@ -64,8 +64,13 @@ export class CuentasService {
   async aplicarRecibo(clienteId: number, items: { cuentaCobrarId: number; monto: number }[]): Promise<number> {
     const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
 
-    // Get next recibo number
-    const ultimo = await prisma.recibo.findFirst({ orderBy: { numero: "desc" } })
+    // Get next recibo number scoped by tenant
+    const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } })
+    const empresaId = cliente?.empresaId
+    const ultimo = await prisma.recibo.findFirst({ 
+      where: empresaId ? { cliente: { empresaId } } : {},
+      orderBy: { numero: "desc" } 
+    })
     const numero = String((parseInt(ultimo?.numero ?? "0", 10) + 1)).padStart(8, "0")
 
     const recibo = await prisma.recibo.create({

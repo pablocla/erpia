@@ -17,6 +17,10 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { isFeatureActiva, getFeatureParam } from "@/lib/config/rubro-config-service"
 import type { ERPEventType } from "@/lib/events/types"
+import {
+  construirSolicitudAprobacion,
+  type WorkflowApprovalParams,
+} from "@/lib/config/workflow-approval-queue"
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -29,6 +33,8 @@ export interface StepResult {
   output?: Record<string, unknown>
   error?: string
   skipReason?: string
+  /** Pausa el workflow hasta aprobación humana */
+  pauseWorkflow?: boolean
 }
 
 type WorkflowStepTemplate = {
@@ -195,7 +201,7 @@ export class WorkflowEngine {
       }
 
       // 5c. Execute action
-      const resultado = await this.ejecutarPaso(currentStep, contexto)
+      const resultado = await this.ejecutarPaso(currentStep, contexto, instancia.id)
 
       // 5d. Merge output into context
       if (resultado.output) {
@@ -206,10 +212,28 @@ export class WorkflowEngine {
       await this.logPaso(
         instancia.id,
         currentStep.stepKey,
-        resultado.success ? "ejecutado" : "error",
+        resultado.pauseWorkflow
+          ? "pausado"
+          : resultado.success
+            ? "ejecutado"
+            : "error",
         Date.now() - startTime,
         resultado,
       )
+
+      // 5e-bis. Pausa por aprobación pendiente
+      if (resultado.pauseWorkflow) {
+        estado = "pausado"
+        await prisma.workflowInstancia.update({
+          where: { id: instancia.id },
+          data: {
+            estado: "pausado",
+            stepActual: currentStep.stepKey,
+            contexto: contexto as Prisma.InputJsonValue,
+          },
+        })
+        break
+      }
 
       // 5f. On error — stop workflow
       if (!resultado.success) {
@@ -256,6 +280,137 @@ export class WorkflowEngine {
   }
 
   /**
+   * Reanuda un workflow pausado tras aprobación (estado en_curso post-resolverAprobacion).
+   */
+  async reanudar(instanciaId: number): Promise<{ instanciaId: number; estado: string; contexto: WorkflowContext }> {
+    const instancia = await prisma.workflowInstancia.findFirst({
+      where: { id: instanciaId, empresaId: this.empresaId, estado: "en_curso" },
+    })
+    if (!instancia?.stepActual) {
+      throw new Error("Instancia no encontrada o no lista para reanudar")
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: this.empresaId },
+      select: { rubroId: true },
+    })
+    if (!empresa?.rubroId) throw new Error("Empresa sin rubro")
+
+    const workflow = await prisma.workflowRubro.findFirst({
+      where: { rubroId: empresa.rubroId, proceso: instancia.proceso, version: instancia.version, activo: true },
+      include: {
+        pasos: {
+          where: { activo: true },
+          orderBy: { orden: "asc" },
+          include: {
+            transicionesSalida: { where: { activo: true }, orderBy: { prioridad: "asc" } },
+          },
+        },
+      },
+    })
+    if (!workflow) throw new Error("Workflow template no encontrado")
+
+    const stepMap = new Map<string, WorkflowStepTemplate>(
+      workflow.pasos.map((p) => [p.stepKey, p as WorkflowStepTemplate]),
+    )
+    const pasoPausado = stepMap.get(instancia.stepActual)
+    if (!pasoPausado) throw new Error(`Paso ${instancia.stepActual} no encontrado`)
+
+    let contexto = { ...((instancia.contexto as WorkflowContext) ?? {}) }
+    let currentStep = await this.resolverSiguientePaso(pasoPausado, contexto, stepMap)
+    let estado = "en_curso"
+
+    while (currentStep) {
+      const startTime = Date.now()
+
+      if (currentStep.requiereFeature) {
+        const featureActiva = await isFeatureActiva(this.empresaId, currentStep.requiereFeature)
+        if (!featureActiva) {
+          await this.logPaso(instanciaId, currentStep.stepKey, "saltado", Date.now() - startTime, {
+            success: true,
+            skipReason: `Feature '${currentStep.requiereFeature}' no activa`,
+          })
+          currentStep = await this.resolverSiguientePaso(currentStep, contexto, stepMap)
+          continue
+        }
+      }
+
+      if (currentStep.condicion && !evaluarCondicionJSON(currentStep.condicion, contexto)) {
+        await this.logPaso(instanciaId, currentStep.stepKey, "saltado", Date.now() - startTime, {
+          success: true,
+          skipReason: "Condición no cumplida",
+        })
+        currentStep = await this.resolverSiguientePaso(currentStep, contexto, stepMap)
+        continue
+      }
+
+      const resultado = await this.ejecutarPaso(currentStep, contexto, instanciaId)
+      if (resultado.output) contexto = { ...contexto, ...resultado.output }
+
+      await this.logPaso(
+        instanciaId,
+        currentStep.stepKey,
+        resultado.pauseWorkflow ? "pausado" : resultado.success ? "ejecutado" : "error",
+        Date.now() - startTime,
+        resultado,
+      )
+
+      if (resultado.pauseWorkflow) {
+        estado = "pausado"
+        await prisma.workflowInstancia.update({
+          where: { id: instanciaId },
+          data: { estado: "pausado", stepActual: currentStep.stepKey, contexto: contexto as Prisma.InputJsonValue },
+        })
+        break
+      }
+
+      if (!resultado.success) {
+        estado = "error"
+        await prisma.workflowInstancia.update({
+          where: { id: instanciaId },
+          data: {
+            estado: "error",
+            error: resultado.error,
+            stepActual: currentStep.stepKey,
+            contexto: contexto as Prisma.InputJsonValue,
+          },
+        })
+        break
+      }
+
+      await prisma.workflowInstancia.update({
+        where: { id: instanciaId },
+        data: { stepActual: currentStep.stepKey, contexto: contexto as Prisma.InputJsonValue },
+      })
+
+      const nextStep = await this.resolverSiguientePaso(currentStep, contexto, stepMap)
+      if (!nextStep) {
+        estado = "completado"
+        break
+      }
+      currentStep = nextStep
+    }
+
+    const finalizeData: Prisma.WorkflowInstanciaUpdateInput = {
+      estado,
+      contexto: contexto as Prisma.InputJsonValue,
+    }
+    if (estado === "completado") {
+      finalizeData.stepActual = null
+      finalizeData.completedAt = new Date()
+    } else if (estado === "error") {
+      finalizeData.stepActual = null
+    }
+
+    await prisma.workflowInstancia.update({
+      where: { id: instanciaId },
+      data: finalizeData,
+    })
+
+    return { instanciaId, estado, contexto }
+  }
+
+  /**
    * Resolver el siguiente paso evaluando transiciones (railroad switch).
    * Evalúa condiciones por prioridad. La primera que matchea gana.
    * Si ninguna matchea, sigue en orden secuencial.
@@ -290,6 +445,7 @@ export class WorkflowEngine {
   private async ejecutarPaso(
     step: { stepKey: string; tipo: string; accion: string | null; parametros: unknown; timeoutSeg: number },
     contexto: WorkflowContext,
+    instanciaId: number,
   ): Promise<StepResult> {
     try {
       const mergedCtx = { ...contexto, ...((step.parametros as Record<string, unknown>) ?? {}) }
@@ -321,8 +477,21 @@ export class WorkflowEngine {
         }
 
         case "approval": {
-          // TODO: Implement approval queue (pause workflow until approved)
-          return { success: true, output: { approvalPending: true } }
+          const approvalParams = (step.parametros ?? {}) as WorkflowApprovalParams
+          const approvalPending = construirSolicitudAprobacion(
+            step.stepKey,
+            contexto,
+            approvalParams,
+          )
+          return {
+            success: true,
+            pauseWorkflow: true,
+            output: {
+              approvalPending,
+              instanciaId,
+              mensaje: `Aprobación requerida: ${approvalPending.titulo}`,
+            },
+          }
         }
 
         case "webhook":

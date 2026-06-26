@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import {
+  notifyAnalistasComentarioStakeholder,
   notifyAnalistasJobFallido,
   notifyAnalistasTicketCritico,
   notifyAnalistasEntornoCaido,
   notifyAnalistasTicketSlaBreach,
+  notifyStakeholdersRespuestaTicket,
 } from "@/lib/ops/ops-notificaciones"
 import { emailService } from "@/lib/email/email-service"
 import { telegramService } from "@/lib/telegram/telegram-service"
@@ -21,6 +23,10 @@ vi.mock("@/lib/telegram/telegram-service", () => ({
   },
 }))
 
+vi.mock("@/lib/ops/sistema-log", () => ({
+  persistSistemaLog: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     analistaAsignacion: {
@@ -28,6 +34,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     usuario: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     sistemaLog: {
       create: vi.fn().mockResolvedValue({ id: 1 }),
@@ -88,6 +95,46 @@ describe("ops-notificaciones", () => {
       expect.objectContaining({
         subject: expect.stringContaining("PRD Caído"),
       })
+    )
+  })
+
+  it("notifyAnalistasComentarioStakeholder manda mail a analistas", async () => {
+    await notifyAnalistasComentarioStakeholder({
+      empresaId: 42,
+      ticketId: 7,
+      numero: "TK-007",
+      titulo: "Consulta go-live",
+      stakeholderEmail: "dueño@almacen.com",
+      texto: "¿Cuándo podemos pasar a producción?",
+    })
+
+    expect(emailService.enviar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: ["analista1@claver.com", "analista2@claver.com"],
+        subject: expect.stringContaining("TK-007"),
+      }),
+    )
+  })
+
+  it("notifyStakeholdersRespuestaTicket manda mail a stakeholders activos", async () => {
+    ;(prisma as any).usuario.findMany.mockResolvedValue([
+      { email: "dueño@almacen.com", nombre: "Juan" },
+    ])
+
+    await notifyStakeholdersRespuestaTicket({
+      empresaId: 42,
+      ticketId: 7,
+      numero: "TK-007",
+      titulo: "Consulta go-live",
+      autorEmail: "analista@claver.com",
+      texto: "UAT programada para el viernes.",
+    })
+
+    expect(emailService.enviar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "dueño@almacen.com",
+        subject: expect.stringContaining("TK-007"),
+      }),
     )
   })
 

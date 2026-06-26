@@ -14,6 +14,7 @@ import { ScanLine, Plus, Search, CheckCircle2, Clock, AlertCircle, ListChecks } 
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { authFetch } from "@/lib/stores"
 
 interface LineaPicking {
   id: number
@@ -88,7 +89,7 @@ export default function PickingPage() {
       const params = new URLSearchParams()
       if (search) params.set("search", search)
       if (filtroEstado !== "todos") params.set("estado", filtroEstado)
-      const res = await fetch(`/api/picking?${params}`)
+      const res = await authFetch(`/api/picking?${params}`)
       if (res.ok) setListas(await res.json())
     } finally {
       setLoading(false)
@@ -96,7 +97,7 @@ export default function PickingPage() {
   }, [search, filtroEstado])
 
   const fetchProductos = useCallback(async () => {
-    const res = await fetch("/api/productos")
+    const res = await authFetch("/api/productos")
     if (res.ok) setProductos(await res.json())
   }, [])
 
@@ -131,7 +132,7 @@ export default function PickingPage() {
           productoId: l.productoId ? parseInt(l.productoId) : null,
         })),
       }
-      const res = await fetch("/api/picking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+      const res = await authFetch("/api/picking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
       if (!res.ok) { const d = await res.json(); setError(d.error || "Error al guardar"); return }
       setDialogOpen(false)
       fetchListas()
@@ -141,10 +142,10 @@ export default function PickingPage() {
   }
 
   const cambiarEstado = async (id: number, estado: string) => {
-    await fetch(`/api/picking/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado }) })
+    await authFetch(`/api/picking/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado }) })
     fetchListas()
     if (listaSeleccionada?.id === id) {
-      const res = await fetch(`/api/picking/${id}`)
+      const res = await authFetch(`/api/picking/${id}`)
       if (res.ok) setListaSeleccionada(await res.json())
     }
   }
@@ -159,7 +160,7 @@ export default function PickingPage() {
     setGuardando(true)
     try {
       const allDone = listaSeleccionada.lineas.every((l) => l.cantidadPicada >= l.cantidadPedida)
-      await fetch(`/api/picking/${listaSeleccionada.id}`, {
+      await authFetch(`/api/picking/${listaSeleccionada.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

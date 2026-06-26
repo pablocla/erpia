@@ -109,9 +109,14 @@ export default function ClaverOrganizationsPage() {
                   <p className="text-muted-foreground">Errores</p>
                 </div>
               </div>
-              <Button asChild className="w-full" size="sm">
-                <Link href={`/claver-cloud/operations/${c.id}`}>Open VPS Panel</Link>
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button asChild size="sm" variant="default">
+                  <Link href={`/claver-cloud/tenants/${c.id}`}>Super Admin</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/claver-cloud/operations/${c.id}`}>Ops</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

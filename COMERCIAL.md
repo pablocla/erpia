@@ -38,6 +38,105 @@ Los siguientes módulos están **100% operativos, validados con pruebas automati
 
 ---
 
+## ⚡ Claver AutoPool — Premium ERP 7 (Servicios Intangibles)
+
+Automatizaciones de **clase enterprise** (inspiradas en SAP, NetSuite, Salesforce, Odoo) adaptadas a Argentina. Se activan en minutos desde [Claver AutoPool](/claver/apps).
+
+| # | Servicio | Dolor que resuelve | Precio/mes |
+|---|----------|-------------------|------------|
+| 1 | **Conciliador Liquidación MP y Tarjetas** | Comisiones fantasmas y plata retenida en procesadoras | $24.900 |
+| 2 | **Recuperador de Retenciones AFIP** | Percepciones olvidadas y proveedores apócrifos | $18.900 |
+| 3 | **Guardián de Caja POS** | Robo hormiga: anulaciones y egresos sospechosos | $14.900 |
+| 4 | **Reactivador B2B** | Cliente mayorista que deja de comprar — alerta temprana | $12.900 |
+| 5 | **Reponedor JIT** | Quiebres de stock y capital muerto en depósito | $16.900 |
+| 6 | **OCR Compras Proveedores** | Carga manual de facturas de compra (IA + mail) | $9.900 + uso |
+| 7 | **Ruteador de Entregas** | Rutas ineficientes y clientes preguntando horario | $19.900 |
+
+**Pack Premium ERP 7:** los siete servicios por **$89.900/mes** (−22%). Documentación técnica: `docs/marketplace/13-servicios-intangibles-premium-7.md`.
+
+---
+
+## 🏪 Pack Almacén Rosario — Retail de Barrio (18 módulos)
+
+Automatizaciones POS para almacenes, kioscos y verdulerías de barrio. Inspiradas en Odoo Retail, Square y Toast, adaptadas a Argentina (listas de distribuidora, envases retornables, fiado, AFIP).
+
+**Principio comercial:** todos los módulos son **siempre visibles** en panel, guía y POS. Sin SKU contratado la UI se muestra bloqueada y las APIs responden 403 — nada se oculta del menú.
+
+| Superficie | URL | Para qué |
+|------------|-----|----------|
+| Panel operativo | `/dashboard/almacen` | Resumen, importar listas, vales, envases y acciones retail |
+| Guía in-app | `/dashboard/almacen/guia` | Pasos de uso y diagramas por módulo |
+| App Store | `/dashboard/apps` | Activar pack o SKU suelto (`?sku=pos.envases_gaseosas`) |
+| POS | `/dashboard/pos` | Envases, vales, promos, pánico y atajos retail |
+
+**Pack completo:** `pool-almacen-rosario` — **$34.900/mes** (−28% vs. SKUs sueltos). Incluye fiado barrio y Guardián POS como add-ons relacionados.
+
+### Módulos incluidos (18 SKUs POS)
+
+| # | Nombre | Dolor que resuelve | Precio/mes |
+|---|--------|-------------------|------------|
+| 1 | Guardián de Margen | Vendés debajo del costo cuando sube la lista | $3.990 |
+| 2 | Zero Waste | Mercadería por vencer sin plan de descuento | $5.990 |
+| 3 | Alerta Stock Cero | Vendés con stock 0 y el dueño se entera tarde | $2.990 |
+| 4 | Promos Medios de Pago | El cajero no recuerda reintegros MODO/BSF/MP | $2.990 |
+| 5 | Importador Listas | Actualizás precios a mano desde Excel distribuidora | $4.990 |
+| 6 | Pánico Vecinal | Sin botón discreto de alerta en el local | $1.990 |
+| 7 | Envases de Gaseosas | Cajones retornables en cuaderno que no cierra | $2.490 |
+| 8 | Vale de Dinero | Vales en papel sin control de saldo | $1.990 |
+| 9 | Recargas y Servicios | SUBE/celular fuera de la caja del día | $2.990 |
+| 10 | Venta por Peso | Peso × precio en calculadora en verdulería | $2.490 |
+| 11 | Promos por Cantidad (2×1) | 2×1 aplicado a mano con errores | $1.990 |
+| 12 | Ticket Regalo | Devoluciones sin crédito trazable en tienda | $1.490 |
+| 13 | Pedido Distribuidora | Pedido urgente al reparto a las corridas | $3.490 |
+| 14 | Mermas y Roturas | Roturas que no bajan stock | $1.990 |
+| 15 | Arqueo Ciego | Cajero ve saldo sistema antes de contar | $2.490 |
+| 16 | Lista Mayorista POS | Precio bulto en otra lista o de memoria | $2.990 |
+| 17 | Cheques en Cartera | Cheques que vencen sin aviso | $2.490 |
+| 18 | Inventario Express | Inventario completo que frena el mostrador | $3.490 |
+
+**Referencia de precio total:** Clavis Core $39.900/mes + Pack $34.900/mes = **$74.800/mes** (ERP + retail barrio).
+
+**Vitrina pública:** [/claver/almacen-rosario](/claver/almacen-rosario) · **In-app:** `/dashboard/almacen` y `/dashboard/almacen/guia`
+
+### Activación (cliente)
+
+1. Ir a **App Store** → Pack **Almacén Rosario** o SKU individual → **Obtener App**
+2. Esperar badge **Instalado** (polling automático, `REGION_AUTO`)
+3. Abrir **Panel Almacén** → verificar módulo **Activo**
+4. Seguir **Guía** del módulo para el primer uso
+
+Documentación técnica completa (diagramas, APIs, runbooks): `docs/marketplace/14-pack-almacen-rosario.md`.
+
+---
+
+## 🔄 Ciclo comercial completo (diagramas)
+
+Flujos funcionales **comercial → implementación CCA → postventa** documentados en:
+
+- **[00-ciclo-completo](docs/marketplace/00-ciclo-completo.md)** — diagrama maestro + activación por certificación
+- **[VAL/PRD activación](docs/operaciones/VAL_PRD_ACTIVACION.md)** — promoción validación → producción
+- Índice marketplace: [docs/marketplace/README.md](docs/marketplace/README.md)
+
+```mermaid
+flowchart LR
+  subgraph planes [Planes]
+    ST[Starter $29.900]
+    PR[Pro $49.900]
+    EN[Enterprise $89.900]
+  end
+  subgraph journey [Journey típico]
+    ENG[Enganche Fiado / Cobranzas]
+    ADD[Add-ons marketplace]
+    ERP[ERP Core + implementación]
+  end
+  ST --> ENG
+  PR --> ADD
+  EN --> ERP
+  ENG --> ADD --> ERP
+```
+
+---
+
 ## 💳 Planes y Precios (Facturación en ARS)
 
 El modelo de cobro es de suscripción recurrente mensual (SaaS) sin contratos de permanencia mínima, e incluye soporte por correo electrónico y actualizaciones fiscales automáticas.

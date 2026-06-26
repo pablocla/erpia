@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
   if (body.presupuestoId) {
     // Agregar línea
     const linea = await agregarLineaPresupuesto({
+      empresaId: auth.empresaId,
       presupuestoId: body.presupuestoId,
       cuentaContableId: body.cuentaContableId,
       centroCostoId: body.centroCostoId,

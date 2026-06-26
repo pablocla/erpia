@@ -15,6 +15,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe("ComprasService", () => {
   it("crearOrdenCompra calcula totales y número correlativo", async () => {
+    mockPrismaClient.proveedor.findFirst.mockResolvedValue({ id: 5, empresaId: 1 })
     mockPrismaClient.ordenCompra.findFirst.mockResolvedValue({ numero: "00000010" })
     mockPrismaClient.ordenCompra.create.mockResolvedValue({
       id: 1,
@@ -39,7 +40,7 @@ describe("ComprasService", () => {
   })
 
   it("threeWayMatch detecta discrepancia de precio", async () => {
-    mockPrismaClient.ordenCompra.findUnique.mockResolvedValue({
+    mockPrismaClient.ordenCompra.findFirst.mockResolvedValue({
       id: 1,
       numero: "00000001",
       lineas: [
@@ -52,7 +53,7 @@ describe("ComprasService", () => {
       ],
     })
 
-    const result = await comprasService.threeWayMatch(1, [
+    const result = await comprasService.threeWayMatch(1, 1, [
       { descripcion: "Cable", cantidad: 100, precioUnitario: 600, productoId: 1 },
     ])
 
@@ -61,7 +62,7 @@ describe("ComprasService", () => {
   })
 
   it("threeWayMatch OK cuando cantidades y precios coinciden", async () => {
-    mockPrismaClient.ordenCompra.findUnique.mockResolvedValue({
+    mockPrismaClient.ordenCompra.findFirst.mockResolvedValue({
       id: 1,
       numero: "00000001",
       lineas: [
@@ -72,7 +73,7 @@ describe("ComprasService", () => {
       ],
     })
 
-    const result = await comprasService.threeWayMatch(1, [
+    const result = await comprasService.threeWayMatch(1, 1, [
       { descripcion: "Cable", cantidad: 100, precioUnitario: 500, productoId: 1 },
     ])
 

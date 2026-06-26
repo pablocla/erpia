@@ -21,7 +21,7 @@
  */
 
 import {
-  useState, useEffect, useCallback, useRef,
+  useState, useEffect, useCallback, useRef, useMemo,
   type KeyboardEvent,
 } from "react"
 import { Button } from "@/components/ui/button"
@@ -44,7 +44,7 @@ import {
   Banknote, Smartphone, Receipt, UtensilsCrossed, Store,
   Monitor, CheckCircle2, RefreshCw, X, ScanLine, Percent,
   ArrowLeft, Wallet, User, AlertTriangle, Printer,
-  BarChart3, Lock,
+  BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package,
 } from "lucide-react"
 import Link from "next/link"
 import { PosPendientesPanel } from "@/components/pos/pos-pendientes-panel"
@@ -52,12 +52,30 @@ import { PosPendientesDrawer } from "@/components/pos/pos-pendientes-drawer"
 import { PosVentasHoyDrawer } from "@/components/pos/pos-ventas-hoy-drawer"
 import { PosPluBar } from "@/components/pos/pos-plu-bar"
 import { PosCartSheet } from "@/components/pos/pos-cart-sheet"
+import { PosAlertStrip, type PosAlertItem } from "@/components/pos/pos-alert-strip"
+import {
+  vibrarAgregarProducto, ordenarClientesPos, labelCajaBadge, mensajeCajaBloqueada,
+  type CajaMotivo,
+} from "@/lib/pos/pos-feedback"
+import { parseApiList } from "@/lib/api/parse-list-response"
+import { usePosLayout } from "@/hooks/use-pos-layout"
+import { useAlmacenRosario } from "@/hooks/use-almacen-rosario"
 import type { PosAfipStatus } from "@/lib/pos/pos-afip-status"
 import { tipoFacturaSugerido } from "@/lib/pos/pos-tipo-factura"
 import {
   guardarVentaSuspendida,
   type VentaSuspendida,
 } from "@/lib/pos/ventas-suspendidas"
+import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
+import { FiscalTicketView } from "@/components/fiscal/fiscal-ticket-view"
+import { FiscalOutputActions } from "@/components/fiscal/fiscal-output-actions"
+import { PosBarcodeCamera } from "@/components/pos/pos-barcode-camera"
+import { PosVariantePicker } from "@/components/pos/pos-variante-picker"
+import { PosEnvasesDialog } from "@/components/pos/pos-envases-dialog"
+import { PosSkuGateButton } from "@/components/pos/pos-sku-gate-button"
+import type { TicketLegalData } from "@/lib/fiscal/ticket-legal"
+import type { SalidaComprobante } from "@/lib/fiscal/emission-config"
+import type { VarianteGrupo } from "@/lib/pos/pos-catalogo-grupos"
 
 const POS_DRAFT_KEY = "erp:pos:draft:v1"
 
@@ -98,6 +116,7 @@ interface ItemCarrito {
 interface Pago {
   medio: string
   monto: number
+  numeroVale?: string
 }
 
 interface Mesa {
@@ -113,6 +132,9 @@ interface Cliente {
   condicionIva?: string
   cuit?: string
   esGranEmpresa?: boolean
+  fiadoHabilitado?: boolean
+  limiteCredito?: number
+  saldoCuentaCorriente?: number
 }
 
 const MEDIOS_PAGO = [
@@ -122,6 +144,7 @@ const MEDIOS_PAGO = [
   { key: "qr", label: "QR/MP", icon: Smartphone, color: "bg-sky-500 hover:bg-sky-600" },
   { key: "transferencia", label: "Transfer.", icon: Receipt, color: "bg-orange-500 hover:bg-orange-600" },
   { key: "cuenta_corriente", label: "Cta. Cte.", icon: Wallet, color: "bg-gray-500 hover:bg-gray-600" },
+  { key: "vale", label: "Vale", icon: Ticket, color: "bg-amber-500 hover:bg-amber-600" },
 ]
 
 const NUMPAD_KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫"]
@@ -132,13 +155,21 @@ const NUMPAD_KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫
 
 export default function POSPage() {
   const { toast } = useToast()
+  const { promos: promosHoy, refreshPromos } = useAlmacenRosario()
   const searchRef = useRef<HTMLInputElement>(null)
   const montoEfectivoRef = useRef<HTMLInputElement>(null)
 
   // ── Estado general ──────────────────────────────────────────
   const [modo, setModo] = useState<ModoPos>("mostrador")
+  const { layout: posLayout } = usePosLayout(modo)
   const [cajaId, setCajaId] = useState<number | null>(null)
   const [cajaOk, setCajaOk] = useState<boolean | null>(null)
+  const [cajaMotivo, setCajaMotivo] = useState<CajaMotivo | null>(null)
+  const [fiadoActivo, setFiadoActivo] = useState(false)
+  const [envasesActivo, setEnvasesActivo] = useState(false)
+  const [valesActivo, setValesActivo] = useState(false)
+  const [envasesDialogOpen, setEnvasesDialogOpen] = useState(false)
+  const [valeInfo, setValeInfo] = useState<Record<number, { saldo: number; numero: string }>>({})
   const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
   const [ventasHoy, setVentasHoy] = useState(0)
   const [imprimiendoFiscal, setImprimiendoFiscal] = useState(false)
@@ -177,14 +208,37 @@ export default function POSPage() {
     qrBase64?: string
     afipError?: string
     esFce?: boolean
+    esExportacion?: boolean
+    modalidadAuth?: "CAE" | "CAEA" | "NINGUNA"
+    pendienteCae?: boolean
+    esTicket?: boolean
+    tipo?: string
     ivaDesglose?: { pct: string; neto: number; iva: number }[]
   } | null>(null)
+  const [ticketLegal, setTicketLegal] = useState<TicketLegalData | null>(null)
+  const [salidaComprobante, setSalidaComprobante] = useState<SalidaComprobante>("preguntar")
+  const [imprimirAuto, setImprimirAuto] = useState(false)
+  const [propina, setPropina] = useState(0)
+  const [catalogoGrupos, setCatalogoGrupos] = useState<{
+    variantes: VarianteGrupo[]
+    productoIdsConVariantes: number[]
+    productoIdsCombo: number[]
+  } | null>(null)
+  const [grupoVariante, setGrupoVariante] = useState<VarianteGrupo | null>(null)
+  const [variantePickerOpen, setVariantePickerOpen] = useState(false)
+  const [indicesCobro, setIndicesCobro] = useState<number[] | null>(null)
+  const [indicesSeleccionados, setIndicesSeleccionados] = useState<Set<number>>(new Set())
+  const [mpQrDataUrl, setMpQrDataUrl] = useState<string | null>(null)
+  const [mpQrRef, setMpQrRef] = useState<string | null>(null)
+  const [mpQrLoading, setMpQrLoading] = useState(false)
+  const [mpQrAprobado, setMpQrAprobado] = useState(false)
   const [umbralMipyme, setUmbralMipyme] = useState(5_468_127)
   const [tipoManual, setTipoManual] = useState(false)
 
   // ── Modal mesas (modo mesa) ─────────────────────────────────
   const [modalMesasOpen, setModalMesasOpen] = useState(false)
   const [cartSheetOpen, setCartSheetOpen] = useState(false)
+  const [numpadAbierto, setNumpadAbierto] = useState(false)
 
   // ── Error ───────────────────────────────────────────────────
   const [error, setError] = useState("")
@@ -200,16 +254,69 @@ export default function POSPage() {
   // ──────────────────────────────────────────────────────────────
   // Carga inicial
   // ──────────────────────────────────────────────────────────────
+  const cargarConfigEmision = useCallback(async () => {
+    try {
+      const res = await fetch("/api/config/fiscal-emision", { headers: authH() })
+      if (res.ok) {
+        const cfg = await res.json()
+        setSalidaComprobante(cfg.salida ?? "preguntar")
+        setImprimirAuto(!!cfg.imprimirAuto)
+      }
+    } catch { /* silent */ }
+  }, [authH])
+
+  const cargarCatalogoGrupos = useCallback(async () => {
+    try {
+      const res = await fetch("/api/pos/catalogo-grupos", { headers: authH() })
+      if (res.ok) setCatalogoGrupos(await res.json())
+    } catch { /* silent */ }
+  }, [authH])
+
+  const cargarTicketLegal = useCallback(async (facturaId: number) => {
+    try {
+      const res = await fetch(`/api/fiscal/ticket-legal?facturaId=${facturaId}`, { headers: authH() })
+      if (res.ok) {
+        const raw = await res.json()
+        setTicketLegal({
+          ...raw,
+          factura: { ...raw.factura, fecha: new Date(raw.factura.fecha), vencimientoCAE: new Date(raw.factura.vencimientoCAE) },
+        })
+      }
+    } catch {
+      setTicketLegal(null)
+    }
+  }, [authH])
+
   const verificarCaja = useCallback(async () => {
     try {
       const res = await fetch("/api/pos/venta", { headers: authH() })
+      if (res.status === 401) {
+        setCajaOk(false)
+        setCajaMotivo("auth")
+        setCajaId(null)
+        setAfipStatus(null)
+        return
+      }
+      if (!res.ok) {
+        setCajaOk(false)
+        setCajaMotivo("red")
+        setCajaId(null)
+        setAfipStatus(null)
+        return
+      }
       const data = await res.json()
-      setCajaOk(data.cajaAbierta)
-      setCajaId(data.cajaId)
+      setCajaOk(!!data.cajaAbierta)
+      setCajaMotivo(data.cajaAbierta ? null : "cerrada")
+      setCajaId(data.cajaId ?? null)
       setAfipStatus(data.afip ?? null)
       setVentasHoy(data.ventasHoy ?? 0)
+      setFiadoActivo(!!data.fiadoActivo)
+      setEnvasesActivo(!!data.envasesActivo)
+      setValesActivo(!!data.valesActivo)
     } catch {
       setCajaOk(false)
+      setCajaMotivo("red")
+      setCajaId(null)
       setAfipStatus(null)
     }
   }, [authH])
@@ -234,15 +341,15 @@ export default function POSPage() {
     try {
       const res = await fetch("/api/maestros/categorias", { headers: authH() })
       const data = await res.json()
-      setCategorias(Array.isArray(data) ? data : [])
+      setCategorias(parseApiList(data))
     } catch { /* silent */ }
   }, [authH])
 
   const cargarClientes = useCallback(async () => {
     try {
-      const res = await fetch("/api/clientes?soloActivos=true&limit=500", { headers: authH() })
+      const res = await fetch("/api/clientes?take=500", { headers: authH() })
       const data = await res.json()
-      setClientes(Array.isArray(data) ? data : [])
+      setClientes(parseApiList(data))
     } catch { /* silent */ }
   }, [authH])
 
@@ -256,6 +363,8 @@ export default function POSPage() {
 
   useEffect(() => {
     verificarCaja()
+    cargarConfigEmision()
+    cargarCatalogoGrupos()
     cargarCategorias()
     cargarProductos()
     cargarClientes()
@@ -317,80 +426,27 @@ export default function POSPage() {
   useEffect(() => { cargarProductos(busqueda) }, [busqueda, categoriaActiva, cargarProductos])
 
   // ──────────────────────────────────────────────────────────────
-  // Keyboard shortcuts & Barcode Scanner
-  // ──────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let barcodeBuffer = ""
-    let barcodeTimeout: NodeJS.Timeout | null = null
-
-    const handler = (e: globalThis.KeyboardEvent) => {
-      if (modalCobroOpen) return
-      
-      // Barcode Scanner Integration
-      if (e.key !== "Enter" && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        barcodeBuffer += e.key
-        if (barcodeTimeout) clearTimeout(barcodeTimeout)
-        barcodeTimeout = setTimeout(() => { barcodeBuffer = "" }, 50)
-        // No return here, to allow normal typing in search if focused
-      }
-      if (e.key === "Enter" && barcodeBuffer.length >= 4) {
-        e.preventDefault()
-        const scannedCode = barcodeBuffer
-        barcodeBuffer = ""
-        const p = productos.find(prod => prod.codigoBarras === scannedCode || prod.codigo === scannedCode)
-        if (p) {
-          setCarrito((prev) => {
-            const existing = prev.findIndex((i) => i.productoId === p.id)
-            if (existing >= 0) return prev.map((item, idx) => idx === existing ? { ...item, cantidad: item.cantidad + 1 } : item)
-            return [...prev, { productoId: p.id, descripcion: p.nombre, precio: p.precioVenta, cantidad: 1, porcentajeIva: p.porcentajeIva ?? 21, descuento: 0 }]
-          })
-          toast({ title: "Producto escaneado", description: p.nombre })
-        } else {
-          toast({ variant: "destructive", title: "No encontrado", description: `Código ${scannedCode} no existe` })
-        }
-        return
-      }
-      if (e.key === "Enter") barcodeBuffer = ""
-
-      if (e.key === "/" || e.key === "F1") {
-        e.preventDefault()
-        searchRef.current?.focus()
-        searchRef.current?.select()
-      }
-      if (e.key === "F12" && carrito.length > 0) {
-        e.preventDefault()
-        abrirCobro()
-      }
-      if (e.key === "Escape") {
-        setBusqueda("")
-        searchRef.current?.blur()
-      }
-      if (e.key === "Delete" && carrito.length > 0) {
-        setCarrito((c) => c.slice(0, -1))
-      }
-      if (e.key === "+" && carrito.length > 0) {
-        setCarrito((c) => c.map((item, i) => i === c.length - 1 ? { ...item, cantidad: item.cantidad + 1 } : item))
-      }
-      if (e.key === "-" && carrito.length > 0) {
-        setCarrito((c) => c.map((item, i) =>
-          i === c.length - 1 && item.cantidad > 1 ? { ...item, cantidad: item.cantidad - 1 } : item
-        ))
-      }
-    }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [carrito, modalCobroOpen, productos])
-
-  // ──────────────────────────────────────────────────────────────
   // Carrito helpers
   // ──────────────────────────────────────────────────────────────
-  const agregarProducto = (p: Producto) => {
+  const agregarProducto = (
+    p: Producto,
+    opts?: { precio?: number; descuento?: number },
+  ) => {
+    if (posLayout.ux.hapticOnAdd) vibrarAgregarProducto()
+    const precio = opts?.precio ?? p.precioVenta
+    const descuento = opts?.descuento ?? 0
     setCarrito((prev) => {
       const existing = prev.findIndex((i) => i.productoId === p.id)
       if (existing >= 0) {
         return prev.map((item, idx) =>
-          idx === existing ? { ...item, cantidad: item.cantidad + 1 } : item
+          idx === existing
+            ? {
+                ...item,
+                cantidad: item.cantidad + 1,
+                precio: opts?.precio != null ? precio : item.precio,
+                descuento: opts?.descuento != null ? descuento : item.descuento,
+              }
+            : item
         )
       }
       return [
@@ -398,13 +454,102 @@ export default function POSPage() {
         {
           productoId: p.id,
           descripcion: p.nombre,
-          precio: p.precioVenta,
+          precio,
           cantidad: 1,
           porcentajeIva: p.porcentajeIva ?? 21,
-          descuento: 0,
+          descuento,
         },
       ]
     })
+  }
+
+  const evaluarYAgregar = useCallback(
+    async (p: Producto) => {
+      try {
+        const res = await fetch("/api/pos/almacen/evaluar-producto", {
+          method: "POST",
+          headers: { ...authH(), "Content-Type": "application/json" },
+          body: JSON.stringify({ productoId: p.id, precioLista: p.precioVenta }),
+        })
+        if (res.ok) {
+          const ev = await res.json()
+          if (ev.bloquear) {
+            toast({
+              variant: "destructive",
+              title: "Margen negativo",
+              description: ev.alertas?.[0]?.mensaje ?? "Actualizá el precio en góndola",
+            })
+            return
+          }
+          for (const a of ev.alertas ?? []) {
+            if (a.severidad === "warning") {
+              toast({ title: a.mensaje, variant: "default" })
+            }
+          }
+          agregarProducto(p, {
+            precio: ev.precioFinal ?? p.precioVenta,
+            descuento: ev.descuentoPct ?? 0,
+          })
+          return
+        }
+      } catch {
+        /* fallback directo */
+      }
+      agregarProducto(p)
+    },
+    [authH, toast],
+  )
+
+  const clicProducto = (p: Producto) => {
+    const grupo = catalogoGrupos?.variantes.find((g) =>
+      g.variantes.some((v) => v.id === p.id),
+    )
+    if (grupo && grupo.variantes.length > 1) {
+      setGrupoVariante(grupo)
+      setVariantePickerOpen(true)
+      return
+    }
+    void evaluarYAgregar(p)
+  }
+
+  const buscarYAgregarCodigo = useCallback((code: string) => {
+    const p = productos.find(
+      (prod) => prod.codigoBarras === code || prod.codigo === code,
+    )
+    if (p) {
+      clicProducto(p)
+      return
+    }
+    fetch(`/api/productos?search=${encodeURIComponent(code)}&soloActivos=true`, {
+      headers: authH(),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : []
+        const found = list.find(
+          (prod: Producto) => prod.codigoBarras === code || prod.codigo === code,
+        )
+        if (found) clicProducto(found)
+        else toast({ variant: "destructive", title: "No encontrado", description: `Código ${code}` })
+      })
+      .catch(() => {
+        toast({ variant: "destructive", title: "Error al buscar código" })
+      })
+  }, [productos, authH, toast, catalogoGrupos])
+
+  const seleccionarVariante = (productoId: number) => {
+    const p = productos.find((x) => x.id === productoId)
+    if (p) void evaluarYAgregar(p)
+    else {
+      fetch(`/api/productos?search=&soloActivos=true`, { headers: authH() })
+        .then((r) => r.json())
+        .then((data) => {
+          const found = (Array.isArray(data) ? data : []).find(
+            (x: Producto) => x.id === productoId,
+          )
+          if (found) void evaluarYAgregar(found)
+        })
+    }
   }
 
   const cambiarCantidad = (idx: number, delta: number) => {
@@ -471,38 +616,229 @@ export default function POSPage() {
   // ──────────────────────────────────────────────────────────────
   // Totales (Precision Decimal Fix)
   // ──────────────────────────────────────────────────────────────
-  const calcTotales = () => {
+  const carritoActivo = useMemo(() => {
+    if (!indicesCobro?.length) return carrito
+    return indicesCobro.map((i) => carrito[i]).filter(Boolean)
+  }, [carrito, indicesCobro])
+
+  const calcTotales = (items = carritoActivo) => {
     let subtotalCents = 0
     let totalIvaCents = 0
-    for (const item of carrito) {
+    for (const item of items) {
       const base = item.precio * item.cantidad * (1 - (item.descuento + descuentoGlobal) / 100)
       const neto = base / (1 + item.porcentajeIva / 100)
-      // Trabajamos con Math.round para evitar el Bug A-007 (IEEE 754 float precision)
       subtotalCents += Math.round(neto * 100)
       totalIvaCents += Math.round((base - neto) * 100)
     }
-    const totalCents = subtotalCents + totalIvaCents
+    const propinaCents = Math.round(propina * 100)
+    const totalCents = subtotalCents + totalIvaCents + propinaCents
     return {
       subtotal: subtotalCents / 100,
       iva: totalIvaCents / 100,
+      propina,
       total: totalCents / 100,
     }
   }
 
   const { subtotal, iva, total } = calcTotales()
+  const totalSinPropina = subtotal + iva
+
+  const productosVisibles = useMemo(() => {
+    if (!catalogoGrupos?.variantes.length) return productos
+    const idsVariantes = new Set(catalogoGrupos.productoIdsConVariantes)
+    return productos.filter((p) => {
+      if (!idsVariantes.has(p.id)) return true
+      const grupo = catalogoGrupos.variantes.find((g) =>
+        g.variantes.some((v) => v.id === p.id),
+      )
+      return grupo?.variantes[0]?.id === p.id
+    })
+  }, [productos, catalogoGrupos])
 
   // ──────────────────────────────────────────────────────────────
   // Cobro / Numpad
   // ──────────────────────────────────────────────────────────────
-  const abrirCobro = () => {
-    if (carrito.length === 0) return
-    setPagos([{ medio: "efectivo", monto: total }])
+  const abrirCobro = (opts?: { medio?: string; monto?: number; indices?: number[] }) => {
+    const items = opts?.indices?.length
+      ? opts.indices.map((i) => carrito[i]).filter(Boolean)
+      : carrito
+    if (items.length === 0) return
+    setIndicesCobro(opts?.indices?.length ? opts.indices : null)
+    const montoCobro = calcTotales(items).total
+    const medio = opts?.medio ?? "efectivo"
+    const monto = opts?.monto ?? montoCobro
+    setPagos([{ medio, monto }])
     setNumpadTarget(0)
-    setNumpadInput(String(total))
+    setNumpadInput(String(monto))
     setVentaExitosa(null)
     setError("")
+    setMpQrDataUrl(null)
+    setMpQrRef(null)
+    setMpQrAprobado(false)
+    setNumpadAbierto(medio === "efectivo" && posLayout.cobro.numpadDefaultOpen)
     setModalCobroOpen(true)
+    void refreshPromos()
     setTimeout(() => montoEfectivoRef.current?.select(), 100)
+  }
+
+  const generarQrMercadoPago = async () => {
+    setMpQrLoading(true)
+    setMpQrAprobado(false)
+    try {
+      const res = await fetch("/api/pos/mercadopago-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authH() },
+        body: JSON.stringify({ monto: total, descripcion: "Venta POS" }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo generar QR")
+        return
+      }
+      setMpQrDataUrl(data.qrDataUrl)
+      setMpQrRef(data.externalReference)
+      toast({ title: "QR generado", description: "Mostrá el código al cliente" })
+    } catch {
+      setError("Error al generar QR MercadoPago")
+    } finally {
+      setMpQrLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!posLayout.ux.keyboardShortcuts) return
+
+    let barcodeBuffer = ""
+    let barcodeTimeout: NodeJS.Timeout | null = null
+
+    const handler = (e: globalThis.KeyboardEvent) => {
+      if (modalCobroOpen) return
+
+      if (e.key !== "Enter" && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        barcodeBuffer += e.key
+        if (barcodeTimeout) clearTimeout(barcodeTimeout)
+        barcodeTimeout = setTimeout(() => { barcodeBuffer = "" }, 50)
+      }
+      if (e.key === "Enter" && barcodeBuffer.length >= 4) {
+        e.preventDefault()
+        const scannedCode = barcodeBuffer
+        barcodeBuffer = ""
+        buscarYAgregarCodigo(scannedCode)
+        return
+      }
+      if (e.key === "Enter") barcodeBuffer = ""
+
+      if (e.key === "/" || e.key === "F1") {
+        e.preventDefault()
+        searchRef.current?.focus()
+        searchRef.current?.select()
+      }
+      if (e.key === "F12" && carrito.length > 0) {
+        e.preventDefault()
+        abrirCobro()
+      }
+      if (e.key === "Escape") {
+        setBusqueda("")
+        searchRef.current?.blur()
+      }
+      if (e.key === "Delete" && carrito.length > 0) {
+        setCarrito((c) => c.slice(0, -1))
+      }
+      if (e.key === "+" && carrito.length > 0) {
+        setCarrito((c) => c.map((item, i) => i === c.length - 1 ? { ...item, cantidad: item.cantidad + 1 } : item))
+      }
+      if (e.key === "-" && carrito.length > 0) {
+        setCarrito((c) => c.map((item, i) =>
+          i === c.length - 1 && item.cantidad > 1 ? { ...item, cantidad: item.cantidad - 1 } : item
+        ))
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [carrito, modalCobroOpen, posLayout.ux.keyboardShortcuts, buscarYAgregarCodigo, abrirCobro])
+
+  useEffect(() => {
+    let holdTimer: ReturnType<typeof setTimeout> | null = null
+    const dispararPanico = async () => {
+      try {
+        const pos = await new Promise<GeolocationPosition | null>((resolve) => {
+          if (!navigator.geolocation) return resolve(null)
+          navigator.geolocation.getCurrentPosition(
+            (p) => resolve(p),
+            () => resolve(null),
+            { timeout: 2500 },
+          )
+        })
+        const res = await fetch("/api/pos/almacen/panico", {
+          method: "POST",
+          headers: { ...authH(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: pos?.coords.latitude,
+            lng: pos?.coords.longitude,
+          }),
+        })
+        if (res.ok) {
+          toast({ title: "Alerta silenciosa enviada" })
+        }
+      } catch {
+        /* silencioso */
+      }
+    }
+    const onDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === "F12") {
+        holdTimer = setTimeout(() => void dispararPanico(), 3000)
+      }
+    }
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key === "F12" && holdTimer) {
+        clearTimeout(holdTimer)
+        holdTimer = null
+      }
+    }
+    window.addEventListener("keydown", onDown)
+    window.addEventListener("keyup", onUp)
+    return () => {
+      if (holdTimer) clearTimeout(holdTimer)
+      window.removeEventListener("keydown", onDown)
+      window.removeEventListener("keyup", onUp)
+    }
+  }, [authH, toast])
+
+  const abrirCobroFiado = () => {
+    if (carrito.length === 0) return
+    if (!fiadoActivo) {
+      toast({
+        variant: "destructive",
+        title: "Libreta Fiado",
+        description: "Activá Libreta Fiado en App Store → Almacén de Barrio",
+      })
+      return
+    }
+    if (!clienteId) {
+      toast({ variant: "destructive", title: "Fiado", description: "Elegí el cliente del barrio en el carrito" })
+      setCartSheetOpen(true)
+      return
+    }
+    const c = clientes.find((x) => x.id === clienteId)
+    if (!c?.fiadoHabilitado) {
+      toast({
+        variant: "destructive",
+        title: "Cliente sin fiado",
+        description: "Activá fiado en Clientes o dalo de alta en Libreta Fiado",
+      })
+      setCartSheetOpen(true)
+      return
+    }
+    if (creditoDispPos != null && creditoDispPos < total) {
+      toast({
+        variant: "destructive",
+        title: "Límite excedido",
+        description: `Disponible: $${creditoDispPos.toLocaleString("es-AR")}`,
+      })
+      return
+    }
+    setTipoFactura("ticket")
+    abrirCobro({ medio: "cuenta_corriente", monto: total })
   }
 
   const numpadPress = (key: string) => {
@@ -536,6 +872,45 @@ export default function POSPage() {
   const vuelto = Math.max(0, totalPagado - total)
   const faltaPagar = Math.max(0, total - totalPagado)
 
+  const validarVale = async (idx: number, numero: string) => {
+    if (!numero.trim()) {
+      setValeInfo((v) => {
+        const next = { ...v }
+        delete next[idx]
+        return next
+      })
+      return
+    }
+    try {
+      const res = await fetch("/api/vales/validar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authH() },
+        body: JSON.stringify({ numero: numero.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setValeInfo((v) => {
+          const next = { ...v }
+          delete next[idx]
+          return next
+        })
+        toast({ variant: "destructive", title: "Vale", description: data.error })
+        return
+      }
+      setValeInfo((v) => ({
+        ...v,
+        [idx]: { saldo: data.saldoRestante, numero: data.numero },
+      }))
+      setPagos((ps) =>
+        ps.map((p, i) =>
+          i === idx ? { ...p, monto: Math.min(p.monto || data.saldoRestante, data.saldoRestante) } : p,
+        ),
+      )
+    } catch {
+      toast({ variant: "destructive", title: "Vale", description: "Error al validar" })
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────
   // Ejecutar venta
   // ──────────────────────────────────────────────────────────────
@@ -545,7 +920,7 @@ export default function POSPage() {
       return
     }
     if (!cajaId) {
-      setError("No hay caja abierta")
+      setError(mensajeCajaBloqueada(cajaMotivo))
       return
     }
     if (afipBloqueaFiscal) {
@@ -557,11 +932,12 @@ export default function POSPage() {
     setError("")
 
     try {
+      const itemsVenta = carritoActivo
       const body = {
         clienteId: clienteId ?? undefined,
-        mesaId: mesaId ?? undefined,
+        mesaId: indicesCobro ? undefined : (mesaId ?? undefined),
         tipoFactura,
-        lineas: carrito.map((i) => ({
+        lineas: itemsVenta.map((i) => ({
           productoId: i.productoId,
           descripcion: i.descripcion,
           cantidad: i.cantidad,
@@ -571,6 +947,7 @@ export default function POSPage() {
         })),
         pagos,
         descuentoGlobal,
+        propina: indicesCobro ? 0 : propina,
       }
 
       const res = await fetch("/api/pos/venta", {
@@ -582,13 +959,17 @@ export default function POSPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error ?? "Error al procesar la venta")
+        const extra =
+          data.disponible != null
+            ? ` (disponible: $${Number(data.disponible).toLocaleString("es-AR")})`
+            : ""
+        setError((data.error ?? "Error al procesar la venta") + extra)
         return
       }
 
       // Computar desglose IVA desde el carrito para mostrar en ticket con precisión decimal
       const ivaMap = new Map<number, { netoCents: number; ivaCents: number }>()
-      for (const item of carrito) {
+      for (const item of itemsVenta) {
         const base = item.precio * item.cantidad * (1 - (item.descuento + descuentoGlobal) / 100)
         const neto = base / (1 + item.porcentajeIva / 100)
         const ivaAmt = base - neto
@@ -608,6 +989,7 @@ export default function POSPage() {
           iva: v.ivaCents / 100,
         }))
 
+      const esTicketVenta = tipoFactura === "ticket"
       setVentaExitosa({
         facturaId: data.facturaId,
         numeroCompleto: data.numeroCompleto,
@@ -618,47 +1000,92 @@ export default function POSPage() {
         qrBase64: data.qrBase64,
         afipError: data.afipError,
         esFce: data.esFce,
+        esExportacion: data.esExportacion,
+        modalidadAuth: data.modalidadAuth,
+        pendienteCae: data.pendienteCae,
+        esTicket: esTicketVenta,
+        tipo: data.tipo,
         ivaDesglose,
       })
+      if (data.facturaId) void cargarTicketLegal(data.facturaId)
+      setNumpadAbierto(false)
       localStorage.removeItem(POS_DRAFT_KEY)
+
+      if (indicesCobro?.length) {
+        setCarrito((prev) => prev.filter((_, idx) => !indicesCobro.includes(idx)))
+        setIndicesCobro(null)
+        setIndicesSeleccionados(new Set())
+      } else {
+        setPropina(0)
+      }
+
+      if (
+        imprimirAuto &&
+        data.facturaId &&
+        (salidaComprobante === "impresora" || salidaComprobante === "ambos")
+      ) {
+        setTimeout(async () => {
+          try {
+            const res = await fetch("/api/impresion/imprimir-ticket", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...authH() },
+              body: JSON.stringify({ facturaId: data.facturaId }),
+            })
+            if (res.ok) {
+              toast({ title: "Ticket impreso", description: "Impresión automática" })
+            }
+          } catch { /* silent */ }
+        }, 400)
+      }
+      if (pagos.some((p) => p.medio === "cuenta_corriente")) {
+        toast({ title: "Fiado registrado", description: "Se notificó por email/WhatsApp si está configurado" })
+        cargarClientes()
+      }
 
       // Recargar productos y caja después de venta exitosa
       cargarProductos(busqueda)
       verificarCaja()
 
-    } catch (err: any) {
-      // Modo Offline Básico con IndexedDB
-      try {
-        const req = indexedDB.open("pos_offline_db", 1)
-        req.onupgradeneeded = (e: any) => e.target.result.createObjectStore("ventas", { autoIncrement: true })
-        req.onsuccess = (e: any) => {
-          const db = e.target.result
-          db.transaction("ventas", "readwrite").objectStore("ventas").add({ 
-             fecha: new Date().toISOString(), 
-             carrito, pagos, total, tipoFactura 
-          })
-          toast({ title: "Modo Offline Activo", description: "Venta guardada localmente (se enviará luego)." })
-        }
-        setVentaExitosa({
-          numeroCompleto: `OFFLINE-${Date.now().toString().slice(-6)}`,
-          total: total,
-          vuelto: vuelto,
-          ivaDesglose: [],
-        })
-      } catch {
-        setError("Error de conexión. Verificá la red.")
-      }
+    } catch {
+      setError("Error de conexión. Verificá la red e intentá de nuevo.")
     } finally {
       setProcesando(false)
     }
   }
 
+  useEffect(() => {
+    if (!mpQrRef || mpQrAprobado) return
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/pos/mercadopago-qr?ref=${encodeURIComponent(mpQrRef)}`, {
+          headers: authH(),
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.aprobado) {
+          setMpQrAprobado(true)
+          setPagos((ps) => ps.map((p, i) => (i === 0 ? { ...p, medio: "qr", monto: data.monto ?? total } : p)))
+          toast({ title: "Pago MP confirmado", description: "Podés confirmar el cobro" })
+        }
+      } catch { /* silent */ }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [mpQrRef, mpQrAprobado, authH, total, toast])
+
   const cerrarYNuevaVenta = () => {
     setModalCobroOpen(false)
     setVentaExitosa(null)
+    setTicketLegal(null)
+    setNumpadAbierto(false)
+    setIndicesCobro(null)
+    setMpQrDataUrl(null)
+    setMpQrRef(null)
+    setMpQrAprobado(false)
     localStorage.removeItem(POS_DRAFT_KEY)
     vaciarCarrito()
+    setClienteId(null)
     toast({ title: "Venta registrada", description: "Lista para la próxima venta" })
+    setTimeout(() => searchRef.current?.focus(), 150)
   }
 
   const imprimirFiscal = async () => {
@@ -701,6 +1128,13 @@ export default function POSPage() {
     afipStatus?.semaforo === "error"
 
   const clienteActivo = clientes.find((c) => c.id === clienteId)
+  const deudaClientePos = clienteActivo
+    ? Math.max(0, -(Number(clienteActivo.saldoCuentaCorriente ?? 0)))
+    : 0
+  const creditoDispPos =
+    clienteActivo && Number(clienteActivo.limiteCredito ?? 0) > 0
+      ? Math.max(0, Number(clienteActivo.limiteCredito) - deudaClientePos)
+      : null
   const tipoSugerido = clienteActivo
     ? tipoFacturaSugerido(clienteActivo.condicionIva)
     : "B"
@@ -735,9 +1169,63 @@ export default function POSPage() {
   // ──────────────────────────────────────────────────────────────
   // Render helpers
   // ──────────────────────────────────────────────────────────────
-  const productosFiltrados = productos
+  const productosFiltrados = productosVisibles
 
   const fmt = (n: number) => n.toLocaleString("es-AR", { minimumFractionDigits: 2 })
+
+  const clientesOrdenados = useMemo(() => ordenarClientesPos(clientes), [clientes])
+
+  const alertasPos = useMemo(() => {
+    const items: PosAlertItem[] = []
+    if (cajaOk === false) {
+      items.push({
+        id: "caja",
+        severity: "error",
+        mensaje: mensajeCajaBloqueada(cajaMotivo),
+        accion: cajaMotivo === "cerrada"
+          ? { label: "Abrir caja", href: "/dashboard/caja" }
+          : cajaMotivo === "auth"
+            ? { label: "Iniciar sesión", href: "/login" }
+            : undefined,
+      })
+    }
+    if (afipBloqueaFiscal) {
+      items.push({
+        id: "afip",
+        severity: "error",
+        mensaje: "AFIP sin certificado — usá Ticket o configurá",
+        accion: { label: "Config AFIP", href: "/dashboard/configuracion?seccion=afip" },
+      })
+    }
+    if (requiereFce) {
+      items.push({
+        id: "fce",
+        severity: "warning",
+        mensaje: `Gran Empresa ≥ $${umbralMipyme.toLocaleString("es-AR")} → FCE MiPyME`,
+        accion: { label: "Config FCE", href: "/dashboard/configuracion?seccion=fiscal" },
+      })
+    }
+    if (tipoMismatch) {
+      items.push({
+        id: "tipo",
+        severity: "info",
+        mensaje: `Sugerido: Factura ${tipoSugerido}`,
+        inline: (
+          <button
+            type="button"
+            className="ml-1 underline text-primary text-[11px] shrink-0"
+            onClick={() => {
+              setTipoFactura(tipoSugerido)
+              setTipoManual(false)
+            }}
+          >
+            Aplicar
+          </button>
+        ),
+      })
+    }
+    return items
+  }, [cajaOk, cajaMotivo, afipBloqueaFiscal, requiereFce, tipoMismatch, tipoSugerido, umbralMipyme])
 
   // ──────────────────────────────────────────────────────────────
   // RENDER
@@ -766,14 +1254,14 @@ export default function POSPage() {
             <button
               key={key}
               onClick={() => setModo(key)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[40px] ${
+              className={`${posLayout.topbar.modeButtonClass} ${
                 modo === key
                   ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted text-muted-foreground"
               }`}
             >
               <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{label}</span>
+              {posLayout.topbar.showModeText && <span>{label}</span>}
             </button>
           ))}
         </div>
@@ -814,7 +1302,7 @@ export default function POSPage() {
           ) : (
             <Badge variant="destructive" className="text-xs gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-white/90" />
-              Caja cerrada
+              {labelCajaBadge(cajaOk, cajaMotivo)}
             </Badge>
           )}
           {afipStatus && (
@@ -836,80 +1324,48 @@ export default function POSPage() {
           <Button variant="ghost" size="sm" onClick={verificarCaja} className="h-7 w-7 p-0">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
+          <Link href="/dashboard/almacen" className="shrink-0">
+            <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
+              <Store className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Almacén</span>
+            </Button>
+          </Link>
+          <Link href="/dashboard/almacen/guia" className="shrink-0 hidden md:inline-flex">
+            <Button variant="ghost" size="sm" className="h-8 sm:h-7 text-xs">
+              Guía
+            </Button>
+          </Link>
+          <PosSkuGateButton
+            activo={envasesActivo}
+            sku="pos.envases_gaseosas"
+            label="Envases"
+            icon={<Package className="h-3.5 w-3.5" />}
+            onClick={() => envasesActivo && setEnvasesDialogOpen(true)}
+          />
+          {fiadoActivo && posLayout.topbar.showFiadoLink && (
+            <Link href="/dashboard/fiado" className="shrink-0">
+              <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
+                <BookOpen className="h-3.5 w-3.5" />
+                Fiado
+              </Button>
+            </Link>
+          )}
           <Link href="/dashboard/pos/cierre" className="shrink-0">
             <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
               <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Cierre X/Z</span>
+              {posLayout.topbar.showCierreLabel && <span>Cierre X/Z</span>}
             </Button>
           </Link>
         </div>
       </div>
 
-      {cajaOk === false && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <Lock className="h-4 w-4 shrink-0" />
-            <span>Caja cerrada — abrí la caja antes de vender</span>
-          </div>
-          <Link href="/dashboard/caja">
-            <Button size="sm" variant="destructive" className="h-7 text-xs">
-              Abrir caja
-            </Button>
-          </Link>
-        </div>
-      )}
-
-      {afipBloqueaFiscal && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>Certificado AFIP no configurado — usá Ticket o configurá AFIP</span>
-          </div>
-          <Link href="/dashboard/configuracion?seccion=afip">
-            <Button size="sm" variant="outline" className="h-7 text-xs">
-              Configurar AFIP
-            </Button>
-          </Link>
-        </div>
-      )}
-
-      {requiereFce && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-amber-500/10 border-b border-amber-500/30 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-amber-900 dark:text-amber-100">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>
-              Cliente Gran Empresa — total ≥ ${umbralMipyme.toLocaleString("es-AR")}: se emitirá FCE MiPyME
-            </span>
-          </div>
-          <Link href="/dashboard/configuracion?seccion=fiscal">
-            <Button size="sm" variant="outline" className="h-7 text-xs">
-              Config FCE
-            </Button>
-          </Link>
-        </div>
-      )}
-
-      {tipoMismatch && (
-        <div className="px-4 py-1.5 bg-muted/50 border-b text-[11px] text-muted-foreground shrink-0">
-          Sugerido para este cliente: <strong>Factura {tipoSugerido}</strong>
-          <button
-            type="button"
-            className="ml-2 underline text-primary"
-            onClick={() => {
-              setTipoFactura(tipoSugerido)
-              setTipoManual(false)
-            }}
-          >
-            Aplicar
-          </button>
-        </div>
-      )}
+      <PosAlertStrip alertas={alertasPos} />
 
       {/* ── BODY ────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* ══ PANEL IZQUIERDO: Productos ══════════════════════ */}
-        <div className={`flex flex-col ${modo === "kiosko" ? "w-full" : "w-full lg:w-[60%]"} border-r overflow-hidden`}>
+        <div className={`flex flex-col ${posLayout.carrito.productosPanelClass} border-r overflow-hidden`}>
 
           {/* Búsqueda */}
           <div className="flex gap-2 px-3 py-2 shrink-0 border-b">
@@ -921,12 +1377,12 @@ export default function POSPage() {
                 onChange={(e) => setBusqueda(e.target.value)}
                 onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === "Enter" && productosFiltrados.length === 1) {
-                    agregarProducto(productosFiltrados[0])
+                    clicProducto(productosFiltrados[0])
                     setBusqueda("")
                   }
                 }}
                 placeholder="Buscar producto o escanear…"
-                className={`pl-9 ${modo === "kiosko" ? "h-12 text-base" : "h-11 sm:h-9 text-base sm:text-sm"}`}
+                className={`pl-9 ${posLayout.productos.searchInputClass}`}
               />
               {busqueda && (
                 <button
@@ -937,6 +1393,7 @@ export default function POSPage() {
                 </button>
               )}
             </div>
+            <PosBarcodeCamera onScan={buscarYAgregarCodigo} disabled={modalCobroOpen} />
             {modo === "mesa" && (
               <Button variant="outline" size="sm" onClick={() => { cargarMesas(); setModalMesasOpen(true) }}>
                 <UtensilsCrossed className="h-4 w-4 mr-1" />
@@ -990,11 +1447,7 @@ export default function POSPage() {
 
           {/* Grilla de productos */}
           <ScrollArea className="flex-1">
-            <div className={`grid gap-2 p-3 pb-24 lg:pb-3 ${
-              modo === "kiosko"
-                ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-                : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5"
-            }`}>
+            <div className={`grid gap-2 p-3 ${posLayout.productos.scrollPaddingClass} ${posLayout.productos.gridClass}`}>
               {cargandoProductos ? (
                 Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
@@ -1008,12 +1461,12 @@ export default function POSPage() {
                 productosFiltrados.map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => agregarProducto(p)}
+                    onClick={() => clicProducto(p)}
                     disabled={p.stock <= 0 && !p.esPlato}
                     className={`
                       flex flex-col items-center justify-center rounded-xl border-2 transition-all
                       text-center p-2 gap-1 select-none
-                      ${modo === "kiosko" ? "min-h-[108px]" : "min-h-[92px] sm:min-h-[80px]"}
+                      ${posLayout.productos.cardMinHeightClass}
                       touch-manipulation active:scale-[0.97]
                       ${p.stock <= 0 && !p.esPlato
                         ? "opacity-40 cursor-not-allowed border-dashed"
@@ -1033,6 +1486,12 @@ export default function POSPage() {
                     {p.stock > 0 && p.stock <= 3 && (
                       <span className="text-[10px] text-amber-500">Últimas {p.stock}</span>
                     )}
+                    {catalogoGrupos?.variantes.some((g) => g.variantes[0]?.id === p.id) && (
+                      <Badge variant="secondary" className="text-[9px] h-4">Variantes</Badge>
+                    )}
+                    {catalogoGrupos?.productoIdsCombo.includes(p.id) && (
+                      <Badge variant="outline" className="text-[9px] h-4">Combo</Badge>
+                    )}
                   </button>
                 ))
               )}
@@ -1041,15 +1500,18 @@ export default function POSPage() {
         </div>
 
         {/* ══ PANEL DERECHO: Carrito ═══════════════════════════ */}
-        {modo !== "kiosko" && (
-          <div className="hidden lg:flex flex-col w-[40%] overflow-hidden bg-muted/30">
+        {modo !== "kiosko" && posLayout.carrito.showSidePanel && (
+          <div className={posLayout.carrito.cartPanelClass}>
 
+            {posLayout.carrito.showPendientesPanel && (
             <PosPendientesPanel
               cajaOk={cajaOk}
+              cajaMotivo={cajaMotivo}
               onRecuperar={recuperarVenta}
               onSuspender={suspenderVenta}
               puedeSuspender={carrito.length > 0}
             />
+            )}
 
             {/* Header carrito */}
             <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
@@ -1078,14 +1540,26 @@ export default function POSPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__cf__">Consumidor Final</SelectItem>
-                  {clientes.map((c) => (
+                  {clientesOrdenados.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.nombre}
+                      {c.fiadoHabilitado && <span className="text-primary ml-1 text-xs">· Fiado</span>}
                       {c.condicionIva && <span className="text-muted-foreground ml-1 text-xs">({c.condicionIva})</span>}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {clienteActivo?.fiadoHabilitado && (
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  Fiado activo
+                  {creditoDispPos != null && (
+                    <> · Disp. ${creditoDispPos.toLocaleString("es-AR")}</>
+                  )}
+                  {deudaClientePos > 0 && (
+                    <span className="text-red-600"> · Debe ${deudaClientePos.toLocaleString("es-AR")}</span>
+                  )}
+                </p>
+              )}
             </div>
 
             {/* Items del carrito */}
@@ -1103,6 +1577,21 @@ export default function POSPage() {
                       key={idx}
                       className="flex items-center gap-2 bg-background rounded-lg px-2 py-1.5 border"
                     >
+                      {modo === "mesa" && (
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 shrink-0"
+                          checked={indicesSeleccionados.has(idx)}
+                          onChange={(e) => {
+                            setIndicesSeleccionados((prev) => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(idx)
+                              else next.delete(idx)
+                              return next
+                            })
+                          }}
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{item.descripcion}</p>
                         <p className="text-xs text-muted-foreground">${fmt(item.precio)} c/u</p>
@@ -1181,6 +1670,12 @@ export default function POSPage() {
                   <span>incluido</span>
                 </div>
               )}
+              {propina > 0 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Propina</span>
+                  <span>${fmt(propina)}</span>
+                </div>
+              )}
               <Separator className="my-1" />
               <div className="flex justify-between font-bold text-lg">
                 <span>TOTAL</span>
@@ -1188,12 +1683,37 @@ export default function POSPage() {
               </div>
             </div>
 
-            {/* Botón cobrar */}
-            <div className="px-3 pb-3 shrink-0">
+            {/* Botones cobrar / fiar */}
+            <div className="px-3 pb-3 shrink-0 space-y-2">
+              {modo === "mesa" && indicesSeleccionados.size > 0 && (
+                <Button
+                  variant="secondary"
+                  className="w-full h-10"
+                  onClick={() =>
+                    abrirCobro({ indices: [...indicesSeleccionados] })
+                  }
+                >
+                  Cobrar selección ({indicesSeleccionados.size})
+                </Button>
+              )}
+              {fiadoActivo &&
+                clienteActivo?.fiadoHabilitado &&
+                carrito.length > 0 &&
+                (creditoDispPos == null || creditoDispPos >= total) && (
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 font-bold border-primary text-primary"
+                    disabled={!cajaOk || afipBloqueaFiscal}
+                    onClick={abrirCobroFiado}
+                  >
+                    <Wallet className="h-4 w-4 mr-2" />
+                    FIAR ${fmt(total)}
+                  </Button>
+                )}
               <Button
-                className="w-full h-14 text-lg font-bold tracking-wide"
+                className="w-full h-12 text-base font-bold tracking-wide"
                 disabled={carrito.length === 0 || !cajaOk || afipBloqueaFiscal}
-                onClick={abrirCobro}
+                onClick={() => abrirCobro()}
               >
                 <CreditCard className="h-5 w-5 mr-2" />
                 COBRAR ${fmt(total)}
@@ -1201,7 +1721,7 @@ export default function POSPage() {
               </Button>
               {!cajaOk && carrito.length > 0 && (
                 <p className="text-xs text-destructive text-center mt-1">
-                  Abrí la caja desde el módulo Caja para poder cobrar
+                  {mensajeCajaBloqueada(cajaMotivo)}
                 </p>
               )}
             </div>
@@ -1209,25 +1729,38 @@ export default function POSPage() {
         )}
 
         {/* Barra inferior móvil / tablet */}
-        {modo !== "kiosko" && (
-          <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-            <div className="flex items-center gap-2 max-w-lg mx-auto">
+        {modo !== "kiosko" && posLayout.carrito.showBottomBar && (
+          <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 px-2 py-1.5 pb-[max(0.35rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(0,0,0,0.08)]">
+            <div className="flex items-center gap-1.5 max-w-lg mx-auto">
               <button
                 type="button"
                 onClick={() => setCartSheetOpen(true)}
-                className="flex items-center gap-2 min-h-[48px] px-3 rounded-xl border bg-card flex-1 touch-manipulation active:scale-[0.98]"
+                className="flex items-center gap-2 min-h-[44px] px-2.5 rounded-xl border bg-card flex-1 touch-manipulation active:scale-[0.98]"
               >
-                <ShoppingCart className="h-5 w-5 text-primary shrink-0" />
+                <ShoppingCart className="h-4 w-4 text-primary shrink-0" />
                 <div className="text-left min-w-0">
-                  <p className="text-xs text-muted-foreground">
-                    {carrito.length === 0 ? "Carrito vacío" : `${carrito.reduce((s, i) => s + i.cantidad, 0)} ítems`}
+                  <p className="text-[10px] text-muted-foreground leading-none">
+                    {carrito.length === 0 ? "Carrito" : `${carrito.reduce((s, i) => s + i.cantidad, 0)} ítems`}
                   </p>
-                  <p className="font-bold text-base leading-none">${fmt(total)}</p>
+                  <p className="font-bold text-sm leading-tight">${fmt(total)}</p>
                 </div>
               </button>
+              {fiadoActivo &&
+                clienteActivo?.fiadoHabilitado &&
+                carrito.length > 0 &&
+                (creditoDispPos == null || creditoDispPos >= total) && (
+                  <Button
+                    variant="outline"
+                    className="h-11 px-3 text-xs font-bold shrink-0 border-primary text-primary"
+                    onClick={abrirCobroFiado}
+                    disabled={!cajaOk || afipBloqueaFiscal}
+                  >
+                    FIAR
+                  </Button>
+                )}
               <Button
-                className="h-12 px-5 text-base font-bold shrink-0"
-                onClick={abrirCobro}
+                className="h-11 px-4 text-sm font-bold shrink-0"
+                onClick={() => abrirCobro()}
                 disabled={carrito.length === 0 || !cajaOk || afipBloqueaFiscal}
               >
                 COBRAR
@@ -1244,7 +1777,7 @@ export default function POSPage() {
               <span className="text-sm">{carrito.reduce((s, i) => s + i.cantidad, 0)} items</span>
             </div>
             <span className="text-white font-bold text-xl ml-auto">${fmt(total)}</span>
-            <Button className="h-12 px-8 text-base font-bold touch-manipulation" onClick={abrirCobro} disabled={!cajaOk || afipBloqueaFiscal}>
+            <Button className="h-12 px-8 text-base font-bold touch-manipulation" onClick={() => abrirCobro()} disabled={!cajaOk || afipBloqueaFiscal}>
               COBRAR
             </Button>
             <Button variant="ghost" className="h-12 w-12 text-gray-400 touch-manipulation" onClick={vaciarCarrito}>
@@ -1254,9 +1787,11 @@ export default function POSPage() {
         )}
       </div>
 
+      {posLayout.carrito.showCartSheet && (
       <PosCartSheet
         open={cartSheetOpen}
         onOpenChange={setCartSheetOpen}
+        sheetHeightClass={posLayout.cobro.sheetHeightClass}
         carrito={carrito}
         clientes={clientes}
         clienteId={clienteId}
@@ -1270,223 +1805,321 @@ export default function POSPage() {
         onCantidad={cambiarCantidad}
         onEliminar={eliminarItem}
         onVaciar={vaciarCarrito}
-        onCobrar={abrirCobro}
+        onCobrar={() => abrirCobro()}
+        onFiar={abrirCobroFiado}
         cajaOk={cajaOk}
+        cajaMotivo={cajaMotivo}
         afipBloqueaFiscal={afipBloqueaFiscal}
+        fiadoActivo={fiadoActivo}
+        creditoDisponible={creditoDispPos}
+        deudaCliente={deudaClientePos}
       />
+      )}
 
       {/* ═══ MODAL: Cobro ═══════════════════════════════════════ */}
       <Dialog open={modalCobroOpen} onOpenChange={(open) => { if (!procesando) setModalCobroOpen(open) }}>
-        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-md max-h-[min(92dvh,640px)] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              {ventaExitosa ? "Venta registrada" : "Cobro"}
+        <DialogContent className={posLayout.cobro.dialogClass}>
+          <DialogHeader className="shrink-0 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" />
+              {ventaExitosa ? "Listo" : pagos[0]?.medio === "cuenta_corriente" ? "Fiado" : "Cobro"}
             </DialogTitle>
             {!ventaExitosa && (
-              <DialogDescription>
-                Total a cobrar: <strong>${fmt(total)}</strong>
+              <DialogDescription className="text-sm">
+                Total: <strong className="text-foreground">${fmt(total)}</strong>
+                {clienteActivo && pagos[0]?.medio === "cuenta_corriente" && (
+                  <span className="block text-xs mt-0.5">{clienteActivo.nombre}</span>
+                )}
               </DialogDescription>
             )}
           </DialogHeader>
 
-          {/* ── Venta exitosa ── */}
           {ventaExitosa ? (
-            <div className="space-y-3" id="ticket-print">
-              <div className="flex flex-col items-center py-4 gap-2">
-                <CheckCircle2 className="h-14 w-14 text-green-500 hide-on-print" />
-                <h3 className="font-bold text-xl text-center hidden print:block">TICKET DE VENTA</h3>
-                <p className="text-xl font-bold">{ventaExitosa.numeroCompleto}</p>
-                {ventaExitosa.esFce && (
-                  <Badge className="bg-amber-500/90 text-amber-950">FCE MiPyME</Badge>
-                )}
-                <p className="text-muted-foreground text-sm">Total cobrado: <strong>${fmt(ventaExitosa.total)}</strong></p>
-                {ventaExitosa.cae && (
-                  <p className="text-xs font-mono">
-                    CAE: {ventaExitosa.cae}
-                    {ventaExitosa.vencimientoCAE && (
-                      <span className="text-muted-foreground ml-2">
-                        vence {new Date(ventaExitosa.vencimientoCAE).toLocaleDateString("es-AR")}
-                      </span>
-                    )}
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-3 py-1 hide-on-print">
+                <FiscalEmissionResult
+                  data={{
+                    success: !!ventaExitosa.cae && !ventaExitosa.pendienteCae,
+                    numero: ventaExitosa.numeroCompleto,
+                    tipo: ventaExitosa.tipo,
+                    cae: ventaExitosa.cae,
+                    vencimientoCAE: ventaExitosa.vencimientoCAE,
+                    qrBase64: ventaExitosa.qrBase64,
+                    error: ventaExitosa.afipError,
+                    pendienteCae: ventaExitosa.pendienteCae,
+                    esFce: ventaExitosa.esFce,
+                    esExportacion: ventaExitosa.esExportacion,
+                    esTicket: ventaExitosa.esTicket,
+                    modalidadAuth: ventaExitosa.modalidadAuth,
+                  } satisfies FiscalEmissionData}
+                  title="Venta registrada"
+                  className="border-0 shadow-none bg-transparent p-0"
+                />
+                {ventaExitosa.vuelto > 0.01 && (
+                  <p className="text-sm font-bold text-yellow-700 text-center">
+                    Vuelto: ${fmt(ventaExitosa.vuelto)}
                   </p>
                 )}
-                {ventaExitosa.afipError && (
-                  <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-lg border border-amber-200 hide-on-print">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{ventaExitosa.afipError} — reintentá desde Pendientes</span>
-                  </div>
-                )}
-                {ventaExitosa.qrBase64 && (
-                  <div className="hide-on-print">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ventaExitosa.qrBase64} alt="QR AFIP" className="h-24 w-24 mx-auto rounded border" />
-                  </div>
-                )}
-                {ventaExitosa.vuelto > 0.01 && (
-                  <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-2 rounded-lg border border-yellow-200 hide-on-print">
-                    <Banknote className="h-5 w-5 text-yellow-600" />
-                    <span className="font-bold text-yellow-700 dark:text-yellow-400 text-lg">
-                      Vuelto: ${fmt(ventaExitosa.vuelto)}
-                    </span>
+                <FiscalOutputActions
+                  facturaId={ventaExitosa.facturaId}
+                  salidaPreferida={salidaComprobante}
+                  onPrintFallback={() => window.print()}
+                />
+              </div>
+              <div id="ticket-print" className="hidden print:block">
+                {ticketLegal ? (
+                  <FiscalTicketView data={ticketLegal} />
+                ) : (
+                  <div className="font-mono text-xs p-2">
+                    <p>{ventaExitosa.numeroCompleto}</p>
+                    <p>Total: ${fmt(ventaExitosa.total)}</p>
+                    {ventaExitosa.cae && <p>CAE: {ventaExitosa.cae}</p>}
                   </div>
                 )}
               </div>
-
-              {/* Desglose IVA del ticket */}
-              {ventaExitosa.ivaDesglose && ventaExitosa.ivaDesglose.length > 0 && (
-                <div className="border rounded-lg p-3 text-xs space-y-1">
-                  <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-2">Desglose IVA</p>
-                  {ventaExitosa.ivaDesglose.map((r) => (
-                    <div key={r.pct} className="flex justify-between">
-                      <span className="text-muted-foreground">Neto {r.pct} — IVA</span>
-                      <span>${fmt(r.neto)} — <strong>${fmt(r.iva)}</strong></span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Mensaje pie ticket impreso */}
-              <div className="text-center text-xs mt-4 hidden print:block border-t pt-2">
-                <p>¡Gracias por su compra!</p>
-              </div>
-
-              <div className="flex gap-2 hide-on-print">
+              <div className="shrink-0 flex gap-2 pt-2 border-t hide-on-print">
                 <Button
                   variant="outline"
-                  className="flex-1"
-                  onClick={() => void imprimirFiscal()}
-                  disabled={imprimiendoFiscal}
+                  size="sm"
+                  className="flex-1 h-11"
+                  onClick={() => window.print()}
                 >
-                  {imprimiendoFiscal ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Printer className="h-4 w-4 mr-2" />
-                  )}
-                  {ventaExitosa.facturaId ? "Imprimir fiscal" : "Imprimir"}
+                  <Printer className="h-4 w-4 mr-1" />
+                  Vista previa
                 </Button>
-                <Button className="flex-1" onClick={cerrarYNuevaVenta}>
+                <Button size="sm" className="flex-1 h-11 font-bold" onClick={cerrarYNuevaVenta}>
                   Nueva venta
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            <div className="flex flex-col flex-1 min-h-0 gap-2">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-0.5">
+                {error && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                  </Alert>
+                )}
 
-              {/* Medios de pago seleccionados */}
-              <div className="space-y-2">
-                {pagos.map((pago, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Select
-                      value={pago.medio}
-                      onValueChange={(v) => setPagos((ps) => ps.map((p, i) => i === idx ? { ...p, medio: v } : p))}
-                    >
-                      <SelectTrigger className="w-36 h-9 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MEDIOS_PAGO.map((m) => (
-                          <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      className={`flex-1 h-9 text-right font-bold ${numpadTarget === idx ? "ring-2 ring-primary" : ""}`}
-                      value={numpadTarget === idx ? numpadInput : pago.monto.toFixed(2)}
-                      onFocus={() => { setNumpadTarget(idx); setNumpadInput(String(pago.monto)) }}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0
-                        setPagos((ps) => ps.map((p, i) => i === idx ? { ...p, monto: val } : p))
-                        setNumpadInput(e.target.value)
+                {promosHoy.length > 0 && (
+                  <Alert className="py-2 border-emerald-500/40 bg-emerald-500/10">
+                    <AlertDescription className="text-xs space-y-1">
+                      {promosHoy.map((pr) => (
+                        <p key={pr.id}>
+                          <strong>Promo hoy:</strong> {pr.mensajeCajero}
+                        </p>
+                      ))}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MEDIOS_PAGO.filter((m) => m.key !== "vale" || valesActivo).map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => {
+                        if (m.key === "vale" && !valesActivo) return
+                        setPagos([{
+                          medio: m.key,
+                          monto: total,
+                          ...(m.key === "vale" ? { numeroVale: "" } : {}),
+                        }])
+                        setNumpadInput(String(total))
+                        setNumpadAbierto(m.key === "efectivo")
                       }}
-                      ref={idx === 0 ? montoEfectivoRef : undefined}
-                    />
-                    {pagos.length > 1 && (
-                      <Button
-                        variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground"
-                        onClick={() => eliminarPago(idx)}
+                      disabled={m.key === "vale" && !valesActivo}
+                      title={m.key === "vale" && !valesActivo ? "Activá Vale de dinero en App Store" : undefined}
+                      className={`${posLayout.cobro.medioButtonClass} ${m.color} ${
+                        pagos[0]?.medio === m.key ? "ring-2 ring-offset-1 ring-white/80" : ""
+                      } ${m.key === "vale" && !valesActivo ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <m.icon className="h-4 w-4 mb-0.5" />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {fiadoActivo && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-9 text-xs border-primary text-primary"
+                    onClick={abrirCobroFiado}
+                  >
+                    <BookOpen className="h-3.5 w-3.5 mr-1" />
+                    Fiado — {clienteActivo?.nombre ?? "elegí cliente"}
+                  </Button>
+                )}
+
+                {!indicesCobro && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs shrink-0">Propina</Label>
+                    <div className="flex gap-1 flex-1">
+                      {[0, 10, 15, 20].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          className={`flex-1 h-8 rounded text-xs font-medium ${
+                            propina === Math.round(totalSinPropina * pct / 100) && pct > 0
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                          onClick={() =>
+                            setPropina(pct === 0 ? 0 : Math.round(totalSinPropina * pct / 100))
+                          }
+                        >
+                          {pct === 0 ? "Sin" : `${pct}%`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {pagos.some((p) => p.medio === "qr") && (
+                  <div className="rounded-lg border p-2 space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      disabled={mpQrLoading}
+                      onClick={() => void generarQrMercadoPago()}
+                    >
+                      {mpQrLoading ? "Generando..." : "Generar QR MercadoPago"}
+                    </Button>
+                    {mpQrDataUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mpQrDataUrl} alt="QR MercadoPago" className="mx-auto w-40 h-40" />
+                    )}
+                    {mpQrAprobado && (
+                      <p className="text-xs text-green-600 text-center font-medium">Pago confirmado ✓</p>
+                    )}
+                  </div>
+                )}
+
+                {pagos.map((pago, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <Select
+                        value={pago.medio}
+                        onValueChange={(v) =>
+                          setPagos((ps) =>
+                            ps.map((p, i) =>
+                              i === idx
+                                ? { ...p, medio: v, ...(v === "vale" ? { numeroVale: p.numeroVale ?? "" } : {}) }
+                                : p,
+                            ),
+                          )
+                        }
                       >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                        <SelectTrigger className="w-28 h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {MEDIOS_PAGO.map((m) => (
+                          <SelectItem
+                            key={m.key}
+                            value={m.key}
+                            disabled={m.key === "vale" && !valesActivo}
+                          >
+                            {m.label}{m.key === "vale" && !valesActivo ? " (activar)" : ""}
+                          </SelectItem>
+                        ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        className={`flex-1 h-9 text-right font-bold text-sm ${numpadTarget === idx ? "ring-2 ring-primary" : ""}`}
+                        value={numpadTarget === idx ? numpadInput : pago.monto.toFixed(2)}
+                        onFocus={() => { setNumpadTarget(idx); setNumpadInput(String(pago.monto)) }}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0
+                          setPagos((ps) => ps.map((p, i) => i === idx ? { ...p, monto: val } : p))
+                          setNumpadInput(e.target.value)
+                        }}
+                        ref={idx === 0 ? montoEfectivoRef : undefined}
+                      />
+                    </div>
+                    {pago.medio === "vale" && (
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          placeholder="VALE-000001"
+                          className="h-8 text-xs font-mono flex-1"
+                          value={pago.numeroVale ?? ""}
+                          onChange={(e) =>
+                            setPagos((ps) =>
+                              ps.map((p, i) => (i === idx ? { ...p, numeroVale: e.target.value.toUpperCase() } : p)),
+                            )
+                          }
+                          onBlur={() => void validarVale(idx, pago.numeroVale ?? "")}
+                        />
+                        {valeInfo[idx] && (
+                          <span className="text-[10px] text-emerald-600 shrink-0">
+                            ${valeInfo[idx].saldo.toLocaleString("es-AR")}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
-                {pagos.length < 3 && (
-                  <Button
-                    variant="outline" size="sm" className="w-full text-xs h-8"
-                    onClick={agregarMedioPago}
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" />Agregar otro medio de pago
-                  </Button>
+
+                <button
+                  type="button"
+                  className="flex items-center justify-center gap-1 w-full text-xs text-muted-foreground py-1"
+                  onClick={() => setNumpadAbierto((v) => !v)}
+                >
+                  Teclado {numpadAbierto ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
+                {numpadAbierto && (
+                  <div className="grid grid-cols-3 gap-1">
+                    {NUMPAD_KEYS.map((k) => (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => numpadPress(k)}
+                        className={posLayout.cobro.numpadKeyClass}
+                      >
+                        {k}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {/* Botones rápidos de medios */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {MEDIOS_PAGO.slice(0, 6).map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => setPagos([{ medio: m.key, monto: total }])}
-                    className={`flex flex-col items-center py-3 sm:py-2 rounded-lg text-white text-xs font-medium transition-all active:scale-95 touch-manipulation min-h-[52px] ${m.color}`}
-                  >
-                    <m.icon className="h-5 w-5 sm:h-4 sm:w-4 mb-0.5" />
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Numpad táctil */}
-              <div className="grid grid-cols-3 gap-2">
-                {NUMPAD_KEYS.map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => numpadPress(k)}
-                    className="h-14 sm:h-12 rounded-lg border bg-muted hover:bg-muted/70 active:bg-primary active:text-primary-foreground font-bold text-lg sm:text-base transition-all touch-manipulation"
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-
-              {/* Resumen */}
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Total</span><span className="font-bold">${fmt(total)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Recibe</span><span className="font-bold">${fmt(totalPagado)}</span>
+              <div className="shrink-0 border-t pt-2 space-y-1.5 bg-background">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Recibe</span>
+                  <span className="font-bold">${fmt(totalPagado)}</span>
                 </div>
                 {vuelto > 0.01 && (
-                  <div className="flex justify-between text-green-600 font-bold">
+                  <div className="flex justify-between text-xs text-green-600 font-bold">
                     <span>Vuelto</span><span>${fmt(vuelto)}</span>
                   </div>
                 )}
                 {faltaPagar > 0.01 && (
-                  <div className="flex justify-between text-destructive font-bold">
+                  <div className="flex justify-between text-xs text-destructive font-bold">
                     <span>Falta</span><span>${fmt(faltaPagar)}</span>
                   </div>
                 )}
+                <Button
+                  className={posLayout.cobro.confirmButtonClass}
+                  disabled={faltaPagar > 0.01 || procesando || !cajaOk || afipBloqueaFiscal}
+                  onClick={ejecutarVenta}
+                >
+                  {procesando ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  )}
+                  {procesando
+                    ? "Procesando..."
+                    : pagos[0]?.medio === "cuenta_corriente"
+                      ? "Confirmar fiado"
+                      : "Confirmar cobro"}
+                </Button>
               </div>
-
-              <Button
-                className="w-full h-12 text-base font-bold"
-                disabled={faltaPagar > 0.01 || procesando || !cajaOk || afipBloqueaFiscal}
-                onClick={ejecutarVenta}
-              >
-                {procesando ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                )}
-                {procesando ? "Procesando..." : "Confirmar cobro"}
-              </Button>
             </div>
           )}
         </DialogContent>
@@ -1532,6 +2165,22 @@ export default function POSPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PosVariantePicker
+        grupo={grupoVariante}
+        open={variantePickerOpen}
+        onOpenChange={setVariantePickerOpen}
+        onSelect={seleccionarVariante}
+      />
+
+      <PosEnvasesDialog
+          open={envasesDialogOpen}
+          onOpenChange={setEnvasesDialogOpen}
+          clienteId={clienteId}
+          clienteNombre={clienteActivo?.nombre}
+          authHeaders={authH}
+          onMovimiento={verificarCaja}
+        />
     </div>
   )
 }

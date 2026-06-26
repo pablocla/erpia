@@ -25,6 +25,7 @@ import {
   Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight, Sparkles,
 } from "lucide-react"
 import { PageShell, PageHeader } from "@/components/layout"
+import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { CSVImport } from "@/components/csv-import"
@@ -52,7 +53,9 @@ const EMPTY_FORM: Record<string, any> = {
   provinciaId: "__none__", localidadId: "__none__", paisId: "__none__", zonaGeograficaId: "__none__",
   telefono: "", telefonoAlternativo: "", email: "", emailFacturacion: "", web: "",
   fechaNacimiento: "", observaciones: "",
-  limiteCredito: 0, descuentoPct: 0, diasGraciaExtra: 0, monedaHabitual: "pesos",
+  limiteCredito: 0, fiadoHabilitado: false, emailNotificacionFiado: "", emailNotificacionFiado2: "",
+  notificarClienteFiado: false,
+  descuentoPct: 0, diasGraciaExtra: 0, monedaHabitual: "pesos",
   cuentaContableCodigo: "",
   condicionPagoId: "__none__", formaPagoId: "__none__",
   vendedorId: "__none__", listaPrecioId: "__none__",
@@ -97,6 +100,10 @@ function clienteToForm(c: any): Record<string, any> {
     fechaNacimiento: c.fechaNacimiento ? c.fechaNacimiento.slice(0, 10) : "",
     observaciones: c.observaciones ?? "",
     limiteCredito: c.limiteCredito ?? 0,
+    fiadoHabilitado: c.fiadoHabilitado ?? false,
+    emailNotificacionFiado: c.emailNotificacionFiado ?? "",
+    emailNotificacionFiado2: c.emailNotificacionFiado2 ?? "",
+    notificarClienteFiado: c.notificarClienteFiado ?? false,
     descuentoPct: c.descuentoPct ?? 0,
     diasGraciaExtra: c.diasGraciaExtra ?? 0,
     monedaHabitual: c.monedaHabitual ?? "pesos",
@@ -137,6 +144,8 @@ function formToPayload(f: Record<string, any>) {
     segmentoClienteId: fkToInt(f.segmentoClienteId),
     vigenciaCertificadoExclusion: f.vigenciaCertificadoExclusion || null,
     fechaNacimiento: f.fechaNacimiento || null,
+    emailNotificacionFiado: f.emailNotificacionFiado || null,
+    emailNotificacionFiado2: f.emailNotificacionFiado2 || null,
   }
 }
 
@@ -186,7 +195,7 @@ export default function ClientesPage() {
       if (busqueda) qs.set("q", busqueda)
       const res = await fetch(`/api/clientes?${qs}`, { headers: authHeaders() })
       const data = await res.json()
-      setClientes(Array.isArray(data) ? data : data.data ?? [])
+      setClientes(parseApiList(data))
       setTotal(data.total ?? 0)
     } catch (error) {
       console.error("Error al cargar clientes:", error)
@@ -715,6 +724,27 @@ export default function ClientesPage() {
                   <Label htmlFor="diasGraciaExtra">Días Gracia Extra</Label>
                   <Input id="diasGraciaExtra" type="number" min={0} step={1} value={formData.diasGraciaExtra} onChange={e => set("diasGraciaExtra", e.target.value)} />
                 </div>
+              </div>
+              <div className="rounded-lg border p-4 space-y-3 bg-muted/30">
+                <p className="text-sm font-semibold">Libreta Fiado</p>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={!!formData.fiadoHabilitado} onChange={e => set("fiadoHabilitado", e.target.checked)} />
+                  Habilitar fiado en POS
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emailNotificacionFiado">Email notificación (fiador)</Label>
+                    <Input id="emailNotificacionFiado" type="email" value={formData.emailNotificacionFiado} onChange={e => set("emailNotificacionFiado", e.target.value)} placeholder="quien@entera.com" />
+                  </div>
+                  <div>
+                    <Label htmlFor="emailNotificacionFiado2">Email notificación 2</Label>
+                    <Input id="emailNotificacionFiado2" type="email" value={formData.emailNotificacionFiado2} onChange={e => set("emailNotificacionFiado2", e.target.value)} />
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={!!formData.notificarClienteFiado} onChange={e => set("notificarClienteFiado", e.target.checked)} />
+                  También notificar al email del cliente
+                </label>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <MaestroSelect tabla="condiciones-pago" value={formData.condicionPagoId} onChange={v => set("condicionPagoId", v)} label="Condición de Pago" />

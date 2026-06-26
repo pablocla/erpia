@@ -199,6 +199,27 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     totalMonthly: CLAVIS_CORE_INDUSTRIA.priceMonthly + 24_900,
   },
   {
+    id: "almacen-rosario",
+    sku: "pool-almacen-rosario",
+    name: "Clavis Almacén Rosario",
+    tagline: "Margen, merma y caja para el barrio",
+    valueProp:
+      "18 módulos POS para kioscos y almacenes: envases, vales, listas distribuidora, 2×1, arqueo ciego. Todo visible; activás lo que usás.",
+    integrations: ["POS táctil", "Listas distribuidora", "Envases retornables", "AFIP"],
+    modules: [
+      "18 módulos retail visibles",
+      "Fiado barrio y Guardián POS (add-ons pack)",
+      "Panel + guía in-app",
+    ],
+    priceMonthly: 34_900,
+    priceAnnual: 349_000,
+    isAddOn: true,
+    highlighted: true,
+    badge: "Retail barrio",
+    cta: "Activar pack almacén",
+    totalMonthly: CLAVIS_CORE.priceMonthly + 34_900,
+  },
+  {
     id: "operacion-completa",
     sku: "bundle.operacion_completa",
     name: "Clavis Operación Completa",

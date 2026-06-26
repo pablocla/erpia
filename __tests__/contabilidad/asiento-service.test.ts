@@ -173,6 +173,7 @@ describe("AsientoService", () => {
       mockPrismaClient.asientoContable.create.mockResolvedValue({ id: 1 })
 
       const data = {
+        empresaId: 1,
         fecha: new Date(),
         numero: 1,
         descripcion: "Asiento manual de prueba",
@@ -190,6 +191,7 @@ describe("AsientoService", () => {
 
     it("should reject unbalanced entries (Debe != Haber)", async () => {
       const data = {
+        empresaId: 1,
         fecha: new Date(),
         numero: 1,
         descripcion: "Desbalanceado",

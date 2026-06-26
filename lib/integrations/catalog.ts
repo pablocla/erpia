@@ -43,6 +43,43 @@ export const INTEGRATION_CATALOG: CatalogEntry[] = [
     entidadesSync: SYNC_ECOM,
   },
   {
+    id: "odoo", nombre: "Odoo", categoria: "erp", categoriaLabel: "ERP / Migración",
+    authTipo: "api_key", prioridad: 88, disponible: true, novedad: true, badge: "Bridge",
+    emoji: "🟣", color: "purple",
+    descripcion: "Puente con Odoo — importación y sincronización vía XML-RPC/JSON-RPC.",
+    descripcionComercial: "Migrá productos, contactos y saldos desde Odoo sin reimplementar todo.",
+    campos: [
+      { key: "url", label: "URL Odoo", tipo: "url", requerido: true, placeholder: "https://miempresa.odoo.com" },
+      { key: "database", label: "Base de datos", tipo: "text", requerido: true },
+      { key: "username", label: "Usuario API", tipo: "text", requerido: true },
+      { key: "apiKey", label: "API Key / password", tipo: "password", requerido: true },
+    ],
+    entidadesSync: [
+      { id: "productos", label: "Productos", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+      { id: "contactos", label: "Contactos", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+      { id: "stock", label: "Stock", defaultDireccion: "bidireccional", defaultFrecuencia: "15min" },
+      { id: "pedidos", label: "Pedidos de venta", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+    ],
+  },
+  {
+    id: "protheus", nombre: "TOTVS Protheus", categoria: "erp", categoriaLabel: "ERP / Migración",
+    authTipo: "oauth2", prioridad: 90, disponible: true, novedad: true, badge: "OPO Bridge",
+    emoji: "🔗", color: "slate",
+    descripcion: "Puente OPO sobre Protheus — REST API o vistas SQL con ontología canónica.",
+    descripcionComercial: "Clavis como capa moderna sobre SA1/SF2/SB1 sin reemplazar Protheus de golpe.",
+    campos: [
+      { key: "baseUrl", label: "URL API Protheus", tipo: "url", requerido: true, placeholder: "https://protheus.empresa.com/api" },
+      { key: "conector", label: "Conector", tipo: "text", requerido: true, placeholder: "rest | sql" },
+      { key: "sqlViewPrefix", label: "Prefijo vistas SQL", tipo: "text", placeholder: "vw_opo_" },
+    ],
+    entidadesSync: [
+      { id: "clientes", label: "Clientes (SA1)", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+      { id: "productos", label: "Productos (SB1)", defaultDireccion: "bidireccional", defaultFrecuencia: "15min" },
+      { id: "facturas", label: "Facturas (SF2)", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+      { id: "pedidos", label: "Pedidos (SC5)", defaultDireccion: "entrada", defaultFrecuencia: "1h" },
+    ],
+  },
+  {
     id: "vtex", nombre: "VTEX", categoria: "ecommerce", categoriaLabel: "E-commerce",
     authTipo: "api_key", prioridad: 80, disponible: true, badge: "Enterprise",
     emoji: "🏪", color: "rose",
@@ -363,6 +400,7 @@ export const CATEGORIA_LABELS: Record<string, string> = {
   automatizacion: "Automatización",
   bi: "BI & Reportes",
   logistica: "Logística",
+  erp: "ERP / Migración",
   opensource: "Open Source",
 }
 

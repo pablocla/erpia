@@ -87,8 +87,15 @@ export class PDFService {
     `).join("")
 
     const condIvaEmisor = empresa?.condicionIva ?? "Responsable Inscripto"
-    const condIvaReceptor = cliente?.condicionIva ?? "Consumidor Final"
-    const iibbEmisor = ""
+    const condIvaReceptor = factura.condicionIvaReceptor ?? cliente?.condicionIva ?? "Consumidor Final"
+    const configFiscal = await prisma.configFiscalEmpresa.findFirst({
+      where: { empresaId: factura.empresaId },
+      include: { inscripcionesIIBB: { where: { activo: true }, take: 1 } },
+    })
+    const iibbEmisor = configFiscal?.inscripcionesIIBB[0]?.numeroInscripcion ?? ""
+    const modalidadAuth = factura.modalidadAuth ?? "CAE"
+    const esFce = [201, 206, 211].includes(factura.tipoCbte ?? 0)
+    const esExportacion = [19, 20, 21].includes(factura.tipoCbte ?? 0)
     const cotCodigo = factura.remitos?.[0]?.cot?.numeroCOT ?? null
 
     const html = `
@@ -202,16 +209,19 @@ export class PDFService {
       ${factura.qrBase64 ? `<img src="${factura.qrBase64}" alt="QR Fiscal" />` : '<div style="border: 1px dashed #ccc; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 10px;">QR no disponible</div>'}
     </div>
     <div class="cae-data">
-      <div class="dato">CAE Nº:</div>
-      <div class="cae-numero">${factura.cae ?? "—"}</div>
-      <div class="dato" style="margin-top: 4px;">Vencimiento CAE: ${vtoCAE}</div>
+      <div class="dato">${modalidadAuth === "CAEA" ? "CAEA Nº:" : "CAE Nº:"}</div>
+      <div class="cae-numero">${factura.cae ?? factura.caea ?? "—"}</div>
+      <div class="dato" style="margin-top: 4px;">Vencimiento: ${vtoCAE}</div>
+      ${esFce ? '<div class="dato" style="margin-top:4px;font-weight:bold;">FCE MiPyME</div>' : ""}
+      ${esExportacion ? '<div class="dato" style="margin-top:4px;font-weight:bold;">Comprobante de exportación</div>' : ""}
     </div>
   </div>
 
   <!-- LEYENDA REGULATORIA -->
   <div class="leyenda">
-    Esta factura electrónica fue autorizada por AFIP — Resolución General Nº 1415/2003 y modificatorias.
-    ${factura.monedaOrigen && factura.monedaOrigen !== "PES" ? " | Operación en moneda extranjera — RG 5616/2024." : ""}
+    Comprobante autorizado por AFIP — RG 1415/2003 y modificatorias.
+    ${modalidadAuth === "CAEA" ? " Emitido bajo modalidad CAEA." : ""}
+    ${factura.monedaOrigen && factura.monedaOrigen !== "PES" ? " | Moneda extranjera — RG 5616/2024." : ""}
   </div>
 
   ${factura.observaciones ? `<div class="dato" style="margin-top: 8px; font-style: italic;">Observaciones: ${factura.observaciones}</div>` : ""}

@@ -16,6 +16,7 @@ beforeEach(() => {
 
 describe("VentasService — integración motor de precios", () => {
   it("resuelve precio desde lista cuando precioUnitario se omite", async () => {
+    mockPrismaClient.cliente.findFirst.mockResolvedValue({ id: 1, empresaId: 1 })
     mockPrismaClient.listaPrecio.findFirst.mockResolvedValue({
       nombre: "Público",
       items: [{ precio: 1200, descuento: 0, escalones: [] }],

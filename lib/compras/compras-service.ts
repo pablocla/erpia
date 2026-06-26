@@ -11,6 +11,12 @@
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
 import { getParametro } from "@/lib/config/parametro-service"
+import {
+  assertProveedorEmpresa,
+  assertOrdenCompraEmpresa,
+  assertDepositoEmpresa,
+  assertProductoEmpresa,
+} from "@/lib/auth/tenant-validate"
 import type { OcAprobadaPayload, CompraRegistradaPayload } from "@/lib/events/types"
 
 export interface ThreeWayMatchResult {
@@ -36,12 +42,14 @@ export class ComprasService {
     fechaEntregaEst?: Date
     observaciones?: string
   }) {
+    await assertProveedorEmpresa(data.proveedorId, data.empresaId)
+
     const subtotal = data.lineas.reduce((sum, l) => sum + l.cantidad * l.precioUnitario, 0)
     const impuestos = subtotal * 0.21 // Estimate — refined at invoice time
     const total = subtotal + impuestos
 
-    // Next number
-    const ultima = await prisma.ordenCompra.findFirst({ orderBy: { numero: "desc" } })
+    // Next number scoped by tenant
+    const ultima = await prisma.ordenCompra.findFirst({ where: { empresaId: data.empresaId }, orderBy: { numero: "desc" } })
     const num = (parseInt(ultima?.numero ?? "0", 10) + 1).toString().padStart(8, "0")
 
     const oc = await prisma.ordenCompra.create({
@@ -74,7 +82,8 @@ export class ComprasService {
     return oc
   }
 
-  async aprobarOrdenCompra(ocId: number) {
+  async aprobarOrdenCompra(ocId: number, empresaId: number) {
+    await assertOrdenCompraEmpresa(ocId, empresaId)
     const oc = await prisma.ordenCompra.update({
       where: { id: ocId },
       data: { estado: "aprobada" },
@@ -97,6 +106,7 @@ export class ComprasService {
   // ─── RECEPCIÓN DE MERCADERÍA ──────────────────────────────────────────────
 
   async registrarRecepcion(data: {
+    empresaId: number
     ordenCompraId: number
     depositoId?: number
     lineas: Array<{
@@ -108,17 +118,27 @@ export class ComprasService {
     }>
     observaciones?: string
   }) {
-    // Validate OC exists and is in valid state
-    const oc = await prisma.ordenCompra.findUnique({
-      where: { id: data.ordenCompraId },
+    const oc = await prisma.ordenCompra.findFirst({
+      where: { id: data.ordenCompraId, empresaId: data.empresaId },
       include: { lineas: true },
     })
     if (!oc) throw new Error("Orden de compra no encontrada")
+
+    if (data.depositoId) {
+      await assertDepositoEmpresa(data.depositoId, data.empresaId)
+    }
+
+    for (const l of data.lineas) {
+      if (l.productoId) await assertProductoEmpresa(l.productoId, data.empresaId)
+    }
     if (!["aprobada", "enviada", "parcial"].includes(oc.estado)) {
       throw new Error(`OC en estado "${oc.estado}" no permite recepción`)
     }
 
-    const ultima = await prisma.recepcionCompra.findFirst({ orderBy: { numero: "desc" } })
+    const ultima = await prisma.recepcionCompra.findFirst({
+      where: { ordenCompra: { empresaId: data.empresaId } },
+      orderBy: { numero: "desc" },
+    })
     const num = (parseInt(ultima?.numero ?? "0", 10) + 1).toString().padStart(8, "0")
 
     const recepcion = await prisma.recepcionCompra.create({
@@ -184,6 +204,7 @@ export class ComprasService {
    */
   async threeWayMatch(
     ordenCompraId: number,
+    empresaId: number,
     facturaLineas: Array<{
       descripcion: string
       cantidad: number
@@ -191,13 +212,12 @@ export class ComprasService {
       productoId?: number
     }>,
     toleranciaPrecio?: number,
-    empresaId: number = 1,
   ): Promise<ThreeWayMatchResult> {
     // Resolve tolerance from DB (or use provided override, or fallback 2%)
     const tol = toleranciaPrecio ?? await getParametro(empresaId, "tolerancia_3way_match", 0.02)
 
-    const oc = await prisma.ordenCompra.findUnique({
-      where: { id: ordenCompraId },
+    const oc = await prisma.ordenCompra.findFirst({
+      where: { id: ordenCompraId, empresaId },
       include: { lineas: true, recepciones: { include: { lineas: true } } },
     })
 

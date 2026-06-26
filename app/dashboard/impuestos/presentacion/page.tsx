@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Receipt, Download, CheckCircle2, Clock, Loader2, RefreshCw } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { authFetch } from "@/lib/stores"
 
 interface PeriodoIVA {
   periodo: string
@@ -38,7 +39,7 @@ export default function PresentacionAFIPPage() {
     // Fetch each period from the IVA API
     const results = await Promise.allSettled(
       lista.map(async (p) => {
-        const res = await fetch(`/api/impuestos/iva?mes=${p.mes}&anio=${p.anio}`)
+        const res = await authFetch(`/api/impuestos/iva?mes=${p.mes}&anio=${p.anio}`)
         const data = await res.json()
         if (data.success && data.reporte) {
           return { ...p, ivaVentas: data.reporte.ivaVentas.total, ivaCompras: data.reporte.ivaCompras.total, saldo: data.reporte.saldo, cargado: true }
@@ -60,7 +61,7 @@ export default function PresentacionAFIPPage() {
   const descargarLiva = async (tipo: "ventas" | "compras" | "alicuotas", p: PeriodoIVA) => {
     setDescargando(`liva-${tipo}-${p.mes}-${p.anio}`)
     try {
-      const res = await fetch(`/api/impuestos/libro-iva-digital?mes=${p.mes}&anio=${p.anio}&tipo=${tipo}`)
+      const res = await authFetch(`/api/impuestos/libro-iva-digital?mes=${p.mes}&anio=${p.anio}&tipo=${tipo}`)
       const blob = await res.blob()
       const objUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -84,7 +85,7 @@ export default function PresentacionAFIPPage() {
         url = `/api/impuestos/${endpoint}?mes=${p.mes}&anio=${p.anio}&formato=csv`
         filename = `libro-iva-${tipo}-${p.mes}-${p.anio}.csv`
       }
-      const res = await fetch(url)
+      const res = await authFetch(url)
       const blob = await res.blob()
       const objUrl = URL.createObjectURL(blob)
       const a = document.createElement("a")

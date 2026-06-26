@@ -19,6 +19,7 @@ import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcu
 import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
 import { mesaEstadoVariant, mesaEstadoLabel } from "@/lib/ui/status-map"
 import { cn } from "@/lib/utils"
+import { parseApiList } from "@/lib/api/parse-list-response"
 
 type EstadoMesa = "libre" | "ocupada" | "reservada"
 
@@ -112,14 +113,11 @@ export default function HospitalidadPage() {
       const res = await fetch("/api/clientes?soloActivos=true", { headers: authHeaders() })
       if (!res.ok) return
       const data = await res.json()
-      if (Array.isArray(data)) {
-        setClientes(data)
-        const consumidorFinal = data.find((cliente) => /consumidor/i.test(cliente.nombre))
-        if (consumidorFinal && !clienteFacturarId) {
-          setClienteFacturarId(String(consumidorFinal.id))
-        }
-      } else {
-        setClientes([])
+      const lista = parseApiList<{ id: number; nombre: string }>(data)
+      setClientes(lista)
+      const consumidorFinal = lista.find((cliente) => /consumidor/i.test(cliente.nombre))
+      if (consumidorFinal && !clienteFacturarId) {
+        setClienteFacturarId(String(consumidorFinal.id))
       }
     } catch { /* silently fail */ }
   }, [authHeaders, clienteFacturarId])

@@ -11,6 +11,7 @@ export type IntegrationCategory =
   | "automatizacion"
   | "bi"
   | "logistica"
+  | "erp"
   | "opensource"
 
 export type AuthTipo = "oauth2" | "api_key" | "certificado" | "webhook" | "ninguno"

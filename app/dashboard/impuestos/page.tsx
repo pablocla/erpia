@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Download, FileSpreadsheet, Loader2, Calculator, TrendingUp, TrendingDown, ClipboardCheck } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { authFetch } from "@/lib/stores"
 
 interface DetalleIVA {
   total: number
@@ -35,7 +36,7 @@ export default function ImpuestosPage() {
   const generarReporte = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/impuestos/iva?mes=${mes}&anio=${anio}`)
+      const res = await authFetch(`/api/impuestos/iva?mes=${mes}&anio=${anio}`)
       const data = await res.json()
       if (data.success) setReporte(data.reporte)
     } catch { /* ignore */ } finally { setLoading(false) }
@@ -47,7 +48,7 @@ export default function ImpuestosPage() {
 
   const descargarLibro = async (tipo: "ventas" | "compras") => {
     const endpoint = tipo === "ventas" ? "libro-iva-ventas" : "libro-iva-compras"
-    const res = await fetch(`/api/impuestos/${endpoint}?mes=${mes}&anio=${anio}&formato=csv`)
+    const res = await authFetch(`/api/impuestos/${endpoint}?mes=${mes}&anio=${anio}&formato=csv`)
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -58,7 +59,7 @@ export default function ImpuestosPage() {
   }
 
   const descargarPresentacion = async () => {
-    const res = await fetch(`/api/impuestos/presentacion-afip?mes=${mes}&anio=${anio}`)
+    const res = await authFetch(`/api/impuestos/presentacion-afip?mes=${mes}&anio=${anio}`)
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")

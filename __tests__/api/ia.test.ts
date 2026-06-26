@@ -276,7 +276,7 @@ describe("chatConNegocio()", () => {
 
     const { chatConNegocio } = await import("@/lib/ai/ai-business")
     const r = await chatConNegocio(1, "hola", [])
-    expect(r).toMatch(/no está disponible/i)
+    expect(r).toMatch(/no está disponible|proveedor de IA|deshabilitado/i)
   })
 
   it("trunca historial de más de 10 pares antes de enviar al modelo", async () => {

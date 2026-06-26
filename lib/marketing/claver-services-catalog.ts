@@ -6,6 +6,7 @@ import {
   Bot,
   Wrench,
   BarChart3,
+  Network,
 } from "lucide-react"
 
 export interface ClaverServiceLine {
@@ -55,6 +56,18 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     gradient: "from-emerald-600 to-teal-800",
     status: "proximamente",
     features: ["Rutas y paradas", "POD con geo", "App vendedor en ruta"],
+  },
+  {
+    id: "clavbridge",
+    name: "ClavBridge",
+    tagline: "OPO sobre legacy",
+    description:
+      "Ontología Open Protocol sobre Protheus, SAP u Odoo. Clavis como frontend moderno sin reemplazar el ERP de golpe.",
+    icon: Network,
+    gradient: "from-slate-600 to-zinc-800",
+    href: "/dashboard/apps/opo",
+    status: "beta",
+    features: ["Introspección REST/SQL", "Demo Protheus", "Playground OPOQL", "MCP para agentes IA"],
   },
   {
     id: "clavai",

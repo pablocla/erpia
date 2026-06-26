@@ -24,6 +24,9 @@ import { useToast } from "@/hooks/use-toast"
 import { getTESVentaPorCondicion, getTipoCbteAFIP } from "@/lib/tes/tes-config"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { formatARS } from "@/lib/format/currency"
+import { parseApiList } from "@/lib/api/parse-list-response"
+import { FiscalEmissionFlow } from "@/components/fiscal/fiscal-emission-flow"
+import { FiscalOutputActions } from "@/components/fiscal/fiscal-output-actions"
 
 interface Cliente {
   id: number
@@ -33,6 +36,7 @@ interface Cliente {
   condicionIva: string
   direccion?: string
   listaPrecioId?: number | null
+  esExportacion?: boolean
 }
 
 interface Producto {
@@ -91,7 +95,7 @@ export default function VentasPage() {
   const [resultado, setResultado] = useState<Resultado | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [imprimiendoFiscal, setImprimiendoFiscal] = useState(false)
+
   const [puntosVenta, setPuntosVenta] = useState<PuntoVenta[]>([])
   const [series, setSeries] = useState<Serie[]>([])
   const [puntoVentaId, setPuntoVentaId] = useState<string>("")
@@ -130,7 +134,7 @@ export default function VentasPage() {
         const dataProductos = await resProductos.json()
         const dataPuntosVenta = await resPuntosVenta.json()
 
-        setClientes(Array.isArray(dataClientes) ? dataClientes : [])
+        setClientes(parseApiList<Cliente>(dataClientes))
         setProductos(Array.isArray(dataProductos) ? dataProductos : [])
         const puntos = Array.isArray(dataPuntosVenta) ? dataPuntosVenta : []
         setPuntosVenta(puntos)
@@ -395,6 +399,10 @@ export default function VentasPage() {
         }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Error al emitir factura")
+        return
+      }
       const tipoLetra = tes?.codigo.charAt(1) ?? "B"
       if (data.success || data.facturaId) {
         const pendiente = data.pendienteCAE || !data.cae
@@ -410,6 +418,9 @@ export default function VentasPage() {
           tes: tes?.nombre ?? "",
           qrBase64: data.qrBase64,
           pendienteCae: pendiente,
+          esFce: data.esFce,
+          esExportacion: data.esExportacion ?? clienteSeleccionado.esExportacion,
+          modalidadAuth: data.modalidadAuth,
           error: data.advertencia ?? data.error,
         })
         if (pendiente) {
@@ -446,35 +457,6 @@ export default function VentasPage() {
       toast({ variant: "destructive", title: "Error de conexión" })
     } finally {
       setReintentando(false)
-    }
-  }
-
-  const imprimirFiscal = async () => {
-    if (!resultado?.facturaId) {
-      setError("No se encontró la factura para impresión fiscal")
-      return
-    }
-
-    setImprimiendoFiscal(true)
-    setError("")
-    try {
-      const res = await fetch("/api/impresion/imprimir-ticket", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ facturaId: resultado.facturaId }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || "No se pudo imprimir fiscalmente")
-      }
-    } catch {
-      setError("Error de conexión al intentar imprimir")
-    } finally {
-      setImprimiendoFiscal(false)
     }
   }
 
@@ -520,6 +502,20 @@ export default function VentasPage() {
         </Alert>
       )}
 
+      <FiscalEmissionFlow
+        compact
+        active={
+          resultado
+            ? {
+                pendienteCae: resultado.pendienteCae,
+                esFce: resultado.esFce,
+                esExportacion: resultado.esExportacion,
+                modalidadAuth: resultado.modalidadAuth,
+              }
+            : undefined
+        }
+      />
+
       {resultado && (
         <div className="space-y-3">
           <FiscalEmissionResult
@@ -538,15 +534,7 @@ export default function VentasPage() {
                   <QrCode className="h-4 w-4 mr-2" />
                   QR AFIP
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={imprimirFiscal}
-                  disabled={!resultado.facturaId || imprimiendoFiscal}
-                >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  {imprimiendoFiscal ? "Imprimiendo..." : "Imprimir"}
-                </Button>
+                <FiscalOutputActions facturaId={resultado.facturaId} />
                 <Button size="sm" onClick={() => setResultado(null)}>
                   Nueva factura
                 </Button>

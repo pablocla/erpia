@@ -12,7 +12,8 @@ function parseAnalystEmails(): Set<string> {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean)
 
-  if (emails.length === 0 && process.env.NODE_ENV !== "production") {
+  // Cuenta demo pública: acceso Cloud si no hay lista explícita de analistas
+  if (emails.length === 0) {
     emails.push(DEMO_ADMIN_EMAIL.toLowerCase())
   }
 

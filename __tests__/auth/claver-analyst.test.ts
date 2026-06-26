@@ -29,8 +29,8 @@ describe("Claver analyst guard", () => {
     expect(isClaverAnalyst("cualquiera@test.com", "analista_claver")).toBe(true)
   })
 
-  it("falls back to demo admin in non-production when env is empty", async () => {
-    process.env.NODE_ENV = "development"
+  it("falls back to demo admin when CLAVER_ANALYST_EMAILS is empty (incl. production)", async () => {
+    process.env.NODE_ENV = "production"
     const { isClaverAnalyst } = await import("@/lib/auth/claver-analyst")
     expect(isClaverAnalyst(DEMO_ADMIN_EMAIL)).toBe(true)
     expect(isClaverAnalyst("otro@test.com")).toBe(false)

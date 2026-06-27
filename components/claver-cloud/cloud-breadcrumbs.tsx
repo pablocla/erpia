@@ -19,6 +19,9 @@ const LABELS: Record<string, string> = {
   settings: "Configuración",
   assignments: "Asignaciones",
   reports: "Reportes",
+  comercial: "Comercial",
+  relevamientos: "Relevamiento calle",
+  campo: "Mapa y ruta",
 }
 
 function segmentLabel(seg: string, index: number, segments: string[]) {

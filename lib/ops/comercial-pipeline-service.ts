@@ -36,6 +36,8 @@ export type ComercialLeadRow = {
   proximaAccion: string | null
   proximaFecha: string | null
   notas: string | null
+  lat: number | null
+  lon: number | null
   empresaId: number | null
   creadoPor: string
   createdAt: string
@@ -57,6 +59,8 @@ function mapLead(row: Record<string, unknown>): ComercialLeadRow {
     proximaAccion: (row.proximaAccion as string | null) ?? null,
     proximaFecha: row.proximaFecha ? new Date(row.proximaFecha as string).toISOString() : null,
     notas: (row.notas as string | null) ?? null,
+    lat: (row.lat as number | null) ?? null,
+    lon: (row.lon as number | null) ?? null,
     empresaId: (row.empresaId as number | null) ?? null,
     creadoPor: row.creadoPor as string,
     createdAt: new Date(row.createdAt as string).toISOString(),

@@ -4,6 +4,7 @@ import {
   Building2,
   CreditCard,
   ClipboardList,
+  Map,
   LayoutDashboard,
   Network,
   PlusSquare,
@@ -35,6 +36,7 @@ export const navSections: NavSection[] = [
     items: [
       { name: "Centro de mando", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
       { name: "Relevamiento calle", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
+      { name: "Mapa y ruta", href: "/claver-cloud/comercial/campo", icon: Map },
     ],
   },
   {

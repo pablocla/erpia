@@ -6418,6 +6418,9 @@ model ComercialPipelineLead {
   proximaAccion String?
   proximaFecha  DateTime?
   notas         String?   @db.Text
+  lat           Float?
+  lon           Float?
+  geocodedAt    DateTime?
   empresaId     Int?
   creadoPor     String
   createdAt     DateTime  @default(now())
@@ -6468,6 +6471,9 @@ model ComercialRelevamientoVisita {
   proximaAccion         String?
   proximaFecha          DateTime?
   notas                 String?   @db.Text
+  lat                   Float?
+  lon                   Float?
+  geocodedAt            DateTime?
   leadId                Int?
   creadoPor             String
   createdAt             DateTime  @default(now())
@@ -6477,4 +6483,47 @@ model ComercialRelevamientoVisita {
   @@index([creadoPor])
   @@index([leadId])
   @@map("comercial_relevamiento_visitas")
+}
+
+// Hoja de ruta campo (CEO / cualquier rubro — plataforma Claver, sin tenant)
+model ComercialHojaRuta {
+  id        Int       @id @default(autoincrement())
+  titulo    String
+  fecha     DateTime
+  contexto  String    @default("comercial") // comercial | logistica | servicio | cobranza | implementacion | otro
+  rubro     String?
+  estado    String    @default("activa") // borrador | activa | completada
+  notas     String?   @db.Text
+  operador  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  paradas   ComercialHojaRutaParada[]
+
+  @@index([fecha])
+  @@index([operador])
+  @@index([estado])
+  @@map("comercial_hojas_ruta")
+}
+
+model ComercialHojaRutaParada {
+  id         Int               @id @default(autoincrement())
+  hojaRutaId Int
+  hojaRuta   ComercialHojaRuta @relation(fields: [hojaRutaId], references: [id], onDelete: Cascade)
+  orden      Int
+  nombre     String
+  direccion  String?
+  localidad  String?
+  telefono   String?
+  rubro      String?
+  lat        Float?
+  lon        Float?
+  origenTipo String? // lead | relevamiento | manual
+  origenId   Int?
+  estado     String    @default("pendiente") // pendiente | visitada | omitida
+  notas      String?   @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([hojaRutaId])
+  @@map("comercial_hoja_ruta_paradas")
 }

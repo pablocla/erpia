@@ -58,6 +58,8 @@ export type RelevamientoRow = {
   proximaAccion: string | null
   proximaFecha: string | null
   notas: string | null
+  lat: number | null
+  lon: number | null
   leadId: number | null
   creadoPor: string
   createdAt: string
@@ -89,6 +91,8 @@ function mapRow(row: Record<string, unknown>): RelevamientoRow {
     proximaAccion: (row.proximaAccion as string | null) ?? null,
     proximaFecha: row.proximaFecha ? new Date(row.proximaFecha as string).toISOString() : null,
     notas: (row.notas as string | null) ?? null,
+    lat: (row.lat as number | null) ?? null,
+    lon: (row.lon as number | null) ?? null,
     leadId: (row.leadId as number | null) ?? null,
     creadoPor: row.creadoPor as string,
     createdAt: new Date(row.createdAt as string).toISOString(),

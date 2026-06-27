@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { CheckCircle2, ClipboardList, MapPin, Save } from "lucide-react"
+import { CheckCircle2, ClipboardList, Map, MapPin, Save } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -137,6 +137,14 @@ export default function RelevamientosCallePage() {
         badge="Calle"
         onRefresh={cargar}
         loading={loading}
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/claver-cloud/comercial/campo">
+              <Map className="h-4 w-4 mr-1.5" />
+              Mapa y ruta
+            </Link>
+          </Button>
+        }
       />
 
       {ok && (

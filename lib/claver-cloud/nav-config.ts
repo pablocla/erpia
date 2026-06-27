@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   CreditCard,
+  ClipboardList,
   LayoutDashboard,
   Network,
   PlusSquare,
@@ -33,6 +34,7 @@ export const navSections: NavSection[] = [
     label: "CEO",
     items: [
       { name: "Centro de mando", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+      { name: "Relevamiento calle", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
     ],
   },
   {

@@ -11,6 +11,7 @@ import {
   Calendar,
   CreditCard,
   DollarSign,
+  ClipboardList,
   Plus,
   PlusSquare,
   Server,
@@ -144,7 +145,8 @@ const etapaColor: Record<PipelineEtapa, string> = {
 }
 
 const quickActions = [
-  { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare, primary: true },
+  { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList, primary: true },
+  { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare },
   { href: "/claver-cloud/superadmin", label: "Super Admin", icon: Shield },
   { href: "/claver-cloud/billing", label: "Facturación MRR", icon: CreditCard },
   { href: "/claver-cloud/marketplace", label: "Marketplace", icon: Store },

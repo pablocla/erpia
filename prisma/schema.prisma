@@ -6441,3 +6441,40 @@ model CeoTareaProgreso {
   @@index([operador])
   @@map("ceo_tarea_progreso")
 }
+
+// Relevamiento post-visita retail (vendedor en calle — plataforma Claver)
+model ComercialRelevamientoVisita {
+  id                    Int       @id @default(autoincrement())
+  fechaVisita           DateTime  @default(now())
+  negocio               String
+  nombreContacto        String?
+  direccion             String?
+  localidad             String?
+  rubro                 String?
+  telefono              String?
+  engancheCandidato     String?
+  respFiado             String?   @db.Text
+  respTiempoCobrar      String?   @db.Text
+  respFacturaElectronica String?  @db.Text
+  respStockGondola      String?   @db.Text
+  respQuienAtiende      String?   @db.Text
+  dolorPrincipal        String?
+  nivelInteres          String    @default("medio")
+  objecionPrincipal     String?
+  demoMostrada          Boolean   @default(false)
+  trialOfrecido         Boolean   @default(false)
+  trialAceptado         Boolean   @default(false)
+  speechUsado           String?
+  proximaAccion         String?
+  proximaFecha          DateTime?
+  notas                 String?   @db.Text
+  leadId                Int?
+  creadoPor             String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([fechaVisita])
+  @@index([creadoPor])
+  @@index([leadId])
+  @@map("comercial_relevamiento_visitas")
+}

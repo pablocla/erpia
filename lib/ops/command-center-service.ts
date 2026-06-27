@@ -5,6 +5,7 @@ import { getFleetBilling } from "@/lib/ops/tenant-billing-service"
 import { getSuperAdminFleetDashboard } from "@/lib/ops/superadmin-dashboard-service"
 import { getMetricasTorreImplementacion } from "@/lib/ops/implementacion-service"
 import { getPipelineResumen, listComercialLeads } from "@/lib/ops/comercial-pipeline-service"
+import { countRelevamientosSemana } from "@/lib/ops/comercial-relevamiento-service"
 import { getCeoRoadmapState } from "@/lib/ops/ceo-task-service"
 import { generarCeoAlerts } from "@/lib/ops/ceo-alerts-service"
 import { computeFocoHoy } from "@/lib/ops/ceo-focus-service"
@@ -48,6 +49,7 @@ export async function getCommandCenter(analystEmail: string) {
   ])
 
   const clientesPagos = contarClientesPagos(leads)
+  const relevamientosSemana = await countRelevamientosSemana().catch(() => 0)
   const leadsEnTrial = leads.filter((l) => l.etapa === "trial").length
   const semana = WEEK_AGO()
   const leadsVisitaSemana = leads.filter(
@@ -147,6 +149,7 @@ export async function getCommandCenter(analystEmail: string) {
       valorPipelineArs: pipelineResumen.valorPipelineArs,
       leadsEnTrial,
       visitasSemana: leadsVisitaSemana,
+      relevamientosSemana,
     },
     mando: {
       focoHoy,
@@ -172,6 +175,11 @@ export async function getCommandCenter(analystEmail: string) {
       implementacion,
     },
     recursos: [
+      {
+        titulo: "Relevamiento de visita",
+        href: "/claver-cloud/comercial/relevamientos",
+        descripcion: "Cargar devolución del local después de cada visita",
+      },
       {
         titulo: "Playbook vendedor en calle",
         href: "/dashboard/documentacion/comercial/roadmap-venta-vendedor",

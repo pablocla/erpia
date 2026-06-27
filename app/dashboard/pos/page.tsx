@@ -69,13 +69,18 @@ import {
 import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
 import { FiscalTicketView } from "@/components/fiscal/fiscal-ticket-view"
 import { FiscalOutputActions } from "@/components/fiscal/fiscal-output-actions"
+import { BalanzaNumpad } from "@/components/pos/balanza-numpad"
 import { PosBarcodeCamera } from "@/components/pos/pos-barcode-camera"
+import { PosTicketTermico } from "@/components/pos/ticket-termico"
 import { PosVariantePicker } from "@/components/pos/pos-variante-picker"
 import { PosEnvasesDialog } from "@/components/pos/pos-envases-dialog"
 import { PosSkuGateButton } from "@/components/pos/pos-sku-gate-button"
 import type { TicketLegalData } from "@/lib/fiscal/ticket-legal"
 import type { SalidaComprobante } from "@/lib/fiscal/emission-config"
 import type { VarianteGrupo } from "@/lib/pos/pos-catalogo-grupos"
+import { beepEscaneoError, beepEscaneoOk } from "@/lib/pos/barcode-feedback"
+import { productoRequiereCantidadVariable } from "@/lib/pos/producto-cantidad-variable"
+import { useAuthStore } from "@/lib/stores"
 
 const POS_DRAFT_KEY = "erp:pos:draft:v1"
 
@@ -94,6 +99,7 @@ interface Producto {
   precioVenta: number
   porcentajeIva: number
   stock: number
+  unidad?: string
   categoria?: { id: number; nombre: string }
   esPlato?: boolean
   imagenUrl?: string
@@ -214,6 +220,9 @@ export default function POSPage() {
     esTicket?: boolean
     tipo?: string
     ivaDesglose?: { pct: string; neto: number; iva: number }[]
+    lineas?: { descripcion: string; cantidad: number; precio: number }[]
+    medioPago?: string
+    empresaNombre?: string
   } | null>(null)
   const [ticketLegal, setTicketLegal] = useState<TicketLegalData | null>(null)
   const [salidaComprobante, setSalidaComprobante] = useState<SalidaComprobante>("preguntar")
@@ -234,6 +243,9 @@ export default function POSPage() {
   const [mpQrAprobado, setMpQrAprobado] = useState(false)
   const [umbralMipyme, setUmbralMipyme] = useState(5_468_127)
   const [tipoManual, setTipoManual] = useState(false)
+  const [balanzaProducto, setBalanzaProducto] = useState<Producto | null>(null)
+  const [balanzaOpen, setBalanzaOpen] = useState(false)
+  const empresaNombre = useAuthStore((s) => s.user?.empresaNombre ?? "Comercio")
 
   // ── Modal mesas (modo mesa) ─────────────────────────────────
   const [modalMesasOpen, setModalMesasOpen] = useState(false)
@@ -430,32 +442,42 @@ export default function POSPage() {
   // ──────────────────────────────────────────────────────────────
   const agregarProducto = (
     p: Producto,
-    opts?: { precio?: number; descuento?: number },
+    opts?: {
+      precio?: number
+      descuento?: number
+      cantidad?: number
+      descripcion?: string
+      noMerge?: boolean
+    },
   ) => {
     if (posLayout.ux.hapticOnAdd) vibrarAgregarProducto()
     const precio = opts?.precio ?? p.precioVenta
     const descuento = opts?.descuento ?? 0
+    const cantidad = opts?.cantidad ?? 1
+    const descripcion = opts?.descripcion ?? p.nombre
     setCarrito((prev) => {
-      const existing = prev.findIndex((i) => i.productoId === p.id)
-      if (existing >= 0) {
-        return prev.map((item, idx) =>
-          idx === existing
-            ? {
-                ...item,
-                cantidad: item.cantidad + 1,
-                precio: opts?.precio != null ? precio : item.precio,
-                descuento: opts?.descuento != null ? descuento : item.descuento,
-              }
-            : item
-        )
+      if (!opts?.noMerge && cantidad === 1 && !opts?.descripcion) {
+        const existing = prev.findIndex((i) => i.productoId === p.id)
+        if (existing >= 0) {
+          return prev.map((item, idx) =>
+            idx === existing
+              ? {
+                  ...item,
+                  cantidad: item.cantidad + 1,
+                  precio: opts?.precio != null ? precio : item.precio,
+                  descuento: opts?.descuento != null ? descuento : item.descuento,
+                }
+              : item,
+          )
+        }
       }
       return [
         ...prev,
         {
           productoId: p.id,
-          descripcion: p.nombre,
+          descripcion,
           precio,
-          cantidad: 1,
+          cantidad,
           porcentajeIva: p.porcentajeIva ?? 21,
           descuento,
         },
@@ -500,6 +522,18 @@ export default function POSPage() {
     [authH, toast],
   )
 
+  const iniciarAgregarProducto = useCallback(
+    (p: Producto) => {
+      if (productoRequiereCantidadVariable(p.unidad)) {
+        setBalanzaProducto(p)
+        setBalanzaOpen(true)
+        return
+      }
+      void evaluarYAgregar(p)
+    },
+    [evaluarYAgregar],
+  )
+
   const clicProducto = (p: Producto) => {
     const grupo = catalogoGrupos?.variantes.find((g) =>
       g.variantes.some((v) => v.id === p.id),
@@ -509,7 +543,7 @@ export default function POSPage() {
       setVariantePickerOpen(true)
       return
     }
-    void evaluarYAgregar(p)
+    iniciarAgregarProducto(p)
   }
 
   const buscarYAgregarCodigo = useCallback((code: string) => {
@@ -517,7 +551,9 @@ export default function POSPage() {
       (prod) => prod.codigoBarras === code || prod.codigo === code,
     )
     if (p) {
-      clicProducto(p)
+      iniciarAgregarProducto(p)
+      beepEscaneoOk()
+      toast({ title: "Agregado", description: p.nombre, duration: 1200 })
       return
     }
     fetch(`/api/productos?search=${encodeURIComponent(code)}&soloActivos=true`, {
@@ -529,17 +565,24 @@ export default function POSPage() {
         const found = list.find(
           (prod: Producto) => prod.codigoBarras === code || prod.codigo === code,
         )
-        if (found) clicProducto(found)
-        else toast({ variant: "destructive", title: "No encontrado", description: `Código ${code}` })
+        if (found) {
+          iniciarAgregarProducto(found)
+          beepEscaneoOk()
+          toast({ title: "Agregado", description: found.nombre, duration: 1200 })
+        } else {
+          beepEscaneoError()
+          toast({ variant: "destructive", title: "No encontrado", description: `Código ${code}` })
+        }
       })
       .catch(() => {
+        beepEscaneoError()
         toast({ variant: "destructive", title: "Error al buscar código" })
       })
-  }, [productos, authH, toast, catalogoGrupos])
+  }, [productos, authH, toast, iniciarAgregarProducto])
 
   const seleccionarVariante = (productoId: number) => {
     const p = productos.find((x) => x.id === productoId)
-    if (p) void evaluarYAgregar(p)
+    if (p) iniciarAgregarProducto(p)
     else {
       fetch(`/api/productos?search=&soloActivos=true`, { headers: authH() })
         .then((r) => r.json())
@@ -547,7 +590,7 @@ export default function POSPage() {
           const found = (Array.isArray(data) ? data : []).find(
             (x: Producto) => x.id === productoId,
           )
-          if (found) void evaluarYAgregar(found)
+          if (found) iniciarAgregarProducto(found)
         })
     }
   }
@@ -1006,6 +1049,13 @@ export default function POSPage() {
         esTicket: esTicketVenta,
         tipo: data.tipo,
         ivaDesglose,
+        lineas: itemsVenta.map((i) => ({
+          descripcion: i.descripcion,
+          cantidad: i.cantidad,
+          precio: i.precio,
+        })),
+        medioPago: pagos[0]?.medio,
+        empresaNombre,
       })
       if (data.facturaId) void cargarTicketLegal(data.facturaId)
       setNumpadAbierto(false)
@@ -1870,11 +1920,17 @@ export default function POSPage() {
                 {ticketLegal ? (
                   <FiscalTicketView data={ticketLegal} />
                 ) : (
-                  <div className="font-mono text-xs p-2">
-                    <p>{ventaExitosa.numeroCompleto}</p>
-                    <p>Total: ${fmt(ventaExitosa.total)}</p>
-                    {ventaExitosa.cae && <p>CAE: {ventaExitosa.cae}</p>}
-                  </div>
+                  <PosTicketTermico
+                    empresaNombre={ventaExitosa.empresaNombre ?? empresaNombre}
+                    numeroComprobante={ventaExitosa.numeroCompleto}
+                    lineas={ventaExitosa.lineas}
+                    total={ventaExitosa.total}
+                    medioPago={ventaExitosa.medioPago}
+                    vuelto={ventaExitosa.vuelto}
+                    cae={ventaExitosa.cae}
+                    vencimientoCae={ventaExitosa.vencimientoCAE}
+                    esTicket={ventaExitosa.esTicket}
+                  />
                 )}
               </div>
               <div className="shrink-0 flex gap-2 pt-2 border-t hide-on-print">
@@ -2181,6 +2237,25 @@ export default function POSPage() {
           authHeaders={authH}
           onMovimiento={verificarCaja}
         />
+
+      <BalanzaNumpad
+        producto={balanzaProducto}
+        open={balanzaOpen}
+        onOpenChange={setBalanzaOpen}
+        onConfirm={(result) => {
+          agregarProducto(result.producto, {
+            cantidad: result.cantidad,
+            precio: result.precioUnitario,
+            descripcion: result.descripcion,
+            noMerge: true,
+          })
+          toast({
+            title: "Agregado",
+            description: result.descripcion,
+            duration: 1500,
+          })
+        }}
+      />
     </div>
   )
 }

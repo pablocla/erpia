@@ -26,8 +26,10 @@ import {
   NIVELES_INTERES,
   OBJECIONES,
   PREGUNTAS_DIAGNOSTICO,
+  PREGUNTAS_EXTRAS_POR_RUBRO,
   RUBROS_RETAIL,
 } from "@/lib/ops/comercial-relevamiento-catalog"
+import { engancheSugeridoPorRubro } from "@/lib/ops/comercial-relevamiento-enganche"
 import { cn } from "@/lib/utils"
 
 type Relevamiento = {
@@ -56,6 +58,10 @@ const initialForm = {
   respFacturaElectronica: "",
   respStockGondola: "",
   respQuienAtiende: "",
+  respUsaEscaner: "",
+  respVentaFraccionada: "",
+  respBalanzaDirecta: "",
+  respProduccionPropia: "",
   dolorPrincipal: "fiado",
   nivelInteres: "medio",
   objecionPrincipal: "ninguna",
@@ -99,6 +105,13 @@ export default function RelevamientosCallePage() {
     void cargar()
   }, [cargar])
 
+  useEffect(() => {
+    setForm((f) => ({
+      ...f,
+      engancheCandidato: engancheSugeridoPorRubro(f.rubro),
+    }))
+  }, [form.rubro])
+
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
   }
@@ -107,12 +120,29 @@ export default function RelevamientosCallePage() {
     if (!form.negocio.trim()) return
     setSaving(true)
     setOk(null)
+
+    // Compilar respuestas de preguntas extras a notas
+    let compiledNotas = form.notas.trim()
+    const extras = PREGUNTAS_EXTRAS_POR_RUBRO[form.rubro]
+    if (extras) {
+      const extraTexts = extras
+        .map((q) => {
+          const val = (form[q.id as keyof typeof form] as string || "").trim()
+          return val ? `[${q.pregunta}]: ${val}` : null
+        })
+        .filter(Boolean)
+      if (extraTexts.length > 0) {
+        compiledNotas = `${extraTexts.join(" | ")}${compiledNotas ? `\n\nNotas generales: ${compiledNotas}` : ""}`
+      }
+    }
+
     try {
       const res = await fetch("/api/claver/comercial/relevamientos", {
         method: "POST",
         headers: cloudAuthHeaders(true),
         body: JSON.stringify({
           ...form,
+          notas: compiledNotas || null,
           sincronizarPipeline: true,
         }),
       })
@@ -267,6 +297,28 @@ export default function RelevamientosCallePage() {
           ))}
         </CardContent>
       </Card>
+
+      {PREGUNTAS_EXTRAS_POR_RUBRO[form.rubro] && (
+        <Card className="border-violet-500/30 bg-violet-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-violet-300 font-semibold">Preguntas diagnóstico extra por rubro</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {PREGUNTAS_EXTRAS_POR_RUBRO[form.rubro].map((p) => (
+              <div key={p.id} className="grid gap-1.5">
+                <Label className="text-sm font-normal leading-snug text-violet-200">{p.pregunta}</Label>
+                <Textarea
+                  rows={2}
+                  placeholder={p.placeholder}
+                  value={form[p.id as keyof typeof form] as string || ""}
+                  onChange={(e) => set(p.id as keyof typeof form, e.target.value)}
+                  className="text-base min-h-[72px] bg-background/50 border-violet-500/20 focus-visible:ring-violet-500"
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-3">

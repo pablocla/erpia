@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest"
+import { DEMO_ADMIN_EMAIL } from "@/lib/brand"
 import {
   CLAVER_CLOUD_HOME,
   getHomePathForRol,
   resolvePostLoginPath,
+  shouldRedirectAnalystToCloud,
 } from "@/lib/auth/home-redirect"
 
 describe("getHomePathForRol", () => {
@@ -35,7 +37,18 @@ describe("resolvePostLoginPath", () => {
   })
 
   it("envía analista a Cloud sin next", () => {
-    expect(resolvePostLoginPath({ rol: "administrador", isAnalyst: true })).toBe(CLAVER_CLOUD_HOME)
+    expect(
+      resolvePostLoginPath({ rol: "administrador", email: "ceo@claver.com", isAnalyst: true }),
+    ).toBe(CLAVER_CLOUD_HOME)
+  })
+
+  it("cuenta demo va al ERP aunque sea analista", () => {
+    expect(
+      resolvePostLoginPath({ rol: "administrador", email: DEMO_ADMIN_EMAIL, isAnalyst: true }),
+    ).toBe("/dashboard")
+    expect(
+      shouldRedirectAnalystToCloud({ email: DEMO_ADMIN_EMAIL, rol: "administrador", isAnalyst: true }),
+    ).toBe(false)
   })
 
   it("envía cliente a dashboard por rol", () => {

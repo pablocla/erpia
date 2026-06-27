@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { isImpersonatingSession, performLogoutAndRedirect } from "@/lib/auth/session-client"
+import { shouldRedirectAnalystToCloud } from "@/lib/auth/home-redirect"
 import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -664,12 +665,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .catch(() => setIsClaverAnalyst(false))
   }, [mounted])
 
-  // Analistas operan en Cloud; el ERP solo vía impersonación de tenant
+  // Analistas reales → Cloud; demo admin y impersonación pueden usar el ERP
   useEffect(() => {
     if (!mounted || !isClaverAnalyst) return
     if (isImpersonatingSession()) return
+    if (
+      !shouldRedirectAnalystToCloud({
+        email: user?.email,
+        rol: role,
+        isAnalyst: isClaverAnalyst,
+      })
+    ) {
+      return
+    }
     router.replace("/claver-cloud")
-  }, [mounted, isClaverAnalyst, router])
+  }, [mounted, isClaverAnalyst, user?.email, role, router])
 
   useEffect(() => {
     if (!compactShell) {

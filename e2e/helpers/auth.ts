@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test"
 
 const DEMO_USUARIO = {
   id: "1",
-  email: "admin@erp-argentina.com",
+  email: "testing@claver.com.ar",
   nombre: "Admin Demo",
   rol: "admin",
   empresaId: 1,

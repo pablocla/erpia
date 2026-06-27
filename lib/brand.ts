@@ -45,5 +45,9 @@ export const BRAND_ASSETS = {
   ogClavERP: "/claver/claverp/opengraph-image",
 } as const
 
-export const DEMO_ADMIN_EMAIL = "admin@erp-argentina.com"
+/** Cuenta pública de testing / demos del ERP (no es analista Cloud) */
+export const DEMO_ADMIN_EMAIL = "testing@claver.com.ar"
 export const DEMO_ADMIN_PASSWORD = "admin1234"
+
+/** Admin real de plataforma Claver (Cloud, torre, CEO) */
+export const CLAVER_OWNER_EMAIL = "pabloclavero03@gmail.com"

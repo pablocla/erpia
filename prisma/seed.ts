@@ -604,7 +604,7 @@ async function seedEmpresaYAdmin() {
       cuit: "20-00000000-0",
       direccion: "Av. Corrientes 1234, CABA",
       telefono: "011-4567-8900",
-      email: "admin@erp-argentina.com",
+      email: "testing@claver.com.ar",
       puntoVenta: 1,
       entorno: "homologacion",
     },
@@ -612,18 +612,30 @@ async function seedEmpresaYAdmin() {
 
   const hashedPassword = await bcrypt.hash("admin1234", 10)
   await prisma.usuario.upsert({
-    where: { email: "admin@erp-argentina.com" },
+    where: { email: "testing@claver.com.ar" },
     update: {},
     create: {
-      nombre: "Administrador",
-      email: "admin@erp-argentina.com",
+      nombre: "Administrador Demo",
+      email: "testing@claver.com.ar",
       password: hashedPassword,
       rol: "administrador",
       empresaId: empresa.id,
       activo: true,
     },
   })
-  console.log("✓ Empresa demo + usuario admin")
+  await prisma.usuario.upsert({
+    where: { email: "pabloclavero03@gmail.com" },
+    update: { activo: true },
+    create: {
+      nombre: "Pablo Clavero",
+      email: "pabloclavero03@gmail.com",
+      password: hashedPassword,
+      rol: "administrador",
+      empresaId: empresa.id,
+      activo: true,
+    },
+  })
+  console.log("✓ Empresa demo + testing@claver.com.ar + owner pabloclavero03@gmail.com")
   return empresa.id
 }
 

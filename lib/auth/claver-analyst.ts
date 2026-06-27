@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { DEMO_ADMIN_EMAIL } from "@/lib/brand"
+import { CLAVER_OWNER_EMAIL } from "@/lib/brand"
 import { getAuthContext, type AuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
@@ -12,9 +12,9 @@ function parseAnalystEmails(): Set<string> {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean)
 
-  // Cuenta demo pública: acceso Cloud si no hay lista explícita de analistas
+  // Admin real de plataforma si no hay lista explícita en env
   if (emails.length === 0) {
-    emails.push(DEMO_ADMIN_EMAIL.toLowerCase())
+    emails.push(CLAVER_OWNER_EMAIL.toLowerCase())
   }
 
   return new Set(emails)

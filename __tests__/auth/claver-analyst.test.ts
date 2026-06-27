@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import { NextRequest } from "next/server"
-import { DEMO_ADMIN_EMAIL } from "@/lib/brand"
+import { CLAVER_OWNER_EMAIL, DEMO_ADMIN_EMAIL } from "@/lib/brand"
 
 describe("Claver analyst guard", () => {
   const originalEnv = process.env
@@ -29,10 +29,11 @@ describe("Claver analyst guard", () => {
     expect(isClaverAnalyst("cualquiera@test.com", "analista_claver")).toBe(true)
   })
 
-  it("falls back to demo admin when CLAVER_ANALYST_EMAILS is empty (incl. production)", async () => {
+  it("falls back to owner email when CLAVER_ANALYST_EMAILS is empty (incl. production)", async () => {
     process.env.NODE_ENV = "production"
     const { isClaverAnalyst } = await import("@/lib/auth/claver-analyst")
-    expect(isClaverAnalyst(DEMO_ADMIN_EMAIL)).toBe(true)
+    expect(isClaverAnalyst(CLAVER_OWNER_EMAIL)).toBe(true)
+    expect(isClaverAnalyst(DEMO_ADMIN_EMAIL)).toBe(false)
     expect(isClaverAnalyst("otro@test.com")).toBe(false)
   })
 

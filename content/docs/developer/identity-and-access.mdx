@@ -49,7 +49,8 @@ flowchart TB
 | **Analista Claver** | `isClaverAnalyst(email, rol)` → rol `analista_claver` **o** email en `CLAVER_ANALYST_EMAILS` | `/claver-cloud`, APIs `/api/claver/*` |
 | **Admin tenant** | `rol` ∈ `administrador`, `admin`, `dueno`, `gerente` | `/dashboard/*` de su `empresaId` |
 | **Usuario operativo** | Resto de roles (`cajero`, `vendedor`, …) | Módulos según rol y SKUs activos |
-| **Demo pública** | `admin@erp-argentina.com` | ERP demo + Cloud si no hay lista explícita de analistas |
+| **Demo pública** | `testing@claver.com.ar` | Solo ERP demo (testing) |
+| **Admin plataforma** | `pabloclavero03@gmail.com` | Claver Cloud (`CLAVER_ANALYST_EMAILS` o fallback) |
 
 **Código:** `lib/auth/claver-analyst.ts`, `components/claver-cloud/claver-cloud-guard.tsx`, `GET /api/claver/analista/status`.
 
@@ -70,7 +71,7 @@ Documentá cada flujo con la misma plantilla:
 | Campo | Valor |
 |-------|-------|
 | Trigger | `POST /api/auth/demo` o botón "Acceder con cuenta Demo" en `/login` |
-| Crea | `Empresa` CUIT `20-00000000-0`, `Usuario` `admin@erp-argentina.com`, rol `administrador` |
+| Crea | `Empresa` CUIT `20-00000000-0`, `Usuario` `testing@claver.com.ar`, rol `administrador` |
 | Token | JWT vía `AuthService.generarToken()` |
 | Seed | `prisma/seed.ts` (misma cuenta) |
 

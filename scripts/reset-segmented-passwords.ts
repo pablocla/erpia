@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 const dryRun = process.argv.includes("--dry-run")
 
 const usuariosObjetivo = [
-  { id: 1, nombre: "Administrador", email: "admin@erp-argentina.com", empresaId: 1 },
+  { id: 1, nombre: "Administrador Demo", email: "testing@claver.com.ar", empresaId: 1 },
   { id: 2, nombre: "Administrador", email: "admin@claver.app", empresaId: 3 },
   { id: 3, nombre: "Admin Gimnasio", email: "gym@demo.com", empresaId: 4 },
   { id: 4, nombre: "Admin Veterinaria", email: "vet@demo.com", empresaId: 5 },

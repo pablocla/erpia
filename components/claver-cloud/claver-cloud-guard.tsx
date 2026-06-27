@@ -56,7 +56,7 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
           if (!cancelled) {
             sessionStorage.removeItem(VERIFIED_KEY)
             setMessage(
-              `Tu usuario (${data.email ?? "sin email"}) no es analista Claver. Pedí que te agreguen a CLAVER_ANALYST_EMAILS o usá la cuenta demo admin@erp-argentina.com.`,
+              `Tu usuario (${data.email ?? "sin email"}) no es analista Claver. Pedí acceso con tu email en CLAVER_ANALYST_EMAILS.`,
             )
             setState("denied")
           }

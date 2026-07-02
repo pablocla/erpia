@@ -6,14 +6,21 @@ import { AppStoreGrid } from "@/components/marketplace/app-store-grid"
 import { ProductControlPanel } from "@/components/platform/product-control-panel"
 import { Button } from "@/components/ui/button"
 
+import { NextIntlClientProvider } from "next-intl"
+import { getMessages, getLocale } from "next-intl/server"
+
 export const metadata: Metadata = {
-  title: "App Store | Clavis ERP",
+  title: "App Store | Claver ERP",
   description: "Marketplace de servicios automáticos para tu empresa.",
 }
 
-export default function AppsPage() {
+export default async function AppsPage() {
+  const messages = await getMessages()
+  const locale = await getLocale()
+
   return (
-    <div className="flex-1 w-full p-4 md:p-8 pt-6 space-y-10">
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <div className="flex-1 w-full p-4 md:p-8 pt-6 space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-orange-500/25 bg-orange-500/5 px-4 py-3">
         <div>
           <p className="text-sm font-medium flex items-center gap-2">
@@ -43,7 +50,7 @@ export default function AppsPage() {
             OPO Studio Bridge
           </p>
           <p className="text-xs text-muted-foreground">
-            Ontología sobre Protheus o Clavis nativo — REST/SQL, discovery y playground IA.
+            Ontología sobre Protheus o Claver nativo — REST/SQL, discovery y playground IA.
           </p>
         </div>
         <Button asChild size="sm" variant="secondary">
@@ -69,5 +76,6 @@ export default function AppsPage() {
         <AppStoreGrid />
       </Suspense>
     </div>
+    </NextIntlClientProvider>
   )
 }

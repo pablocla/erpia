@@ -1,8 +1,8 @@
 {
-  "name": "clavis-opo-edge-agent",
+  "name": "claver-opo-edge-agent",
   "version": "1.0.0",
   "private": true,
-  "description": "Puente OPO liviano para PC con VPN — enruta SQL y REST Protheus hacia Clavis",
+  "description": "Puente OPO liviano para PC con VPN — enruta SQL y REST Protheus hacia Claver",
   "type": "module",
   "main": "index.mjs",
   "scripts": {

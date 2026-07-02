@@ -458,7 +458,7 @@ export function ThemeCustomizerPanel({ className }: { className?: string }) {
         <div className="space-y-3">
           <div>
             <Label className="text-[10px] text-muted-foreground">Nombre en sidebar</Label>
-            <p className="text-[10px] text-muted-foreground/80 mb-1">Vacío muestra Clavis by Claver</p>
+            <p className="text-[10px] text-muted-foreground/80 mb-1">Vacío muestra Claver by Claver</p>
             <Input
               disabled={disabled}
               value={config.appName ?? ""}

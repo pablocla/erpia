@@ -6,12 +6,13 @@ import { BRAND_ASSETS } from "@/lib/brand"
 import { ScrollReveal } from "@/components/ui/motion"
 
 interface LogoShowcaseProps {
-  variant?: "matrix" | "claverp"
+  variant?: "matrix" | "claverp" | "clavergrow"
 }
 
 /** Bloque visual de marca para heroes de landing */
 export function LogoShowcase({ variant = "matrix" }: LogoShowcaseProps) {
   const isClaverp = variant === "claverp"
+  const isClavergrow = variant === "clavergrow"
 
   return (
     <ScrollReveal className="mt-16">
@@ -24,21 +25,31 @@ export function LogoShowcase({ variant = "matrix" }: LogoShowcaseProps) {
             <BrandLogo
               size="lg"
               theme="dark"
-              variant={isClaverp ? "claverp-full" : "group-full"}
-              showByClaver={isClaverp}
+              variant={
+                isClavergrow ? "clavergrow-full" : isClaverp ? "claverp-full" : "group-full"
+              }
+              showByClaver={isClaverp || isClavergrow}
             />
             <p className="mt-4 text-xs text-slate-500">Componente React (vivo)</p>
           </div>
           <div className="hidden h-24 w-px bg-white/10 sm:block" />
           <div className="flex flex-col items-center gap-4">
             <Image
-              src={isClaverp ? BRAND_ASSETS.claverpIcon : BRAND_ASSETS.claverIcon}
+              src={
+                isClavergrow
+                  ? BRAND_ASSETS.clavergrowIcon
+                  : isClaverp
+                    ? BRAND_ASSETS.claverpIcon
+                    : BRAND_ASSETS.claverIcon
+              }
               alt=""
               width={80}
               height={80}
-              className="rounded-2xl shadow-lg shadow-blue-900/30"
+              className={`rounded-2xl shadow-lg ${
+                isClavergrow ? "shadow-emerald-900/30" : "shadow-blue-900/30"
+              }`}
             />
-            {!isClaverp && (
+            {!isClaverp && !isClavergrow && (
               <Image
                 src={BRAND_ASSETS.claverpIcon}
                 alt=""
@@ -50,15 +61,17 @@ export function LogoShowcase({ variant = "matrix" }: LogoShowcaseProps) {
             <p className="text-xs text-slate-500">SVG en /public/brand/</p>
           </div>
         </div>
-        <div className="mt-8 flex justify-center">
-          <Image
-            src={BRAND_ASSETS.claverpLockup}
-            alt="Clavis by Claver"
-            width={280}
-            height={56}
-            className="opacity-95"
-          />
-        </div>
+        {!isClavergrow && (
+          <div className="mt-8 flex justify-center">
+            <Image
+              src={BRAND_ASSETS.claverpLockup}
+              alt="Claver by Claver"
+              width={280}
+              height={56}
+              className="opacity-95"
+            />
+          </div>
+        )}
       </div>
     </ScrollReveal>
   )

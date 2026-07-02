@@ -5,7 +5,7 @@ import { AlmacenRosarioVitrine } from "@/components/marketing/almacen-rosario-vi
 import { MotionFadeDown } from "@/components/ui/motion"
 
 export const metadata = {
-  title: "Pack Almacén Rosario — Retail de barrio | Clavis",
+  title: "Pack Almacén Rosario — Retail de barrio | Claver",
   description:
     "18 módulos para kioscos y almacenes: envases, vales, listas distribuidora, 2×1, arqueo ciego. Pack $34.900/mes. Todo visible, activás lo que necesitás.",
 }

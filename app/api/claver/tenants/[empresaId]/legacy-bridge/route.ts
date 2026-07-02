@@ -3,12 +3,12 @@ import { z } from "zod"
 import { getClaverAnalystEmpresaContext } from "@/lib/auth/claver-analyst"
 import { runLegacyBridgeTest } from "@/lib/opo/bridge-test-service"
 import { PROTHEUS_DEFAULT_MAPPINGS } from "@/lib/opo/entity-mappings-default"
-import { buildClavisDiscoveryManifest } from "@/lib/opo/clavis-adapter"
+import { buildClaverDiscoveryManifest } from "@/lib/opo/claver-adapter"
 import { getEmpresaNombre, getOpoConfig, patchOpoConfig } from "@/lib/opo/opo-config-service"
 
 const patchSchema = z.object({
   modoErp: z.enum(["full", "legacy_front", "hibrido"]).optional(),
-  origen: z.enum(["clavis_db", "protheus"]).optional(),
+  origen: z.enum(["claver_db", "protheus"]).optional(),
   conector: z.enum(["rest", "sql"]).optional(),
   accesoCanal: z.enum(["edge_agent", "rest_directo", "sql_vistas"]).optional(),
   sqlModo: z.enum(["direct", "via_rest"]).optional(),
@@ -52,7 +52,7 @@ export async function GET(
     },
     defaultMappings: PROTHEUS_DEFAULT_MAPPINGS,
     discoveryHint: "GET {restDirectUrl}/tlpp/rest/list/service",
-    entities: buildClavisDiscoveryManifest("", orgName).supported_entities ?? [],
+    entities: buildClaverDiscoveryManifest("", orgName).supported_entities ?? [],
   })
 }
 
@@ -85,7 +85,7 @@ export async function PATCH(
   const next = await patchOpoConfig(id, {
     ...patch,
     activo: patch.activo ?? (isLegacy ? true : current.activo),
-    origen: patch.origen ?? (isLegacy ? "protheus" : "clavis_db"),
+    origen: patch.origen ?? (isLegacy ? "protheus" : "claver_db"),
     entityMappings: patch.entityMappings ?? current.entityMappings ?? PROTHEUS_DEFAULT_MAPPINGS,
   })
 

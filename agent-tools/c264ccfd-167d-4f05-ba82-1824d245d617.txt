@@ -1,0 +1,697 @@
+.next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/pos/venta/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/pos/venta/route"), "POST" | "config" | "GET" | "PATCH" | "PUT" | "DELETE" | "revalidate" | "HEAD" | ... 7 more ... | "OPTIONS", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'calcularLinea' is incompatible with index signature.
+    Type '(precioUnitario: number, cantidad: number, porcentajeIva: number, descuento: number) => { neto: number; iva: number; total: number; }' is not assignable to type 'never'.
+.next/types/app/dashboard/configuracion/reportes/[id]/page.ts(34,29): error TS2344: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/validator.ts(1791,31): error TS2344: Type 'typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/agenda-publica/[empresaId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/agenda-publica/[empresaId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: NextRequest, { params }: { params: { empresaId: string; }; }) => Promise<NextResponse<{ error: string; }> | NextResponse<{ success: boolean; empresa: { id: number; nombre: string; }; profesionales: { ...; }[]; servicios: { ...; }[]; disponibilidad: { ...; }[]; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ empresaId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ empresaId: string; }>; }' is not assignable to type '{ params: { empresaId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'empresaId' is missing in type 'Promise<{ empresaId: string; }>' but required in type '{ empresaId: string; }'.
+__tests__/almacen-rosario/comercial.test.ts(22,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '"pos.recargas_servicios" | "pos.balanza_peso" | "pos.promos_cantidad" | "pos.ticket_regalo" | "pos.pedido_distribuidora" | "pos.mermas_roturas" | "pos.arqueo_ciego" | "pos.lista_mayorista_pos" | ... 9 more ... | "pos.vale_dinero"'.
+__tests__/auth/claver-analyst.test.ts(33,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/automation/poll.test.ts(32,48): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(49,45): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(88,47): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/reporting/sheets-entitlements.test.ts(32,70): error TS2345: Argument of type '(args: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => Promise<...>' is not assignable to parameter of type '(args?: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => Prisma__SuscripcionModuloClient<...>'.
+  Type 'Promise<null>' is missing the following properties from type 'Prisma__SuscripcionModuloClient<{ empresaId: number; id: number; createdAt: Date; updatedAt: Date; activo: boolean; vigenciaDesde: Date; vigenciaHasta: Date | null; sku: string; limiteEventosMes: number | null; metadata: JsonValue; } | null, null, DefaultArgs, PrismaClientOptions>': empresa, producto
+__tests__/reporting/sheets-entitlements.test.ts(52,64): error TS2345: Argument of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Promise<...>' is not assignable to parameter of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Prisma__UsageEventClient<...>'.
+  Property 'empresa' is missing in type 'Promise<never>' but required in type 'Prisma__UsageEventClient<{ empresaId: number; id: number; createdAt: Date; updatedAt: Date; mes: string; eventKey: string; sku: string; contador: number; } | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/reporting/sheets-entitlements.test.ts(66,64): error TS2345: Argument of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Promise<...>' is not assignable to parameter of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Prisma__UsageEventClient<...>'.
+  Property 'empresa' is missing in type 'Promise<never>' but required in type 'Prisma__UsageEventClient<{ empresaId: number; id: number; createdAt: Date; updatedAt: Date; mes: string; eventKey: string; sku: string; contador: number; } | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/ventas/pedidos-route.test.ts(39,34): error TS2339: Property 'mockResolvedValue' does not exist on type '(pedidoId: number, datosFactura: { empresaId: number; tipo: string; tipoCbte: number; puntoVenta: number; cae?: string | undefined; fechaCAE?: Date | undefined; vencimientoCAE?: Date | undefined; condicionPagoId?: number | undefined; depositoId?: number | ... 1 more ... | undefined; }) => Promise<...>'.
+app/api/agenda-publica/[empresaId]/route.ts(194,7): error TS2552: Cannot find name 'duracionMinutos'. Did you mean 'durationMinutos'?
+app/api/agenda/route.ts(125,9): error TS2552: Cannot find name 'duracionMinutos'. Did you mean 'durationMinutos'?
+app/api/agro/riego/zonas/route.ts(21,52): error TS18048: 'loteId' is possibly 'undefined'.
+app/api/agro/sensores/route.ts(31,52): error TS18048: 'loteId' is possibly 'undefined'.
+app/api/campos-personalizados/valores/route.ts(101,59): error TS2339: Property 'formula' does not exist on type '{ valores: { id: number; createdAt: Date; updatedAt: Date; entidadId: string; valorTexto: string | null; valorBooleano: boolean | null; valorNumero: Decimal | null; valorFecha: Date | null; valorJson: JsonValue; campoId: number; }[]; } & { ...; }'.
+app/api/campos-personalizados/valores/route.ts(102,29): error TS2339: Property 'formula' does not exist on type '{ valores: { id: number; createdAt: Date; updatedAt: Date; entidadId: string; valorTexto: string | null; valorBooleano: boolean | null; valorNumero: Decimal | null; valorFecha: Date | null; valorJson: JsonValue; campoId: number; }[]; } & { ...; }'.
+app/api/campos-personalizados/valores/route.ts(115,20): error TS2339: Property 'formula' does not exist on type '{ valores: { id: number; createdAt: Date; updatedAt: Date; entidadId: string; valorTexto: string | null; valorBooleano: boolean | null; valorNumero: Decimal | null; valorFecha: Date | null; valorJson: JsonValue; campoId: number; }[]; } & { ...; }'.
+app/api/claver-cloud/protheus-api/catalog/route.ts(55,13): error TS18047: 'bundle' is possibly 'null'.
+app/api/claver-cloud/protheus-api/catalog/route.ts(56,21): error TS18047: 'bundle' is possibly 'null'.
+app/api/claver-cloud/protheus-api/catalog/route.ts(57,14): error TS18047: 'bundle' is possibly 'null'.
+app/api/claver/marketplace/tareas/[id]/route.ts(23,30): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/[id]/route.ts(57,30): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/[id]/route.ts(70,34): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/[id]/route.ts(82,34): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/[id]/route.ts(93,20): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/[id]/route.ts(104,34): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/claver/marketplace/tareas/route.ts(22,32): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/api/claver/marketplace/tareas/route.ts(39,39): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/api/claver/marketplace/tareas/route.ts(46,37): error TS7006: Parameter 't' implicitly has an 'any' type.
+app/api/compras/[id]/route.ts(28,9): error TS2561: Object literal may only specify known properties, but 'recepciones' does not exist in type 'CompraInclude<DefaultArgs>'. Did you mean to write 'retenciones'?
+app/api/compras/[id]/route.ts(38,37): error TS2339: Property 'cuentasPagar' does not exist on type '{ empresaId: number; id: number; puntoVenta: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; tipo: string; numero: string; subtotal: Decimal; iva: Decimal; ... 17 more ...; ordenCompraId: number | null; }'.
+app/api/compras/[id]/route.ts(38,58): error TS7006: Parameter 's' implicitly has an 'any' type.
+app/api/compras/[id]/route.ts(38,61): error TS7006: Parameter 'cp' implicitly has an 'any' type.
+app/api/compras/[id]/route.ts(44,33): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/compras/ordenes/[id]/route.ts(23,68): error TS2353: Object literal may only specify known properties, and 'sku' does not exist in type 'ProductoSelect<DefaultArgs>'.
+app/api/compras/ordenes/[id]/route.ts(39,31): error TS2339: Property 'lineas' does not exist on type '{ empresaId: number; id: number; createdAt: Date; updatedAt: Date; numero: string; subtotal: Decimal; total: Decimal; observaciones: string | null; estado: string; ... 4 more ...; impuestos: Decimal; }'.
+app/api/compras/ordenes/[id]/route.ts(39,43): error TS7006: Parameter 'l' implicitly has an 'any' type.
+app/api/compras/route.ts(121,17): error TS2339: Property 'constatar' does not exist on type 'typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/wscdc-client")'.
+app/api/compras/route.ts(201,9): error TS2322: Type 'Decimal' is not assignable to type 'number'.
+app/api/cron/almacen-rosario/route.ts(84,11): error TS2339: Property 'error' does not exist on type '{ empresaId: number; alertas: number; }'.
+app/api/cron/cobranzas-ia/route.ts(24,9): error TS2353: Object literal may only specify known properties, and 'estadoCobranzaIA' does not exist in type 'FacturaWhereInput'.
+app/api/cron/cobranzas-ia/route.ts(54,37): error TS2551: Property 'cliente' does not exist on type '{ empresaId: number; id: number; puntoVenta: number; createdAt: Date; updatedAt: Date; deletedAt: Date | null; tipo: string; tipoCbte: number; numero: number; cae: string | null; ... 30 more ...; condicionIvaReceptor: string | null; }'. Did you mean 'clienteId'?
+app/api/cron/cobranzas-ia/route.ts(55,37): error TS2551: Property 'empresa' does not exist on type '{ empresaId: number; id: number; puntoVenta: number; createdAt: Date; updatedAt: Date; deletedAt: Date | null; tipo: string; tipoCbte: number; numero: number; cae: string | null; ... 30 more ...; condicionIvaReceptor: string | null; }'. Did you mean 'empresaId'?
+app/api/cron/cobranzas-ia/route.ts(76,63): error TS2551: Property 'cliente' does not exist on type '{ empresaId: number; id: number; puntoVenta: number; createdAt: Date; updatedAt: Date; deletedAt: Date | null; tipo: string; tipoCbte: number; numero: number; cae: string | null; ... 30 more ...; condicionIvaReceptor: string | null; }'. Did you mean 'clienteId'?
+app/api/cron/cobranzas-ia/route.ts(82,11): error TS2353: Object literal may only specify known properties, and 'estadoCobranzaIA' does not exist in type '(Without<FacturaUpdateInput, FacturaUncheckedUpdateInput> & FacturaUncheckedUpdateInput) | (Without<...> & FacturaUpdateInput)'.
+app/api/cron/cobranzas-ia/route.ts(90,11): error TS2353: Object literal may only specify known properties, and 'empresaId' does not exist in type '(Without<LogActividadCreateInput, LogActividadUncheckedCreateInput> & LogActividadUncheckedCreateInput) | (Without<...> & LogActividadCreateInput)'.
+app/api/cron/premium-intangibles/route.ts(146,19): error TS2339: Property 'error' does not exist on type '{ empresaId: number; alertas: number; servicios: string[]; }'.
+app/api/ecommerce/catalogo/route.ts(96,22): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/api/fiado/clientes-rapido/route.ts(34,7): error TS2353: Object literal may only specify known properties, and 'fiadoHabilitado' does not exist in type 'Without<ClienteCreateInput, ClienteUncheckedCreateInput> & ClienteUncheckedCreateInput'.
+app/api/impuestos/percepciones/route.ts(67,56): error TS2365: Operator '+' cannot be applied to types 'number' and 'Decimal'.
+app/api/impuestos/percepciones/route.ts(94,56): error TS2365: Operator '+' cannot be applied to types 'number' and 'Decimal'.
+app/api/integrations/[slug]/route.ts(63,73): error TS2345: Argument of type '{ entidades: Record<string, { direccion: string; activo: boolean; frecuencia: string; }>; } | undefined' is not assignable to parameter of type 'SyncConfigForm | undefined'.
+  Type '{ entidades: Record<string, { direccion: string; activo: boolean; frecuencia: string; }>; }' is not assignable to type 'SyncConfigForm'.
+    Types of property 'entidades' are incompatible.
+      Type 'Record<string, { direccion: string; activo: boolean; frecuencia: string; }>' is not assignable to type 'Record<string, { activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }>'.
+        'string' index signatures are incompatible.
+          Type '{ direccion: string; activo: boolean; frecuencia: string; }' is not assignable to type '{ activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }'.
+            Types of property 'direccion' are incompatible.
+              Type 'string' is not assignable to type 'SyncDireccion'.
+app/api/integrations/[slug]/route.ts(69,55): error TS2345: Argument of type '{ entidades: Record<string, { direccion: string; activo: boolean; frecuencia: string; }>; }' is not assignable to parameter of type 'SyncConfigForm'.
+  Types of property 'entidades' are incompatible.
+    Type 'Record<string, { direccion: string; activo: boolean; frecuencia: string; }>' is not assignable to type 'Record<string, { activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }>'.
+      'string' index signatures are incompatible.
+        Type '{ direccion: string; activo: boolean; frecuencia: string; }' is not assignable to type '{ activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }'.
+          Types of property 'direccion' are incompatible.
+            Type 'string' is not assignable to type 'SyncDireccion'.
+app/api/integrations/route.ts(97,5): error TS2345: Argument of type '{ entidades: Record<string, { direccion: string; activo: boolean; frecuencia: string; }>; } | undefined' is not assignable to parameter of type 'SyncConfigForm | undefined'.
+  Type '{ entidades: Record<string, { direccion: string; activo: boolean; frecuencia: string; }>; }' is not assignable to type 'SyncConfigForm'.
+    Types of property 'entidades' are incompatible.
+      Type 'Record<string, { direccion: string; activo: boolean; frecuencia: string; }>' is not assignable to type 'Record<string, { activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }>'.
+        'string' index signatures are incompatible.
+          Type '{ direccion: string; activo: boolean; frecuencia: string; }' is not assignable to type '{ activo: boolean; direccion: SyncDireccion; frecuencia: SyncFrecuencia; }'.
+            Types of property 'direccion' are incompatible.
+              Type 'string' is not assignable to type 'SyncDireccion'.
+app/api/listas-precio/route.ts(41,39): error TS2353: Object literal may only specify known properties, and 'nombre' does not exist in type 'MonedaSelect<DefaultArgs>'.
+app/api/marketplace/catalog/route.ts(11,13): error TS2339: Property 'ok' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/catalog/route.ts(11,29): error TS2339: Property 'response' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/catalog/route.ts(14,30): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/catalog/route.ts(18,39): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketplace/catalog/route.ts(20,23): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/catalog/route.ts(27,47): error TS7006: Parameter 'j' implicitly has an 'any' type.
+app/api/marketplace/catalog/route.ts(38,29): error TS2339: Property 'estado' does not exist on type '{}'.
+app/api/marketplace/catalog/route.ts(39,28): error TS2339: Property 'id' does not exist on type '{}'.
+app/api/marketplace/catalog/route.ts(50,29): error TS2339: Property 'estado' does not exist on type '{}'.
+app/api/marketplace/catalog/route.ts(51,28): error TS2339: Property 'id' does not exist on type '{}'.
+app/api/marketplace/checkout/route.ts(9,13): error TS2339: Property 'ok' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/checkout/route.ts(9,29): error TS2339: Property 'response' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/checkout/route.ts(30,32): error TS2339: Property 'marketplaceOrden' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketplace/checkout/route.ts(32,25): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/checkout/route.ts(40,56): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/intangibles/cobranzas/resumen/route.ts(8,13): error TS2339: Property 'ok' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/intangibles/cobranzas/resumen/route.ts(8,29): error TS2339: Property 'response' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/intangibles/cobranzas/resumen/route.ts(11,30): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/intangibles/cobranzas/resumen/route.ts(18,57): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/jobs/[id]/route.ts(10,13): error TS2339: Property 'ok' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/jobs/[id]/route.ts(10,29): error TS2339: Property 'response' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/jobs/[id]/route.ts(14,28): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+app/api/marketplace/jobs/[id]/route.ts(15,39): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/provision/route.ts(7,13): error TS2339: Property 'ok' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/provision/route.ts(7,29): error TS2339: Property 'response' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/provision/route.ts(15,44): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/marketplace/provision/route.ts(16,25): error TS2339: Property 'auth' does not exist on type 'Promise<{ ok: true; auth: AuthContext; } | { ok: false; response: NextResponse<unknown>; }>'.
+app/api/notas-credito/route.ts(151,11): error TS2322: Type 'number | null | undefined' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+app/api/notas-credito/route.ts(162,11): error TS2322: Type 'number | null' is not assignable to type 'number | undefined'.
+  Type 'null' is not assignable to type 'number | undefined'.
+app/api/notas-credito/route.ts(240,11): error TS2322: Type 'Decimal' is not assignable to type 'number'.
+app/api/notas-debito/route.ts(50,44): error TS2353: Object literal may only specify known properties, and 'razonSocial' does not exist in type 'ProveedorSelect<DefaultArgs>'.
+app/api/ordenes-pago/[id]/route.ts(25,48): error TS2353: Object literal may only specify known properties, and 'concepto' does not exist in type 'CuentaPagarSelect<DefaultArgs>'.
+app/api/ordenes-pago/[id]/route.ts(64,12): error TS2339: Property 'anulada' does not exist on type '{ items: { id: number; ordenPagoId: number; montoPagado: Decimal; cuentaPagarId: number; }[]; } & { id: number; createdAt: Date; updatedAt: Date; numero: string; observaciones: string | null; ... 8 more ...; netoPagado: Decimal; }'.
+app/api/ordenes-pago/[id]/route.ts(86,17): error TS2353: Object literal may only specify known properties, and 'anulada' does not exist in type '(Without<RetencionSICOREUpdateManyMutationInput, RetencionSICOREUncheckedUpdateManyInput> & RetencionSICOREUncheckedUpdateManyInput) | (Without<...> & RetencionSICOREUpdateManyMutationInput)'.
+app/api/ordenes-pago/[id]/route.ts(91,17): error TS2353: Object literal may only specify known properties, and 'anulada' does not exist in type '(Without<OrdenPagoUpdateInput, OrdenPagoUncheckedUpdateInput> & OrdenPagoUncheckedUpdateInput) | (Without<...> & OrdenPagoUpdateInput)'.
+app/api/pagos/[id]/route.ts(16,34): error TS2353: Object literal may only specify known properties, and 'empresaId' does not exist in type 'OrdenPagoWhereInput'.
+app/api/pagos/[id]/route.ts(26,9): error TS2353: Object literal may only specify known properties, and 'retencionesSicore' does not exist in type 'OrdenPagoInclude<DefaultArgs>'.
+app/api/portal/pedidos/route.ts(36,38): error TS2353: Object literal may only specify known properties, and 'deletedAt' does not exist in type 'PedidoVentaWhereInput'.
+app/api/portal/pedidos/route.ts(128,11): error TS2322: Type '{ productoId: number; descripcion: string; cantidad: number; precioUnitario: number; total: number; }[]' is not assignable to type '(Without<LineaPedidoVentaCreateWithoutPedidoVentaInput, LineaPedidoVentaUncheckedCreateWithoutPedidoVentaInput> & LineaPedidoVentaUncheckedCreateWithoutPedidoVentaInput) | (Without<...> & LineaPedidoVentaCreateWithoutPedidoVentaInput) | LineaPedidoVentaCreateWithoutPedidoVentaInput[] | LineaPedidoVentaUncheckedCreat...'.
+  Type '{ productoId: number; descripcion: string; cantidad: number; precioUnitario: number; total: number; }[]' is not assignable to type 'LineaPedidoVentaCreateWithoutPedidoVentaInput[]'.
+    Property 'subtotal' is missing in type '{ productoId: number; descripcion: string; cantidad: number; precioUnitario: number; total: number; }' but required in type 'LineaPedidoVentaCreateWithoutPedidoVentaInput'.
+app/api/precios/route.ts(48,7): error TS2322: Type '{ empresaId: number; moneda: string; nombre: string; activa: boolean; esBase: boolean; margenPct?: number | undefined; }' is not assignable to type '(Without<ListaPrecioCreateInput, ListaPrecioUncheckedCreateInput> & ListaPrecioUncheckedCreateInput) | (Without<...> & ListaPrecioCreateInput)'.
+  Type '{ empresaId: number; moneda: string; nombre: string; activa: boolean; esBase: boolean; margenPct?: number | undefined; }' is not assignable to type 'Without<ListaPrecioCreateInput, ListaPrecioUncheckedCreateInput> & ListaPrecioUncheckedCreateInput'.
+    Type '{ empresaId: number; moneda: string; nombre: string; activa: boolean; esBase: boolean; margenPct?: number | undefined; }' is not assignable to type 'Without<ListaPrecioCreateInput, ListaPrecioUncheckedCreateInput>'.
+      Types of property 'moneda' are incompatible.
+        Type 'string' is not assignable to type 'undefined'.
+app/api/productos/[id]/route.ts(190,9): error TS2353: Object literal may only specify known properties, and 'codigo' does not exist in type 'ProductoEliminadoPayload'.
+app/api/productos/route.ts(139,9): error TS2322: Type 'Decimal' is not assignable to type 'number'.
+app/api/productos/route.ts(140,9): error TS2322: Type 'Decimal' is not assignable to type 'number'.
+app/api/recibos/[id]/route.ts(26,49): error TS2353: Object literal may only specify known properties, and 'concepto' does not exist in type 'CuentaCobrarSelect<DefaultArgs>'.
+app/api/recibos/[id]/route.ts(65,16): error TS2339: Property 'anulado' does not exist on type '{ items: { id: number; reciboId: number; cuentaCobrarId: number; montoPagado: Decimal; }[]; } & { id: number; createdAt: Date; updatedAt: Date; numero: string; observaciones: string | null; ... 9 more ...; cobradorId: number | null; }'.
+app/api/recibos/[id]/route.ts(88,17): error TS2353: Object literal may only specify known properties, and 'anulado' does not exist in type '(Without<ReciboUpdateInput, ReciboUncheckedUpdateInput> & ReciboUncheckedUpdateInput) | (Without<...> & ReciboUpdateInput)'.
+app/api/reporting/export/route.ts(32,29): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more.
+app/api/stock/[id]/route.ts(22,27): error TS2353: Object literal may only specify known properties, and 'cantidadActual' does not exist in type 'LoteWhereInput'.
+app/api/stock/depositos/route.ts(16,27): error TS2353: Object literal may only specify known properties, and 'stockDepositos' does not exist in type 'DepositoCountOutputTypeSelect<DefaultArgs>'.
+app/api/stock/depositos/route.ts(28,20): error TS2339: Property 'esPrincipal' does not exist on type '{ empresaId: number; provincia: string | null; localidad: string | null; id: number; nombre: string; direccion: string | null; createdAt: Date; updatedAt: Date; tipo: string; ... 4 more ...; responsableId: number | null; }'.
+app/api/stock/depositos/route.ts(30,23): error TS2339: Property '_count' does not exist on type '{ empresaId: number; provincia: string | null; localidad: string | null; id: number; nombre: string; direccion: string | null; createdAt: Date; updatedAt: Date; tipo: string; ... 4 more ...; responsableId: number | null; }'.
+app/api/stock/depositos/route.ts(31,19): error TS2339: Property 'stockDepositos' does not exist on type '{ empresaId: number; provincia: string | null; localidad: string | null; id: number; nombre: string; direccion: string | null; createdAt: Date; updatedAt: Date; tipo: string; ... 4 more ...; responsableId: number | null; }'.
+app/api/stock/depositos/route.ts(94,9): error TS2353: Object literal may only specify known properties, and 'productoId' does not exist in type '(Without<TransferenciaDepositoCreateInput, TransferenciaDepositoUncheckedCreateInput> & TransferenciaDepositoUncheckedCreateInput) | (Without<...> & TransferenciaDepositoCreateInput)'.
+app/api/stock/route.ts(54,9): error TS2353: Object literal may only specify known properties, and 'precioCosto' does not exist in type 'ProductoSelect<DefaultArgs>'.
+app/api/ventas/pedidos/[id]/route.ts(24,68): error TS2353: Object literal may only specify known properties, and 'sku' does not exist in type 'ProductoSelect<DefaultArgs>'.
+app/api/ventas/presupuestos/[id]/route.ts(25,68): error TS2353: Object literal may only specify known properties, and 'sku' does not exist in type 'ProductoSelect<DefaultArgs>'.
+app/dashboard/agenda/page.tsx(191,21): error TS2345: Argument of type '(current: CustomFieldDefinition[] | null) => (CustomFieldDefinition | { valor: { id?: number | undefined; campoId?: number | undefined; ... 5 more ...; valorJson?: unknown; }; ... 8 more ...; valorDefault?: string | ... 1 more ... | undefined; })[] | null' is not assignable to parameter of type 'SetStateAction<CustomFieldDefinition[] | null>'.
+  Type '(current: CustomFieldDefinition[] | null) => (CustomFieldDefinition | { valor: { id?: number | undefined; campoId?: number | undefined; ... 5 more ...; valorJson?: unknown; }; ... 8 more ...; valorDefault?: string | ... 1 more ... | undefined; })[] | null' is not assignable to type '(prevState: CustomFieldDefinition[] | null) => CustomFieldDefinition[] | null'.
+    Type '(CustomFieldDefinition | { valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null | undefined; valorNumero?: number | ... 1 more ... | undefined; valorFecha?: string | ... 1 more ... | undefined; valorBooleano?: boolean | ... 1 more ... | undefined;...' is not assignable to type 'CustomFieldDefinition[] | null'.
+      Type '(CustomFieldDefinition | { valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null | undefined; valorNumero?: number | ... 1 more ... | undefined; valorFecha?: string | ... 1 more ... | undefined; valorBooleano?: boolean | ... 1 more ... | undefined;...' is not assignable to type 'CustomFieldDefinition[]'.
+        Type 'CustomFieldDefinition | { valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null | undefined; valorNumero?: number | ... 1 more ... | undefined; valorFecha?: string | ... 1 more ... | undefined; valorBooleano?: boolean | ... 1 more ... | undefined; ...' is not assignable to type 'CustomFieldDefinition'.
+          Type '{ valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null; valorNumero?: number | null; valorFecha?: string | null; valorBooleano?: boolean | null; valorJson?: unknown | null; }; ... 8 more ...; valorDefault?: string | null; }' is not assignable to type 'CustomFieldDefinition'.
+            The types of 'valor.id' are incompatible between these types.
+              Type 'number | undefined' is not assignable to type 'number'.
+                Type 'undefined' is not assignable to type 'number'.
+app/dashboard/agenda/page.tsx(214,48): error TS2339: Property 'valorNumero' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(214,77): error TS2339: Property 'valorTexto' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(214,116): error TS2339: Property 'valorTexto' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(216,47): error TS2339: Property 'valorFecha' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(218,50): error TS2339: Property 'valorBooleano' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(220,46): error TS2339: Property 'valorJson' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(220,65): error TS2339: Property 'valorTexto' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(222,47): error TS2339: Property 'valorTexto' does not exist on type '{}'.
+app/dashboard/agenda/page.tsx(232,25): error TS2345: Argument of type '{ valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null | undefined; valorNumero?: number | null | undefined; valorFecha?: string | ... 1 more ... | undefined; valorBooleano?: boolean | ... 1 more ... | undefined; valorJson?: unknown; }; ... 8 more...' is not assignable to parameter of type 'SetStateAction<CustomFieldDefinition[] | null>'.
+  Type '{ valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null | undefined; valorNumero?: number | null | undefined; valorFecha?: string | ... 1 more ... | undefined; valorBooleano?: boolean | ... 1 more ... | undefined; valorJson?: unknown; }; ... 8 more...' is not assignable to type 'CustomFieldDefinition[]'.
+    Type '{ valor: { id?: number | undefined; campoId?: number | undefined; entidadId?: string | undefined; valorTexto?: string | null; valorNumero?: number | null; valorFecha?: string | null; valorBooleano?: boolean | null; valorJson?: unknown | null; }; ... 8 more ...; valorDefault?: string | null; }' is not assignable to type 'CustomFieldDefinition'.
+      The types of 'valor.id' are incompatible between these types.
+        Type 'number | undefined' is not assignable to type 'number'.
+          Type 'undefined' is not assignable to type 'number'.
+app/dashboard/aprobaciones/page.tsx(66,54): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/aprobaciones/page.tsx(80,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/calidad/page.tsx(53,45): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/calidad/page.tsx(54,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/campos-personalizados/page.tsx(124,13): error TS2345: Argument of type '{ nombreCampo: string; etiqueta: string; tipoDato: string; opciones: string; obligatorio: false; visibleEnLista: false; visibleEnFormulario: true; placeholder: string; ayuda: string; valorDefault: string; }' is not assignable to parameter of type 'SetStateAction<{ nombreCampo: string; etiqueta: string; tipoDato: string; opciones: string; formula: string; obligatorio: boolean; visibleEnLista: boolean; visibleEnFormulario: boolean; placeholder: string; ayuda: string; valorDefault: string; }>'.
+  Property 'formula' is missing in type '{ nombreCampo: string; etiqueta: string; tipoDato: string; opciones: string; obligatorio: false; visibleEnLista: false; visibleEnFormulario: true; placeholder: string; ayuda: string; valorDefault: string; }' but required in type '{ nombreCampo: string; etiqueta: string; tipoDato: string; opciones: string; formula: string; obligatorio: boolean; visibleEnLista: boolean; visibleEnFormulario: boolean; placeholder: string; ayuda: string; valorDefault: string; }'.
+app/dashboard/cashflow/page.tsx(47,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/cashflow/page.tsx(48,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/cashflow/page.tsx(66,54): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/centro-alertas/page.tsx(9,3): error TS2322: Type '() => { Authorization: string; } | { Authorization?: undefined; }' is not assignable to type '() => HeadersInit'.
+  Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'HeadersInit'.
+    Type '{ Authorization?: undefined; }' is not assignable to type 'HeadersInit'.
+      Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+        Property 'Authorization' is incompatible with index signature.
+          Type 'undefined' is not assignable to type 'string'.
+app/dashboard/configuracion/page.tsx(1269,18): error TS2304: Cannot find name 'Link'.
+app/dashboard/configuracion/page.tsx(1271,19): error TS2304: Cannot find name 'Link'.
+app/dashboard/contabilidad/inflacion/page.tsx(42,64): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/contabilidad/inflacion/page.tsx(59,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/contabilidad/inflacion/page.tsx(70,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/contabilidad/inflacion/page.tsx(79,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(input: string | Request | URL, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+  Overload 2 of 2, '(input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>', gave the following error.
+    Type '{ Authorization: string; "Content-Type": string; } | { "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+      Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'HeadersInit | undefined'.
+        Type '{ "Content-Type": string; Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+          Property 'Authorization' is incompatible with index signature.
+            Type 'undefined' is not assignable to type 'string'.
+app/dashboard/ia/page.tsx(70,3): error TS2322: Type '() => { Authorization: string; } | { Authorization?: undefined; }' is not assignable to type '() => Record<string, string>'.
+  Type '{ Authorization: string; } | { Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+    Type '{ Authorization?: undefined; }' is not assignable to type 'Record<string, string>'.
+      Property 'Authorization' is incompatible with index signature.
+        Type 'undefined' is not assignable to type 'string'.
+app/dashboard/pos/page.tsx(798,40): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(type: "keydown", listener: (this: Window, ev: KeyboardEvent) => any, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type '(this: Window, ev: KeyboardEvent) => any'.
+      Types of parameters 'e' and 'ev' are incompatible.
+        Type 'KeyboardEvent' is missing the following properties from type 'KeyboardEvent<Element>': locale, nativeEvent, isDefaultPrevented, isPropagationStopped, persist
+  Overload 2 of 2, '(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.
+      Type '(e: KeyboardEvent) => void' is not assignable to type 'EventListener'.
+        Types of parameters 'e' and 'evt' are incompatible.
+          Type 'Event' is missing the following properties from type 'KeyboardEvent<Element>': altKey, charCode, ctrlKey, code, and 15 more.
+app/dashboard/pos/page.tsx(799,38): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(type: "keyup", listener: (this: Window, ev: KeyboardEvent) => any, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type '(this: Window, ev: KeyboardEvent) => any'.
+      Types of parameters 'e' and 'ev' are incompatible.
+        Type 'KeyboardEvent' is missing the following properties from type 'KeyboardEvent<Element>': locale, nativeEvent, isDefaultPrevented, isPropagationStopped, persist
+  Overload 2 of 2, '(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.
+      Type '(e: KeyboardEvent) => void' is not assignable to type 'EventListener'.
+        Types of parameters 'e' and 'evt' are incompatible.
+          Type 'Event' is missing the following properties from type 'KeyboardEvent<Element>': altKey, charCode, ctrlKey, code, and 15 more.
+app/dashboard/pos/page.tsx(802,45): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(type: "keydown", listener: (this: Window, ev: KeyboardEvent) => any, options?: boolean | EventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type '(this: Window, ev: KeyboardEvent) => any'.
+      Types of parameters 'e' and 'ev' are incompatible.
+        Type 'KeyboardEvent' is missing the following properties from type 'KeyboardEvent<Element>': locale, nativeEvent, isDefaultPrevented, isPropagationStopped, persist
+  Overload 2 of 2, '(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.
+      Type '(e: KeyboardEvent) => void' is not assignable to type 'EventListener'.
+        Types of parameters 'e' and 'evt' are incompatible.
+          Type 'Event' is missing the following properties from type 'KeyboardEvent<Element>': altKey, charCode, ctrlKey, code, and 15 more.
+app/dashboard/pos/page.tsx(803,43): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(type: "keyup", listener: (this: Window, ev: KeyboardEvent) => any, options?: boolean | EventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type '(this: Window, ev: KeyboardEvent) => any'.
+      Types of parameters 'e' and 'ev' are incompatible.
+        Type 'KeyboardEvent' is missing the following properties from type 'KeyboardEvent<Element>': locale, nativeEvent, isDefaultPrevented, isPropagationStopped, persist
+  Overload 2 of 2, '(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions | undefined): void', gave the following error.
+    Argument of type '(e: KeyboardEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.
+      Type '(e: KeyboardEvent) => void' is not assignable to type 'EventListener'.
+        Types of parameters 'e' and 'evt' are incompatible.
+          Type 'Event' is missing the following properties from type 'KeyboardEvent<Element>': altKey, charCode, ctrlKey, code, and 15 more.
+components/marketplace/app-store-bundles.tsx(64,57): error TS18048: 'c' is possibly 'undefined'.
+components/platform/product-control-panel.tsx(107,66): error TS2339: Property 'lema' does not exist on type '{ id: string; nombre: string; todoActivo: boolean; algunoActivo: boolean; }'.
+components/platform/product-control-panel.tsx(109,78): error TS2339: Property 'skus' does not exist on type '{ id: string; nombre: string; todoActivo: boolean; algunoActivo: boolean; }'.
+components/pos/pin-overlay.tsx(18,40): error TS2339: Property 'setToken' does not exist on type 'AuthState'.
+components/pos/pin-overlay.tsx(19,42): error TS2339: Property 'setUsuario' does not exist on type 'AuthState'.
+lib/almacen-rosario/config.ts(103,74): error TS2322: Type 'AlmacenRosarioConfig' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type 'AlmacenRosarioConfig'.
+lib/almacen-rosario/stock-cero-service.ts(68,7): error TS2353: Object literal may only specify known properties, and 'categoria' does not exist in type 'ReglaAlertaWhereInput'.
+lib/almacen-rosario/stock-cero-service.ts(77,22): error TS2339: Property 'metadata' does not exist on type '{ empresaId: number; id: number; nombre: string; createdAt: Date; updatedAt: Date; activo: boolean; accion: string; tipoRegla: string; condicion: string; destinatarioId: number | null; emailDestino: string | null; frecuenciaHoras: number; ultimoChequeo: Date | null; ultimoResultado: boolean | null; }'.
+lib/fiado/fiado-provision.ts(17,7): error TS2353: Object literal may only specify known properties, and 'fiadoRequiereLimite' does not exist in type '(Without<EmpresaUpdateInput, EmpresaUncheckedUpdateInput> & EmpresaUncheckedUpdateInput) | (Without<...> & EmpresaUpdateInput)'.
+lib/fiado/fiado-provision.ts(22,9): error TS2304: Cannot find name 'ErrorLogger'.
+lib/fiado/fiado-service.ts(47,9): error TS2353: Object literal may only specify known properties, and 'fiadoHabilitado' does not exist in type 'ClienteSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(55,17): error TS2353: Object literal may only specify known properties, and 'fiadoRequiereLimite' does not exist in type 'EmpresaSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(60,16): error TS2339: Property 'fiadoHabilitado' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(68,16): error TS2339: Property 'fiadoRequiereLimite' does not exist on type '{ email: string | null; rubro: string; id: number; nombre: string; razonSocial: string; cuit: string; direccion: string | null; telefono: string | null; certificadoCRT: string | null; certificadoKEY: string | null; ... 15 more ...; deletedAt: Date | null; }'.
+lib/fiado/fiado-service.ts(117,7): error TS2353: Object literal may only specify known properties, and 'fiadoHabilitado' does not exist in type 'ClienteWhereInput'.
+lib/fiado/fiado-service.ts(127,7): error TS2353: Object literal may only specify known properties, and 'emailNotificacionFiado' does not exist in type 'ClienteSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(146,29): error TS2307: Cannot find module '../utils/error-logger' or its corresponding type declarations.
+lib/fiado/fiado-service.ts(161,12): error TS2339: Property 'fiadoNotificacionLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/fiado/fiado-service.ts(166,44): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+lib/fiado/fiado-service.ts(166,49): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/fiado/fiado-service.ts(189,12): error TS2339: Property 'fiadoNotificacionLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/fiado/fiado-service.ts(194,44): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+lib/fiado/fiado-service.ts(194,49): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/fiado/fiado-service.ts(222,9): error TS2353: Object literal may only specify known properties, and 'emailNotificacionFiado' does not exist in type 'ClienteSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(229,31): error TS2353: Object literal may only specify known properties, and 'emailDuenoAlmacen' does not exist in type 'EmpresaSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(236,15): error TS2339: Property 'emailNotificacionFiado' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(236,73): error TS2339: Property 'emailNotificacionFiado' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(237,15): error TS2339: Property 'emailNotificacionFiado2' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(237,74): error TS2339: Property 'emailNotificacionFiado2' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(238,15): error TS2339: Property 'notificarClienteFiado' does not exist on type '{ email: string | null; empresaId: number; id: number; nombre: string; cuit: string | null; direccion: string | null; telefono: string | null; rubroId: number | null; condicionIva: string; ... 51 more ...; profesionId: number | null; }'.
+lib/fiado/fiado-service.ts(239,15): error TS2339: Property 'emailDuenoAlmacen' does not exist on type '{ email: string | null; rubro: string; id: number; nombre: string; razonSocial: string; cuit: string; direccion: string | null; telefono: string | null; certificadoCRT: string | null; certificadoKEY: string | null; ... 15 more ...; deletedAt: Date | null; }'.
+lib/fiado/fiado-service.ts(239,68): error TS2339: Property 'emailDuenoAlmacen' does not exist on type '{ email: string | null; rubro: string; id: number; nombre: string; razonSocial: string; cuit: string; direccion: string | null; telefono: string | null; certificadoCRT: string | null; certificadoKEY: string | null; ... 15 more ...; deletedAt: Date | null; }'.
+lib/fiado/fiado-service.ts(288,16): error TS2339: Property 'fiadoNotificacionLog' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/fiado/fiado-service.ts(308,27): error TS2345: Argument of type '{ empresaId: number; severidad: string; mensaje: string; metadata: { facturaId: number; clienteId: number; linkPago: boolean; modulo: string; }; }' is not assignable to parameter of type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+  Type '{ empresaId: number; severidad: string; mensaje: string; metadata: { facturaId: number; clienteId: number; linkPago: boolean; modulo: string; }; }' is missing the following properties from type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }': categoria, contexto
+lib/fiado/fiado-service.ts(322,7): error TS2353: Object literal may only specify known properties, and 'emailDuenoAlmacen' does not exist in type 'EmpresaSelect<DefaultArgs>'.
+lib/fiado/fiado-service.ts(343,7): error TS2353: Object literal may only specify known properties, and 'emailDuenoAlmacen' does not exist in type '(Without<EmpresaUpdateInput, EmpresaUncheckedUpdateInput> & EmpresaUncheckedUpdateInput) | (Without<...> & EmpresaUpdateInput)'.
+lib/fiado/fiado-service.ts(348,7): error TS2353: Object literal may only specify known properties, and 'emailDuenoAlmacen' does not exist in type 'EmpresaSelect<DefaultArgs>'.
+lib/fiado/fiado-whatsapp.ts(26,17): error TS2353: Object literal may only specify known properties, and 'fiadoNotificarWhatsApp' does not exist in type 'EmpresaSelect<DefaultArgs>'.
+lib/fiado/fiado-whatsapp.ts(30,29): error TS2339: Property 'fiadoNotificarWhatsApp' does not exist on type '{ email: string | null; rubro: string; id: number; nombre: string; razonSocial: string; cuit: string; direccion: string | null; telefono: string | null; certificadoCRT: string | null; certificadoKEY: string | null; ... 15 more ...; deletedAt: Date | null; }'.
+lib/marketplace/analyst-task-service.ts(6,35): error TS2339: Property 'analistaAsignacion' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/analyst-task-service.ts(12,33): error TS2339: Property 'proyectoImplementacion' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/analyst-task-service.ts(41,17): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/analyst-task-service.ts(78,17): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/analyst-task-service.ts(89,30): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/analyst-task-service.ts(101,17): error TS2339: Property 'analistaAsignacion' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/cobranzas-wa-service.ts(62,5): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/marketplace-catalog.ts(1107,3): error TS2322: Type '{ sku: "pos.recargas_servicios" | "pos.balanza_peso" | "pos.promos_cantidad" | "pos.ticket_regalo" | "pos.pedido_distribuidora" | "pos.mermas_roturas" | "pos.arqueo_ciego" | "pos.lista_mayorista_pos" | "pos.cheques_cartera" | "pos.inventario_express"; ... 11 more ...; trialDias: number; }' is not assignable to type 'MarketplaceSku'.
+  Types of property 'tipoCobro' are incompatible.
+    Type 'string' is not assignable to type '"recurrente" | "por_uso"'.
+lib/marketplace/premium-activators.ts(79,5): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/provision-service.ts(17,28): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(53,20): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(68,9): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/provision-service.ts(91,18): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(99,7): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/provision-service.ts(113,5): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/provision-service.ts(119,28): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(126,16): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(139,28): error TS2339: Property 'marketplaceProvisionJob' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(146,16): error TS2339: Property 'marketplaceTareaAnalista' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/marketplace/provision-service.ts(156,5): error TS2353: Object literal may only specify known properties, and 'modulo' does not exist in type '{ empresaId?: number | undefined; entornoId?: number | undefined; severidad: string; categoria: string; contexto: string; mensaje: string; stack?: string | undefined; requestId?: string | undefined; metadata?: Record<...> | undefined; }'.
+lib/marketplace/provision-service.ts(164,30): error TS2339: Property 'marketplaceOrden' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+lib/opo/protheus-catalog-service.ts(91,7): error TS2322: Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]' is not assignable to type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[][]'.
+  Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }' is missing the following properties from type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]': length, pop, push, concat, and 35 more.
+lib/opo/protheus-catalog-service.ts(105,5): error TS2322: Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]' is not assignable to type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[][]'.
+  Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }' is missing the following properties from type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]': length, pop, push, concat, and 35 more.
+lib/opo/protheus-catalog-service.ts(108,3): error TS2322: Type 'ProtheusCatalogBundle | null' is not assignable to type 'ProtheusCatalogBundle'.
+  Type 'null' is not assignable to type 'ProtheusCatalogBundle'.
+lib/opo/protheus-catalog-service.ts(187,5): error TS2322: Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]' is not assignable to type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[][]'.
+  Type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }' is missing the following properties from type '{ id: string; nombre: string; siglaProtheus: string; descripcion: string; paraQueSirve: string; opoEntities: OpoCanonicalEntity[]; clavisApps: { sku: string; nombre: string; comoComplementa: string; }[]; monetizacion: string; }[]': length, pop, push, concat, and 35 more.
+lib/opo/protheus-sql-introspection.ts(19,30): error TS7016: Could not find a declaration file for module 'mssql'. 'C:/Users/Pablo Clavero/Downloads/pos-system-argentina/node_modules/.pnpm/mssql@11.0.1/node_modules/mssql/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/mssql` if it exists or add a new declaration (.d.ts) file containing `declare module 'mssql';`
+lib/ops/client-portal-service.ts(82,31): error TS7006: Parameter 't' implicitly has an 'any' type.
+lib/ops/client-portal-service.ts(83,34): error TS7006: Parameter 't' implicitly has an 'any' type.
+lib/ops/client-portal-service.ts(88,47): error TS7006: Parameter 't' implicitly has an 'any' type.
+lib/ops/client-portal-service.ts(113,27): error TS7006: Parameter 't' implicitly has an 'any' type.
+lib/ops/entorno-sync-service.ts(544,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+lib/ops/entorno-sync-service.ts(545,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+lib/ops/tenant-billing-service.ts(38,61): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+lib/platform/commercial-service.ts(212,7): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+lib/platform/commercial-service.ts(214,5): error TS2322: Type '{ metadata?: Record<string, unknown> | undefined; activo: boolean | undefined; vigenciaHasta: Date | null | undefined; limiteEventosMes: number | null | undefined; }' is not assignable to type '(Without<SuscripcionModuloUpdateInput, SuscripcionModuloUncheckedUpdateInput> & SuscripcionModuloUncheckedUpdateInput) | (Without<...> & SuscripcionModuloUpdateInput)'.
+  Type '{ metadata?: Record<string, unknown> | undefined; activo: boolean | undefined; vigenciaHasta: Date | null | undefined; limiteEventosMes: number | null | undefined; }' is not assignable to type 'Without<SuscripcionModuloUncheckedUpdateInput, SuscripcionModuloUpdateInput> & SuscripcionModuloUpdateInput'.
+    Type '{ metadata?: Record<string, unknown> | undefined; activo: boolean | undefined; vigenciaHasta: Date | null | undefined; limiteEventosMes: number | null | undefined; }' is not assignable to type 'SuscripcionModuloUpdateInput'.
+      Types of property 'metadata' are incompatible.
+        Type 'Record<string, unknown> | undefined' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+          Type 'Record<string, unknown>' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+            Type 'Record<string, unknown>' is missing the following properties from type 'readonly (InputJsonValue | null)[]': length, concat, join, slice, and 26 more.
+lib/platform/product-hooks.ts(46,25): error TS2322: Type '(empresaId: number) => Promise<{ ok: boolean; whatsappSugerido: boolean; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ ok: boolean; whatsappSugerido: boolean; }>' is not assignable to type 'Promise<void>'.
+    Type '{ ok: boolean; whatsappSugerido: boolean; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(48,5): error TS2322: Type '(empresaId: number, config?: Partial<CobranzasWaConfig>) => Promise<{ reglaId: number; config: CobranzasWaConfig; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; config: CobranzasWaConfig; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; config: CobranzasWaConfig; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(57,5): error TS2322: Type '(empresaId: number) => Promise<{ reglaId: number; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(61,5): error TS2322: Type '(empresaId: number) => Promise<{ reglaId: number; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(65,5): error TS2322: Type '(empresaId: number) => Promise<{ reglaId: number; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(69,5): error TS2322: Type '(empresaId: number) => Promise<{ reglaId: number; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(73,5): error TS2322: Type '(empresaId: number) => Promise<{ inboxAlias: string; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ inboxAlias: string; }>' is not assignable to type 'Promise<void>'.
+    Type '{ inboxAlias: string; }' is not assignable to type 'void'.
+lib/platform/product-hooks.ts(77,5): error TS2322: Type '(empresaId: number) => Promise<{ reglaId: number; }>' is not assignable to type 'ProductHook'.
+  Type 'Promise<{ reglaId: number; }>' is not assignable to type 'Promise<void>'.
+    Type '{ reglaId: number; }' is not assignable to type 'void'.
+lib/pos/devolucion-venta-pos.ts(42,15): error TS2339: Property 'lineaFacturaId' does not exist on type '{ id: number; subtotal: Decimal; iva: Decimal; total: Decimal; descripcion: string; porcentajeIva: number; productoId: number | null; cantidad: number; precioUnitario: Decimal; codigoAfipIva: string | null; descuento: number; notaCreditoId: number; }'.
+lib/pos/devolucion-venta-pos.ts(44,12): error TS2339: Property 'lineaFacturaId' does not exist on type '{ id: number; subtotal: Decimal; iva: Decimal; total: Decimal; descripcion: string; porcentajeIva: number; productoId: number | null; cantidad: number; precioUnitario: Decimal; codigoAfipIva: string | null; descuento: number; notaCreditoId: number; }'.
+lib/pos/devolucion-venta-pos.ts(45,34): error TS2339: Property 'lineaFacturaId' does not exist on type '{ id: number; subtotal: Decimal; iva: Decimal; total: Decimal; descripcion: string; porcentajeIva: number; productoId: number | null; cantidad: number; precioUnitario: Decimal; codigoAfipIva: string | null; descuento: number; notaCreditoId: number; }'.
+opo/Open-protocol-ontology/app/api/dashboard/route.ts(2,32): error TS2307: Cannot find module '@/lib/engine/broker/resource-broker' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/digital-employees/run/[id]/route.ts(2,41): error TS2307: Cannot find module '@/lib/engine/swarm' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/digital-employees/run/[id]/route.ts(3,42): error TS2307: Cannot find module '@/lib/studio/digitalEmployee' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/digital-employees/run/[id]/route.ts(4,81): error TS2307: Cannot find module '@/lib/saas/tenant' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/digital-employees/run/[id]/route.ts(53,38): error TS7006: Parameter 'r' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/digital-employees/run/[id]/route.ts(64,31): error TS7006: Parameter 'r' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/engine/auth/keys/route.ts(2,34): error TS2307: Cannot find module '@/lib/engine/auth/api-keys' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/engine/billing/usage/route.ts(2,36): error TS2307: Cannot find module '@/lib/engine/billing/metering' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/hil/[requestId]/route.ts(2,28): error TS2307: Cannot find module '@/lib/engine/hil/hil-manager' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/marketplace/publish/route.ts(2,73): error TS2307: Cannot find module '@/lib/studio/digitalEmployee' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mcp/discover/route.ts(2,28): error TS2307: Cannot find module '@/lib/engine/mcp/mcp-client' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(2,32): error TS2307: Cannot find module '@/lib/mesh/semanticRouter' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(3,47): error TS2307: Cannot find module '@/lib/mesh/meshTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(4,26): error TS2307: Cannot find module '@/lib/mesh/registry' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(5,39): error TS2307: Cannot find module '@/lib/engine/worker/swarm-queue' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(15,63): error TS2307: Cannot find module '@/lib/mesh/vaultResolver' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/query/route.ts(73,45): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/mesh/registry/route.ts(2,26): error TS2307: Cannot find module '@/lib/mesh/registry' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/mesh/stream/[sessionId]/route.ts(2,29): error TS2307: Cannot find module '@/lib/engine/blackboard/blackboard' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/sessions/[sessionId]/timeline/route.ts(2,29): error TS2307: Cannot find module '@/lib/engine/blackboard/blackboard' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/sessions/[sessionId]/timeline/route.ts(3,33): error TS2307: Cannot find module '@/lib/engine/timetravel/time-travel-db' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/discover/route.ts(2,37): error TS2307: Cannot find module '@/lib/studio/connectionGuard' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/discover/route.ts(53,24): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/execute-query/route.ts(2,74): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/execute-query/route.ts(3,55): error TS2307: Cannot find module '@/lib/studio/runOpoQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/execute-query/route.ts(34,38): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/studio/health/route.ts(2,59): error TS2307: Cannot find module '@/lib/studio/studioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/node-chat/route.ts(39,40): error TS2307: Cannot find module '@/lib/mesh/llm' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/node-chat/route.ts(40,46): error TS2307: Cannot find module '@/lib/mesh/vaultResolver' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/ollama-health/route.ts(2,35): error TS2307: Cannot find module '@/lib/studio/ollamaHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/onboard/route.ts(2,48): error TS2307: Cannot find module '@/lib/studio/onboarding/onboardingOrchestrator' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/onboard/route.ts(3,34): error TS2307: Cannot find module '@/lib/studio/onboarding/onboardingTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/protheus-baseline/route.ts(7,8): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(2,40): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(3,74): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusMockData' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(4,41): error TS2307: Cannot find module '@/lib/studio/sqlExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(5,46): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDictionaryExtractor' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(104,38): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(105,38): error TS7006: Parameter 'f' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(106,45): error TS7006: Parameter 'r' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/studio/sql-to-ontology/route.ts(211,42): error TS7006: Parameter 'row' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/swarm/[swarmId]/route.ts(2,41): error TS2307: Cannot find module '@/lib/engine/swarm' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/swarm/create/route.ts(2,41): error TS2307: Cannot find module '@/lib/engine/swarm' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/swarm/create/route.ts(3,31): error TS2307: Cannot find module '@/lib/mesh/meshTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/swarm/list/route.ts(2,41): error TS2307: Cannot find module '@/lib/engine/swarm' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/swarm/list/route.ts(14,26): error TS7006: Parameter 's' implicitly has an 'any' type.
+opo/Open-protocol-ontology/app/api/v1/run/[swarmId]/route.ts(2,34): error TS2307: Cannot find module '@/lib/engine/auth/api-keys' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/v1/run/[swarmId]/route.ts(3,39): error TS2307: Cannot find module '@/lib/engine/worker/swarm-queue' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/v1/run/[swarmId]/route.ts(4,36): error TS2307: Cannot find module '@/lib/engine/billing/metering' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/api/vault/route.ts(2,33): error TS2307: Cannot find module '@/lib/engine/vault/credential-vault' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/consultas/page.tsx(6,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/consultas/page.tsx(7,23): error TS2307: Cannot find module '@/components/studio/MeshPanel' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/consultas/page.tsx(8,27): error TS2307: Cannot find module '@/components/studio/SettingsModal' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/consultas/page.tsx(9,24): error TS2307: Cannot find module '@/components/studio/Onboarding' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/dashboard/page.tsx(4,26): error TS2307: Cannot find module '@/components/ClientLayout' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/dashboard/page.tsx(5,20): error TS2307: Cannot find module '@/components/studio/Topbar' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/dashboard/page.tsx(8,35): error TS2307: Cannot find module '@/components/dashboard/ConsumptionCharts' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/marketplace/page.tsx(4,26): error TS2307: Cannot find module '@/components/ClientLayout' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/studio/page.tsx(5,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/studio/page.tsx(6,26): error TS2307: Cannot find module '@/components/studio/StudioEditor' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/studio/page.tsx(7,24): error TS2307: Cannot find module '@/components/studio/Onboarding' or its corresponding type declarations.
+opo/Open-protocol-ontology/app/studio/page.tsx(9,57): error TS2307: Cannot find module '@/lib/studio/studioDeepLink' or its corresponding type declarations.
+opo/Open-protocol-ontology/cli/commands/mcp.ts(5,30): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/cli/utils/sqlTranslator.ts(9,8): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/dashboard/ConsumptionCharts.tsx(5,35): error TS2307: Cannot find module '@/lib/engine/types/credentials' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/dashboard/ConsumptionCharts.tsx(27,13): error TS18046: 'info' is of type 'unknown'.
+opo/Open-protocol-ontology/components/dashboard/ConsumptionCharts.tsx(28,15): error TS18046: 'info' is of type 'unknown'.
+opo/Open-protocol-ontology/components/dashboard/ConsumptionCharts.tsx(32,14): error TS18046: 'info' is of type 'unknown'.
+opo/Open-protocol-ontology/components/dashboard/ConsumptionCharts.tsx(33,12): error TS18046: 'info' is of type 'unknown'.
+opo/Open-protocol-ontology/components/debugger/FrameInspector.tsx(4,37): error TS2307: Cannot find module '@/lib/engine/types/blackboard' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/debugger/FrameInspector.tsx(46,36): error TS7006: Parameter 'lock' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/debugger/FrameInspector.tsx(46,42): error TS7006: Parameter 'i' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/debugger/TimelinePlayer.tsx(5,37): error TS2307: Cannot find module '@/lib/engine/types/blackboard' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/AgentTemplateGallery.tsx(4,33): error TS2307: Cannot find module '@/lib/studio/agentTemplates' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/AgentTemplateGallery.tsx(5,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/AgentTemplateGallery.tsx(14,47): error TS7006: Parameter 's' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/AgentTemplateGallery.tsx(36,31): error TS7006: Parameter 'template' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/AgentTemplateGallery.tsx(36,41): error TS7006: Parameter 'index' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/AttributeRow.tsx(1,44): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/CanvasEmptyState.tsx(2,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/GraphCanvas.tsx(6,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/GraphCanvas.tsx(18,33): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/GraphCanvas.tsx(195,39): error TS7006: Parameter 'e' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/AgentNode.tsx(3,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/EntityNode.tsx(5,33): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/N8nNode.tsx(3,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(4,45): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(6,39): error TS2307: Cannot find module '@/lib/studio/meshQueryHints' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(120,52): error TS7006: Parameter 'm' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(124,44): error TS7006: Parameter 's' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(140,44): error TS7006: Parameter 'm' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(143,36): error TS7006: Parameter 's' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(210,24): error TS7006: Parameter 'msg' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/NodeChatInterface.tsx(210,29): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/canvas/nodes/ToolNode.tsx(3,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/IntentEditor.tsx(4,30): error TS2307: Cannot find module '@/lib/mesh/intentParser' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/IntentEditor.tsx(5,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(3,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(4,33): error TS2307: Cannot find module '@/lib/mesh/ontologyCompiler' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(10,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(15,8): error TS2307: Cannot find module '@/lib/studio/opoResponseParser' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(19,8): error TS2307: Cannot find module '@/lib/studio/matchRecurringQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(20,38): error TS2307: Cannot find module '@/lib/studio/consultasSummary' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(21,33): error TS2307: Cannot find module '@/lib/studio/useStudioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(22,29): error TS2307: Cannot find module '@/components/studio/StatusSemaphore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(25,32): error TS2307: Cannot find module '@/components/debugger/TimelinePlayer' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(26,32): error TS2307: Cannot find module '@/components/debugger/FrameInspector' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/MeshPanel.tsx(27,37): error TS2307: Cannot find module '@/lib/engine/types/blackboard' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/OllamaSetupForm.tsx(3,35): error TS2307: Cannot find module '@/lib/studio/ollamaHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Onboarding.tsx(3,44): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Onboarding.tsx(4,36): error TS2307: Cannot find module '@/lib/studio/studioDeepLink' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/ProtheusConnectionForm.tsx(3,72): error TS2307: Cannot find module '@/lib/studio/onboarding/connectionBuilder' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(9,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(10,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(11,33): error TS2307: Cannot find module '@/lib/mesh/ontologyCompiler' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(60,72): error TS7006: Parameter 'acc' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(60,77): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(83,18): error TS18046: 'items' is of type 'unknown'.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(83,29): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/RecurringQueriesChips.tsx(105,36): error TS7006: Parameter 'p' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/SettingsModal.tsx(2,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/SidebarRight.tsx(1,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/SidebarRight.tsx(5,54): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StatusSemaphore.tsx(4,33): error TS2307: Cannot find module '@/lib/studio/useStudioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StatusSemaphore.tsx(5,35): error TS2307: Cannot find module '@/lib/studio/studioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(11,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(13,29): error TS2307: Cannot find module '@/lib/studio/GuidanceEngine' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(14,35): error TS2307: Cannot find module '@/lib/studio/ollamaHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(15,41): error TS2307: Cannot find module '@/lib/studio/studioDeepLink' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(50,36): error TS7006: Parameter 'n' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(55,26): error TS7006: Parameter 'a' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(56,27): error TS7006: Parameter 'existing' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(178,40): error TS7006: Parameter 'a' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(260,43): error TS7006: Parameter 'alert' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(275,36): error TS7006: Parameter 'act' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(275,41): error TS7006: Parameter 'i' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/StudioEditor.tsx(327,27): error TS7006: Parameter 'a' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(1,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(4,40): error TS2307: Cannot find module '@/lib/studio/mcpGenerator' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(6,32): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(8,29): error TS2307: Cannot find module '@/components/studio/StatusSemaphore' or its corresponding type declarations.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(74,38): error TS7006: Parameter 'n' implicitly has an 'any' type.
+opo/Open-protocol-ontology/components/studio/Topbar.tsx(82,23): error TS7006: Parameter 'a' implicitly has an 'any' type.
+opo/Open-protocol-ontology/docs-site/src/pages/index.tsx(6,33): error TS2503: Cannot find namespace 'JSX'.
+opo/Open-protocol-ontology/lib/engine/worker/swarm-queue.ts(2,29): error TS2307: Cannot find module '@/lib/mesh/meshTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/engine/worker/swarm-queue.ts(4,42): error TS2307: Cannot find module '@/lib/studio/runOpoQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/engine/worker/swarm-worker.ts(3,31): error TS2307: Cannot find module '@/lib/mesh/agentExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/engine/worker/swarm-worker.ts(7,37): error TS2307: Cannot find module '@/lib/mesh/sessionMemory' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/adapters/totvs/protheusDictionaryExtractor.ts(2,46): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(15,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(16,45): error TS2307: Cannot find module '@/lib/studio/matchRecurringQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(17,59): error TS2307: Cannot find module '@/lib/studio/runOpoQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(18,38): error TS2307: Cannot find module '@/lib/studio/opoResponseParser' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(20,38): error TS2307: Cannot find module '@/lib/studio/consultasSummary' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(371,87): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(372,53): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/mesh/agentExecutor.ts(373,52): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/mesh/opoRuntime.ts(3,72): error TS2307: Cannot find module '@/lib/studio/runOpoQuery' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/mesh/semanticRouter.ts(7,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/consultasSummary.ts(1,37): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/digitalEmployee.ts(2,31): error TS2307: Cannot find module '@/lib/mesh/meshTypes' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/GuidanceEngine.ts(3,36): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/GuidanceEngine.ts(4,41): error TS2307: Cannot find module '@/lib/engine/swarm' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/matchRecurringQuery.ts(4,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/matchRecurringQuery.ts(30,26): error TS7006: Parameter 'p' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/matchRecurringQuery.ts(63,44): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/matchRecurringQuery.ts(64,33): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/onboarding/onboardingOrchestrator.ts(5,37): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/onboarding/onboardingOrchestrator.ts(7,33): error TS2307: Cannot find module '@/lib/engine/vault/credential-vault' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/onboarding/onboardingOrchestrator.ts(36,20): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/recurringQueries.test.ts(2,35): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(6,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(7,42): error TS2307: Cannot find module '@/lib/studio/protheusMockRows' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(8,41): error TS2307: Cannot find module '@/lib/studio/sqlExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(9,37): error TS2307: Cannot find module '@/lib/studio/connectionGuard' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(10,37): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(11,77): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(174,34): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/sqlExecutor.ts(5,8): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/sqlExecutor.ts(6,37): error TS2307: Cannot find module '@/lib/studio/connectionGuard' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioDeepLink.ts(1,33): error TS2307: Cannot find module '@/lib/studio/agentTemplates' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioDeepLink.ts(19,40): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(1,31): error TS2307: Cannot find module '@/lib/mesh/vaultResolver' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(2,35): error TS2307: Cannot find module '@/lib/studio/ollamaHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(3,41): error TS2307: Cannot find module '@/lib/studio/sqlExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(4,37): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/useStudioHealth.ts(4,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/useStudioHealth.ts(5,41): error TS2307: Cannot find module '@/lib/studio/studioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(14,58): error TS2307: Cannot find module '@/lib/studio/mockProtheus' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(15,41): error TS2307: Cannot find module '@/lib/studio/deployAgentTemplate' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(16,67): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.

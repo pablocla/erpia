@@ -7,7 +7,7 @@ import type {
   OpoQueryInput,
 } from "./types"
 
-export const CLAVIS_ENTITY_MAPPINGS: OpoEntityMapping[] = [
+export const CLAVER_ENTITY_MAPPINGS: OpoEntityMapping[] = [
   { canonical: "opo:Customer", nativeReference: "Cliente", confidence: 1 },
   { canonical: "opo:Product", nativeReference: "Producto", confidence: 1 },
   { canonical: "opo:Invoice", nativeReference: "Factura", confidence: 1 },
@@ -15,14 +15,14 @@ export const CLAVIS_ENTITY_MAPPINGS: OpoEntityMapping[] = [
   { canonical: "opo:Supplier", nativeReference: "Proveedor", confidence: 0.95 },
 ]
 
-export function buildClavisDiscoveryManifest(
+export function buildClaverDiscoveryManifest(
   baseUrl: string,
   organizationName: string,
 ): OpoDiscoveryManifest {
   return {
     opo_version: "0.1.0",
     system_identity: {
-      erp_name: "Clavis ERP",
+      erp_name: "Claver ERP",
       version: "2026.1",
       jurisdictions: ["AR"],
       organization_name: organizationName,
@@ -43,7 +43,7 @@ export function buildClavisDiscoveryManifest(
       "opo:Product": { path: "/api/opo/entities/Product", methods: ["GET"] },
       "opo:Order": { path: "/api/opo/entities/Order", methods: ["GET"] },
     },
-    supported_entities: CLAVIS_ENTITY_MAPPINGS,
+    supported_entities: CLAVER_ENTITY_MAPPINGS,
   }
 }
 
@@ -106,7 +106,7 @@ function mapFactura(f: {
   }
 }
 
-export async function queryClavisEntity(empresaId: number, input: OpoQueryInput) {
+export async function queryClaverEntity(empresaId: number, input: OpoQueryInput) {
   const limit = Math.min(input.limit ?? 10, 50)
   const search = input.search?.trim()
 
@@ -135,7 +135,7 @@ export async function queryClavisEntity(empresaId: number, input: OpoQueryInput)
           codigo: true,
         },
       })
-      return { entity: "Customer", source: "clavis_db", count: rows.length, data: rows.map(mapCliente) }
+      return { entity: "Customer", source: "claver_db", count: rows.length, data: rows.map(mapCliente) }
     }
     case "Product": {
       const rows = await prisma.producto.findMany({
@@ -160,7 +160,7 @@ export async function queryClavisEntity(empresaId: number, input: OpoQueryInput)
           stock: true,
         },
       })
-      return { entity: "Product", source: "clavis_db", count: rows.length, data: rows.map(mapProducto) }
+      return { entity: "Product", source: "claver_db", count: rows.length, data: rows.map(mapProducto) }
     }
     case "Invoice": {
       const rows = await prisma.factura.findMany({
@@ -180,7 +180,7 @@ export async function queryClavisEntity(empresaId: number, input: OpoQueryInput)
           clienteId: true,
         },
       })
-      return { entity: "Invoice", source: "clavis_db", count: rows.length, data: rows.map(mapFactura) }
+      return { entity: "Invoice", source: "claver_db", count: rows.length, data: rows.map(mapFactura) }
     }
     case "Supplier": {
       const rows = await prisma.proveedor.findMany({
@@ -196,7 +196,7 @@ export async function queryClavisEntity(empresaId: number, input: OpoQueryInput)
       })
       return {
         entity: "Supplier",
-        source: "clavis_db",
+        source: "claver_db",
         count: rows.length,
         data: rows.map((p) => ({
           id: String(p.id),
@@ -215,7 +215,7 @@ export async function queryClavisEntity(empresaId: number, input: OpoQueryInput)
       })
       return {
         entity: "Order",
-        source: "clavis_db",
+        source: "claver_db",
         count: rows.length,
         data: rows.map((o) => ({
           id: String(o.id),

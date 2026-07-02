@@ -9,7 +9,7 @@ const bodySchema = z.object({
   config: z
     .object({
       modoErp: z.enum(["full", "legacy_front", "hibrido"]).optional(),
-      origen: z.enum(["clavis_db", "protheus"]).optional(),
+      origen: z.enum(["claver_db", "protheus"]).optional(),
       conector: z.enum(["rest", "sql"]).optional(),
       accesoCanal: z.enum(["edge_agent", "rest_directo", "sql_vistas"]).optional(),
       sqlModo: z.enum(["direct", "via_rest"]).optional(),

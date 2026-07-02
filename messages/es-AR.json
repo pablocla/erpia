@@ -1,0 +1,268 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "loading": "Cargando...",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "search": "Buscar...",
+    "actions": "Acciones",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "nav": {
+    "sections": {
+      "principal": "Principal"
+    },
+    "items": {
+      "dashboard": "Panel de Control",
+      "myTasks": "Mis Tareas",
+      "sales": "Ventas",
+      "purchases": "Compras",
+      "stock": "Inventario",
+      "settings": "Configuración",
+      "pos": "Punto de Venta"
+    }
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña"
+  },
+  "pos": {
+    "checkout": "Cobrar",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "discount": "Descuento",
+    "pay": "Pagar",
+    "searchProduct": "Buscar producto por nombre o código de barras (F2)...",
+    "noProductsInCart": "No hay productos en el carrito",
+    "cart": "Carrito",
+    "cancelSale": "Cancelar Venta",
+    "paymentMethod": "Medio de Pago",
+    "cash": "Efectivo",
+    "card": "Tarjeta",
+    "transfer": "Transferencia",
+    "client": "Cliente",
+    "selectClient": "Seleccionar Cliente (Opcional)",
+    "receipt": "Comprobante",
+    "print": "Imprimir",
+    "close": "Cerrar"
+  },
+  "fiscal": {
+    "ar": {
+      "cuit": "CUIT",
+      "afip": "AFIP",
+      "iva": "IVA",
+      "iibb": "Ingresos Brutos"
+    },
+    "us": {
+      "taxId": "Tax ID",
+      "salesTax": "Sales Tax"
+    }
+  },
+  "errors": {
+    "generic": "Ocurrió un error inesperado.",
+    "notFound": "No se encontró el recurso.",
+    "unauthorized": "No autorizado."
+  },
+  "toasts": {
+    "success": "Operación exitosa",
+    "error": "Error en la operación"
+  },
+  "emptyStates": {
+    "noData": "No hay datos disponibles"
+  },
+  "cloudNav": {
+    "sections": {
+      "ceo": "CEO",
+      "platform": "Plataforma",
+      "protheus": "Protheus / OPO",
+      "admin": "Administración"
+    },
+    "items": {
+      "commandCenter": "Centro de mando",
+      "fieldSurvey": "Relevamiento calle",
+      "mapAndRoute": "Mapa y ruta",
+      "superAdmin": "Super Admin",
+      "tenants": "Tenants",
+      "provisioning": "Provisioning",
+      "operations": "Operaciones",
+      "implementation": "Implementación",
+      "marketplace": "Marketplace",
+      "setupProtheus": "Setup Protheus",
+      "opoConsole": "Consola OPO",
+      "restApi": "API REST",
+      "billing": "Facturación",
+      "settings": "Configuración"
+    }
+  },
+  "CommandPalette": {
+    "title": "Paleta de comandos",
+    "description": "Buscar módulos, acciones y configuración del ERP",
+    "placeholder": "Buscar módulo, acción o configuración...",
+    "empty": "No se encontraron resultados.",
+    "groups": {
+      "quickActions": "Acciones Rápidas",
+      "recent": "Recientes",
+      "docs": "Documentación (Wiki)",
+      "appearance": "Apariencia",
+      "session": "Sesión"
+    },
+    "actions": {
+      "newSalesOrder": "Nuevo Pedido de Venta",
+      "newQuote": "Nuevo Presupuesto",
+      "newCustomer": "Nuevo Cliente",
+      "newProduct": "Nuevo Producto",
+      "lightMode": "Modo Claro",
+      "darkMode": "Modo Oscuro",
+      "systemTheme": "Tema del Sistema",
+      "logout": "Cerrar Sesión"
+    }
+  },
+  "dashboard": {
+    "salesPanel": "Panel de Ventas",
+    "cashier": "Cajero",
+    "openPos": "Abrir Caja Registradora (POS)",
+    "summary": "Resumen Diario",
+    "sales": "Ventas",
+    "returns": "Devoluciones",
+    "cashDrawer": "Caja Fuerte",
+    "recentTx": "Transacciones Recientes",
+    "noTx": "No hay transacciones aún hoy.",
+    "masterPanel": "Panel de Control Principal",
+    "monthSummary": "Resumen del Mes",
+    "monthlySales": "Ventas del Mes",
+    "totalInvoices": "Total Facturas",
+    "pendingTaxes": "Impuestos a Pagar",
+    "salesEvolution": "Evolución de Ventas",
+    "topCustomers": "Top Clientes",
+    "inventoryAlerts": "Alertas de Inventario",
+    "viewAll": "Ver Todo",
+    "outOfStock": "Sin Stock",
+    "lowStock": "Bajo Stock",
+    "noAlerts": "Sin alertas",
+    "systemStatus": "Estado del Sistema"
+  },
+  "sales": {
+    "title": "Ventas y Facturación",
+    "newSale": "Nueva Venta",
+    "export": "Exportar",
+    "refresh": "Actualizar",
+    "filters": {
+      "status": "Estado",
+      "client": "Cliente",
+      "date": "Fecha",
+      "all": "Todos",
+      "completed": "Completada",
+      "pending": "Pendiente",
+      "canceled": "Cancelada"
+    },
+    "table": {
+      "date": "Fecha",
+      "invoice": "Factura",
+      "client": "Cliente",
+      "total": "Total",
+      "status": "Estado",
+      "actions": "Acciones"
+    }
+  },
+  "products": {
+    "title": "Catálogo de Productos",
+    "newProduct": "Nuevo Producto",
+    "import": "Importar",
+    "search": "Buscar por código, nombre o categoría...",
+    "table": {
+      "code": "Código",
+      "name": "Nombre",
+      "category": "Categoría",
+      "price": "Precio",
+      "stock": "Stock",
+      "actions": "Acciones"
+    }
+  },
+  "customers": {
+    "title": "Directorio de Clientes",
+    "newCustomer": "Nuevo Cliente",
+    "export": "Exportar",
+    "search": "Buscar cliente, CUIT/DNI, email...",
+    "table": {
+      "name": "Nombre",
+      "document": "Documento",
+      "condition": "Condición",
+      "balance": "Saldo",
+      "actions": "Acciones"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "company": "Empresa",
+    "fiscal": "AFIP / Fiscal",
+    "users": "Usuarios",
+    "save": "Guardar Cambios",
+    "companyInfo": "Información de la Empresa",
+    "businessName": "Razón Social",
+    "fantasyName": "Nombre de Fantasía",
+    "taxCondition": "Condición Fiscal",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "fiscalSettings": "Configuración Fiscal",
+    "salePoint": "Punto de Venta",
+    "environment": "Entorno",
+    "production": "Producción",
+    "homologation": "Homologación (Testing)",
+    "certificates": "Certificados",
+    "uploadCert": "Subir CRT",
+    "uploadKey": "Subir KEY"
+  },
+  "purchases": {
+    "title": "Compras y Gastos",
+    "newPurchase": "Nueva Compra",
+    "export": "Exportar",
+    "refresh": "Actualizar",
+    "filters": {
+      "status": "Estado",
+      "supplier": "Proveedor",
+      "date": "Fecha",
+      "all": "Todos",
+      "completed": "Completada",
+      "pending": "Pendiente",
+      "canceled": "Cancelada"
+    },
+    "table": {
+      "date": "Fecha",
+      "invoice": "Factura",
+      "supplier": "Proveedor",
+      "total": "Total",
+      "status": "Estado",
+      "actions": "Acciones"
+    }
+  },
+  "cash": {
+    "title": "Caja y Tesorería",
+    "newMovement": "Nuevo Movimiento",
+    "openRegister": "Abrir Caja",
+    "closeRegister": "Cerrar Caja",
+    "export": "Exportar",
+    "balance": "Saldo Actual",
+    "income": "Ingresos",
+    "expenses": "Egresos",
+    "search": "Buscar movimiento...",
+    "table": {
+      "date": "Fecha",
+      "concept": "Concepto",
+      "type": "Tipo",
+      "amount": "Monto",
+      "user": "Usuario",
+      "actions": "Acciones"
+    }
+  },
+  "AppStore": {
+    "title": "App Store",
+    "description": "Descubre e instala módulos adicionales para tu negocio."
+  }
+}

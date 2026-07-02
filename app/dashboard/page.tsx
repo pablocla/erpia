@@ -21,6 +21,7 @@ import {
 import Link from "next/link"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import { useTranslations } from "next-intl"
 
 interface DashboardStats {
   resumenMes: {
@@ -194,8 +195,8 @@ function DashboardCajero({ user, authHeaders }: { user: any; authHeaders: () => 
     <div className="space-y-6">
       <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Ventas</h1>
-          <p className="text-muted-foreground text-sm mt-1">Cajero: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">{t("salesPanel")}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t("cashier")}: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
         </div>
         <Link href="/dashboard/pos">
           <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">

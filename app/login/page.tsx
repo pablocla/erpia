@@ -9,12 +9,13 @@ import { useAuth } from "@/lib/auth/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
 import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
+import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
 
 function LoginPageContent() {
   const router = useRouter()
@@ -22,14 +23,14 @@ function LoginPageContent() {
   const nextPath = searchParams.get("next")
   const { login, loginConToken } = useAuth()
 
-  async function redirectAfterLogin(token: string, rol: string) {
-    const dest = await resolvePostLoginPathAsync(token, rol, nextPath)
+  async function redirectAfterLogin(token: string, rol: string, goldenPath?: string) {
+    const dest = await resolvePostLoginPathAsync(token, rol, goldenPath ?? nextPath)
     router.push(dest)
   }
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [rubro, setRubro] = useState("salon_belleza")
+  const [rubro] = useState("veterinaria")
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
   const [cargandoDemo, setCargandoDemo] = useState(false)
@@ -47,12 +48,12 @@ function LoginPageContent() {
         const res = await fetch("/api/auth/demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rubro }),
+          body: JSON.stringify({ industryId: rubro }),
         })
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
-          await redirectAfterLogin(data.token, data.usuario.rol)
+          await redirectAfterLogin(data.token, data.usuario.rol, data.goldenPath)
           return
         }
       } catch {
@@ -75,12 +76,12 @@ function LoginPageContent() {
       const res = await fetch("/api/auth/demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rubro }),
+        body: JSON.stringify({ industryId: rubro }),
       })
       const data = await res.json()
       if (data.success && data.token) {
         loginConToken(data.token, data.usuario)
-        await redirectAfterLogin(data.token, data.usuario.rol)
+        await redirectAfterLogin(data.token, data.usuario.rol, data.goldenPath)
       } else {
         setError(data.error || "Error al iniciar sesión demo")
       }
@@ -92,7 +93,10 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
+      <div className="absolute top-4 right-4">
+        <LocaleFlagToggle />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{BRAND_NAME}</CardTitle>
@@ -132,20 +136,11 @@ function LoginPageContent() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="rubro">Rubro de la demo</Label>
-              <Select value={rubro} onValueChange={(value) => setRubro(value)}>
-                <SelectTrigger id="rubro">
-                  <SelectValue placeholder="Elegí un rubro" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="salon_belleza">Salón de Belleza / Barbería</SelectItem>
-                  <SelectItem value="bar_restaurant">Bar / Restaurante</SelectItem>
-                  <SelectItem value="estacion_servicio">Estación de Servicio</SelectItem>
-                  <SelectItem value="farmacia">Farmacia</SelectItem>
-                  <SelectItem value="veterinaria">Veterinaria</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="rounded-md border border-dashed p-3 text-center text-sm">
+              <p className="text-muted-foreground">¿Primera vez? Elegí tu rubro y entrá directo a tu demo.</p>
+              <Link href="/demo" className="mt-2 inline-block font-medium text-primary hover:underline">
+                Abrir sensor de rubro →
+              </Link>
             </div>
 
             <Button type="submit" className="w-full" disabled={cargando || cargandoDemo}>
@@ -192,7 +187,11 @@ function LoginPageContent() {
           </Link>
           <span aria-hidden>·</span>
           <Link href="/claver/claverp" className="text-primary hover:underline">
-            Clavis
+            Claver
+          </Link>
+          <span aria-hidden>·</span>
+          <Link href="/claver/clavergrow" className="text-primary hover:underline">
+            Clavergrow
           </Link>
           <span aria-hidden>·</span>
           <Link href="/claver-cloud" className="text-primary hover:underline">

@@ -325,17 +325,23 @@ Si el cliente paga con `cuenta_corriente`, se genera automáticamente una **Cuen
 
 ---
 
-## 10. Autocrítica — lo que todavía nos falta
+## 10. Autocrítica y Estado de Implementación
 
-### Crítico para competir (must-have en 30 días)
+### Ya Implementado y Sólido (Cierre de Gaps de Venta Recientes)
 
-| # | Problema | Impacto | Fix sugerido |
-|---|---------|---------|-------------|
-| P1 | **Sin escáner de código de barras en POS** | En kiosko/ferretería el cajero no puede escanear. Tiene que tipear el nombre. | Implementar `BarcodeDetector` API + fallback `QuaggaJS` para cámara. Input oculto que captura scan de pistola USB. |
-| P2 | **Sin impresora fiscal / térmica** | No imprime ticket físico legal. Solo `window.print()` (usa papel A4, inútil en POS real). | Integrar con API del browser `PrinterService` + template CSS `@media print` para 80mm. Para fiscal: socket TCP Epson/Hasar. |
-| P3 | **Modo offline con contingencia** | Si se corta internet, se requiere facturar offline sin interrupciones. | Integrado con CAEA offline. Ver la [Guía de Contingencia CAEA](file:///c:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/content/docs/funcional/caea-contingencia) para parametrización y sincronización diferida. |
-| P4 | **`Producto.precioVenta` es `Float` no `Decimal`** (Bug A-007) | Errores de redondeo en IVA: `$1234.50 × 1.21 = $1493.745000000001` | Migración Prisma a `Decimal @db.Decimal(15,2)`. |
-| P5 | **Sin búsqueda por código de barras en API** | El campo `codigoBarras` existe en el schema pero no se usa en el WHERE de búsqueda POS. | Agregar `{ codigoBarras: { contains: search } }` en el OR de `/api/productos`. |
+- ✅ **Escáner de código de barras físico (Wedge) y cámara:** Implementado un buffer de velocidad de pulsación inteligente en `pos/page.tsx` para separar el wedge del teclado virtual/manual (descarte de caracteres lentos > 50ms) y auto-enfoque al campo de búsqueda en clicks/foco de ventana. Cámara integrada vía `PosBarcodeCamera`.
+- ✅ **Búsqueda por código de barras / SKU exacto:** El endpoint `/api/productos` ahora evalúa y prioriza coincidencias exactas por código de barras o código antes de buscar coincidencias parciales por texto.
+- ✅ **Botones Rápidos PLU:** Panel de acceso rápido configurable de hasta 24 slots en `/dashboard/pos/config` con soporte multi-tenant en `/api/pos/plu`, permitiendo colores OKLCH dinámicos y etiquetas personalizadas de hasta 24 caracteres.
+- ✅ **Redondeo exacto de IVA (Decimales):** Migrado el modelo `Producto.precioVenta` de Float a Decimal para evitar inconsistencias de redondeo en IVA y facturación legal.
+- ✅ **Modo Offline Básico:** Cola de contingencia local en `localStorage` que retiene ventas pendientes si se corta la conexión (comprobantes tipo `Ticket` sin CAE) con banner de sincronización y botón manual para procesar en segundo plano al recuperar red.
+
+### Pendientes Críticos para Competir (Mostrador Físico)
+
+| # | Problema / Gap | Impacto | Fix propuesto |
+|---|----------------|---------|---------------|
+| P2 | **Sin impresora fiscal / térmica directa** | Solo se soporta `window.print()` nativo (con vista previa del navegador). | Integración directa con protocolos ESC/POS mediante API WebUSB/WebSerial para imprimir sin diálogo, y sockets TCP locales para ticketeadoras fiscales (Epson/Hasar). |
+| P3 | **Soporte CAEA offline local completo** | La contingencia AFIP actual requiere conexión para firmar comprobantes con CAE (el offline actual solo genera tickets informales). | Integrar el flujo de CAEA (Clave de Auto-autorización Electrónica de AFIP) localmente, permitiendo facturar A/B/C sin internet y reportar la rendición a AFIP en el plazo legal. |
+| P10 | **Pesaje integrado (balanza física)** | El carnicero o dietética tiene que pesar manualmente y cargar los gramos en el teclado en pantalla. | Integrar lectura serial (RS-232) por puerto COM mediante la Web Serial API (protocolo Toledo/Kretz). |
 
 ### Importante para diferenciación (60 días)
 
@@ -344,8 +350,6 @@ Si el cliente paga con `cuenta_corriente`, se genera automáticamente una **Cuen
 | P6 | Sin Mercado Pago link de pago QR en cobro | Integrar MP QR dinámico: POST a MP API → mostrar QR → webhook confirma pago |
 | P7 | Sin cliente frecuente / puntos | Tabla `ClientePuntos` + acumular en cada venta POS |
 | P8 | Sin historial de ventas del día en pantalla POS | Sección colapsable "Últimas ventas" con anular última |
-| P9 | Sin PLU (botones de acceso rápido personalizados) | Tabla `PLU { empresaId, productoId, orden, color }` |
-| P10 | Sin pesaje integrado (balanza) | Para carnicería/dietética: serial/USB con protocolo Toledo o Marte |
 
 ### Deseable (90 días)
 

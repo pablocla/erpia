@@ -207,7 +207,7 @@ const doc = new Document({
         }),
         p("Versión 1.0 — Junio 2026 | claver.com.ar", { color: "64748B" }),
         spacer(),
-        p("Nota de marca: Claver es la matriz (conglomerado). Clavis es el producto ERP flagship. Este documento describe el paraguas Claver, no solo Clavis.", {
+        p("Nota de marca: Claver es la matriz (conglomerado). Claver es el producto ERP flagship. Este documento describe el paraguas Claver, no solo Claver.", {
           bold: true,
         }),
 
@@ -226,7 +226,7 @@ const doc = new Document({
           ["Concepto", "Definición"],
           [
             ["Claver (matriz)", "Paraguas corporativo: sistemas, servicios e implementación para Argentina"],
-            ["Clavis (producto)", "ERP & POS flagship con facturación AFIP — 40+ módulos"],
+            ["Claver (producto)", "ERP & POS flagship con facturación AFIP — 40+ módulos"],
             ["Claver Cloud", "Plataforma multi-tenant de aprovisionamiento, ops e implementación (metodología CCA)"],
             ["Clav Consult", "Brazo humano: parametrización, migración, capacitación y soporte"],
           ],
@@ -239,7 +239,7 @@ const doc = new Document({
         h1("2. Líneas de negocio del grupo"),
         p("Seis líneas estructuran la oferta comercial de Claver. Cada una puede operar de forma independiente o como add-on del ecosistema."),
 
-        h2("2.1 Clavis — ERP & POS con AFIP"),
+        h2("2.1 Claver — ERP & POS con AFIP"),
         p("Estado: Disponible | Producto flagship"),
         bullet("Sistema integral: ventas, stock, compras, caja, contabilidad, ecommerce, logística, industria y agro"),
         bullet("40+ módulos con onboarding inteligente por rubro"),
@@ -252,7 +252,7 @@ const doc = new Document({
         p("Estado: Beta"),
         bullet("Mercado Pago, QR dinámico, links de pago y tarjetas"),
         bullet("Conciliación automática diaria con caja y ERP"),
-        bullet("Add-on nativo de Clavis; roadmap como servicio standalone"),
+        bullet("Add-on nativo de Claver; roadmap como servicio standalone"),
 
         h2("2.3 ClavLog — Logística y distribución"),
         p("Estado: Próximamente"),
@@ -287,7 +287,7 @@ const doc = new Document({
         table(
           ["Línea", "Estado", "Público objetivo"],
           [
-            ["Clavis", "Disponible", "Comercios, distribuidoras, industria, agro"],
+            ["Claver", "Disponible", "Comercios, distribuidoras, industria, agro"],
             ["ClavPay", "Beta", "Todo cliente que cobra con medios digitales"],
             ["ClavLog", "Próximamente", "Distribuidoras con flota y reparto"],
             ["ClavAI", "Beta", "Operaciones que buscan automatización"],
@@ -325,7 +325,7 @@ const doc = new Document({
 
         // 4. Segmentos verticales
         h1("4. Segmentos verticales (soluciones por industria)"),
-        p("Clavis se comercializa con landings y onboarding específicos por vertical. Cada segmento activa módulos, maestros y flujos adaptados al rubro."),
+        p("Claver se comercializa con landings y onboarding específicos por vertical. Cada segmento activa módulos, maestros y flujos adaptados al rubro."),
 
         h2("4.1 Retail y comercio (POS & AFIP)"),
         p("ICP: Comercios minoristas, kioscos, ferreterías, farmacias — 1 a 5 puntos de venta."),
@@ -437,7 +437,7 @@ const doc = new Document({
 
         // 7. Add-ons y monetización
         h1("7. Modelo comercial y add-ons"),
-        h2("7.1 Planes SaaS Clavis (ARS/mes)"),
+        h2("7.1 Planes SaaS Claver (ARS/mes)"),
         table(
           ["Plan", "Precio", "Incluye"],
           [
@@ -488,10 +488,10 @@ const doc = new Document({
             [
               "Fase 1 — Identidad Grupo",
               "Q2 2026",
-              "Marca Claver + Clavis, hub /claver, kit partners contadores",
+              "Marca Claver + Claver, hub /claver, kit partners contadores",
             ],
             [
-              "Fase 2 — Clavis comercial",
+              "Fase 2 — Claver comercial",
               "Q2 2026",
               "Landings verticales, catálogo 40+ módulos, demo por rubro",
             ],
@@ -514,17 +514,17 @@ const doc = new Document({
         table(
           ["Necesidad del cliente", "Línea Claver", "Producto / Servicio"],
           [
-            ["Facturar y vender en mostrador", "Clavis", "POS + AFIP"],
-            ["Vender online y mayorista", "Clavis", "Ecommerce + Portal B2B"],
-            ["Repartir y cobrar en calle", "ClavLog + Clavis", "App ruta + distribución"],
+            ["Facturar y vender en mostrador", "Claver", "POS + AFIP"],
+            ["Vender online y mayorista", "Claver", "Ecommerce + Portal B2B"],
+            ["Repartir y cobrar en calle", "ClavLog + Claver", "App ruta + distribución"],
             ["Cobrar con QR y tarjetas", "ClavPay", "Mercado Pago integrado"],
-            ["Producir con BOM y MRP", "Clavis", "Módulo Industria"],
-            ["Acopiar granos y liquidar", "Clavis", "Módulo Agro"],
+            ["Producir con BOM y MRP", "Claver", "Módulo Industria"],
+            ["Acopiar granos y liquidar", "Claver", "Módulo Agro"],
             ["Automatizar operaciones", "ClavAI", "IA + n8n + agentes"],
             ["Implementar y capacitar", "Clav Consult", "CCA + soporte"],
             ["Ver KPIs ejecutivos", "Clav Analytics", "BI y tableros"],
             ["Alojar y operar el tenant", "Claver Cloud", "Plataforma ops multi-tenant"],
-            ["Presentar IVA y CITI", "Clavis + Clav Consult", "Fiscal + partner contador"],
+            ["Presentar IVA y CITI", "Claver + Clav Consult", "Fiscal + partner contador"],
           ],
           [3200, 2200, 3960]
         ),

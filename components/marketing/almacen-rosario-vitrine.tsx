@@ -12,7 +12,7 @@ import {
   modulosPorGrupo,
   precioSueltoTotalArs,
 } from "@/lib/almacen-rosario/comercial"
-import { CLAVIS_CORE } from "@/lib/marketing/pricing-catalog"
+import { CLAVER_CORE } from "@/lib/marketing/pricing-catalog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -70,7 +70,7 @@ export function AlmacenRosarioVitrine({ variant = "full", ctaMode = "public" }: 
               </Button>
               {variant === "full" && (
                 <p className="mt-2 text-[10px] text-slate-500">
-                  Con Core: ~{fmtArs(CLAVIS_CORE.priceMonthly + bundle.precioPackArs)}/mes
+                  Con Core: ~{fmtArs(CLAVER_CORE.priceMonthly + bundle.precioPackArs)}/mes
                 </p>
               )}
             </div>

@@ -54,7 +54,7 @@ flowchart LR
   E1[Tier 1: Fiado / Cobranzas WA] --> E2[Tier 2: WhatsApp / OCR / Backup]
   E2 --> E3[Bundle pool-almacen-barrio]
   E3 --> E4[Pack Almacén Rosario 18 módulos]
-  E4 --> E5[Clavis Core ERP + AFIP]
+  E4 --> E5[Claver Core ERP + AFIP]
   E1 -.->|trial 14d| E1
 ```
 

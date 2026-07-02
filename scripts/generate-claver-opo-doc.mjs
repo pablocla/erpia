@@ -1,6 +1,6 @@
 /**
- * Genera documento estratégico: Clavis + OPO + Claver Cloud
- * Uso: node scripts/generate-clavis-opo-doc.mjs
+ * Genera documento estratégico: Claver + OPO + Claver Cloud
+ * Uso: node scripts/generate-claver-opo-doc.mjs
  */
 import fs from "fs"
 import path from "path"
@@ -24,7 +24,7 @@ import {
 } from "docx"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const OUT = path.join(__dirname, "..", "docs", "Clavis-OPO-ClaverCloud-Estrategia.docx")
+const OUT = path.join(__dirname, "..", "docs", "Claver-OPO-ClaverCloud-Estrategia.docx")
 
 const border = { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" }
 const borders = { top: border, bottom: border, left: border, right: border }
@@ -166,7 +166,7 @@ const doc = new Document({
             new Paragraph({
               alignment: AlignmentType.CENTER,
               children: [
-                new TextRun("Clavis · OPO · Claver Cloud — Documento estratégico — Junio 2026 — Pág. "),
+                new TextRun("Claver · OPO · Claver Cloud — Documento estratégico — Junio 2026 — Pág. "),
                 new TextRun({ children: [PageNumber.CURRENT] }),
               ],
             }),
@@ -177,7 +177,7 @@ const doc = new Document({
         new Paragraph({
           spacing: { after: 400 },
           children: [
-            new TextRun({ text: "Clavis + OPO + Claver Cloud", bold: true, size: 40 }),
+            new TextRun({ text: "Claver + OPO + Claver Cloud", bold: true, size: 40 }),
           ],
         }),
         new Paragraph({
@@ -191,7 +191,7 @@ const doc = new Document({
           ],
         }),
         p("Versión: Junio 2026 · Audiencia: fundador / analista / implementador (1 persona puede operar)"),
-        p("Stack: Clavis (Next.js 15) · Claver Cloud · OPO · Protheus REST/SQL · Cursor · Grok Build"),
+        p("Stack: Claver (Next.js 15) · Claver Cloud · OPO · Protheus REST/SQL · Cursor · Grok Build"),
 
         h1("1. Resumen ejecutivo"),
         p(
@@ -203,7 +203,7 @@ const doc = new Document({
         table(
           ["Pieza", "Qué es", "Para quién", "Rol"],
           [
-            ["Clavis", "ERP Next.js (POS, ventas, stock, AFIP)", "Cliente final", "Producto core — datos canónicos"],
+            ["Claver", "ERP Next.js (POS, ventas, stock, AFIP)", "Cliente final", "Producto core — datos canónicos"],
             ["Claver Cloud", "Consola analista (/claver-cloud)", "Vos / equipo Claver", "Control plane: tenants, ops, bridge"],
             ["OPO", "Ontología + bridge legacy", "Analista + tenant", "Traduce Protheus ↔ entidades canónicas"],
             ["Cursor + Grok", "IDE + agente IA", "Desarrollo", "Implementación, no runtime"],
@@ -216,7 +216,7 @@ const doc = new Document({
         p("Lectura hoy (lo que funciona):"),
         bullet("numbers", "Protheus REST → protheus-rest-client → Legacy Bridge → entidades OPO (Customer, Product, Invoice)"),
         bullet("numbers", "Protheus SQL → introspección SX2/SX3/SA1/SB1 → OPO Console (descubrimiento, no query runtime aún)"),
-        bullet("numbers", "Clavis DB → clavis-adapter → modo full (sin bridge)"),
+        bullet("numbers", "Claver DB → claver-adapter → modo full (sin bridge)"),
         bullet("numbers", "Edge Agent (VPN) → remote-agent → mismo protocolo OPO en PC del cliente"),
         p("Escritura: definida en tipos pero escritura=null en mapeos default — pendiente de productizar."),
 
@@ -258,8 +258,8 @@ const doc = new Document({
 
         h1("4. Dolores que esto resuelve"),
         h2("4.1 Para el cliente con Protheus"),
-        bullet("bullets", "No reemplazar ERP de golpe — UI moderna Clavis leyendo maestros legacy"),
-        bullet("bullets", "Facturación AFIP en Clavis sin migrar años de histórico Protheus"),
+        bullet("bullets", "No reemplazar ERP de golpe — UI moderna Claver leyendo maestros legacy"),
+        bullet("bullets", "Facturación AFIP en Claver sin migrar años de histórico Protheus"),
         bullet("bullets", "Omnicanal (ML, TN, WhatsApp) sin duplicar stock en Protheus manualmente"),
         bullet("bullets", "Visibilidad: 3.432 endpoints documentados vs. caja negra AdvPL"),
         bullet("bullets", "Implementación remota: analista opera desde Claver Cloud sin ir al sitio"),
@@ -271,7 +271,7 @@ const doc = new Document({
         bullet("bullets", "Cursor/Grok aceleran parches; el runtime queda en Next.js estable"),
 
         h2("4.3 Dolores AÚN NO resueltos (honestos)"),
-        bullet("bullets", "Escritura bidireccional Protheus ↔ Clavis (solo lectura hoy)"),
+        bullet("bullets", "Escritura bidireccional Protheus ↔ Claver (solo lectura hoy)"),
         bullet("bullets", "SQL en runtime de queries (solo introspección)"),
         bullet("bullets", "Demo fallback enmascara mala configuración"),
         bullet("bullets", "Credenciales Protheus en localStorage del navegador"),
@@ -300,10 +300,10 @@ const doc = new Document({
         table(
           ["Nivel", "Nombre", "SKUs clave", "Precio ref.", "Target"],
           [
-            ["0", "Clavis Nativo", "core.clavis", "$39.900/mes", "PyME sin legacy"],
+            ["0", "Claver Nativo", "core.claver", "$39.900/mes", "PyME sin legacy"],
             ["1", "Conecta", "pool-conecta-ar, integ.*", "$34.900/mes", "Primer canal digital"],
             ["2", "Vertical / Omnicanal", "pool-almacen-rosario, Omnicanal", "$49–89k/mes", "Retail, distribuidora"],
-            ["3", "Legacy Bridge", "bridge.opo_studio + pool-digitalizacion-legacy", "$59.900/mes", "Protheus → Clavis UI"],
+            ["3", "Legacy Bridge", "bridge.opo_studio + pool-digitalizacion-legacy", "$59.900/mes", "Protheus → Claver UI"],
             ["4", "Claver Platform", "Plan Pro/Enterprise + ops.*", "$79–149k/mes", "MSP / implementador"],
           ],
         ),
@@ -327,9 +327,9 @@ const doc = new Document({
         p("pool-digitalizacion-legacy ($59.900/mes):"),
         bullet("bullets", "bridge.opo_studio — bridge + consola OPO"),
         bullet("bullets", "impl.parametrizacion_remota — setup sin visita"),
-        p("Mensaje comercial: 'Tu Protheus sigue; tu equipo usa Clavis. Stock unificado en 30 días.'"),
+        p("Mensaje comercial: 'Tu Protheus sigue; tu equipo usa Claver. Stock unificado en 30 días.'"),
 
-        h1("7. Cómo enlazar Clavis · Next.js · Cursor · Grok · OPO"),
+        h1("7. Cómo enlazar Claver · Next.js · Cursor · Grok · OPO"),
         h2("7.1 División de responsabilidades"),
         table(
           ["Capa", "Tecnología", "Quién lo toca", "No mezclar con"],
@@ -421,7 +421,7 @@ const doc = new Document({
 
         h1("11. Conclusión"),
         p(
-          "No te falta conexión: te sobra superficie. REST y SQL ya te permiten descubrir, catalogar y leer Protheus desde una sola consola. El siguiente paso no es conectar más cosas, sino empaquetar menos opciones, unificar precios, y cerrar el circuito introspección → bridge → facturación del SKU. Con Cursor y Grok construís rápido; con Claver Cloud operás sin ir a cada cliente. OPO es el pegamento semántico entre Clavis y Protheus — vendelo como pool-digitalizacion-legacy, no como 12 pantallas sueltas.",
+          "No te falta conexión: te sobra superficie. REST y SQL ya te permiten descubrir, catalogar y leer Protheus desde una sola consola. El siguiente paso no es conectar más cosas, sino empaquetar menos opciones, unificar precios, y cerrar el circuito introspección → bridge → facturación del SKU. Con Cursor y Grok construís rápido; con Claver Cloud operás sin ir a cada cliente. OPO es el pegamento semántico entre Claver y Protheus — vendelo como pool-digitalizacion-legacy, no como 12 pantallas sueltas.",
         ),
         p("Próximo paso sugerido: activar pool-digitalizacion-legacy en un tenant piloto y documentar el caso en 1 página.", {
           bold: true,

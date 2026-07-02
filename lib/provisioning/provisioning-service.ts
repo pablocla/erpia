@@ -4,6 +4,11 @@ import { ensureProyectoImplementacion } from "@/lib/ops/implementacion-service"
 import { emailService } from "@/lib/email/email-service"
 import { emailLayout } from "@/lib/email/email-templates"
 import { hashPassword } from "@/lib/auth/password"
+import { applyRetailOnboarding } from "@/lib/comercial/retail-onboarding-service"
+import {
+  inferModoLiteFromEnganche,
+  resolvePackCalle,
+} from "@/lib/comercial/pack-calle-catalog"
 
 export async function procesarOrdenProvision(ordenId: number) {
   const db = prisma as any
@@ -21,14 +26,23 @@ export async function procesarOrdenProvision(ordenId: number) {
 
   try {
     // 1. Crear Empresa
+    const rubro = orden.rubro || "almacen"
+    const engancheId = orden.engancheId || orden.engancheCandidato || "pos.fiado_barrio"
+    const modoLite = orden.modoLite || inferModoLiteFromEnganche(engancheId)
+    const pack = resolvePackCalle(engancheId)
+
     const empresa = await db.empresa.create({
       data: {
         nombre: orden.razonSocial,
         razonSocial: orden.razonSocial,
-        cuit: orden.cuit,
+        cuit: orden.cuit || orden.rfc || "00000000000",
         email: orden.contactoEmail,
         planHosting: orden.planHosting,
         entornoAfip: "homologacion",
+        paisFiscal: orden.paisFiscal || "AR",
+        rubro,
+        modoLite,
+        temaConfig: { locale: orden.paisFiscal === "MX" ? "es-MX" : "es-AR" },
         activo: true,
       },
     })
@@ -58,7 +72,16 @@ export async function procesarOrdenProvision(ordenId: number) {
       planComercial: orden.planHosting,
     })
 
-    // 5. Suscripciones (Opcional, en base a SKUs)
+    // 5. Onboarding retail + SKUs del enganche
+    const onboarding = await applyRetailOnboarding({
+      empresaId: empresa.id,
+      rubro,
+      engancheId,
+      modoLite,
+      origen: `orden_provision:${ordenId}`,
+      trialDias: 14,
+    })
+
     if (orden.skus && Array.isArray(orden.skus)) {
       for (const sku of orden.skus) {
         await db.suscripcionModulo.upsert({
@@ -77,17 +100,20 @@ export async function procesarOrdenProvision(ordenId: number) {
 
     // 7. Enviar email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://erp.claver.cloud"
+    const destinoUrl = `${appUrl}${onboarding.landingPath}`
+    const packNombre = pack?.nombre ?? "Libreta Fiado"
     const html = emailLayout(`
-      <h2>¡Bienvenido a Claver Cloud ERP!</h2>
-      <p>Hola ${orden.contactoNombre}, tu entorno para <strong>${orden.razonSocial}</strong> está listo.</p>
-      <p>Podés acceder a la plataforma con las siguientes credenciales temporales:</p>
+      <h2>Tu comercio ya está listo en Claver</h2>
+      <p>Hola ${orden.contactoNombre}, configuramos <strong>${orden.razonSocial}</strong> con <strong>${packNombre}</strong>.</p>
+      <p>En minutos podés anotar el primer fiado o la primera venta — sin cuaderno.</p>
       <ul>
-        <li><strong>URL:</strong> <a href="${appUrl}">${appUrl}</a></li>
+        <li><strong>Entrar:</strong> <a href="${appUrl}/login">${appUrl}/login</a></li>
+        <li><strong>Ir directo a:</strong> <a href="${destinoUrl}">${packNombre}</a></li>
         <li><strong>Email:</strong> ${orden.contactoEmail}</li>
-        <li><strong>Contraseña:</strong> ${tempPassword}</li>
+        <li><strong>Contraseña temporal:</strong> ${tempPassword}</li>
       </ul>
-      <p>Por razones de seguridad, te recomendamos cambiar la contraseña al ingresar.</p>
-    `, { preheader: "Bienvenido a Claver Cloud" })
+      <p>Trial 14 días. Cambiá la contraseña al ingresar.</p>
+    `, { preheader: `${orden.razonSocial} — listo para operar` })
 
     await emailService.enviar({
       to: orden.contactoEmail,

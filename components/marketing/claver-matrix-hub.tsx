@@ -37,13 +37,30 @@ export function ClaverMatrixHub() {
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-slate-400">{CLAVER_GROUP.descriptor}</p>
             <p className="mt-4 max-w-xl text-sm text-slate-500">
-              Clavis es nuestro sistema ERP flagship. Pronto sumamos más líneas de cobros, logística,
-              IA y consultoría bajo el mismo paraguas.
+              Claver para comercio y distribución. Clavergrow para producción agrícola.
+              Más líneas de cobros, logística, IA y consultoría bajo el mismo paraguas.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Button size="lg" className="bg-amber-600 hover:bg-amber-500 text-slate-950" asChild>
                 <Link href="/claver/claverp">
-                  Conocer Clavis
+                  Conocer Claver
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-500 text-white" asChild>
+                <Link href="/claver/clavergrow">
+                  Conocer Clavergrow
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-amber-400/40 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20"
+                asChild
+              >
+                <Link href="/demo">
+                  Probar mi rubro
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -64,6 +81,14 @@ export function ClaverMatrixHub() {
                 asChild
               >
                 <Link href="/claver/marca">Identidad del grupo</Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-blue-500/20 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40 hover:text-blue-200"
+                asChild
+              >
+                <Link href="/clavernet">Red Clavernet</Link>
               </Button>
             </div>
           </MotionFadeDown>
@@ -92,9 +117,11 @@ export function ClaverMatrixHub() {
                   className={`group h-full transition hover:-translate-y-1 hover:shadow-lg ${
                     line.id === "claverp"
                       ? "ring-2 ring-blue-500/40 border-blue-200"
-                      : line.id === "clavercloud"
-                        ? "ring-2 ring-violet-500/40 border-violet-200"
-                        : "border-slate-200/80"
+                      : line.id === "clavergrow"
+                        ? "ring-2 ring-emerald-500/40 border-emerald-200"
+                        : line.id === "clavercloud"
+                          ? "ring-2 ring-violet-500/40 border-violet-200"
+                          : "border-slate-200/80"
                   }`}
                 >
                   <CardHeader>

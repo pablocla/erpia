@@ -103,8 +103,8 @@ export default function AgroDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold font-[var(--font-fraunces)]">AGRO / Acopio</h1>
-          <p className="text-sm text-muted-foreground">Gestión de granos, balanza, contratos y liquidaciones</p>
+          <h1 className="text-2xl font-semibold font-[var(--font-fraunces)]">Clavergrow</h1>
+          <p className="text-sm text-muted-foreground">Cultivá con control — granos, balanza, contratos y liquidaciones</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRefreshPizarra} disabled={refreshing}>
@@ -357,6 +357,7 @@ export default function AgroDashboardPage() {
           { href: "/dashboard/agro/lotes", label: "Lotes / Campos", desc: "Agricultura 4.0", icon: Wheat },
           { href: "/dashboard/agro/carta-porte", label: "Carta de Porte", desc: "CPE AFIP", icon: ShieldCheck },
           { href: "/dashboard/agro/productor", label: "Portal Productor", desc: "Saldos y liquidaciones", icon: Layers },
+          { href: "/dashboard/agro/cannabis", label: "Cultivo regulado", desc: "Trazabilidad REPROCANN", icon: Leaf },
         ].map((item) => (
           <Link
             key={item.href}

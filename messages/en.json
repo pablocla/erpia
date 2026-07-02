@@ -1,0 +1,268 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "search": "Search...",
+    "actions": "Actions",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "sections": {
+      "principal": "Main"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "myTasks": "My Tasks",
+      "sales": "Sales",
+      "purchases": "Purchases",
+      "stock": "Inventory",
+      "settings": "Settings",
+      "pos": "Point of Sale"
+    }
+  },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "register": "Register",
+    "email": "Email address",
+    "password": "Password"
+  },
+  "pos": {
+    "checkout": "Checkout",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "pay": "Pay",
+    "searchProduct": "Search product by name or barcode (F2)...",
+    "noProductsInCart": "No products in cart",
+    "cart": "Cart",
+    "cancelSale": "Cancel Sale",
+    "paymentMethod": "Payment Method",
+    "cash": "Cash",
+    "card": "Card",
+    "transfer": "Transfer",
+    "client": "Customer",
+    "selectClient": "Select Customer (Optional)",
+    "receipt": "Receipt",
+    "print": "Print",
+    "close": "Close"
+  },
+  "fiscal": {
+    "ar": {
+      "cuit": "CUIT (Tax ID)",
+      "afip": "AFIP (Tax Auth)",
+      "iva": "IVA (VAT)",
+      "iibb": "Ingresos Brutos (Gross Receipt Tax)"
+    },
+    "us": {
+      "taxId": "Tax ID",
+      "salesTax": "Sales Tax"
+    }
+  },
+  "errors": {
+    "generic": "An unexpected error occurred.",
+    "notFound": "Resource not found.",
+    "unauthorized": "Unauthorized."
+  },
+  "toasts": {
+    "success": "Operation successful",
+    "error": "Operation failed"
+  },
+  "emptyStates": {
+    "noData": "No data available"
+  },
+  "cloudNav": {
+    "sections": {
+      "ceo": "CEO",
+      "platform": "Platform",
+      "protheus": "Protheus / OPO",
+      "admin": "Administration"
+    },
+    "items": {
+      "commandCenter": "Command Center",
+      "fieldSurvey": "Field Survey",
+      "mapAndRoute": "Map & Route",
+      "superAdmin": "Super Admin",
+      "tenants": "Tenants",
+      "provisioning": "Provisioning",
+      "operations": "Operations",
+      "implementation": "Implementation",
+      "marketplace": "Marketplace",
+      "setupProtheus": "Setup Protheus",
+      "opoConsole": "OPO Console",
+      "restApi": "REST API",
+      "billing": "Billing",
+      "settings": "Settings"
+    }
+  },
+  "CommandPalette": {
+    "title": "Command Palette",
+    "description": "Search modules, actions, and ERP settings",
+    "placeholder": "Search module, action or setting...",
+    "empty": "No results found.",
+    "groups": {
+      "quickActions": "Quick Actions",
+      "recent": "Recent",
+      "docs": "Documentation (Wiki)",
+      "appearance": "Appearance",
+      "session": "Session"
+    },
+    "actions": {
+      "newSalesOrder": "New Sales Order",
+      "newQuote": "New Quote",
+      "newCustomer": "New Customer",
+      "newProduct": "New Product",
+      "lightMode": "Light Mode",
+      "darkMode": "Dark Mode",
+      "systemTheme": "System Theme",
+      "logout": "Sign Out"
+    }
+  },
+  "dashboard": {
+    "salesPanel": "Sales Panel",
+    "cashier": "Cashier",
+    "openPos": "Open Cash Register (POS)",
+    "summary": "Daily Summary",
+    "sales": "Sales",
+    "returns": "Returns",
+    "cashDrawer": "Cash Drawer",
+    "recentTx": "Recent Transactions",
+    "noTx": "No transactions yet today.",
+    "masterPanel": "Main Control Panel",
+    "monthSummary": "Month Summary",
+    "monthlySales": "Monthly Sales",
+    "totalInvoices": "Total Invoices",
+    "pendingTaxes": "Pending Taxes",
+    "salesEvolution": "Sales Evolution",
+    "topCustomers": "Top Customers",
+    "inventoryAlerts": "Inventory Alerts",
+    "viewAll": "View All",
+    "outOfStock": "Out of Stock",
+    "lowStock": "Low Stock",
+    "noAlerts": "No alerts",
+    "systemStatus": "System Status"
+  },
+  "sales": {
+    "title": "Sales & Billing",
+    "newSale": "New Sale",
+    "export": "Export",
+    "refresh": "Refresh",
+    "filters": {
+      "status": "Status",
+      "client": "Customer",
+      "date": "Date",
+      "all": "All",
+      "completed": "Completed",
+      "pending": "Pending",
+      "canceled": "Canceled"
+    },
+    "table": {
+      "date": "Date",
+      "invoice": "Invoice",
+      "client": "Customer",
+      "total": "Total",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "products": {
+    "title": "Product Catalog",
+    "newProduct": "New Product",
+    "import": "Import",
+    "search": "Search by code, name or category...",
+    "table": {
+      "code": "Code",
+      "name": "Name",
+      "category": "Category",
+      "price": "Price",
+      "stock": "Stock",
+      "actions": "Actions"
+    }
+  },
+  "customers": {
+    "title": "Customer Directory",
+    "newCustomer": "New Customer",
+    "export": "Export",
+    "search": "Search customer, Tax ID, email...",
+    "table": {
+      "name": "Name",
+      "document": "Document",
+      "condition": "Condition",
+      "balance": "Balance",
+      "actions": "Actions"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "company": "Company",
+    "fiscal": "Tax / Fiscal",
+    "users": "Users",
+    "save": "Save Changes",
+    "companyInfo": "Company Information",
+    "businessName": "Business Name",
+    "fantasyName": "Fantasy Name",
+    "taxCondition": "Tax Condition",
+    "address": "Address",
+    "phone": "Phone",
+    "fiscalSettings": "Fiscal Settings",
+    "salePoint": "Sale Point",
+    "environment": "Environment",
+    "production": "Production",
+    "homologation": "Homologation (Testing)",
+    "certificates": "Certificates",
+    "uploadCert": "Upload CRT",
+    "uploadKey": "Upload KEY"
+  },
+  "purchases": {
+    "title": "Purchases & Expenses",
+    "newPurchase": "New Purchase",
+    "export": "Export",
+    "refresh": "Refresh",
+    "filters": {
+      "status": "Status",
+      "supplier": "Supplier",
+      "date": "Date",
+      "all": "All",
+      "completed": "Completed",
+      "pending": "Pending",
+      "canceled": "Canceled"
+    },
+    "table": {
+      "date": "Date",
+      "invoice": "Invoice",
+      "supplier": "Supplier",
+      "total": "Total",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "cash": {
+    "title": "Cash & Treasury",
+    "newMovement": "New Movement",
+    "openRegister": "Open Register",
+    "closeRegister": "Close Register",
+    "export": "Export",
+    "balance": "Current Balance",
+    "income": "Income",
+    "expenses": "Expenses",
+    "search": "Search movement...",
+    "table": {
+      "date": "Date",
+      "concept": "Concept",
+      "type": "Type",
+      "amount": "Amount",
+      "user": "User",
+      "actions": "Actions"
+    }
+  },
+  "AppStore": {
+    "title": "App Store",
+    "description": "Discover and install additional modules for your business."
+  }
+}

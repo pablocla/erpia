@@ -13,10 +13,10 @@ export async function runLegacyBridgeTest(
   const testedAt = new Date().toISOString()
   const steps: LegacyBridgeTestResult["steps"] = []
 
-  if (config.modoErp === "full" || config.origen === "clavis_db") {
+  if (config.modoErp === "full" || config.origen === "claver_db") {
     return {
       ok: true,
-      steps: [{ id: "native", label: "ERP nativo Clavis — sin bridge legacy", ok: true }],
+      steps: [{ id: "native", label: "ERP nativo Claver — sin bridge legacy", ok: true }],
       testedAt,
     }
   }

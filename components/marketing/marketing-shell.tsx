@@ -140,7 +140,7 @@ export function MarketingShell({ children, theme = "dark-hero" }: MarketingShell
           </div>
         </div>
         <p className="mx-auto mt-10 max-w-7xl text-center text-xs text-slate-600">
-          © {new Date().getFullYear()} Claver · Clavis. Precios orientativos + IVA.
+          © {new Date().getFullYear()} Claver · Claver. Precios orientativos + IVA.
         </p>
       </footer>
     </div>

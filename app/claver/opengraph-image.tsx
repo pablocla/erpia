@@ -45,7 +45,7 @@ export default function ClaverOgImage() {
           {CLAVER_GROUP.descriptor}
         </div>
         <div style={{ marginTop: 40, display: "flex", gap: 16 }}>
-          {["Clavis", "ClavPay", "ClavAI", "Clav Consult"].map((p) => (
+          {["Claver", "ClavPay", "ClavAI", "Clav Consult"].map((p) => (
             <div
               key={p}
               style={{

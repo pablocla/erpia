@@ -52,7 +52,7 @@ async function main() {
     if (path === "/health") {
       return send(res, 200, {
         ok: true,
-        agent: "clavis-opo-edge-agent",
+        agent: "claver-opo-edge-agent",
         routing: config.routing,
         sql: config.sql.enabled,
         rest: config.rest.enabled,
@@ -101,7 +101,7 @@ async function main() {
   server.listen(config.port, config.host, () => {
     console.log(`[OPO Edge Agent] escuchando en http://${config.host}:${config.port}`)
     console.log(`[OPO Edge Agent] routing=${config.routing} sql=${config.sql.enabled} rest=${config.rest.enabled}`)
-    console.log(`[OPO Edge Agent] desde Clavis (192.168.100.2) usar baseUrl: http://192.168.100.3:${config.port}`)
+    console.log(`[OPO Edge Agent] desde Claver (192.168.100.2) usar baseUrl: http://192.168.100.3:${config.port}`)
   })
 }
 

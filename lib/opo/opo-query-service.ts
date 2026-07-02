@@ -1,4 +1,4 @@
-import { queryClavisEntity, buildClavisDiscoveryManifest } from "./clavis-adapter"
+import { queryClaverEntity, buildClaverDiscoveryManifest } from "./claver-adapter"
 import {
   buildProtheusDemoManifest,
   PROTHEUS_DEMO_CUSTOMERS,
@@ -41,7 +41,7 @@ export async function getOpoDiscovery(empresaId: number, requestOrigin: string) 
     }
     return buildProtheusDemoManifest(baseUrl)
   }
-  return buildClavisDiscoveryManifest(baseUrl, orgName)
+  return buildClaverDiscoveryManifest(baseUrl, orgName)
 }
 
 export async function executeOpoQuery(empresaId: number, input: OpoQueryInput) {
@@ -50,8 +50,8 @@ export async function executeOpoQuery(empresaId: number, input: OpoQueryInput) {
     throw new Error("OPO Studio no está activo para este tenant")
   }
 
-  if (config.origen === "clavis_db") {
-    return queryClavisEntity(empresaId, input)
+  if (config.origen === "claver_db") {
+    return queryClaverEntity(empresaId, input)
   }
 
   if (isRestDirectConfigured(config)) {

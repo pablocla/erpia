@@ -528,7 +528,7 @@ export const AUTOPOOL_ENTRIES: AutopoolEntry[] = [
   {
     sku: "integ.woocommerce",
     nombre: "WooCommerce Link",
-    lema: "WordPress vende. Clavis manda.",
+    lema: "WordPress vende. Claver manda.",
     tipo: "integracion",
     nicho: "integra",
     integracionId: "woocommerce",

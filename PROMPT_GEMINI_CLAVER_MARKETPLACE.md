@@ -271,7 +271,7 @@ Leer ANTES de codear (no reimplementar):
 |---------|-----------|
 | `app/claver/apps/page.tsx` | Landing marketplace (UI marketing estática) |
 | `components/marketing/claver-apps-marketplace.tsx` | Cards desde `CLAVER_SERVICE_LINES` + pricing simulado |
-| `lib/marketing/claver-services-catalog.ts` | 6 líneas Claver (Clavis, ClavPay, etc.) |
+| `lib/marketing/claver-services-catalog.ts` | 6 líneas Claver (Claver, ClavPay, etc.) |
 | `lib/platform/commercial-service.ts` | `ProductoComercial`, `seedCommercialCatalog()`, suscripciones |
 | `lib/platform/sku-catalog.ts` | `SKU_TO_FEATURE` mapeo feature técnica |
 | `lib/platform/entitlements.ts` | `canUseSku()`, `trackAutomationUsage()` |

@@ -41,10 +41,13 @@ import {
   Globe,
   ClipboardList,
   Cloud,
+  Sprout,
+  Leaf,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
+import { useTranslations } from "next-intl"
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -103,6 +106,12 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/onboarding", label: "Onboarding IA", icon: Sparkles, section: "Inteligencia", keywords: ["onboarding", "setup"] },
   { href: "/dashboard/reportes", label: "Clav Sheets", icon: FileText, section: "Inteligencia", keywords: ["reportes", "pivot", "excel", "smartview", "sheets"] },
   { href: "/dashboard/reportes/plantillas", label: "Plantillas Clav Sheets", icon: FileText, section: "Inteligencia", keywords: ["plantillas", "templates", "reportes", "galeria"] },
+  // Clavergrow / Agro
+  { href: "/dashboard/agro", label: "Clavergrow Dashboard", icon: Sprout, section: "Clavergrow", keywords: ["agro", "clavergrow", "acopio", "granos", "campo"] },
+  { href: "/dashboard/agro/balanza", label: "Balanza Camiones", icon: Truck, section: "Clavergrow", keywords: ["balanza", "pesada", "camión", "tn"] },
+  { href: "/dashboard/agro/lotes", label: "Lotes y Mapas", icon: Leaf, section: "Clavergrow", keywords: ["lote", "ndvi", "campo", "mapa"] },
+  { href: "/dashboard/agro/cannabis", label: "Cultivo regulado", icon: Leaf, section: "Clavergrow", keywords: ["cannabis", "reprocann", "cultivo", "regulado"] },
+  { href: "/claver/clavergrow", label: "Landing Clavergrow", icon: Sprout, section: "Marketing", keywords: ["clavergrow", "agro", "landing", "producto"] },
   // Config
   { href: "/dashboard/configuracion", label: "Parámetros", icon: Settings, section: "Configuración", keywords: ["config", "parámetro", "setting"] },
   { href: "/dashboard/usuarios", label: "Usuarios y Permisos", icon: Shield, section: "Configuración", keywords: ["usuario", "permiso", "rol"] },
@@ -115,6 +124,7 @@ const ROUTES: RouteItem[] = [
 ]
 
 export function CommandPalette() {
+  const t = useTranslations("CommandPalette")
   const router = useRouter()
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
@@ -170,32 +180,32 @@ export function CommandPalette() {
     <CommandDialog
       open={commandPaletteOpen}
       onOpenChange={setCommandPaletteOpen}
-      title="Paleta de comandos"
-      description="Buscar módulos, acciones y configuración del ERP"
+      title={t("title")}
+      description={t("description")}
     >
-      <CommandInput placeholder="Buscar módulo, acción o configuración..." />
+      <CommandInput placeholder={t("placeholder")} />
       <CommandList>
-        <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+        <CommandEmpty>{t("empty")}</CommandEmpty>
 
-        <CommandGroup heading="Acciones Rápidas">
+        <CommandGroup heading={t("groups.quickActions")}>
           <CommandItem value="nuevo pedido de venta accion rapida" onSelect={() => navigate("/dashboard/ventas/pedidos")}>
             <ShoppingCart className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Nuevo Pedido de Venta</span>
+            <span>{t("actions.newSalesOrder")}</span>
             <CommandShortcut>NP</CommandShortcut>
           </CommandItem>
           <CommandItem value="nuevo presupuesto accion rapida" onSelect={() => navigate("/dashboard/ventas/presupuestos")}>
             <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Nuevo Presupuesto</span>
+            <span>{t("actions.newQuote")}</span>
             <CommandShortcut>NPR</CommandShortcut>
           </CommandItem>
           <CommandItem value="nuevo cliente accion rapida" onSelect={() => navigate("/dashboard/clientes")}>
             <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Nuevo Cliente</span>
+            <span>{t("actions.newCustomer")}</span>
             <CommandShortcut>NC</CommandShortcut>
           </CommandItem>
           <CommandItem value="nuevo producto accion rapida" onSelect={() => navigate("/dashboard/productos")}>
             <Package className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>Nuevo Producto</span>
+            <span>{t("actions.newProduct")}</span>
             <CommandShortcut>NPROD</CommandShortcut>
           </CommandItem>
         </CommandGroup>
@@ -204,7 +214,7 @@ export function CommandPalette() {
 
         {/* Recent pages */}
         {recentPages.length > 0 && (
-          <CommandGroup heading="Recientes">
+          <CommandGroup heading={t("groups.recent")}>
             {recentPages.slice(0, 5).map((page) => {
               const route = ROUTES.find((r) => r.href === page.href)
               const Icon = route?.icon ?? Clock
@@ -244,7 +254,7 @@ export function CommandPalette() {
         {/* Documentación Group */}
         {docItems.length > 0 && (
           <>
-            <CommandGroup heading="Documentación (Wiki)">
+            <CommandGroup heading={t("groups.docs")}>
               {docItems.map((doc) => (
                 <CommandItem
                   key={doc.slug}
@@ -264,23 +274,23 @@ export function CommandPalette() {
         )}
 
         {/* Theme actions */}
-        <CommandGroup heading="Apariencia">
+        <CommandGroup heading={t("groups.appearance")}>
           <CommandItem onSelect={() => { setTheme("light"); setCommandPaletteOpen(false) }}>
             <Sun className="mr-2 h-4 w-4" />
-            <span>Modo Claro</span>
+            <span>{t("actions.lightMode")}</span>
           </CommandItem>
           <CommandItem onSelect={() => { setTheme("dark"); setCommandPaletteOpen(false) }}>
             <Moon className="mr-2 h-4 w-4" />
-            <span>Modo Oscuro</span>
+            <span>{t("actions.darkMode")}</span>
           </CommandItem>
           <CommandItem onSelect={() => { setTheme("system"); setCommandPaletteOpen(false) }}>
             <Monitor className="mr-2 h-4 w-4" />
-            <span>Tema del Sistema</span>
+            <span>{t("actions.systemTheme")}</span>
           </CommandItem>
         </CommandGroup>
 
         {/* Session actions */}
-        <CommandGroup heading="Sesión">
+        <CommandGroup heading={t("groups.session")}>
           <CommandItem
             onSelect={() => {
               setCommandPaletteOpen(false)
@@ -288,7 +298,7 @@ export function CommandPalette() {
             }}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Cerrar Sesión</span>
+            <span>{t("actions.logout")}</span>
             <CommandShortcut>⇧⌘Q</CommandShortcut>
           </CommandItem>
         </CommandGroup>

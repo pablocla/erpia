@@ -31,7 +31,7 @@ No necesitás sociedad para **empezar a vender**. Operás como:
 ```
 Cliente retail ──paga mensual──► Vos (monotributista)
                                       │
-                                      └── contratás / activás Clavis vía Claver Cloud (tenant)
+                                      └── contratás / activás Claver vía Claver Cloud (tenant)
 ```
 
 | Concepto | Práctica recomendada |
@@ -39,7 +39,7 @@ Cliente retail ──paga mensual──► Vos (monotributista)
 | **Qué facturás** | “Servicio de digitalización / software / implementación” (validá categoría monotributo con contador) |
 | **Cómo cobrás** | Transferencia, Mercado Pago, efectivo + factura mensual |
 | **Contrato** | Orden de servicio simple 1 página (anexo SKU + precio + duración) |
-| **Marca al cliente** | Presentás **Claver / Clavis**; vos sos el “partner implementador” |
+| **Marca al cliente** | Presentás **Claver / Claver**; vos sos el “partner implementador” |
 | **Soporte** | Vos primer nivel; escalás a analista / Cloud para AFIP y provisioning |
 
 **Límite consciente:** sin SRL/SA no escalás equipo grande ni contratos enterprise; esta fase es **validar venta repetible** en una zona.
@@ -116,7 +116,7 @@ sequenceDiagram
 | Oferta | Cuándo | Condición |
 |--------|--------|-----------|
 | `pool-almacen-barrio` | Cliente con fiado + deuda recurrente | Ya usa fiado o cobranzas |
-| Clavis POS + stock | Comercio con caja formal | Dueño quiere facturar |
+| Claver POS + stock | Comercio con caja formal | Dueño quiere facturar |
 | Reporte mañanero + IA | Dueño dependiente del negocio | “Quiero saber sin entrar al sistema” |
 
 **Metas:** 2 bundles + 1 homologación AFIP en marcha.

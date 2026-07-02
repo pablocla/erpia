@@ -66,7 +66,7 @@ export const INTEGRATION_CATALOG: CatalogEntry[] = [
     authTipo: "oauth2", prioridad: 90, disponible: true, novedad: true, badge: "OPO Bridge",
     emoji: "🔗", color: "slate",
     descripcion: "Puente OPO sobre Protheus — REST API o vistas SQL con ontología canónica.",
-    descripcionComercial: "Clavis como capa moderna sobre SA1/SF2/SB1 sin reemplazar Protheus de golpe.",
+    descripcionComercial: "Claver como capa moderna sobre SA1/SF2/SB1 sin reemplazar Protheus de golpe.",
     campos: [
       { key: "baseUrl", label: "URL API Protheus", tipo: "url", requerido: true, placeholder: "https://protheus.empresa.com/api" },
       { key: "conector", label: "Conector", tipo: "text", requerido: true, placeholder: "rest | sql" },

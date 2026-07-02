@@ -3,7 +3,8 @@
 import type React from "react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { isImpersonatingSession, performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { shouldRedirectAnalystToCloud } from "@/lib/auth/home-redirect"
@@ -17,6 +18,7 @@ import { ImpersonationBanner } from "@/components/ops/impersonation-banner"
 import { CajasAbiertasAlert } from "@/components/caja/cajas-abiertas-alert"
 import { DraftAlert } from "@/components/ventas/draft-alert"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
+import { getCountryFeatures, type CountryFeatures } from "@/lib/country/country-features"
 import { MotionPage, MotionPresence } from "@/components/ui/motion"
 import {
   LayoutDashboard,
@@ -95,19 +97,36 @@ import {
   Link2,
   LayoutGrid,
   Cloud,
+  Scale,
+  Bike,
+  Tv,
+  Leaf,
+  FlaskConical,
+  Sprout,
+  Beaker,
 } from "lucide-react"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
+import { isMenuItemAllowedInModoLite, type ModoLite } from "@/lib/comercial/lite-sidebar"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useThemeConfig } from "@/lib/theme-config"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { useCompactShell } from "@/hooks/use-mobile"
+import { resolveDashboardBranding, type DashboardBranding } from "@/lib/brand"
+import {
+  getIndustryTemplate,
+  getMenuLabelForRubro,
+  getSectionLabelForRubro,
+} from "@/lib/comercial/industry-templates"
+import { isPathAllowedInDemoPresentation } from "@/lib/comercial/demo-presentation"
+import { ClavergrowIcon } from "@/components/marketing/brand-logo"
 
 interface MenuItem {
   href?: string
   icon: React.ElementType
   label: string
+  translationKey?: any // for next-intl
   badge?: string
   children?: MenuItem[]
   featureKey?: string
@@ -119,23 +138,25 @@ interface MenuItem {
   claverAnalystOnly?: boolean
   /** SKU horizontal — oculta si el producto no está activo */
   skuKey?: string
+  requiredCountryFeature?: string
 }
 
-const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuItem[] }[] = [
+const MODULOS: { label: string; translationKey?: any; color: string; moduloKey?: string; requiredCountryFeature?: string; items: MenuItem[] }[] = [
   {
     label: "Principal",
+    translationKey: "sections.principal",
     color: "text-slate-500",
     items: [
-      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas" },
+      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", translationKey: "items.dashboard" },
+      { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas", translationKey: "items.myTasks" },
     ],
   },
   {
-    label: "AGRO / Acopio",
+    label: "Clavergrow",
     color: "text-emerald-600",
     moduloKey: "agro",
     items: [
-      { href: "/dashboard/agro", icon: Layers, label: "Dashboard AGRO", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro", icon: Layers, label: "Dashboard Clavergrow", allowedRubros: ["agro_acopio", "agro_cannabis"] },
       { href: "/dashboard/agro/balanza", icon: Truck, label: "Balanza Camiones", featureKey: "agro_balanza_digital", allowedRubros: ["agro_acopio"] },
       { href: "/dashboard/agro/contratos", icon: FileText, label: "Contratos Cereales", featureKey: "agro_pizarra_precios", allowedRubros: ["agro_acopio"] },
       { href: "/dashboard/agro/liquidaciones", icon: DollarSign, label: "Liquidaciones", featureKey: "retenciones", allowedRubros: ["agro_acopio"] },
@@ -147,6 +168,11 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/agro/iot/maquinaria", icon: Wrench, label: "Maquinaria", featureKey: "iot_sensores", allowedRubros: ["agro_acopio"] },
       { href: "/dashboard/agro/carta-porte", icon: ClipboardList, label: "Carta de Porte (CPE)", featureKey: "agro_carta_porte", allowedRubros: ["agro_acopio"] },
       { href: "/dashboard/agro/productor", icon: Users, label: "Portal Productor", featureKey: "agro_portal_productor", allowedRubros: ["agro_acopio"] },
+      { href: "/dashboard/agro/cannabis", icon: Leaf, label: "Cultivo regulado", featureKey: "agro_cannabis", allowedRubros: ["agro_acopio", "agro_cannabis"] },
+      { href: "/dashboard/agro/cannabis/ciclos", icon: Sprout, label: "Ciclos de cultivo", featureKey: "agro_cannabis", allowedRubros: ["agro_acopio", "agro_cannabis"] },
+      { href: "/dashboard/agro/cannabis/insumos", icon: FlaskConical, label: "Insumos cultivo", featureKey: "agro_cannabis", allowedRubros: ["agro_acopio", "agro_cannabis"] },
+      { href: "/dashboard/agro/cannabis/aplicaciones", icon: Beaker, label: "Aplicaciones", featureKey: "agro_cannabis", allowedRubros: ["agro_acopio", "agro_cannabis"] },
+      { href: "/dashboard/agro/cannabis/suelo", icon: Layers, label: "Suelo / sustrato", featureKey: "agro_cannabis", allowedRubros: ["agro_acopio", "agro_cannabis"] },
     ],
   },
   {
@@ -199,6 +225,7 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     items: [
       { href: "/dashboard/caja", icon: Wallet, label: "Caja", permisoModulo: "caja" },
       { href: "/dashboard/banco", icon: Landmark, label: "Banco", permisoModulo: "cuentas_cobrar" },
+      { href: "/dashboard/cuenta-partida", icon: Scale, label: "Cuenta Partida (Socios)", permisoModulo: "caja" },
       { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Cuentas a Cobrar", permisoModulo: "cuentas_cobrar" },
       { href: "/dashboard/cuentas-pagar", icon: FileMinus, label: "Cuentas a Pagar", permisoModulo: "cuentas_pagar" },
       { href: "/dashboard/cheques", icon: Banknote, label: "Cheques", permisoModulo: "cheques" },
@@ -226,13 +253,13 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
     color: "text-red-500",
     items: [
       { href: "/dashboard/impuestos",              icon: FileText,      label: "IVA / Libros Fiscales" },
-      { href: "/dashboard/impuestos/iibb",          icon: FileText,      label: "Ingresos Brutos" },
-      { href: "/dashboard/impuestos/padron",         icon: Database,      label: "Padrón IIBB" },
+      { href: "/dashboard/impuestos/iibb",          icon: FileText,      label: "Ingresos Brutos", requiredCountryFeature: "showIibb" },
+      { href: "/dashboard/impuestos/padron",         icon: Database,      label: "Padrón IIBB", requiredCountryFeature: "showPadron" },
       { href: "/dashboard/impuestos/tes",           icon: Tags,          label: "TES (Tipos de Impuesto)" },
-      { href: "/dashboard/impuestos/presentacion",  icon: Receipt,       label: "Presentación AFIP" },
+      { href: "/dashboard/impuestos/presentacion",  icon: Receipt,       label: "Presentación AFIP", requiredCountryFeature: "showAfip" },
       { href: "/dashboard/puntos-venta",            icon: Store,         label: "Puntos de Venta" },
       { href: "/dashboard/series",                  icon: Hash,          label: "Series de Comprobantes" },
-      { href: "/dashboard/impuestos/citi",        icon: FileSpreadsheet, label: "CITI Ventas/Compras" },
+      { href: "/dashboard/impuestos/citi",        icon: FileSpreadsheet, label: "CITI Ventas/Compras", requiredCountryFeature: "showAfip" },
     ],
   },
   {
@@ -243,8 +270,10 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
       { href: "/dashboard/toma-pedidos", icon: ShoppingCart, label: "Toma de Pedidos", permisoModulo: "hospitalidad" },
       { href: "/dashboard/hospitalidad/kds", icon: Monitor, label: "Pantalla Cocina (KDS)", permisoModulo: "kds", featureKey: "kds" },
       { href: "/dashboard/hospitalidad", icon: UtensilsCrossed, label: "Mesas y Comandas", permisoModulo: "hospitalidad" },
+      { href: "/dashboard/hospitalidad/delivery", icon: Bike, label: "Delivery Propio", featureKey: "delivery_propio", allowedRubros: ["bar_restaurant"] },
+      { href: "/dashboard/hospitalidad/cartelera", icon: Tv, label: "Cartelera Digital", featureKey: "cartelera_digital", allowedRubros: ["bar_restaurant", "kiosco"] },
       { href: "/dashboard/hospitalidad/platos", icon: ClipboardList, label: "Platos y Recetas", featureKey: "recetas_bom", allowedRubros: ["bar_restaurant"] },
-      { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda de Turnos", permisoModulo: "agenda", featureKey: "turnos_agenda", allowedRubros: ["veterinaria", "clinica", "salon_belleza", "gimnasio"] },
+      { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda de Turnos", permisoModulo: "agenda", featureKey: "turnos_agenda", allowedRubros: ["veterinaria", "clinica", "salon_belleza", "gimnasio", "canchas"] },
       { href: "/dashboard/peluqueria", icon: Scissors, label: "Peluquería móvil", permisoModulo: "agenda", featureKey: "turnos_agenda", allowedRubros: ["salon_belleza"] },
       { href: "/dashboard/historia-clinica", icon: HeartPulse, label: "Historia Clínica", permisoModulo: "historia_clinica", featureKey: "historia_clinica", allowedRubros: ["veterinaria", "clinica"] },
       { href: "/dashboard/membresias", icon: Dumbbell, label: "Membresías", permisoModulo: "membresias", featureKey: "membresias", allowedRubros: ["gimnasio"] },
@@ -421,6 +450,8 @@ const MODULOS: { label: string; color: string; moduloKey?: string; items: MenuIt
 
 function NavItem({ item, depth = 0, sidebarOpen = true }: { item: MenuItem; depth?: number; sidebarOpen?: boolean }) {
   const pathname = usePathname()
+  const t = useTranslations("nav")
+  const label = item.translationKey ? t(item.translationKey) : item.label
   const isActive = item.href
     ? item.href === "/dashboard"
       ? pathname === "/dashboard"
@@ -430,7 +461,7 @@ function NavItem({ item, depth = 0, sidebarOpen = true }: { item: MenuItem; dept
   if (!item.href) return null
 
   return (
-    <Link href={item.href} className="block" title={!sidebarOpen ? item.label : undefined}>
+    <Link href={item.href} className="block" title={!sidebarOpen ? label : undefined}>
       <Button
         variant="ghost"
         size="sm"
@@ -443,7 +474,7 @@ function NavItem({ item, depth = 0, sidebarOpen = true }: { item: MenuItem; dept
         )}
       >
         <item.icon className="sidebar-icon h-4 w-4 flex-shrink-0" />
-        {sidebarOpen && <span className="sidebar-label truncate">{item.label}</span>}
+        {sidebarOpen && <span className="sidebar-label truncate">{label}</span>}
         {sidebarOpen && item.badge && (
           <Badge className="ml-auto h-4 text-[10px] px-1" variant="secondary">
             {item.badge}
@@ -459,12 +490,14 @@ function CollapseSection({
   sidebarOpen,
   defaultExpanded = false,
 }: {
-  modulo: { label: string; color: string; moduloKey?: string; items: MenuItem[] }
+  modulo: { label: string; translationKey?: any; color: string; moduloKey?: string; items: MenuItem[] }
   sidebarOpen: boolean
   defaultExpanded?: boolean
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
   const pathname = usePathname()
+  const t = useTranslations("nav")
+  const label = modulo.translationKey ? t(modulo.translationKey) : modulo.label
   const hasActiveChild = modulo.items.some(
     (item) =>
       item.href &&
@@ -502,7 +535,7 @@ function CollapseSection({
             !expanded && "-rotate-90",
           )}
         />
-        <span className="flex-1 text-left">{modulo.label}</span>
+        <span className="flex-1 text-left">{label}</span>
         {hasActiveChild && (
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         )}
@@ -569,7 +602,14 @@ function canRenderMenuItem(
   userId: string | null,
   rubro: Rubro,
   isClaverAnalyst: boolean,
+  countryFeatures: CountryFeatures,
 ) {
+  if (item.requiredCountryFeature) {
+    if (!countryFeatures[item.requiredCountryFeature as keyof CountryFeatures]) {
+      return false
+    }
+  }
+
   if (item.claverAnalystOnly && !isClaverAnalyst) return false
 
   if (item.skuKey && productosSku && productosSku[item.skuKey] !== true) return false
@@ -610,21 +650,40 @@ function canRenderMenuItem(
   return true
 }
 
-function SidebarBrand({ appName, logoUrl }: { appName: string; logoUrl: string | null }) {
+function SidebarBrand({ branding, logoUrl }: { branding: DashboardBranding; logoUrl: string | null }) {
+  const isGrow = branding.productLine === "clavergrow"
+
   return (
     <div className="flex items-center gap-2">
       {logoUrl ? (
         <img src={logoUrl} alt="" className="h-7 w-7 rounded-lg object-cover shrink-0 border border-border/50" />
+      ) : isGrow ? (
+        <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+          <ClavergrowIcon size={22} theme="light" />
+        </div>
       ) : (
         <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <Store className="h-4 w-4 text-primary" />
         </div>
       )}
       <div className="min-w-0">
-        <h2 className="text-sm font-bold text-primary truncate leading-tight">{appName}</h2>
+        <h2
+          className={cn(
+            "text-sm font-bold truncate leading-tight",
+            isGrow ? "text-emerald-700 dark:text-emerald-400" : "text-primary",
+          )}
+        >
+          {branding.title}
+        </h2>
         <p className="text-[9px] text-muted-foreground leading-tight flex items-center gap-1">
-          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Operación en tiempo real
+          {branding.showLiveIndicator ? (
+            <>
+              <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {branding.liveLabel}
+            </>
+          ) : (
+            <span className="truncate">{branding.subtitle}</span>
+          )}
         </p>
       </div>
     </div>
@@ -640,17 +699,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [featuresActivas, setFeaturesActivas] = useState<Record<string, boolean> | null>(null)
   const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
   const [rubro, setRubro] = useState<Rubro>("otro")
+  const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
+  const [modoLite, setModoLite] = useState<string>("completo")
   const [sidebarSearch, setSidebarSearch] = useState("")
+  const [countryFeatures, setCountryFeatures] = useState<CountryFeatures>(getCountryFeatures("AR"))
+
+  const { themeConfig, updateThemeConfig } = useUIStore()
   const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
   const user = useAuthStore((s) => s.user)
+  const token = useAuthStore((s) => s.token)
 
   const role = user?.rol
   const userId = user?.id ?? null
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isPosShell = pathname.startsWith("/dashboard/pos")
   const router = useRouter()
   const { config: temaConfig } = useThemeConfig()
   const empresaDisplayName = temaConfig.appName ?? "ERP Argentina"
+  const presentMode = searchParams.get("present") === "1" && !!demoIndustryId
+  const industryTemplate = useMemo(
+    () => (demoIndustryId ? getIndustryTemplate(demoIndustryId) : null),
+    [demoIndustryId],
+  )
+  const sidebarBranding = useMemo(() => {
+    const effectiveRubro = industryTemplate?.rubro ?? rubro
+    const base = resolveDashboardBranding(empresaDisplayName, effectiveRubro)
+    if (!industryTemplate) return base
+    return {
+      ...base,
+      title: industryTemplate.label,
+      subtitle: `Demo · ${industryTemplate.tagline}`,
+      liveLabel: industryTemplate.wowMoment,
+    }
+  }, [empresaDisplayName, rubro, industryTemplate])
 
   useEffect(() => setMounted(true), [])
 
@@ -710,10 +792,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     performLogoutAndRedirect("/login")
   }, [])
 
-  const authHeaders = useCallback((): HeadersInit => {
-    const token = localStorage.getItem("token")
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }, [])
+  const authHeaders = useCallback(() => getAuthHeaders(token || ""), [token])
 
   const cargarModulos = useCallback(async () => {
     try {
@@ -734,8 +813,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!res.ok) return
       const data = await res.json()
       setRubro(normalizeRubroValue(data?.rubro))
+      setDemoIndustryId(typeof data?.demoIndustryId === "string" ? data.demoIndustryId : null)
+      setModoLite(data?.modoLite ?? "completo")
     } catch {
       setRubro("otro")
+      setDemoIndustryId(null)
+      setModoLite("completo")
+    }
+  }, [authHeaders])
+
+  const cargarCountryContext = useCallback(async () => {
+    try {
+      const res = await fetch("/api/config/country-context", {
+        headers: authHeaders(),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data?.features) {
+        setCountryFeatures(data.features)
+      }
+    } catch {
+      // Fallback a features default de AR si falla
     }
   }, [authHeaders])
 
@@ -776,10 +874,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     cargarModulos()
     cargarRubro()
+    cargarCountryContext()
     cargarFeatures()
     cargarProductosSku()
     const handler = () => {
       cargarModulos()
+      cargarCountryContext()
       cargarFeatures()
       cargarProductosSku()
     }
@@ -795,9 +895,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const modulosFiltrados = MODULOS.map((modulo) => ({
     ...modulo,
-    items: modulo.items.filter((item) =>
-      canRenderMenuItem(item, role, modulosActivos, featuresActivas, productosSku, userId, rubro, isClaverAnalyst),
-    ),
+    items: modulo.items.filter((item) => {
+      if (!canRenderMenuItem(item, role, modulosActivos, featuresActivas, productosSku, userId, rubro, isClaverAnalyst, countryFeatures)) {
+        return false
+      }
+      if (modoLite !== "completo" && !isMenuItemAllowedInModoLite(item.href, modoLite as ModoLite)) {
+        return false
+      }
+      if (presentMode && demoIndustryId && item.href && !isPathAllowedInDemoPresentation(item.href, demoIndustryId)) {
+        return false
+      }
+      return true
+    }),
   })).filter((modulo) => {
     // Always show sections without a moduloKey if they still have visible items
     if (!modulo.moduloKey) return modulo.items.length > 0
@@ -809,17 +918,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const modulosOrdenados = ordenarModulosPorRubro(modulosFiltrados, rubro)
 
+  const modulosConLabels = useMemo(
+    () =>
+      modulosOrdenados.map((modulo) => ({
+        ...modulo,
+        label: getSectionLabelForRubro(modulo.moduloKey, modulo.label, rubro, demoIndustryId),
+        items: modulo.items.map((item) => ({
+          ...item,
+          label: item.href
+            ? getMenuLabelForRubro(item.href, item.label, rubro, demoIndustryId)
+            : item.label,
+        })),
+      })),
+    [modulosOrdenados, rubro, demoIndustryId],
+  )
+
   // Search filter for sidebar
   const modulosBuscados = useMemo(() => {
-    if (!sidebarSearch.trim()) return modulosOrdenados
+    if (!sidebarSearch.trim()) return modulosConLabels
     const q = sidebarSearch.toLowerCase()
-    return modulosOrdenados
+    return modulosConLabels
       .map((modulo) => ({
         ...modulo,
         items: modulo.items.filter((item) => item.label.toLowerCase().includes(q)),
       }))
       .filter((modulo) => modulo.items.length > 0)
-  }, [modulosOrdenados, sidebarSearch])
+  }, [modulosConLabels, sidebarSearch])
 
   return (
     <div className="dashboard-canvas dashboard-shell flex min-h-screen relative overflow-hidden bg-background">
@@ -840,7 +964,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-3 border-b flex items-center gap-2">
           {sidebarOpen && (
             <div className="flex-1 min-w-0">
-              <SidebarBrand appName={empresaDisplayName} logoUrl={temaConfig.logoUrl} />
+              <SidebarBrand branding={sidebarBranding} logoUrl={temaConfig.logoUrl} />
             </div>
           )}
           <Button
@@ -942,7 +1066,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex h-full flex-col">
               <div className="p-3 border-b flex items-center gap-2">
                 <div className="flex-1 min-w-0">
-                  <SidebarBrand appName={empresaDisplayName} logoUrl={temaConfig.logoUrl} />
+                  <SidebarBrand branding={sidebarBranding} logoUrl={temaConfig.logoUrl} />
                 </div>
                 <Button
                   variant="ghost"

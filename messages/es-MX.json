@@ -1,0 +1,125 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "loading": "Cargando...",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "search": "Buscar...",
+    "actions": "Acciones",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "nav": {
+    "sections": {
+      "principal": "Principal"
+    },
+    "items": {
+      "dashboard": "Panel de Control",
+      "myTasks": "Mis Tareas",
+      "sales": "Ventas",
+      "purchases": "Compras",
+      "stock": "Inventario",
+      "settings": "Configuración",
+      "pos": "Punto de Venta"
+    }
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña"
+  },
+  "pos": {
+    "checkout": "Cobrar",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "discount": "Descuento",
+    "pay": "Pagar"
+  },
+  "fiscal": {
+    "mx": {
+      "rfc": "RFC",
+      "sat": "SAT",
+      "iva": "IVA",
+      "cfdi": "CFDI",
+      "regimenFiscal": "Régimen fiscal"
+    },
+    "ar": {
+      "cuit": "CUIT",
+      "afip": "AFIP",
+      "iva": "IVA",
+      "iibb": "Ingresos Brutos"
+    },
+    "us": {
+      "taxId": "Tax ID",
+      "salesTax": "Sales Tax"
+    }
+  },
+  "errors": {
+    "generic": "Ocurrió un error inesperado.",
+    "notFound": "No se encontró el recurso.",
+    "unauthorized": "No autorizado."
+  },
+  "toasts": {
+    "success": "Operación exitosa",
+    "error": "Error en la operación"
+  },
+  "emptyStates": {
+    "noData": "No hay datos disponibles"
+  },
+  "cloudNav": {
+    "sections": {
+      "ceo": "CEO",
+      "platform": "Plataforma",
+      "protheus": "Protheus / OPO",
+      "admin": "Administración"
+    },
+    "items": {
+      "commandCenter": "Centro de mando",
+      "fieldSurvey": "Relevamiento calle",
+      "mapAndRoute": "Mapa y ruta",
+      "superAdmin": "Super Admin",
+      "tenants": "Tenants",
+      "provisioning": "Provisioning",
+      "operations": "Operaciones",
+      "implementation": "Implementación",
+      "marketplace": "Marketplace",
+      "setupProtheus": "Setup Protheus",
+      "opoConsole": "Consola OPO",
+      "restApi": "API REST",
+      "billing": "Facturación",
+      "settings": "Configuración"
+    }
+  },
+  "CommandPalette": {
+    "title": "Paleta de comandos",
+    "description": "Buscar módulos, acciones y configuración del ERP",
+    "placeholder": "Buscar módulo, acción o configuración...",
+    "empty": "No se encontraron resultados.",
+    "groups": {
+      "quickActions": "Acciones Rápidas",
+      "recent": "Recientes",
+      "docs": "Documentación (Wiki)",
+      "appearance": "Apariencia",
+      "session": "Sesión"
+    },
+    "actions": {
+      "newSalesOrder": "Nuevo Pedido de Venta",
+      "newQuote": "Nuevo Presupuesto",
+      "newCustomer": "Nuevo Cliente",
+      "newProduct": "Nuevo Producto",
+      "lightMode": "Modo Claro",
+      "darkMode": "Modo Oscuro",
+      "systemTheme": "Tema del Sistema",
+      "logout": "Cerrar Sesión"
+    }
+  },
+  "AppStore": {
+    "title": "App Store",
+    "description": "Descubre e instala módulos adicionales para tu negocio."
+  }
+}

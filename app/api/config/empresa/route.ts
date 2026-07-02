@@ -7,15 +7,24 @@ export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
-  const empresa = await prisma.empresa.findUnique({
-    where: { id: ctx.auth.empresaId },
-  })
+  const [empresa, demoParam] = await Promise.all([
+    prisma.empresa.findUnique({ where: { id: ctx.auth.empresaId } }),
+    prisma.parametroFiscal.findUnique({
+      where: {
+        empresaId_clave_pais: { empresaId: ctx.auth.empresaId, clave: "demo_industry_id", pais: "AR" },
+      },
+      select: { descripcion: true },
+    }),
+  ])
 
   if (!empresa) {
     return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 })
   }
 
-  return NextResponse.json(empresa)
+  return NextResponse.json({
+    ...empresa,
+    demoIndustryId: demoParam?.descripcion ?? null,
+  })
 }
 
 const empresaUpdateSchema = z.object({
@@ -41,7 +50,7 @@ export async function PUT(request: NextRequest) {
     if (!ctx.ok) return ctx.response
 
     // Only admins/owners can update company data
-    if (!["admin", "propietario"].includes(ctx.auth.rol)) {
+    if (!["admin", "propietario", "administrador", "dueno", "owner"].includes(ctx.auth.rol)) {
       return NextResponse.json({ error: "Solo administradores pueden modificar datos de empresa" }, { status: 403 })
     }
 

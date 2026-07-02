@@ -1,0 +1,47 @@
+---
+pid: 34508
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -First 40"
+started_at: 2026-07-02T01:36:34.047Z
+running_for_ms: 11214998 
+---
+.next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/pos/venta/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/pos/venta/route"), "config" | "POST" | "PUT" | "PATCH" | "GET" | "revalidate" | "HEAD" | "OPTIONS" | ... 7 more ... | "maxDuration", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'calcularLinea' is incompatible with index signature.
+    Type '(precioUnitario: number, cantidad: number, porcentajeIva: number, descuento: number) => { neto: number; iva: number; total: number; }' is not assignable to type 'never'.
+.next/types/app/dashboard/configuracion/reportes/[id]/page.ts(34,29): error TS2344: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/validator.ts(1917,31): error TS2344: Type 'typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/agenda-publica/[empresaId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/agenda-publica/[empresaId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: NextRequest, { params }: { params: { empresaId: string; }; }) => Promise<NextResponse<{ error: string; }> | NextResponse<{ success: boolean; empresa: { id: number; nombre: string; }; profesionales: { ...; }[]; servicios: { ...; }[]; disponibilidad: { ...; }[]; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ empresaId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ empresaId: string; }>; }' is not assignable to type '{ params: { empresaId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'empresaId' is missing in type 'Promise<{ empresaId: string; }>' but required in type '{ empresaId: string; }'.
+__tests__/almacen-rosario/comercial.test.ts(22,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '"pos.recargas_servicios" | "pos.balanza_peso" | "pos.promos_cantidad" | "pos.ticket_regalo" | "pos.pedido_distribuidora" | "pos.mermas_roturas" | "pos.arqueo_ciego" | "pos.lista_mayorista_pos" | ... 9 more ... | "pos.vale_dinero"'.
+__tests__/auth/claver-analyst.test.ts(33,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/automation/poll.test.ts(32,48): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(49,45): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(88,47): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/integration/backoffice-funcional.test.ts(104,55): error TS2353: Object literal may only specify known properties, and 'empresaId' does not exist in type 'CuentaCobrarWhereInput'.
+__tests__/integration/backoffice-funcional.test.ts(105,54): error TS2353: Object literal may only specify known properties, and 'empresaId' does not exist in type 'CuentaPagarWhereInput'.
+__tests__/integration/backoffice-funcional.test.ts(192,59): error TS2365: Operator '>' cannot be applied to types 'Decimal' and 'number'.
+__tests__/reporting/sheets-entitlements.test.ts(32,70): error TS2345: Argument of type '(args: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => Promise<...>' is not assignable to parameter of type '(args?: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => Prisma__SuscripcionModuloClient<...>'.
+  Type 'Promise<null>' is missing the following properties from type 'Prisma__SuscripcionModuloClient<{ id: number; createdAt: Date; updatedAt: Date; empresaId: number; activo: boolean; vigenciaDesde: Date; vigenciaHasta: Date | null; sku: string; limiteEventosMes: number | null; metadata: JsonValue; sellerId: string | null; implementerId: string | null; } | null, null, DefaultArgs, P...': empresa, producto
+__tests__/reporting/sheets-entitlements.test.ts(52,64): error TS2345: Argument of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Promise<...>' is not assignable to parameter of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Prisma__UsageEventClient<...>'.
+  Property 'empresa' is missing in type 'Promise<never>' but required in type 'Prisma__UsageEventClient<{ id: number; createdAt: Date; updatedAt: Date; empresaId: number; mes: string; eventKey: string; sku: string; contador: number; } | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/reporting/sheets-entitlements.test.ts(66,64): error TS2345: Argument of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Promise<...>' is not assignable to parameter of type '(args: { select?: UsageEventSelect<DefaultArgs> | null | undefined; omit?: UsageEventOmit<DefaultArgs> | null | undefined; include?: UsageEventInclude<...> | ... 1 more ... | undefined; where: UsageEventWhereUniqueInput; }) => Prisma__UsageEventClient<...>'.
+  Property 'empresa' is missing in type 'Promise<never>' but required in type 'Prisma__UsageEventClient<{ id: number; createdAt: Date; updatedAt: Date; empresaId: number; mes: string; eventKey: string; sku: string; contador: number; } | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/ventas/pedidos-route.test.ts(39,34): error TS2339: Property 'mockResolvedValue' does not exist on type '(pedidoId: number, datosFactura: { empresaId: number; tipo: string; tipoCbte: number; puntoVenta: number; cae?: string | undefined; fechaCAE?: Date | undefined; vencimientoCAE?: Date | undefined; condicionPagoId?: number | undefined; depositoId?: number | ... 1 more ... | undefined; }) => Promise<...>'.

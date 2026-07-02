@@ -1,5 +1,5 @@
 /** Cookie legible por middleware para rutas SSR (/claver-cloud). */
-export const AUTH_TOKEN_COOKIE = "clavis_token"
+export const AUTH_TOKEN_COOKIE = "claver_token"
 
 export function setAuthTokenCookie(token: string) {
   if (typeof document === "undefined") return

@@ -206,17 +206,17 @@ export function LegacyBridgeWizard({ empresaId }: { empresaId: number }) {
                   {
                     value: "full",
                     label: "ERP normal",
-                    desc: "Datos en Clavis DB. Sin bridge legacy.",
+                    desc: "Datos en Claver DB. Sin bridge legacy.",
                   },
                   {
                     value: "legacy_front",
                     label: "Front legacy",
-                    desc: "UI Clavis; lectura/escritura en Protheus u otro ERP.",
+                    desc: "UI Claver; lectura/escritura en Protheus u otro ERP.",
                   },
                   {
                     value: "hibrido",
                     label: "Híbrido",
-                    desc: "Maestros en legacy; operación diaria en Clavis.",
+                    desc: "Maestros en legacy; operación diaria en Claver.",
                   },
                 ] as const
               ).map((opt) => (
@@ -227,7 +227,7 @@ export function LegacyBridgeWizard({ empresaId }: { empresaId: number }) {
                     setConfig({
                       ...config,
                       modoErp: opt.value,
-                      origen: opt.value === "full" ? "clavis_db" : "protheus",
+                      origen: opt.value === "full" ? "claver_db" : "protheus",
                       activo: opt.value !== "full",
                     })
                   }
@@ -264,7 +264,7 @@ export function LegacyBridgeWizard({ empresaId }: { empresaId: number }) {
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
               {!isLegacy && (
-                <Button variant="secondary" onClick={() => void guardar({ modoErp: "full", origen: "clavis_db" })}>
+                <Button variant="secondary" onClick={() => void guardar({ modoErp: "full", origen: "claver_db" })}>
                   Guardar ERP normal
                 </Button>
               )}

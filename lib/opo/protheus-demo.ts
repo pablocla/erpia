@@ -98,7 +98,7 @@ export function buildProtheusDemoManifest(baseUrl: string): OpoDiscoveryManifest
       erp_name: "TOTVS Protheus",
       version: "12.1.2310",
       jurisdictions: ["BR", "AR"],
-      organization_name: "Demo Protheus — Clavis Bridge",
+      organization_name: "Demo Protheus — Claver Bridge",
     },
     adapter_configuration: {
       base_url: baseUrl,

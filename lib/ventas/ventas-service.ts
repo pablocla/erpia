@@ -411,7 +411,7 @@ export class VentasService {
 
     // Build factura lines from pedido lines
     const lineasFactura = pedido.lineas.map((l, i) => ({
-      productoId: l.productoId,
+      producto: l.productoId ? { connect: { id: l.productoId } } : undefined,
       descripcion: l.descripcion ?? l.producto?.nombre ?? "",
       cantidad: Number(l.cantidad),
       precioUnitario: Number(l.precioUnitario),
@@ -419,7 +419,6 @@ export class VentasService {
       porcentajeIva: 21,
       iva: Number(l.subtotal) * 0.21,
       total: Number(l.subtotal) * 1.21,
-      orden: i + 1,
     }))
 
     const subtotal = Number(pedido.subtotal)

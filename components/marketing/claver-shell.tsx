@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 
 interface ClaverShellProps {
   children: React.ReactNode
-  /** Matriz Claver o producto Clavis */
-  context?: "matrix" | "claverp"
+  /** Matriz Claver, Claver o Clavergrow */
+  context?: "matrix" | "claverp" | "clavergrow"
   theme?: "dark-hero" | "light"
 }
 
@@ -39,11 +39,25 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
         )}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href={context === "claverp" ? "/claver/claverp" : "/claver"}>
+          <Link
+            href={
+              context === "claverp"
+                ? "/claver/claverp"
+                : context === "clavergrow"
+                  ? "/claver/clavergrow"
+                  : "/claver"
+            }
+          >
             <BrandLogo
               size="sm"
               theme={navDark ? "dark" : "light"}
-              variant={context === "claverp" ? "claverp-full" : "group-full"}
+              variant={
+                context === "claverp"
+                  ? "claverp-full"
+                  : context === "clavergrow"
+                    ? "clavergrow-full"
+                    : "group-full"
+              }
             />
           </Link>
 
@@ -85,9 +99,17 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
             >
               <Link href="/claver-cloud">Claver Cloud</Link>
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-500" asChild>
+            <Button
+              size="sm"
+              className={
+                context === "clavergrow"
+                  ? "bg-emerald-600 hover:bg-emerald-500"
+                  : "bg-blue-600 hover:bg-blue-500"
+              }
+              asChild
+            >
               <Link href="/login">
-                Demo Clavis
+                {context === "clavergrow" ? "Demo Clavergrow" : "Demo Claver"}
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -120,7 +142,9 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
                 <Link href="/claver-cloud">Claver Cloud</Link>
               </Button>
               <Button className="mt-2" asChild>
-                <Link href="/login">Demo Clavis</Link>
+                <Link href="/login">
+                  {context === "clavergrow" ? "Demo Clavergrow" : "Demo Claver"}
+                </Link>
               </Button>
             </div>
           </div>
@@ -134,16 +158,20 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
           <div className="md:col-span-2 space-y-4">
             <BrandLogo size="md" theme="dark" variant="group-full" />
             <p className="max-w-sm text-sm">
-              {CLAVER_GROUP.descriptor}. Clavis es la línea ERP del grupo.
+              {CLAVER_GROUP.descriptor}. Claver para comercio, Clavergrow para producción agrícola.
             </p>
-            <BrandLogo size="sm" theme="dark" variant="claverp-full" />
+            <div className="flex flex-wrap gap-4">
+              <BrandLogo size="sm" theme="dark" variant="claverp-full" />
+              <BrandLogo size="sm" theme="dark" variant="clavergrow-full" />
+            </div>
           </div>
           <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Clavis</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Productos</p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/claver/claverp" className="hover:text-white">Producto</Link></li>
-              <li><Link href="/claver/claverp/modulos" className="hover:text-white">Módulos</Link></li>
-              <li><Link href="/claver/claverp/precios" className="hover:text-white">Precios</Link></li>
+              <li><Link href="/claver/claverp" className="hover:text-white">Claver — ERP & POS</Link></li>
+              <li><Link href="/claver/claverp/modulos" className="hover:text-white">Módulos Claver</Link></li>
+              <li><Link href="/claver/claverp/precios" className="hover:text-white">Precios Claver</Link></li>
+              <li><Link href="/claver/clavergrow" className="hover:text-white">Clavergrow — Agro</Link></li>
               <li><Link href="/claver/ecommerce" className="hover:text-white">Ecommerce</Link></li>
             </ul>
           </div>
@@ -158,7 +186,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
           </div>
         </div>
         <p className="mx-auto mt-10 max-w-7xl text-center text-xs text-slate-600">
-          © {new Date().getFullYear()} {CLAVER_GROUP.name} · Clavis. Argentina.
+          © {new Date().getFullYear()} {CLAVER_GROUP.name} · Claver · Clavergrow. Argentina.
         </p>
       </footer>
     </div>

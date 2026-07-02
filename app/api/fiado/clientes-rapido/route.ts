@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
+import { canUseSku } from "@/lib/platform/entitlements"
 
 const schema = z.object({
   nombre: z.string().min(2),
@@ -14,6 +15,9 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
+
+  const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
+  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   const body = await request.json()
   const parsed = schema.safeParse(body)

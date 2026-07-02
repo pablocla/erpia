@@ -43,7 +43,7 @@ import {
   Search, ShoppingCart, Trash2, Plus, Minus, CreditCard,
   Banknote, Smartphone, Receipt, UtensilsCrossed, Store,
   Monitor, CheckCircle2, RefreshCw, X, ScanLine, Percent,
-  ArrowLeft, Wallet, User, AlertTriangle, Printer,
+  ArrowLeft, Wallet, User, AlertTriangle, Printer, Settings,
   BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package,
 } from "lucide-react"
 import Link from "next/link"
@@ -81,6 +81,7 @@ import type { VarianteGrupo } from "@/lib/pos/pos-catalogo-grupos"
 import { beepEscaneoError, beepEscaneoOk } from "@/lib/pos/barcode-feedback"
 import { productoRequiereCantidadVariable } from "@/lib/pos/producto-cantidad-variable"
 import { useAuthStore } from "@/lib/stores"
+import { useTranslations } from "next-intl"
 
 const POS_DRAFT_KEY = "erp:pos:draft:v1"
 
@@ -174,6 +175,8 @@ export default function POSPage() {
   const [fiadoActivo, setFiadoActivo] = useState(false)
   const [envasesActivo, setEnvasesActivo] = useState(false)
   const [valesActivo, setValesActivo] = useState(false)
+  const [ventasOfflineCount, setVentasOfflineCount] = useState(0)
+  const [sincronizando, setSincronizando] = useState(false)
   const [envasesDialogOpen, setEnvasesDialogOpen] = useState(false)
   const [valeInfo, setValeInfo] = useState<Record<number, { saldo: number; numero: string }>>({})
   const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
@@ -556,7 +559,7 @@ export default function POSPage() {
       toast({ title: "Agregado", description: p.nombre, duration: 1200 })
       return
     }
-    fetch(`/api/productos?search=${encodeURIComponent(code)}&soloActivos=true`, {
+    fetch(`/api/productos?codigoBarras=${encodeURIComponent(code)}&soloActivos=true`, {
       headers: authH(),
     })
       .then((r) => r.json())
@@ -753,23 +756,33 @@ export default function POSPage() {
 
     let barcodeBuffer = ""
     let barcodeTimeout: NodeJS.Timeout | null = null
+    let lastKeyTime = Date.now()
 
     const handler = (e: globalThis.KeyboardEvent) => {
       if (modalCobroOpen) return
 
+      const now = Date.now()
+      const diff = now - lastKeyTime
+      lastKeyTime = now
+
       if (e.key !== "Enter" && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (barcodeBuffer.length > 0 && diff > 50) {
+          barcodeBuffer = ""
+        }
         barcodeBuffer += e.key
         if (barcodeTimeout) clearTimeout(barcodeTimeout)
-        barcodeTimeout = setTimeout(() => { barcodeBuffer = "" }, 50)
+        barcodeTimeout = setTimeout(() => { barcodeBuffer = "" }, 100)
       }
-      if (e.key === "Enter" && barcodeBuffer.length >= 4) {
-        e.preventDefault()
-        const scannedCode = barcodeBuffer
+      if (e.key === "Enter") {
+        if (barcodeBuffer.length >= 4) {
+          e.preventDefault()
+          const scannedCode = barcodeBuffer
+          barcodeBuffer = ""
+          buscarYAgregarCodigo(scannedCode)
+          return
+        }
         barcodeBuffer = ""
-        buscarYAgregarCodigo(scannedCode)
-        return
       }
-      if (e.key === "Enter") barcodeBuffer = ""
 
       if (e.key === "/" || e.key === "F1") {
         e.preventDefault()
@@ -796,9 +809,27 @@ export default function POSPage() {
         ))
       }
     }
+
+    const refocusHandler = () => {
+      if (modalCobroOpen || envasesDialogOpen) return
+      setTimeout(() => {
+        const active = document.activeElement
+        if (!active || active.tagName === "BODY" || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA" && active.getAttribute("role") !== "combobox")) {
+          searchRef.current?.focus()
+        }
+      }, 150)
+    }
+
     window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [carrito, modalCobroOpen, posLayout.ux.keyboardShortcuts, buscarYAgregarCodigo, abrirCobro])
+    window.addEventListener("click", refocusHandler)
+    window.addEventListener("focus", refocusHandler)
+
+    return () => {
+      window.removeEventListener("keydown", handler)
+      window.removeEventListener("click", refocusHandler)
+      window.removeEventListener("focus", refocusHandler)
+    }
+  }, [carrito, modalCobroOpen, envasesDialogOpen, posLayout.ux.keyboardShortcuts, buscarYAgregarCodigo, abrirCobro])
 
   useEffect(() => {
     let holdTimer: ReturnType<typeof setTimeout> | null = null
@@ -966,6 +997,24 @@ export default function POSPage() {
       setError(mensajeCajaBloqueada(cajaMotivo))
       return
     }
+    if (ventasOfflineCount > 0) {
+      items.push({
+        id: "offline_sync",
+        severity: "warning",
+        mensaje: `Sin internet - tenés ${ventasOfflineCount} venta${ventasOfflineCount > 1 ? "s" : ""} guardada${ventasOfflineCount > 1 ? "s" : ""} localmente.`,
+        inline: (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-7 text-[10px] sm:text-xs px-2 ml-2" 
+            onClick={sincronizarVentasOffline}
+            disabled={sincronizando}
+          >
+            {sincronizando ? "Sincronizando..." : "Sincronizar ahora"}
+          </Button>
+        )
+      })
+    }
     if (afipBloqueaFiscal) {
       setError("Configurá el certificado AFIP o usá Ticket (sin CAE)")
       return
@@ -993,21 +1042,79 @@ export default function POSPage() {
         propina: indicesCobro ? 0 : propina,
       }
 
-      const res = await fetch("/api/pos/venta", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authH() },
-        body: JSON.stringify(body),
-      })
+      let res
+      let data
+      let isOfflineMode = !navigator.onLine
 
-      const data = await res.json()
+      if (!isOfflineMode) {
+        try {
+          res = await fetch("/api/pos/venta", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authH() },
+            body: JSON.stringify(body),
+          })
+          data = await res.json()
+          if (!res.ok) {
+            const extra =
+              data.disponible != null
+                ? ` (disponible: ${Number(data.disponible).toLocaleString("es-AR")})`
+                : ""
+            setError((data.error ?? "Error al procesar la venta") + extra)
+            return
+          }
+        } catch {
+          isOfflineMode = true
+        }
+      }
 
-      if (!res.ok) {
-        const extra =
-          data.disponible != null
-            ? ` (disponible: $${Number(data.disponible).toLocaleString("es-AR")})`
-            : ""
-        setError((data.error ?? "Error al procesar la venta") + extra)
-        return
+      if (isOfflineMode) {
+        if (tipoFactura !== "ticket") {
+          setError("No hay conexión a internet. Para vender offline, seleccioná tipo de comprobante 'Ticket' (sin CAE).")
+          return
+        }
+
+        const queueStr = localStorage.getItem("claverp:offline:queue") || "[]"
+        const queue = JSON.parse(queueStr)
+        const offlineId = "OFF-" + Date.now()
+        const newOfflineSale = {
+          idLocal: offlineId,
+          clienteId: clienteId ?? undefined,
+          mesaId: indicesCobro ? undefined : (mesaId ?? undefined),
+          tipoFactura: "ticket",
+          lineas: itemsVenta.map((i) => ({
+            productoId: i.productoId,
+            descripcion: i.descripcion,
+            cantidad: i.cantidad,
+            precioUnitario: i.precio,
+            porcentajeIva: i.porcentajeIva,
+            descuento: i.descuento,
+          })),
+          pagos,
+          descuentoGlobal,
+          propina: indicesCobro ? 0 : propina,
+          createdAt: new Date().toISOString(),
+        }
+        queue.push(newOfflineSale)
+        localStorage.setItem("claverp:offline:queue", JSON.stringify(queue))
+        setVentasOfflineCount(queue.length)
+
+        data = {
+          facturaId: null,
+          numeroCompleto: `TK-OFFLINE-${offlineId.split("-")[1]}`,
+          total: totalVenta,
+          vuelto: vuelto,
+          cae: undefined,
+          vencimientoCAE: undefined,
+          qrBase64: undefined,
+          afipError: undefined,
+          esFce: false,
+          esExportacion: false,
+          modalidadAuth: "OFFLINE",
+          pendienteCae: false,
+          tipo: "TK",
+        }
+        beepEscaneoOk()
+        toast({ title: "Venta guardada localmente", description: "Modo contingencia offline activo." })
       }
 
       // Computar desglose IVA desde el carrito para mostrar en ticket con precisión decimal
@@ -1400,6 +1507,12 @@ export default function POSPage() {
               </Button>
             </Link>
           )}
+          <Link href="/dashboard/pos/config" className="shrink-0">
+            <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
+              <Settings className="h-3.5 w-3.5" />
+              <span>Config PLU</span>
+            </Button>
+          </Link>
           <Link href="/dashboard/pos/cierre" className="shrink-0">
             <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
               <BarChart3 className="h-3.5 w-3.5" />
@@ -1743,7 +1856,7 @@ export default function POSPage() {
                     abrirCobro({ indices: [...indicesSeleccionados] })
                   }
                 >
-                  Cobrar selección ({indicesSeleccionados.size})
+                  {t("checkout")} selección ({indicesSeleccionados.size})
                 </Button>
               )}
               {fiadoActivo &&

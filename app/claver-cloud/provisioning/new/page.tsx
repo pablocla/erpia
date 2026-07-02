@@ -132,7 +132,7 @@ export default function NewProvisioningPage() {
           <div className="space-y-4 flex-1">
             <h3 className="text-lg font-semibold">Datos del cliente</h3>
             <p className="text-sm text-muted-foreground -mt-2">
-              Estos datos crean la empresa y el usuario administrador inicial en Clavis.
+              Estos datos crean la empresa y el usuario administrador inicial en Claver.
             </p>
             <div className="grid gap-4">
               <div className="grid gap-2">

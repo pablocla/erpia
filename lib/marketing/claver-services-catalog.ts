@@ -8,6 +8,7 @@ import {
   BarChart3,
   Network,
   Cloud,
+  Sprout,
 } from "lucide-react"
 
 export interface ClaverServiceLine {
@@ -22,7 +23,7 @@ export interface ClaverServiceLine {
   features: string[]
 }
 
-/** Líneas de negocio del grupo Claver — Clavis es la flagship disponible */
+/** Líneas de negocio del grupo Claver — Claver es la flagship disponible */
 export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
   {
     id: "clavercloud",
@@ -38,10 +39,10 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
   },
   {
     id: "claverp",
-    name: "Clavis",
+    name: "Claver",
     tagline: "ERP & POS con AFIP",
     description:
-      "Sistema integral: ventas, stock, compras, caja, contabilidad, ecommerce, logística, industria y agro. 40+ módulos con onboarding por rubro.",
+      "Sistema integral: ventas, stock, compras, caja, contabilidad, ecommerce, logística e industria. 40+ módulos con onboarding por rubro.",
     icon: Layers,
     gradient: "from-blue-600 to-indigo-800",
     href: "/claver/claverp",
@@ -49,11 +50,51 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     features: ["POS + factura electrónica", "Stock multi-depósito", "Portal B2B y tienda", "Onboarding IA"],
   },
   {
+    id: "clavergrow",
+    name: "Clavergrow",
+    tagline: "Cultivá con control.",
+    description:
+      "Producción agrícola end-to-end: lotes, IoT, acopio, pizarra B2B y cultivo regulado. Línea dedicada del grupo Claver para el campo.",
+    icon: Sprout,
+    gradient: "from-emerald-600 to-green-900",
+    href: "/claver/clavergrow",
+    status: "beta",
+    features: ["Lotes y NDVI", "Balanza y CPE", "IoT agro", "Cultivo regulado"],
+  },
+  {
+    id: "claverfiado",
+    name: "Claver Fiado",
+    tagline: "Crédito B2B y BNPL",
+    description:
+      "Plataforma de originación, scoring y cobranza. Permite a comercios financiar ventas (Buy Now Pay Later) o manejar créditos P2P con garantía cruzada.",
+    icon: CreditCard,
+    gradient: "from-amber-500 to-orange-700",
+    status: "beta",
+    href: "/dashboard/fiado",
+    features: ["Scoring alternativo", "Cobranza automatizada (WApp)", "Garantía solidaria B2B"],
+  },
+  {
+    id: "clavernet",
+    name: "Clavernet",
+    tagline: "Ecosistema B2B de Partners",
+    description: "La red de distribución y desarrollo de Claver ERP. Programadores, Vendedores e Implementadores generando ingresos recurrentes juntos.",
+    icon: Network,
+    gradient: "from-sky-500 to-blue-700",
+    status: "beta",
+    href: "/clavernet",
+    features: [
+      "Comisiones recurrentes por venta (MRR)",
+      "Marketplace de microservicios abierto",
+      "Onboarding y certificación de implementadores",
+      "Split billing automático"
+    ]
+  },
+  {
     id: "clavpay",
     name: "ClavPay",
     tagline: "Cobros y conciliación",
     description:
-      "Mercado Pago, QR, tarjetas y conciliación automática con el ERP. Add-on nativo de Clavis, pronto como servicio standalone.",
+      "Mercado Pago, QR, tarjetas y conciliación automática con el ERP. Add-on nativo de Claver, pronto como servicio standalone.",
     icon: CreditCard,
     gradient: "from-violet-600 to-purple-800",
     status: "beta",
@@ -75,7 +116,7 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     name: "ClavBridge",
     tagline: "OPO sobre legacy",
     description:
-      "Ontología Open Protocol sobre Protheus, SAP u Odoo. Clavis como frontend moderno sin reemplazar el ERP de golpe.",
+      "Ontología Open Protocol sobre Protheus, SAP u Odoo. Claver como frontend moderno sin reemplazar el ERP de golpe.",
     icon: Network,
     gradient: "from-slate-600 to-zinc-800",
     href: "/dashboard/apps/opo",
@@ -105,14 +146,25 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     features: ["Homologación AFIP", "Migración CSV", "Capacitación por rubro"],
   },
   {
+    id: "claverstudio",
+    name: "Claver Studio",
+    tagline: "Software Factory & A Medida",
+    description:
+      "Desarrollo a medida de microservicios e integraciones complejas (Ej. Clínicas, Logística avanzada) montados sobre la arquitectura Claver Cloud.",
+    icon: Wrench,
+    gradient: "from-slate-700 to-zinc-900",
+    status: "disponible",
+    features: ["Desarrollo de Apps B2B", "Integraciones API a medida", "Venta cruzada en Clavernet"],
+  },
+  {
     id: "clavanalytics",
     name: "Clav Analytics",
     tagline: "BI y tableros ejecutivos",
     description:
-      "KPIs, alertas configurables y dashboards por rol. Extrae valor de los datos que ya genera Clavis.",
+      "KPIs, alertas configurables y dashboards por rol. Extrae valor de los datos que ya genera Claver.",
     icon: BarChart3,
-    gradient: "from-cyan-600 to-sky-800",
-    status: "proximamente",
-    features: ["KPIs en tiempo real", "Alertas por umbral", "Export ejecutivo"],
+    gradient: "from-blue-600 to-sky-800",
+    status: "disponible",
+    features: ["Dashboards dinámicos", "Exportación PDF/Excel", "Top clientes/productos"],
   },
 ]

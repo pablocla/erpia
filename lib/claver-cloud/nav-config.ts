@@ -32,42 +32,42 @@ export type NavSection = {
 
 export const navSections: NavSection[] = [
   {
-    label: "CEO",
+    label: "ceo",
     items: [
-      { name: "Centro de mando", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
-      { name: "Relevamiento calle", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
-      { name: "Mapa y ruta", href: "/claver-cloud/comercial/campo", icon: Map },
+      { name: "commandCenter", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+      { name: "fieldSurvey", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
+      { name: "mapAndRoute", href: "/claver-cloud/comercial/campo", icon: Map },
     ],
   },
   {
-    label: "Plataforma",
+    label: "platform",
     items: [
-      { name: "Super Admin", href: "/claver-cloud/superadmin", icon: Shield },
+      { name: "superAdmin", href: "/claver-cloud/superadmin", icon: Shield },
       {
-        name: "Tenants",
+        name: "tenants",
         href: "/claver-cloud/organizations",
         icon: Building2,
         matchPrefixes: ["/claver-cloud/tenants"],
       },
-      { name: "Provisioning", href: "/claver-cloud/provisioning", icon: PlusSquare },
-      { name: "Operaciones", href: "/claver-cloud/operations", icon: Server },
-      { name: "Implementación", href: "/claver-cloud/implementation", icon: Target },
-      { name: "Marketplace", href: "/claver-cloud/marketplace", icon: Store },
+      { name: "provisioning", href: "/claver-cloud/provisioning", icon: PlusSquare },
+      { name: "operations", href: "/claver-cloud/operations", icon: Server },
+      { name: "implementation", href: "/claver-cloud/implementation", icon: Target },
+      { name: "marketplace", href: "/claver-cloud/marketplace", icon: Store },
     ],
   },
   {
-    label: "Protheus / OPO",
+    label: "protheus",
     items: [
-      { name: "Setup Protheus", href: "/claver-cloud/protheus-setup", icon: Wrench },
-      { name: "Consola OPO", href: "/claver-cloud/opo-console", icon: Network },
-      { name: "API REST", href: "/claver-cloud/protheus-api", icon: BookOpen },
+      { name: "setupProtheus", href: "/claver-cloud/protheus-setup", icon: Wrench },
+      { name: "opoConsole", href: "/claver-cloud/opo-console", icon: Network },
+      { name: "restApi", href: "/claver-cloud/protheus-api", icon: BookOpen },
     ],
   },
   {
-    label: "Administración",
+    label: "admin",
     items: [
-      { name: "Facturación", href: "/claver-cloud/billing", icon: CreditCard },
-      { name: "Configuración", href: "/claver-cloud/settings", icon: Settings },
+      { name: "billing", href: "/claver-cloud/billing", icon: CreditCard },
+      { name: "settings", href: "/claver-cloud/settings", icon: Settings },
     ],
   },
 ]

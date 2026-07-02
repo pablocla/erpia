@@ -10,8 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CloudBreadcrumbs } from "@/components/claver-cloud/cloud-breadcrumbs"
 import { TenantSearch } from "@/components/claver-cloud/tenant-search"
+import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
 import { cn } from "@/lib/utils"
 import { isNavItemActive, navSections } from "@/lib/claver-cloud/nav-config"
+
+import { useTranslations } from "next-intl"
 
 function NavLinks({
   pathname,
@@ -22,6 +25,8 @@ function NavLinks({
   onNavigate?: () => void
   compact?: boolean
 }) {
+  const t = useTranslations("cloudNav")
+
   return (
     <>
       {navSections.map((section) => (
@@ -32,7 +37,7 @@ function NavLinks({
               compact ? "text-xs" : "text-[10px] mb-1",
             )}
           >
-            {section.label}
+            {t(`sections.${section.label}` as any)}
           </p>
           {section.items.map((item) => {
             const active = isNavItemActive(pathname, item)
@@ -52,7 +57,7 @@ function NavLinks({
                 )}
               >
                 <item.icon className={compact ? "h-5 w-5" : "h-4 w-4 shrink-0"} />
-                {item.name}
+                {t(`items.${item.name}` as any)}
               </Link>
             )
           })}
@@ -127,6 +132,7 @@ export function CloudShell({ children }: { children: React.ReactNode }) {
             <CloudBreadcrumbs />
           </div>
 
+          <LocaleFlagToggle />
           <TenantSearch className="ml-auto w-full max-w-[360px]" />
         </div>
         <div className="mt-2 sm:hidden">

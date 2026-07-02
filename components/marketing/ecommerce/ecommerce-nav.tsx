@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { href: "#precios", label: "Precios" },
   { href: "#integraciones", label: "Integraciones" },
   { href: "#faq", label: "FAQ" },
-  { href: "/claver/claverp", label: "Clavis" },
+  { href: "/claver/claverp", label: "Claver" },
   { href: "/claver-cloud", label: "Claver Cloud" },
 ]
 

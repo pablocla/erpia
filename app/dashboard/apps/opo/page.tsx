@@ -2,8 +2,8 @@ import { Metadata } from "next"
 import { OpoStudioPanel } from "@/components/opo/opo-studio-panel"
 
 export const metadata: Metadata = {
-  title: "OPO Studio Bridge | Clavis ERP",
-  description: "Ontología y puente semántico entre Clavis y sistemas legacy.",
+  title: "OPO Studio Bridge | Claver ERP",
+  description: "Ontología y puente semántico entre Claver y sistemas legacy.",
 }
 
 export default function OpoStudioPage() {

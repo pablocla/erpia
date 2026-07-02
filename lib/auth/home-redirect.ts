@@ -4,6 +4,7 @@
 
 import { DEMO_ADMIN_EMAIL } from "@/lib/brand"
 import { parseJwtPayload } from "@/lib/auth/session-client"
+import { getGoldenPathForRubro } from "@/lib/comercial/industry-templates"
 
 export const CLAVER_CLOUD_HOME = "/claver-cloud"
 
@@ -21,7 +22,7 @@ export function shouldRedirectAnalystToCloud(opts: {
   const email = opts.email?.trim().toLowerCase()
   if (email === DEMO_ADMIN_EMAIL.toLowerCase()) return false
   if (opts.rol === ANALYST_ROLE) return true
-  return true
+  return false
 }
 
 export function getHomePathForRol(rol: string): string {
@@ -49,6 +50,7 @@ export function resolvePostLoginPath(opts: {
   email?: string | null
   nextPath?: string | null
   isAnalyst?: boolean
+  rubro?: string | null
 }): string {
   const next = opts.nextPath?.trim()
   if (next && next.startsWith("/") && !next.startsWith("//")) {
@@ -56,6 +58,11 @@ export function resolvePostLoginPath(opts: {
   }
   if (shouldRedirectAnalystToCloud({ email: opts.email, rol: opts.rol, isAnalyst: opts.isAnalyst })) {
     return CLAVER_CLOUD_HOME
+  }
+  const isDemoAccount =
+    opts.email?.trim().toLowerCase() === DEMO_ADMIN_EMAIL.toLowerCase()
+  if (isDemoAccount && opts.rubro) {
+    return getGoldenPathForRubro(opts.rubro)
   }
   return getHomePathForRol(opts.rol)
 }
@@ -73,6 +80,19 @@ export async function fetchIsClaverAnalyst(token: string): Promise<boolean> {
   }
 }
 
+async function fetchEmpresaRubro(token: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/config/empresa", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { rubro?: string }
+    return data.rubro ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function resolvePostLoginPathAsync(
   token: string,
   rol: string,
@@ -83,5 +103,6 @@ export async function resolvePostLoginPathAsync(
   const payload = parseJwtPayload(token)
   const resolvedEmail =
     email ?? (typeof payload?.email === "string" ? String(payload.email) : undefined)
-  return resolvePostLoginPath({ rol, email: resolvedEmail, nextPath, isAnalyst })
+  const rubro = await fetchEmpresaRubro(token)
+  return resolvePostLoginPath({ rol, email: resolvedEmail, nextPath, isAnalyst, rubro })
 }

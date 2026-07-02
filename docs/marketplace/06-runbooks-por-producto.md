@@ -22,7 +22,7 @@ flowchart TB
 
 | Ejecutor | Responsable |
 |----------|-------------|
-| sistema | Backend Clavis / cron / webhooks |
+| sistema | Backend Claver / cron / webhooks |
 | ia | ClavAI (Gemini) |
 | analista | Humano en Claver Cloud |
 | cliente | Usuario del tenant |

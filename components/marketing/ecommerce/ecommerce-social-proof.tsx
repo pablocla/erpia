@@ -8,7 +8,7 @@ import { ScrollReveal } from "@/components/ui/motion"
 const testimonials = [
   {
     quote:
-      "Antes tardábamos 2 días en procesar pedidos web. Ahora con Clavis Ecommerce, el pedido se crea, reserva stock y genera el remito automáticamente. Reducimos tiempo en un 90%.",
+      "Antes tardábamos 2 días en procesar pedidos web. Ahora con Claver Ecommerce, el pedido se crea, reserva stock y genera el remito automáticamente. Reducimos tiempo en un 90%.",
     name: "Roberto F.",
     role: "Distribuidora de Herrajes · Córdoba",
     rating: 5,
@@ -74,7 +74,7 @@ export function EcommerceSocialProof() {
             Testimonios
           </Badge>
           <h2 className="mt-4 font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
-            Más de 500 PyMEs ya vendieron más con Clavis
+            Más de 500 PyMEs ya vendieron más con Claver
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-slate-600 text-sm">
             Negocios argentinos que unificaron su operación y empezaron a crecer.

@@ -21,6 +21,7 @@ const RUBROS: { value: Rubro; emoji: string; label: string }[] = [
   { value: "distribuidora", emoji: "🚚", label: "Distribuidora" },
   { value: "salon_belleza", emoji: "💅", label: "Salón de Belleza" },
   { value: "gimnasio", emoji: "🏋️", label: "Gimnasio" },
+  { value: "canchas", emoji: "⚽", label: "Canchas / Reservas" },
   { value: "otro", emoji: "🏪", label: "Otro comercio" },
 ]
 

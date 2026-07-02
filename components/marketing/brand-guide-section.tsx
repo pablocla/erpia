@@ -1,11 +1,12 @@
 "use client"
 
-import { ClaverIcon, ClavERPIcon, BrandLogo } from "@/components/marketing/brand-logo"
+import { ClaverIcon, ClavERPIcon, ClavergrowIcon, BrandLogo } from "@/components/marketing/brand-logo"
 import {
   BRAND_COLORS,
   BRAND_TYPOGRAPHY,
   CLAVER_GROUP,
   CLAVERP_PRODUCT,
+  CLAVERGROW_PRODUCT,
   LOGO_SPEC,
   MARKETING_ROADMAP,
 } from "@/lib/marketing/brand-system"
@@ -25,7 +26,7 @@ export function BrandGuideSection() {
           <h2 className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
             Arquitectura de marca — Grupo + producto
           </h2>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
             <Card className="ring-2 ring-slate-300">
               <CardHeader>
                 <CardTitle className="text-xl">Matriz — {CLAVER_GROUP.name}</CardTitle>
@@ -44,6 +45,16 @@ export function BrandGuideSection() {
               <CardContent className="text-sm text-slate-600">
                 <p>{CLAVERP_PRODUCT.descriptor}</p>
                 <p className="mt-4">Landings en <code>/claver/claverp</code>.</p>
+              </CardContent>
+            </Card>
+            <Card className="ring-2 ring-emerald-500">
+              <CardHeader>
+                <CardTitle className="text-xl">Producto — {CLAVERGROW_PRODUCT.name}</CardTitle>
+                <p className="text-sm text-muted-foreground">{CLAVERGROW_PRODUCT.tagline}</p>
+              </CardHeader>
+              <CardContent className="text-sm text-slate-600">
+                <p>{CLAVERGROW_PRODUCT.descriptor}</p>
+                <p className="mt-4">Landings en <code>/claver/clavergrow</code>.</p>
               </CardContent>
             </Card>
           </div>
@@ -68,9 +79,9 @@ export function BrandGuideSection() {
           </p>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { name: "Primario", hex: BRAND_COLORS.primary.DEFAULT, uso: "CTA, links, isotipo" },
+              { name: "Primario", hex: BRAND_COLORS.primary.DEFAULT, uso: "CTA Claver, links ERP" },
+              { name: "Clavergrow", hex: BRAND_COLORS.grow.DEFAULT, uso: "Línea agro, campo, acopio" },
               { name: "Acento", hex: BRAND_COLORS.accent.DEFAULT, uso: "Highlights, nodos logo" },
-              { name: "Éxito", hex: BRAND_COLORS.success.DEFAULT, uso: "Stock, KPIs OK" },
               { name: "Fiscal", hex: BRAND_COLORS.fiscal.DEFAULT, uso: "Solo sección AFIP" },
             ].map((c) => (
               <div key={c.name} className="overflow-hidden rounded-2xl border shadow-sm">
@@ -95,6 +106,7 @@ export function BrandGuideSection() {
           </h2>
           <p className="mt-2 max-w-2xl text-slate-600">{LOGO_SPEC.group.description}</p>
           <p className="mt-2 max-w-2xl text-sm text-slate-500">{LOGO_SPEC.product.description}</p>
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">{LOGO_SPEC.grow.description}</p>
           <div className="mt-10 flex flex-wrap items-end gap-12">
             <div className="text-center">
               <ClaverIcon size={32} theme="light" className="mx-auto" />
@@ -105,10 +117,17 @@ export function BrandGuideSection() {
               <p className="mt-2 text-xs text-slate-500">{CLAVERP_PRODUCT.name}</p>
             </div>
             <div className="text-center">
+              <ClavergrowIcon size={32} theme="light" className="mx-auto" />
+              <p className="mt-2 text-xs text-slate-500">{CLAVERGROW_PRODUCT.name}</p>
+            </div>
+            <div className="text-center">
               <BrandLogo size="lg" theme="light" variant="group-full" />
             </div>
             <div className="text-center">
               <BrandLogo size="lg" theme="light" variant="claverp-full" />
+            </div>
+            <div className="text-center">
+              <BrandLogo size="lg" theme="light" variant="clavergrow-full" />
             </div>
             <div className="rounded-2xl bg-slate-950 p-6">
               <BrandLogo size="md" theme="dark" variant="claverp-full" />
@@ -122,7 +141,8 @@ export function BrandGuideSection() {
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
               { src: BRAND_ASSETS.claverIcon, label: "Claver icon" },
-              { src: BRAND_ASSETS.claverpIcon, label: "Clavis icon" },
+              { src: BRAND_ASSETS.claverpIcon, label: "Claver icon" },
+              { src: BRAND_ASSETS.clavergrowIcon, label: "Clavergrow icon" },
               { src: BRAND_ASSETS.claverpLockup, label: "Lockup" },
             ].map((asset) => (
               <div key={asset.src} className="rounded-xl border bg-slate-50 p-4 text-center">

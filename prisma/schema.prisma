@@ -50,6 +50,11 @@ model Empresa {
   condicionIva     String    @default("Responsable Inscripto")
   /// Apariencia global del ERP (definida por dueño/admin, aplica a todos los usuarios)
   temaConfig       Json?
+  modoLite         String    @default("completo")
+  /// Libreta Fiado — requiere límite de crédito por cliente
+  fiadoRequiereLimite      Boolean   @default(true)
+  emailDuenoAlmacen        String?
+  fiadoNotificarWhatsApp   Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
@@ -171,6 +176,14 @@ model Empresa {
   agroContratos               AgroContrato[]
   agroLiquidaciones           AgroLiquidacion[]
   agroLotes                   AgroLote[]
+  agroCannabisPerfil          AgroCannabisPerfil?
+  agroCannabisGeneticas       AgroCannabisGenetica[]
+  agroCannabisSalas           AgroCannabisSala[]
+  agroCannabisCiclos          AgroCannabisCiclo[]
+  agroCannabisInsumos         AgroCannabisInsumo[]
+  agroCannabisAplicaciones    AgroCannabisAplicacion[]
+  agroCannabisAnalisisSuelo   AgroCannabisAnalisisSuelo[]
+  agroCannabisCosechas        AgroCannabisCosecha[]
 
   @@map("empresas")
 }
@@ -242,6 +255,11 @@ model Cliente {
   mpAccountId                  String?
   /// Puntos de Lealtad (Fidelización)
   loyaltyPoints                Int       @default(0)
+  /// Libreta Fiado — permite venta a fiado en POS
+  fiadoHabilitado              Boolean   @default(false)
+  emailNotificacionFiado       String?
+  emailNotificacionFiado2      String?
+  notificarClienteFiado        Boolean   @default(false)
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
   deletedAt                    DateTime?
@@ -381,6 +399,7 @@ model Proveedor {
   retenciones       RetencionSICORE[]
   cuentasBancarias  CuentaBancaria[]
   cheques           Cheque[]
+  endososRecibidos  Cheque[] @relation("ChequeEndoso")
   ordenesCompra     OrdenCompra[]
   cuentasPagar      CuentaPagar[]
   ordenesPago       OrdenPago[]
@@ -390,6 +409,7 @@ model Proveedor {
   agroContratos     AgroContrato[]
   agroLiquidaciones AgroLiquidacion[]
   agroLotes         AgroLote[]
+  cannabisInsumos   AgroCannabisInsumo[]
 
   @@map("proveedores")
 }
@@ -652,6 +672,7 @@ model Usuario {
   tareas                 TareaPendiente[]
   virtualWorkers         AutomationVirtualWorker[]
   solicitudesIntegracion SolicitudIntegracion[]
+  partnerProfile         PartnerProfile?
 
   @@map("usuarios")
 }
@@ -2047,6 +2068,13 @@ model Cheque {
   recibo      Recibo?    @relation(fields: [reciboId], references: [id])
   ordenPagoId Int?
   ordenPago   OrdenPago? @relation(fields: [ordenPagoId], references: [id])
+
+  /// FIX A-001: endoso de cheques a proveedores
+  endosadoAProveedorId Int?
+  endosadoAProveedor   Proveedor? @relation("ChequeEndoso", fields: [endosadoAProveedorId], references: [id])
+  
+  /// Foto capturada del cheque
+  fotoUrl              String?
 
   /// FIX A-001: índices para cartera de cheques
   @@index([estado, fechaVencimiento])
@@ -4258,6 +4286,7 @@ model Sucursal {
   depositos Deposito[]
   cajasTipo CajaTipo[]
   cajas     Caja[]     @relation("CajaSucursal")
+  posPlus   PosPlu[]   @relation("SucursalPosPlus")
 
   @@unique([empresaId, codigo])
   @@map("sucursales")
@@ -6119,6 +6148,11 @@ model SuscripcionModulo {
   vigenciaHasta    DateTime?
   limiteEventosMes Int?
   metadata         Json?
+  
+  // --- Partner Network ---
+  sellerId         String?   // Vendedor que comisiona MRR
+  implementerId    String?   // Técnico que comisionó el Setup
+  
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -6155,11 +6189,13 @@ model PosPlu {
   color      String?
   etiqueta   String?
   activo     Boolean  @default(true)
+  sucursalId Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  empresa  Empresa  @relation("EmpresaPosPlus", fields: [empresaId], references: [id])
-  producto Producto @relation("ProductoPosPlus", fields: [productoId], references: [id])
+  empresa  Empresa   @relation("EmpresaPosPlus", fields: [empresaId], references: [id])
+  producto Producto  @relation("ProductoPosPlus", fields: [productoId], references: [id])
+  sucursal Sucursal? @relation("SucursalPosPlus", fields: [sucursalId], references: [id])
 
   @@unique([empresaId, productoId])
   @@map("pos_plus")
@@ -6397,10 +6433,189 @@ model AgroLote {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  empresa   Empresa    @relation(fields: [empresaId], references: [id])
-  proveedor Proveedor? @relation(fields: [proveedorId], references: [id])
+  empresa       Empresa            @relation(fields: [empresaId], references: [id])
+  proveedor     Proveedor?         @relation(fields: [proveedorId], references: [id])
+  cannabisSalas AgroCannabisSala[]
 
   @@map("agro_lotes")
+}
+
+// ── Cannabis medicinal / ONG (trazabilidad REPROCANN) ───────────────────────
+
+model AgroCannabisPerfil {
+  id                   Int       @id @default(autoincrement())
+  empresaId            Int       @unique
+  nombreOng            String?
+  reprocannNumero      String?
+  reprocannVencimiento DateTime?
+  cupoPlantas          Int?
+  cupoSuperficieM2     Float?
+  responsableTecnico   String?
+  observaciones        String?   @db.Text
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+
+  @@map("agro_cannabis_perfil")
+}
+
+model AgroCannabisGenetica {
+  id                  Int      @id @default(autoincrement())
+  empresaId           Int
+  nombre              String
+  tipo                String   @default("CBD")
+  thcMaxPct           Float?
+  cbdMaxPct           Float?
+  reprocannAutorizada Boolean  @default(true)
+  activa              Boolean  @default(true)
+  notas               String?  @db.Text
+  createdAt           DateTime @default(now())
+
+  empresa Empresa             @relation(fields: [empresaId], references: [id])
+  ciclos  AgroCannabisCiclo[]
+
+  @@unique([empresaId, nombre])
+  @@map("agro_cannabis_geneticas")
+}
+
+model AgroCannabisSala {
+  id               Int      @id @default(autoincrement())
+  empresaId        Int
+  nombre           String
+  tipo             String   @default("INDOOR")
+  superficieM2     Float?
+  capacidadPlantas Int?
+  loteId           Int?
+  activa           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  empresa       Empresa                    @relation(fields: [empresaId], references: [id])
+  lote          AgroLote?                  @relation(fields: [loteId], references: [id])
+  ciclos        AgroCannabisCiclo[]
+  analisisSuelo AgroCannabisAnalisisSuelo[]
+
+  @@unique([empresaId, nombre])
+  @@map("agro_cannabis_salas")
+}
+
+model AgroCannabisCiclo {
+  id               Int       @id @default(autoincrement())
+  empresaId        Int
+  numero           String
+  salaId           Int
+  geneticaId       Int
+  etapa            String    @default("GERMINACION")
+  plantasIniciales Int       @default(0)
+  plantasActuales  Int       @default(0)
+  fechaInicio      DateTime  @default(now())
+  fechaFin         DateTime?
+  costoAcumulado   Float     @default(0)
+  observaciones    String?   @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  empresa       Empresa                    @relation(fields: [empresaId], references: [id])
+  sala          AgroCannabisSala           @relation(fields: [salaId], references: [id])
+  genetica      AgroCannabisGenetica       @relation(fields: [geneticaId], references: [id])
+  aplicaciones  AgroCannabisAplicacion[]
+  analisisSuelo AgroCannabisAnalisisSuelo[]
+  cosechas      AgroCannabisCosecha[]
+
+  @@unique([empresaId, numero])
+  @@map("agro_cannabis_ciclos")
+}
+
+model AgroCannabisInsumo {
+  id             Int      @id @default(autoincrement())
+  empresaId      Int
+  codigo         String
+  nombre         String
+  categoria      String
+  unidad         String   @default("L")
+  stockActual    Float    @default(0)
+  stockMinimo    Float    @default(0)
+  costoUnitario  Float    @default(0)
+  proveedorId    Int?
+  activo         Boolean  @default(true)
+  fichaSeguridad String?
+  composicion    String?
+  createdAt      DateTime @default(now())
+
+  empresa      Empresa                  @relation(fields: [empresaId], references: [id])
+  proveedor    Proveedor?               @relation(fields: [proveedorId], references: [id])
+  aplicaciones AgroCannabisAplicacion[]
+
+  @@unique([empresaId, codigo])
+  @@map("agro_cannabis_insumos")
+}
+
+model AgroCannabisAplicacion {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  cicloId       Int
+  insumoId      Int
+  fecha         DateTime @default(now())
+  cantidad      Float
+  unidad        String
+  dosis         String?
+  costoTotal    Float    @default(0)
+  operador      String?
+  metodo        String?
+  observaciones String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  empresa Empresa            @relation(fields: [empresaId], references: [id])
+  ciclo   AgroCannabisCiclo  @relation(fields: [cicloId], references: [id])
+  insumo  AgroCannabisInsumo @relation(fields: [insumoId], references: [id])
+
+  @@index([cicloId, fecha])
+  @@map("agro_cannabis_aplicaciones")
+}
+
+model AgroCannabisAnalisisSuelo {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int
+  cicloId       Int?
+  salaId        Int?
+  fecha         DateTime @default(now())
+  tipoMuestra   String   @default("SUSTRATO")
+  ph            Float?
+  ec            Float?
+  nitrogeno     Float?
+  fosforo       Float?
+  potasio       Float?
+  humedad       Float?
+  costoAnalisis Float?
+  laboratorio   String?
+  notas         String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  empresa Empresa            @relation(fields: [empresaId], references: [id])
+  ciclo   AgroCannabisCiclo? @relation(fields: [cicloId], references: [id])
+  sala    AgroCannabisSala?  @relation(fields: [salaId], references: [id])
+
+  @@map("agro_cannabis_analisis_suelo")
+}
+
+model AgroCannabisCosecha {
+  id                 Int      @id @default(autoincrement())
+  empresaId          Int
+  cicloId            Int
+  fecha              DateTime @default(now())
+  pesoHumedoKg       Float?
+  pesoSecoKg         Float?
+  plantasCosechadas  Int
+  rendimientoGp      Float?
+  destino            String?
+  loteTrazabilidad   String?
+  observaciones      String?  @db.Text
+  createdAt          DateTime @default(now())
+
+  empresa Empresa           @relation(fields: [empresaId], references: [id])
+  ciclo   AgroCannabisCiclo @relation(fields: [cicloId], references: [id])
+
+  @@map("agro_cannabis_cosechas")
 }
 
 // Pipeline comercial de plataforma (CEO / analistas Claver — sin tenant)
@@ -6527,3 +6742,40 @@ model ComercialHojaRutaParada {
   @@index([hojaRutaId])
   @@map("comercial_hoja_ruta_paradas")
 }
+
+// -- Clavernet (Partner Network) --------------------------
+model PartnerProfile {
+  id             Int       @id @default(autoincrement())
+  usuarioId      Int       @unique
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id])
+  tipo           String    // "dev" | "seller" | "implementer" | "hybrid"
+  nombreFantasia String?
+  bio            String?   @db.Text
+  nivel          String    @default("novice") // "novice" | "pro" | "elite"
+  comisionGlobal Decimal   @default(0) @db.Decimal(5, 2)
+  activo         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  appsPublicadas MarketplaceApp[] @relation("DevApps")
+  
+  @@map("partner_profiles")
+}
+
+model MarketplaceApp {
+  id             Int       @id @default(autoincrement())
+  sku            String    @unique
+  nombre         String
+  descripcion    String    @db.Text
+  devId          Int
+  developer      PartnerProfile @relation("DevApps", fields: [devId], references: [id])
+  precioMensual  Decimal   @default(0) @db.Decimal(10, 2)
+  comisionSeller Decimal   @default(0) @db.Decimal(5, 2)
+  comisionTeacher Decimal  @default(0) @db.Decimal(5, 2)
+  estado         String    @default("draft") // "draft" | "published" | "deprecated"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("marketplace_apps")
+}
+

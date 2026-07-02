@@ -1,6 +1,6 @@
 # 00 — Ciclo completo: Comercial → Implementación → Postventa
 
-> **Documento maestro** de flujos funcionales Clavis / Claver Cloud.  
+> **Documento maestro** de flujos funcionales Claver / Claver Cloud.  
 > Complementa [README marketplace](./README.md) y [CCA](../../content/docs/operaciones/claver-cloud-proceso-implementacion.mdx).
 
 ## Diagrama transversal

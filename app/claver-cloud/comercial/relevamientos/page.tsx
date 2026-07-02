@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { CheckCircle2, ClipboardList, Map, MapPin, Save } from "lucide-react"
+import { CheckCircle2, ClipboardList, ExternalLink, Map, MapPin, Rocket, Save } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,6 +50,14 @@ type Relevamiento = {
   dolorPrincipal: string | null
   trialAceptado: boolean
   engancheCandidato: string | null
+  leadEmpresaId: number | null
+}
+
+type ProvisionResult = {
+  empresaId: number
+  tempPassword: string
+  contactoEmail: string
+  landingPath: string
 }
 
 const initialForm = {
@@ -88,6 +103,12 @@ export default function RelevamientosCallePage() {
   const [ok, setOk] = useState<number | null>(null)
   const [lista, setLista] = useState<Relevamiento[]>([])
   const [loading, setLoading] = useState(false)
+  const [provisionOpen, setProvisionOpen] = useState(false)
+  const [provisionTarget, setProvisionTarget] = useState<Relevamiento | null>(null)
+  const [provisionEmail, setProvisionEmail] = useState("")
+  const [provisionando, setProvisionando] = useState(false)
+  const [provisionOk, setProvisionOk] = useState<ProvisionResult | null>(null)
+  const [provisionError, setProvisionError] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -114,6 +135,43 @@ export default function RelevamientosCallePage() {
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  function abrirProvision(r: Relevamiento) {
+    setProvisionTarget(r)
+    setProvisionEmail("")
+    setProvisionOk(null)
+    setProvisionError(null)
+    setProvisionOpen(true)
+  }
+
+  async function provisionarTrial() {
+    if (!provisionTarget || !provisionEmail.trim()) return
+    setProvisionando(true)
+    setProvisionError(null)
+    try {
+      const res = await fetch(
+        `/api/claver/comercial/relevamientos/${provisionTarget.id}/provision`,
+        {
+          method: "POST",
+          headers: cloudAuthHeaders(true),
+          body: JSON.stringify({ contactoEmail: provisionEmail.trim() }),
+        },
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "No se pudo provisionar")
+      setProvisionOk({
+        empresaId: data.empresaId,
+        tempPassword: data.tempPassword,
+        contactoEmail: data.contactoEmail,
+        landingPath: data.landingPath,
+      })
+      await cargar()
+    } catch (e) {
+      setProvisionError(e instanceof Error ? e.message : "Error al provisionar")
+    } finally {
+      setProvisionando(false)
+    }
   }
 
   async function guardar() {
@@ -461,6 +519,31 @@ export default function RelevamientosCallePage() {
                       Trial
                     </Badge>
                   )}
+                  {r.leadEmpresaId && (
+                    <Badge variant="outline" className="text-xs border-violet-500/40 text-violet-400">
+                      Tenant #{r.leadEmpresaId}
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {!r.leadEmpresaId && (r.trialAceptado || r.nivelInteres === "alto") && (
+                    <Button
+                      size="sm"
+                      className="h-8 bg-violet-600 hover:bg-violet-500"
+                      onClick={() => abrirProvision(r)}
+                    >
+                      <Rocket className="h-3.5 w-3.5 mr-1" />
+                      Dejar listo hoy
+                    </Button>
+                  )}
+                  {r.leadEmpresaId && (
+                    <Button size="sm" variant="outline" className="h-8" asChild>
+                      <Link href={`/claver-cloud/tenants/${r.leadEmpresaId}`}>
+                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                        Ver tenant
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -480,6 +563,67 @@ export default function RelevamientosCallePage() {
           </ul>
         </CardContent>
       </Card>
+
+      <Dialog open={provisionOpen} onOpenChange={setProvisionOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dejar listo — {provisionTarget?.negocio}</DialogTitle>
+          </DialogHeader>
+          {provisionOk ? (
+            <div className="space-y-3 text-sm">
+              <p className="text-emerald-600 font-medium">Tenant #{provisionOk.empresaId} creado.</p>
+              <div className="rounded-md border bg-muted/40 p-3 space-y-1 font-mono text-xs">
+                <p>Email: {provisionOk.contactoEmail}</p>
+                <p>Pass: {provisionOk.tempPassword}</p>
+                <p>Entrada: {provisionOk.landingPath}</p>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Copiá y mandá por WhatsApp. El comerciante entra y anota el primer fiado.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Pack:{" "}
+                <strong>
+                  {ENGANCHES_CANDIDATOS.find((e) => e.id === provisionTarget?.engancheCandidato)?.label ??
+                    "Libreta Fiado"}
+                </strong>
+              </p>
+              <div className="grid gap-1.5">
+                <Label>Email del comerciante</Label>
+                <Input
+                  type="email"
+                  placeholder="dueño@comercio.com"
+                  value={provisionEmail}
+                  onChange={(e) => setProvisionEmail(e.target.value)}
+                />
+              </div>
+              {provisionError && (
+                <p className="text-sm text-destructive">{provisionError}</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            {provisionOk ? (
+              <Button onClick={() => setProvisionOpen(false)}>Cerrar</Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setProvisionOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-violet-600 hover:bg-violet-500"
+                  disabled={provisionando || !provisionEmail.includes("@")}
+                  onClick={() => void provisionarTrial()}
+                >
+                  {provisionando ? "Creando…" : "Crear tenant + trial 14d"}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

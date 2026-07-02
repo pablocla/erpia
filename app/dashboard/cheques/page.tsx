@@ -14,10 +14,6 @@
  *  3. Endosar a proveedor → estado "endosado"
  *  4. Rebotado → genera deuda al cliente + alerta
  *  5. Cheques propios emitidos a proveedores → seguimiento de débito
- *
- * TODO (requiere schema migration):
- *  - Agregar campo `fotoUrl String?` para foto del cheque (capturada por vendedor)
- *  - Agregar campo `endosadoAProveedorId Int?` para tracking de endosos
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react"

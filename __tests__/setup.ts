@@ -67,6 +67,8 @@ const prismaModels = [
   "planMantenimiento", "ordenTrabajo",
   // Agro
   "agroGrano", "agroSilo", "agroPrecioPizarra", "agroTicketBalanza", "agroContrato", "agroLiquidacion", "agroLote",
+  "agroCannabisPerfil", "agroCannabisGenetica", "agroCannabisSala", "agroCannabisCiclo",
+  "agroCannabisInsumo", "agroCannabisAplicacion", "agroCannabisAnalisisSuelo", "agroCannabisCosecha",
   // Caja arqueo
   "arqueoCaja",
   // WhatsApp

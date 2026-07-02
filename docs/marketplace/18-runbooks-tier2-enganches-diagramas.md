@@ -10,7 +10,7 @@ flowchart LR
   T1[Tier implementado: Fiado / Cobranzas WA / Guardián] --> T2[Tier parcial: WA / ClavPay / OCR / Backup]
   T2 --> BND[Bundle pool-almacen-barrio]
   BND --> AR[Pack Almacén Rosario 18 módulos]
-  AR --> ERP[Clavis Core + AFIP]
+  AR --> ERP[Claver Core + AFIP]
   T1 -.->|trial 14d fiado| T1
 ```
 

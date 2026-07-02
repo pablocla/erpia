@@ -26,7 +26,9 @@ export type Rubro =
   | "distribuidora"
   | "salon_belleza"
   | "gimnasio"
+  | "canchas"
   | "agro_acopio"
+  | "agro_cannabis"
   | "prestamista"
   | "concesionaria"
   | "importador"
@@ -336,6 +338,20 @@ const CONFIG_POR_RUBRO: Record<Rubro, {
     argumentoVenta: "¿Todavía liquidás a tus productores en Excel? Con este sistema el ticket de balanza actualiza el stock solo, el contrato calcula la liquidación con las retenciones de AFIP correctas, y el productor puede ver su saldo desde el celular. La pizarra BCR aparece en el dashboard para que puedas decidir cuándo vender.",
     rolesSugeridos: ["dueno", "gerente", "cajero", "deposito", "contador"],
   },
+  agro_cannabis: {
+    modulos: ["agro", "compras", "proveedores", "stock", "usuarios", "reportes"],
+    particularidades: [
+      "Trazabilidad REPROCANN: cupos, genéticas autorizadas y lotes de cosecha",
+      "Ciclos de cultivo: germinación → vegetativo → floración → secado → curado",
+      "Insumos: fertilizantes, químicos, sustrato con stock y ficha de seguridad",
+      "Aplicaciones con dosis, operador y costo automático por ciclo",
+      "Análisis de suelo/sustrato/agua: pH, EC, NPK, humedad",
+      "Costos acumulados por ciclo y por categoría de insumo",
+      "Salas indoor, invernadero u outdoor con capacidad de plantas",
+    ],
+    argumentoVenta: "Digitalizá todo el proceso de tu ONG de cannabis medicinal: desde el REPROCANN hasta cada aplicación de nutrientes, con costos por ciclo y trazabilidad lista para auditoría.",
+    rolesSugeridos: ["dueno", "gerente", "deposito"],
+  },
   prestamista: {
     modulos: ["clientes", "caja", "banco", "reportes"],
     particularidades: [
@@ -512,6 +528,7 @@ function getMensajeBienvenida(rubro: Rubro): string {
     salon_belleza: "¡Tu salón está listo! Agenda por profesional, fidelidad con sellos, comisiones automáticas y recordatorio de turnos.",
     gimnasio: "Gimnasio configurado: membresías con vencimiento, control de acceso, clases con cupo y retención automática de socios.",
     agro_acopio: "¡Tu acopio ya está listo! Pizarra BCR en el dashboard, balanza digital, contratos de cereales y liquidaciones con retenciones AFIP correctas. El productor puede ver su saldo desde el celular.",
+    agro_cannabis: "¡Tu ONG de cannabis medicinal está lista! Trazabilidad REPROCANN, ciclos de cultivo, insumos, aplicaciones y análisis de suelo en un solo lugar.",
     prestamista: "¡Tu gestor de prestamos listo! Controlá tus cuotas, calculá intereses, imprimí pagarés e identificá tu cobranza diaria.",
     concesionaria: "¡Concesionaria configurada! Gestioná tu flota, la documentación de vehículos, tasaciones y la red de revendedores.",
     importador: "¡Herramientas de importación listas! Calculá landed cost, prorrateá despachante y fletes, y asegurá el ROI de tus contenedores de China.",
@@ -606,6 +623,12 @@ function getProductosEjemploByRubro(rubro: Rubro): { nombre: string; codigo: str
       { nombre: "Almacenaje soja (por tn/mes)", codigo: "ALM-SOJ", precio: 2800, iva: 21 },
       { nombre: "Secado soja (por punto de humedad/tn)", codigo: "SEC-SOJ", precio: 1200, iva: 21 },
     ],
+    agro_cannabis: [
+      { nombre: "Fertilizante NPK Grow A (L)", codigo: "FERT-GROW-A", precio: 8500, iva: 21 },
+      { nombre: "Fertilizante Bloom B (L)", codigo: "FERT-BLOOM-B", precio: 9200, iva: 21 },
+      { nombre: "Sustrato coco perlita (kg)", codigo: "SUS-COCO", precio: 3200, iva: 21 },
+      { nombre: "Cal-Mag (L)", codigo: "NUT-CALMAG", precio: 4500, iva: 21 },
+    ],
     prestamista: [
       { nombre: "Interes mora diaria", codigo: "INT-MORA", precio: 0, iva: 0 },
       { nombre: "Gasto administrativo", codigo: "GTOS-ADM", precio: 2500, iva: 21 },
@@ -648,6 +671,7 @@ const RUBRO_ALIASES: Record<string, Rubro> = {
   gastronomia: "bar_restaurant",
   salud: "clinica",
   comercio: "kiosco",
+  almacen: "kiosco",
   hoteleria: "bar_restaurant",
   transporte: "distribuidora",
   servicios: "otro",
@@ -657,6 +681,9 @@ const RUBRO_ALIASES: Record<string, Rubro> = {
   acopio: "agro_acopio",
   agropecuario: "agro_acopio",
   cereales: "agro_acopio",
+  cannabis: "agro_cannabis",
+  ong_cannabis: "agro_cannabis",
+  reprocann: "agro_cannabis",
   construccion: "ferreteria",
   gasolinera: "estacion_servicio",
   estacion_servicio: "estacion_servicio",
@@ -698,8 +725,8 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
     foco: ["Ventas por hora", "Ticket promedio", "Margen por producto", "Rotacion de stock"],
     alertas: ["Stock bajo en top 20", "Caja sin cierre", "Productos vencidos"],
     quickActions: [
-      { label: "Venta rapida", href: "/dashboard/ventas" },
-      { label: "Movimientos stock", href: "/dashboard/productos/movimientos" },
+      { label: "Anotar fiado", href: "/dashboard/fiado" },
+      { label: "Venta rapida", href: "/dashboard/pos" },
       { label: "Cerrar caja", href: "/dashboard/caja" },
     ],
     sidebarPrioridad: ["ventas", "caja", "stock", "compras"],
@@ -842,9 +869,9 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
     foco: ["Ventas de combustible", "Venta de conveniencia", "Caja por turno", "Stock de surtidores"],
     alertas: ["Surtidor sin stock", "Caja sin cierre", "Productos por vencer", "Litros por debajo del mínimo"],
     quickActions: [
-      { label: "Venta rápida", href: "/dashboard/ventas" },
-      { label: "Control de stock", href: "/dashboard/productos/movimientos" },
-      { label: "Caja", href: "/dashboard/caja" },
+      { label: "Cuenta corriente flotas", href: "/dashboard/cuentas-cobrar" },
+      { label: "Cierre de turno", href: "/dashboard/caja" },
+      { label: "Venta surtidor", href: "/dashboard/ventas" },
     ],
     sidebarPrioridad: ["ventas", "caja", "stock", "compras", "reportes"],
     maestrosCriticos: [
@@ -1042,6 +1069,30 @@ const RUBRO_UX: Record<Rubro, RubroUxConfig> = {
       "Compra grano → retención Ganancias rural → percepción IVA → asiento contable",
       "Carta de porte CPE: generar antes de salir el camión → AFIP → confirmar",
       "Pizarra BCR actualizada → alerta a productor cuando supera precio target",
+    ],
+  },
+  agro_cannabis: {
+    nombre: "Cannabis medicinal / ONG",
+    foco: ["Ciclos activos", "Cupo REPROCANN", "Stock de insumos", "Costos del mes"],
+    alertas: ["Insumo bajo stock mínimo", "Cupo de plantas al 90%", "REPROCANN próximo a vencer", "pH/EC fuera de rango"],
+    quickActions: [
+      { label: "Nuevo ciclo", href: "/dashboard/agro/cannabis/ciclos" },
+      { label: "Registrar aplicación", href: "/dashboard/agro/cannabis/aplicaciones" },
+      { label: "Análisis de suelo", href: "/dashboard/agro/cannabis/suelo" },
+      { label: "Configurar ONG", href: "/dashboard/agro/cannabis" },
+    ],
+    sidebarPrioridad: ["agro", "compras", "stock", "reportes"],
+    maestrosCriticos: [
+      { tabla: "agro/cannabis/perfil", label: "Perfil REPROCANN", descripcion: "Nº habilitación, cupos y responsable técnico." },
+      { tabla: "agro/cannabis/salas", label: "Salas de cultivo", descripcion: "Indoor, invernadero u outdoor con capacidad." },
+      { tabla: "agro/cannabis/geneticas", label: "Genéticas", descripcion: "Variedades autorizadas con THC/CBD máximo." },
+      { tabla: "agro/cannabis/insumos", label: "Insumos", descripcion: "Fertilizantes, químicos, sustrato con stock y costo." },
+    ],
+    flujosCriticos: [
+      "Configurar REPROCANN → salas → genéticas → iniciar ciclo",
+      "Aplicación de insumo → descuenta stock → suma costo al ciclo",
+      "Análisis suelo/agua → alerta si pH/EC fuera de rango",
+      "Cosecha → lote trazabilidad → ciclo finalizado",
     ],
   },
 }

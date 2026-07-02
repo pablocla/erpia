@@ -47,7 +47,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "implementado",
     nichos: ["almacen_barrio", "pyme_cobranzas"],
     precioArs: 20000,
-    upsellA: ["fiscal.clavpay_link", "core.clavis"],
+    upsellA: ["fiscal.clavpay_link", "core.claver"],
     dolorResuelve: "Cuentas por cobrar vencidas sin seguimiento automático",
   },
   {
@@ -77,17 +77,17 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "parcial",
     nichos: ["horizontal", "almacen_barrio"],
     precioArs: 6000,
-    upsellA: ["core.clavis", "data.nps"],
+    upsellA: ["core.claver", "data.nps"],
     dolorResuelve: "Dueño sin visibilidad diaria de caja y stock",
   },
   {
     sku: "bridge.opo_studio",
     nombre: "OPO Studio Bridge",
-    lema: "Tu Protheus, con cara de Clavis.",
+    lema: "Tu Protheus, con cara de Claver.",
     tier: "parcial",
     nichos: ["horizontal", "ecommerce"],
     precioArs: 24900,
-    upsellA: ["core.clavis", "impl.parametrizacion_remota", "ops.morning_commander"],
+    upsellA: ["core.claver", "impl.parametrizacion_remota", "ops.morning_commander"],
     dolorResuelve: "ERP legacy sin capa moderna ni IA con contexto unificado",
   },
   {
@@ -97,7 +97,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "parcial",
     nichos: ["almacen_barrio", "fiscal"],
     precioArs: 9000,
-    upsellA: ["core.clavis", "impl.homologacion_afip"],
+    upsellA: ["core.claver", "impl.homologacion_afip"],
     dolorResuelve: "Carga manual de facturas de proveedores",
   },
   {
@@ -107,7 +107,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "parcial",
     nichos: ["horizontal", "seguridad_ops"],
     precioArs: 20000,
-    upsellA: ["sec.mfa", "core.clavis"],
+    upsellA: ["sec.mfa", "core.claver"],
     dolorResuelve: "Miedo a perder datos del negocio",
   },
   {
@@ -127,7 +127,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "implementado",
     nichos: ["almacen_barrio", "pyme_cobranzas"],
     precioArs: 14900,
-    upsellA: ["core.clavis", "intang.liquidacion_pagos"],
+    upsellA: ["core.claver", "intang.liquidacion_pagos"],
     dolorResuelve: "Anulaciones y egresos sospechosos en caja",
   },
   {
@@ -137,7 +137,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "parcial",
     nichos: ["pyme_cobranzas", "ecommerce"],
     precioArs: 24900,
-    upsellA: ["channel.mercadopago", "core.clavis"],
+    upsellA: ["channel.mercadopago", "core.claver"],
     dolorResuelve: "Diferencias entre ventas POS y liquidación procesadoras",
   },
   {
@@ -167,7 +167,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "catalogo",
     nichos: ["pyme_cobranzas", "horizontal"],
     precioArs: 9900,
-    upsellA: ["core.clavis"],
+    upsellA: ["core.claver"],
     dolorResuelve: "Contratos y letras chicas sin revisar",
   },
   {
@@ -177,7 +177,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "catalogo",
     nichos: ["horizontal"],
     precioArs: 3000,
-    upsellA: ["core.clavis"],
+    upsellA: ["core.claver"],
     dolorResuelve: "Suscripciones olvidadas en resumen bancario",
   },
   {
@@ -207,7 +207,7 @@ export const ENGANCHES: EngancheProducto[] = [
     tier: "catalogo",
     nichos: ["pyme_cobranzas", "ecommerce"],
     precioArs: 4000,
-    upsellA: ["com.whatsapp", "core.clavis"],
+    upsellA: ["com.whatsapp", "core.claver"],
     dolorResuelve: "Leads perdidos fuera de horario",
   },
 ]

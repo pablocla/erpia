@@ -2,7 +2,7 @@
 
 > **Lema AutoPool:** *Prendelo una vez. Labura todos los días.*
 
-Este índice cubre el ciclo completo del marketplace de automatizaciones y servicios de Clavis: desde que un cliente descubre un producto hasta la atención postventa, pasando por la torre de analistas en Claver Cloud.
+Este índice cubre el ciclo completo del marketplace de automatizaciones y servicios de Claver: desde que un cliente descubre un producto hasta la atención postventa, pasando por la torre de analistas en Claver Cloud.
 
 ## Audiencia
 

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { obtenerConfigFiado, guardarConfigFiado } from "@/lib/fiado/fiado-service"
+import { canUseSku } from "@/lib/platform/entitlements"
 
 const patchSchema = z.object({
   emailDuenoAlmacen: z.string().email().optional().or(z.literal("")).nullable(),
@@ -13,6 +14,9 @@ export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
+  const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
+  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
+
   const config = await obtenerConfigFiado(ctx.auth.empresaId)
   if (!config) return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 })
 
@@ -22,6 +26,9 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
+
+  const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
+  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   if (!["admin", "propietario", "administrador", "dueno"].includes(ctx.auth.rol)) {
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 })

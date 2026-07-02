@@ -3,8 +3,8 @@ import { MARKETPLACE_CATALOG } from "@/lib/marketplace/marketplace-catalog"
 
 /** SKU comercial → feature técnica NOP */
 export const SKU_TO_FEATURE: Record<string, string> = {
-  "core.clavis": "core",
-  "core.clavis_industria": "core_industria",
+  "core.claver": "core",
+  "core.claver_industria": "core_industria",
   "bundle.tienda_conectada": "integrations_tienda",
   "bundle.marketplace_ml": FEATURES.MERCADO_LIBRE,
   "bundle.multicanal_ar": "integrations_multicanal",

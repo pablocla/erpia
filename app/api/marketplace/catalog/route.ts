@@ -5,10 +5,14 @@ import { MARKETPLACE_CATALOG } from "@/lib/marketplace/marketplace-catalog"
 import { AUTOPOOL_ENTRIES } from "@/lib/marketplace/autopool-manifest"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { getRunbook } from "@/lib/marketplace/product-runbooks"
+import { getEmpresaCountry } from "@/lib/country/get-empresa-country"
 
 export async function GET(request: NextRequest) {
   const auth = getAuthContext(request)
   if (!auth.ok) return auth.response
+
+  const countryContext = await getEmpresaCountry(auth.auth.empresaId)
+  const pais = countryContext.paisFiscal
 
   const suscripciones = await prisma.suscripcionModulo.findMany({
     where: { empresaId: auth.auth.empresaId, activo: true },
@@ -26,7 +30,9 @@ export async function GET(request: NextRequest) {
   const suscripcionesMap = new Map(suscripciones.map((s) => [s.sku, s]))
   const jobsMap = new Map(jobsPendientes.map((j) => [j.sku, j]))
 
-  const catalogWithStatus = MARKETPLACE_CATALOG.map((item) => {
+  const catalogWithStatus = MARKETPLACE_CATALOG
+    .filter((item) => !item.paisesHabilitados || item.paisesHabilitados.includes(pais))
+    .map((item) => {
     const instalada = suscripcionesMap.has(item.sku)
     const sub = suscripcionesMap.get(item.sku)
     const job = jobsMap.get(item.sku)
@@ -41,7 +47,9 @@ export async function GET(request: NextRequest) {
     }
   })
 
-  const autopool = AUTOPOOL_ENTRIES.map((entry) => {
+  const autopool = AUTOPOOL_ENTRIES
+    .filter((entry) => !entry.paisesHabilitados || entry.paisesHabilitados.includes(pais))
+    .map((entry) => {
     const instalada = suscripcionesMap.has(entry.sku)
     const job = jobsMap.get(entry.sku)
     return {
@@ -52,9 +60,12 @@ export async function GET(request: NextRequest) {
     }
   })
 
+  const bundles = MARKETPLACE_BUNDLES
+    .filter((bundle) => !bundle.paisesHabilitados || bundle.paisesHabilitados.includes(pais))
+
   return NextResponse.json({
     catalog: catalogWithStatus,
     autopool,
-    bundles: MARKETPLACE_BUNDLES,
+    bundles,
   })
 }

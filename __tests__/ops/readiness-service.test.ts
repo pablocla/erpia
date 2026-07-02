@@ -24,6 +24,12 @@ describe("readiness-service", () => {
     mockPrismaClient.cliente.count.mockResolvedValue(3)
     mockPrismaClient.parametroFiscal.findFirst.mockResolvedValue({ valor: "1" })
     mockPrismaClient.tenantEntorno.count.mockResolvedValue(3)
+    mockPrismaClient.conexionIntegracion.findMany.mockResolvedValue([
+      { integracionId: "shopify", estado: "conectado", cuentaExterna: "tienda.myshopify.com" },
+      { integracionId: "tienda_nube", estado: "conectado", cuentaExterna: "Cloud Store" },
+      { integracionId: "mercado_pago", estado: "conectado", cuentaExterna: "MP Live" },
+      { integracionId: "whatsapp", estado: "conectado", cuentaExterna: "Twilio" },
+    ])
 
     const fases = buildFasesIniciales()
     fases["CCA-060"] = { completado: true, fecha: new Date().toISOString() }

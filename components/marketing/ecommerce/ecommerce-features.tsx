@@ -68,7 +68,7 @@ export function EcommerceFeatures() {
             <div className="p-8 bg-white">
               <h3 className="flex items-center gap-2 font-[var(--font-fraunces)] text-lg font-bold text-emerald-800">
                 <Check className="h-5 w-5 text-emerald-500" />
-                <span>Con Clavis Ecommerce</span>
+                <span>Con Claver Ecommerce</span>
               </h3>
               <ul className="mt-6 space-y-4">
                 {problemSolutions.map((item, idx) => (

@@ -1,0 +1,88 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+import { IndustrySelector } from "@/components/onboarding/industry-selector"
+import { BrandLogo } from "@/components/marketing/brand-logo"
+import { CLAVER_GROUP } from "@/lib/marketing/brand-system"
+import { useAuth } from "@/lib/auth/hooks"
+import { launchIndustryDemo } from "@/components/onboarding/launch-industry-demo"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { MotionFadeDown } from "@/components/ui/motion"
+
+export default function DemoSensorPage() {
+  const router = useRouter()
+  const { loginConToken } = useAuth()
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [error, setError] = useState("")
+
+  async function handleSelect(industryId: string) {
+    setError("")
+    setLoadingId(industryId)
+    try {
+      const dest = await launchIndustryDemo(industryId, loginConToken)
+      router.push(dest)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error de conexión")
+      setLoadingId(null)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
+        <MotionFadeDown>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <Link href="/claver">
+              <BrandLogo size="md" theme="dark" variant="group-full" showByClaver={false} />
+            </Link>
+            <Button variant="outline" className="border-white/20 bg-white/5" asChild>
+              <Link href="/login">Ya tengo cuenta</Link>
+            </Button>
+          </div>
+
+          <p className="text-sm text-slate-400">Grupo {CLAVER_GROUP.name}</p>
+          <h1 className="mt-2 font-[var(--font-fraunces)] text-3xl font-semibold sm:text-4xl lg:text-5xl">
+            El sistema que habla el idioma de tu negocio
+          </h1>
+          <p className="mt-4 max-w-2xl text-slate-400">
+            Ni muy grande, ni muy chico. Elegí tu rubro y armamos una demo aislada — solo los
+            módulos que necesitás, con datos reales de tu industria.
+          </p>
+
+          <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+            <span className="font-medium text-white">¿Cuál es tu mundo hoy?</span>
+            <span className="text-slate-400"> — Elegí para armar tu demo en 10 segundos</span>
+          </div>
+        </MotionFadeDown>
+
+        {error && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="mt-8 rounded-2xl border border-white/10 bg-slate-950/60 p-4 sm:p-6 backdrop-blur">
+          <IndustrySelector onSelect={handleSelect} loadingId={loadingId} />
+        </div>
+
+        <div className="mt-10 flex flex-wrap gap-3 text-sm text-slate-400">
+          <Link href="/claver/claverp" className="hover:text-white inline-flex items-center gap-1">
+            Clavis — comercio <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+          <span>·</span>
+          <Link href="/claver/clavergrow" className="hover:text-white inline-flex items-center gap-1">
+            Clavergrow — agro <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+          <span>·</span>
+          <Link href="/claver-cloud" className="hover:text-white">
+            Implementación Claver Cloud
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}

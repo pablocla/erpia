@@ -98,7 +98,7 @@ Fase 2: append `Pagá acá: {link_mp}`
 
 ## Stack externo (opcional n8n)
 
-| Paso n8n | Equivalente en Clavis |
+| Paso n8n | Equivalente en Claver |
 |----------|----------------------|
 | Schedule 7am | cron ia-diaria |
 | Query ERP | cuentaCobrar Prisma |

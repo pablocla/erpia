@@ -94,7 +94,7 @@ Automatizaciones POS para almacenes, kioscos y verdulerías de barrio. Inspirada
 | 17 | Cheques en Cartera | Cheques que vencen sin aviso | $2.490 |
 | 18 | Inventario Express | Inventario completo que frena el mostrador | $3.490 |
 
-**Referencia de precio total:** Clavis Core $39.900/mes + Pack $34.900/mes = **$74.800/mes** (ERP + retail barrio).
+**Referencia de precio total:** Claver Core $39.900/mes + Pack $34.900/mes = **$74.800/mes** (ERP + retail barrio).
 
 **Vitrina pública:** [/claver/almacen-rosario](/claver/almacen-rosario) · **In-app:** `/dashboard/almacen` y `/dashboard/almacen/guia`
 

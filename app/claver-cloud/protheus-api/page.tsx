@@ -34,7 +34,7 @@ type ModuleMeta = {
   descripcion: string
   paraQueSirve: string
   opoEntities: string[]
-  clavisApps: { sku: string; nombre: string; comoComplementa: string }[]
+  claverApps: { sku: string; nombre: string; comoComplementa: string }[]
   monetizacion: string
 }
 
@@ -249,7 +249,7 @@ export default function ProtheusApiCatalogPage() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{meta.paraQueSirve}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {meta.clavisApps.slice(0, 2).map((a) => (
+                    {meta.claverApps.slice(0, 2).map((a) => (
                       <Badge key={a.sku} variant="secondary" className="text-[10px]">
                         {a.nombre}
                       </Badge>
@@ -335,7 +335,7 @@ export default function ProtheusApiCatalogPage() {
                     <strong>Monetización:</strong> {meta.monetizacion}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {meta.clavisApps.map((a) => (
+                    {meta.claverApps.map((a) => (
                       <div key={a.sku} className="rounded border bg-background px-2 py-1 text-xs">
                         <span className="font-medium">{a.nombre}</span>
                         <span className="text-muted-foreground"> ({a.sku})</span>

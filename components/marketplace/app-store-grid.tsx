@@ -37,7 +37,10 @@ type CatalogItem = MarketplaceSku & {
 
 type CatalogResponse = { catalog: CatalogItem[]; autopool: unknown[]; bundles: unknown[] }
 
+import { useTranslations } from "next-intl"
+
 export function AppStoreGrid() {
+  const t = useTranslations("AppStore")
   const searchParams = useSearchParams()
   const skuParam = searchParams.get("sku")
   const bundleParam = searchParams.get("bundle")
@@ -51,7 +54,11 @@ export function AppStoreGrid() {
   const [installingSku, setInstallingSku] = useState<string | null>(null)
   const [highlightSku, setHighlightSku] = useState<string | null>(null)
 
-  const categories = ["Todas", "Intangibles", "Integraciones", "Seguridad", "Infraestructura", "Comunicaciones", "Fiscal", "Operaciones", "Datos", "Marketing"]
+  const categories = [
+    "Todas", 
+    "Inteligencia", "Benchmark", "Contenido", "Cumplimiento", "Capacitación", "Optimización", "CRM", "Partners",
+    "Intangibles", "Integraciones", "Seguridad", "Infraestructura", "Comunicaciones", "Fiscal", "Operaciones", "Datos", "Marketing"
+  ]
 
   useEffect(() => {
     setSkuFilter(skuParam)
@@ -152,8 +159,8 @@ export function AppStoreGrid() {
     <div className="space-y-6 w-full max-w-7xl mx-auto py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">App Store</h1>
-          <p className="text-muted-foreground mt-2 text-lg">Descubrí e instalá servicios automáticos para potenciar tu negocio.</p>
+          <h1 className="text-4xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground mt-2 text-lg">{t("description")}</p>
         </div>
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

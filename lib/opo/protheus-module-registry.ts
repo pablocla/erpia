@@ -7,7 +7,7 @@ export interface ProtheusModuleMeta {
   descripcion: string
   paraQueSirve: string
   opoEntities: OpoCanonicalEntity[]
-  clavisApps: { sku: string; nombre: string; comoComplementa: string }[]
+  claverApps: { sku: string; nombre: string; comoComplementa: string }[]
   monetizacion: string
   patrones: RegExp[]
 }
@@ -22,9 +22,9 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     paraQueSirve:
       "Consulta saldos, movimientos, cálculo de costos (MATA280/330/350), depósitos y divergencias de inventario.",
     opoEntities: ["Product"],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Lee SB1/SB2 y expone Product canónico al mini front." },
-      { sku: "erp.stock", nombre: "Stock Clavis", comoComplementa: "Sincroniza existencias si el cliente migra gradualmente." },
+      { sku: "erp.stock", nombre: "Stock Claver", comoComplementa: "Sincroniza existencias si el cliente migra gradualmente." },
     ],
     monetizacion: "Pack legacy + módulo Stock; cobro por conector inventario en tiempo real.",
     patrones: [/\/api\/stock\//i, /trackcosts/i, /kardex/i, /warehouses/i, /mata\d+/i],
@@ -36,7 +36,7 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Catálogo de productos, tipos, grupos y perfiles de configuración.",
     paraQueSirve: "Lista y mantiene productos, estructuras de campos y perfiles AC.",
     opoEntities: ["Product"],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Mapea /api/acproduct/v1/products → opo:Product." },
       { sku: "erp.maestros", nombre: "Maestros ERP", comoComplementa: "Catálogo unificado si híbrido." },
     ],
@@ -50,9 +50,9 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Clientes, límites de crédito, bloqueos, adjuntos y cobranzas bancarias.",
     paraQueSirve: "Gestiona crédito, historial, análisis VADU, PIX/boletos y tablas financieras.",
     opoEntities: ["Customer", "Invoice"],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "SA1 + endpoints fin/v1 → Customer/Invoice." },
-      { sku: "erp.tesoreria", nombre: "Tesorería", comoComplementa: "Cobranzas y conciliación en Clavis." },
+      { sku: "erp.tesoreria", nombre: "Tesorería", comoComplementa: "Cobranzas y conciliación en Claver." },
       { sku: "com.whatsapp", nombre: "WhatsApp API", comoComplementa: "Recordatorios de cobro desde datos Protheus." },
     ],
     monetizacion: "Bridge + tesorería + canal cobranzas (WhatsApp/SMS).",
@@ -65,9 +65,9 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Asientos, totales, prorrateos y estructura contable.",
     paraQueSirve: "Expone asientos contables, totales, prorrateos y modelos de balance.",
     opoEntities: ["Invoice"],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "SF2/SF1 vía accountingentry." },
-      { sku: "erp.contabilidad", nombre: "Contabilidad Clavis", comoComplementa: "Libro diario si migración parcial." },
+      { sku: "erp.contabilidad", nombre: "Contabilidad Claver", comoComplementa: "Libro diario si migración parcial." },
     ],
     monetizacion: "Pack contador + bridge lectura asientos.",
     patrones: [/\/api\/ctb\//i, /accountingentry/i, /apportionment/i, /accountingtotal/i],
@@ -79,8 +79,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Vinculación de cuentas, centros de costo y referencias.",
     paraQueSirve: "Binding chart of accounts, centros de costo y carga CVN.",
     opoEntities: [],
-    clavisApps: [
-      { sku: "erp.contabilidad", nombre: "Contabilidad Clavis", comoComplementa: "Importa plan de cuentas para mayor contable." },
+    claverApps: [
+      { sku: "erp.contabilidad", nombre: "Contabilidad Claver", comoComplementa: "Importa plan de cuentas para mayor contable." },
     ],
     monetizacion: "Implementación parametrización remota (impl.parametrizacion_remota).",
     patrones: [/bindingchartofaccounts/i, /chartofaccount/i, /costcenter/i],
@@ -92,8 +92,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Validadores ECD/ECF, checklists y asientos extemporáneos.",
     paraQueSirve: "Cumplimiento fiscal contable Brasil; checklists y validadores.",
     opoEntities: [],
-    clavisApps: [
-      { sku: "erp.contabilidad", nombre: "Contabilidad Clavis", comoComplementa: "Reportes de cierre y conformidad." },
+    claverApps: [
+      { sku: "erp.contabilidad", nombre: "Contabilidad Claver", comoComplementa: "Reportes de cierre y conformidad." },
     ],
     monetizacion: "Servicio compliance + horas analista.",
     patrones: [/\/api\/cc\//i, /Ecdvalidators/i, /ecfvalidators/i],
@@ -105,11 +105,11 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Reportes de compras, OC y flujos de aprobación.",
     paraQueSirve: "Genera y descarga reportes PC; integra órdenes de compra.",
     opoEntities: ["Order", "Supplier"],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "SC7/SA2 → Order/Supplier." },
-      { sku: "erp.compras", nombre: "Compras Clavis", comoComplementa: "OC y recepción si híbrido." },
+      { sku: "erp.compras", nombre: "Compras Claver", comoComplementa: "OC y recepción si híbrido." },
     ],
-    monetizacion: "Bridge compras + módulo compras Clavis.",
+    monetizacion: "Bridge compras + módulo compras Claver.",
     patrones: [/\/api\/pc\//i, /purchaseorder/i, /\/api\/com\/purchase/i],
   },
   {
@@ -119,8 +119,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Pedidos comerciales, aprobaciones y flujo de ventas B2B.",
     paraQueSirve: "Órdenes de compra/venta comercial, aprobaciones y catálogo comercial.",
     opoEntities: ["Order", "Customer"],
-    clavisApps: [
-      { sku: "erp.ventas", nombre: "Ventas Clavis", comoComplementa: "Pedidos y cotizaciones." },
+    claverApps: [
+      { sku: "erp.ventas", nombre: "Ventas Claver", comoComplementa: "Pedidos y cotizaciones." },
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "SC5 → Order canónico." },
     ],
     monetizacion: "Pack ventas B2B + bridge.",
@@ -133,9 +133,9 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Presupuestos, pedidos de venta, contactos y CRM.",
     paraQueSirve: "Sales orders, budgets, contacts y pipeline comercial.",
     opoEntities: ["Customer", "Order"],
-    clavisApps: [
-      { sku: "erp.ventas", nombre: "Ventas Clavis", comoComplementa: "Mini front pedidos y clientes." },
-      { sku: "erp.crm", nombre: "CRM", comoComplementa: "Pipeline si activan CRM Clavis." },
+    claverApps: [
+      { sku: "erp.ventas", nombre: "Ventas Claver", comoComplementa: "Mini front pedidos y clientes." },
+      { sku: "erp.crm", nombre: "CRM", comoComplementa: "Pipeline si activan CRM Claver." },
     ],
     monetizacion: "CRM + ventas + bridge lectura.",
     patrones: [/\/api\/tgv\//i, /\/api\/crm\//i, /salesorders/i, /salesbudgets/i],
@@ -147,8 +147,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Motor fiscal, NF-e, retenciones y notificaciones centrales.",
     paraQueSirve: "Emisión fiscal, TAF, retenciones y monitoreo EAI fiscal.",
     opoEntities: ["Invoice"],
-    clavisApps: [
-      { sku: "erp.fiscal", nombre: "Fiscal AFIP Clavis", comoComplementa: "Complementa con CAE/ARBA si migran facturación." },
+    claverApps: [
+      { sku: "erp.fiscal", nombre: "Fiscal AFIP Claver", comoComplementa: "Complementa con CAE/ARBA si migran facturación." },
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Lee comprobantes legacy." },
     ],
     monetizacion: "Servicio fiscal + bridge lectura comprobantes.",
@@ -161,8 +161,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "PCP, órdenes de producción, smartview e inspección de calidad.",
     paraQueSirve: "Planificación, órdenes de fabricación y reportes QIP.",
     opoEntities: ["Product", "Order"],
-    clavisApps: [
-      { sku: "erp.industria", nombre: "Industria Clavis", comoComplementa: "OP y BOM si migran producción." },
+    claverApps: [
+      { sku: "erp.industria", nombre: "Industria Claver", comoComplementa: "OP y BOM si migran producción." },
     ],
     monetizacion: "Módulo industria + horas PCP.",
     patrones: [/\/api\/pcp\//i, /processinspection/i, /\/api\/qip\//i],
@@ -174,8 +174,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Nómina, préstamos, eSocial y smartview RRHH.",
     paraQueSirve: "Gestión de personal, nómina, eSocial Brasil y reportes RH.",
     opoEntities: [],
-    clavisApps: [
-      { sku: "erp.rrhh", nombre: "RRHH Clavis", comoComplementa: "Legajos y novedades si unifican." },
+    claverApps: [
+      { sku: "erp.rrhh", nombre: "RRHH Claver", comoComplementa: "Legajos y novedades si unifican." },
     ],
     monetizacion: "Módulo RRHH + integración nómina.",
     patrones: [/\/api\/rh\//i, /\/rh\//i, /esocial/i, /payrollLoan/i],
@@ -187,11 +187,11 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Punto de venta retail y operaciones de tienda.",
     paraQueSirve: "Integración retail, POS y operaciones de sucursal.",
     opoEntities: ["Product", "Customer", "Invoice"],
-    clavisApps: [
-      { sku: "erp.pos", nombre: "POS Clavis", comoComplementa: "POS moderno leyendo catálogo Protheus." },
+    claverApps: [
+      { sku: "erp.pos", nombre: "POS Claver", comoComplementa: "POS moderno leyendo catálogo Protheus." },
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Catálogo y clientes legacy." },
     ],
-    monetizacion: "POS Clavis + bridge catálogo.",
+    monetizacion: "POS Claver + bridge catálogo.",
     patrones: [/\/api\/retail\//i],
   },
   {
@@ -201,8 +201,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Usuarios, privilegios, providers y utilitarios del AppServer.",
     paraQueSirve: "Autenticación, permisos, usuarios AC y data providers genéricos.",
     opoEntities: [],
-    clavisApps: [
-      { sku: "sec.mfa", nombre: "MFA", comoComplementa: "Refuerzo auth si SSO Clavis." },
+    claverApps: [
+      { sku: "sec.mfa", nombre: "MFA", comoComplementa: "Refuerzo auth si SSO Claver." },
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "acUser para mapeo usuarios." },
     ],
     monetizacion: "Seguridad + bridge identidad.",
@@ -215,8 +215,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Alertas, insights y monitoreo EAI.",
     paraQueSirve: "Alertas de negocio y monitoreo de integraciones.",
     opoEntities: [],
-    clavisApps: [
-      { sku: "bi.reportes", nombre: "Reportes BI Clavis", comoComplementa: "Dashboards sobre datos OPO." },
+    claverApps: [
+      { sku: "bi.reportes", nombre: "Reportes BI Claver", comoComplementa: "Dashboards sobre datos OPO." },
       { sku: "infra.uptime", nombre: "Uptime", comoComplementa: "Monitoreo del REST Protheus." },
     ],
     monetizacion: "Pack BI + monitoreo uptime del AppServer.",
@@ -229,8 +229,8 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Beneficiarios, contratos familiares y atención.",
     paraQueSirve: "Vertical salud: planes, beneficiarios y red de atención.",
     opoEntities: ["Customer"],
-    clavisApps: [
-      { sku: "erp.salud", nombre: "Salud Clavis", comoComplementa: "Agenda y pacientes si vertical salud." },
+    claverApps: [
+      { sku: "erp.salud", nombre: "Salud Claver", comoComplementa: "Agenda y pacientes si vertical salud." },
     ],
     monetizacion: "Vertical salud + bridge.",
     patrones: [/totvsHealthPlans/i, /healthplans/i],
@@ -240,9 +240,9 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     nombre: "Usuarios y acceso",
     siglaProtheus: "AC User",
     descripcion: "Usuarios del sistema y perfiles.",
-    paraQueSirve: "CRUD de usuarios Protheus para SSO o mapeo Clavis.",
+    paraQueSirve: "CRUD de usuarios Protheus para SSO o mapeo Claver.",
     opoEntities: [],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Sincroniza usuarios legacy." },
     ],
     monetizacion: "Incluido en bridge + MFA opcional.",
@@ -255,7 +255,7 @@ export const PROTHEUS_MODULE_REGISTRY: ProtheusModuleMeta[] = [
     descripcion: "Endpoints custom, integraciones EAI y rutinas particulares del cliente.",
     paraQueSirve: "Rutinas desarrolladas a medida; requieren análisis por analista.",
     opoEntities: [],
-    clavisApps: [
+    claverApps: [
       { sku: "bridge.opo_studio", nombre: "OPO Studio Bridge", comoComplementa: "Mapeo manual en Legacy Bridge wizard." },
       { sku: "impl.parametrizacion_remota", nombre: "Parametrización remota", comoComplementa: "Horas analista para documentar custom." },
     ],

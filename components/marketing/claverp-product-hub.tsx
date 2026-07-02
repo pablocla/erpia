@@ -2,7 +2,8 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Store, Globe, Truck, UtensilsCrossed, Factory, Layers, Calculator, CreditCard, Palette, HelpCircle, FileText, Package, BookOpen, Cpu, Bot, Check, Sparkles, ShoppingCart, Wallet, Target, UserCircle, GraduationCap, Search, Star, TrendingUp, Shield, Zap, Building2, MessageSquare } from "lucide-react"
+import { ArrowRight, Code, Store, Globe, Truck, UtensilsCrossed, Factory, Layers, Calculator, CreditCard, Palette, HelpCircle, FileText, Package, BookOpen, Cpu, Bot, Check, Sparkles, ShoppingCart, Wallet, Target, UserCircle, GraduationCap, Search, Star, TrendingUp, Shield, Zap, Building2, MessageSquare } from "lucide-react"
+
 
 const IconMap = {
   Store,
@@ -36,7 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MotionFadeDown, ScrollReveal, MotionList, MotionListItem } from "@/components/ui/motion"
 import { LogoShowcase } from "@/components/marketing/logo-showcase"
 import { IntegrationsNovedades } from "@/components/marketing/integrations-novedades"
-import { ClavisPricingSection } from "@/components/marketing/clavis-pricing-section"
+import { ClaverPricingSection } from "@/components/marketing/claver-pricing-section"
 import { MODULO_CATEGORIAS } from "@/lib/marketing/modulos-catalog"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -207,7 +208,7 @@ export function ClavERPProductHub() {
         <div className="mx-auto max-w-7xl">
           <ScrollReveal className="text-center">
             <h2 className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
-              Soluciones Clavis por vertical
+              Soluciones Claver por vertical
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-slate-600">
               Landings dedicadas dentro del ecosistema {CLAVER_GROUP.name}.
@@ -266,7 +267,7 @@ export function ClavERPProductHub() {
             {/* Controles de Búsqueda y Filtros */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between mb-8 max-w-4xl mx-auto">
               <div className="relative flex-1 max-w-md w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-450" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   type="text"
                   placeholder="Buscar módulo (ej: stock, AFIP, comanda, sueldos...)"
@@ -291,7 +292,7 @@ export function ClavERPProductHub() {
                       "rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer",
                       activeGroup === btn.id
                         ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-slate-100 text-slate-650 hover:bg-slate-200"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     )}
                   >
                     {btn.label}
@@ -322,12 +323,16 @@ export function ClavERPProductHub() {
                           <CardTitle className="font-[var(--font-fraunces)] text-lg text-slate-900 group-hover:text-blue-700">
                             {mod.label}
                           </CardTitle>
-                          <p className="text-xs text-slate-500 leading-relaxed">{mod.tagline}</p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <Code className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Desarrollada por Claver</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed mt-2">{mod.tagline}</p>
                         </CardHeader>
                         <CardContent>
                           <ul className="space-y-1.5 border-t border-slate-100 pt-3">
                             {mod.highlights.slice(0, 4).map((h) => (
-                              <li key={h} className="flex items-start gap-2 text-xs text-slate-650">
+                              <li key={h} className="flex items-start gap-2 text-xs text-slate-600">
                                 <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                                 <span>{h}</span>
                               </li>
@@ -353,7 +358,7 @@ export function ClavERPProductHub() {
               <div className="text-center space-y-3 mb-10">
                 <Badge className="bg-blue-600 text-white hover:bg-blue-600">
                   <Sparkles className="mr-1.5 h-3.5 w-3.5 inline animate-pulse" />
-                  Cotizador de Procesos Clavis
+                  Cotizador de Procesos Claver
                 </Badge>
                 <h3 className="font-[var(--font-fraunces)] text-2xl font-bold text-slate-900 md:text-3xl">
                   Diseñá tu propia infraestructura operativa
@@ -484,7 +489,7 @@ export function ClavERPProductHub() {
           </ScrollReveal>
 
           {/* PLANES Y PRECIOS EMPAQUETADOS */}
-          <ClavisPricingSection compact />
+          <ClaverPricingSection compact />
 
           <ScrollReveal className="mt-10 flex justify-center gap-4">
             <Button variant="outline" asChild>
@@ -509,13 +514,13 @@ export function ClavERPProductHub() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  quote: "Implementamos Clavis en 3 días y en la primera semana ya facturamos electrónicamente con CAE sin problemas. El soporte en español hace la diferencia.",
+                  quote: "Implementamos Claver en 3 días y en la primera semana ya facturamos electrónicamente con CAE sin problemas. El soporte en español hace la diferencia.",
                   name: "Alejandra G.",
                   role: "Distribuidora de Alimentos · Buenos Aires",
                   rating: 5,
                 },
                 {
-                  quote: "Teníamos 3 sistemas separados: ERP, tienda web y facturación. Con Clavis todo queda en uno solo y el stock se actualiza en tiempo real.",
+                  quote: "Teníamos 3 sistemas separados: ERP, tienda web y facturación. Con Claver todo queda en uno solo y el stock se actualiza en tiempo real.",
                   name: "Martín P.",
                   role: "Ferretería Industrial · Córdoba",
                   rating: 5,

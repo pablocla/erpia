@@ -99,7 +99,7 @@ Tras venta exitosa con `cuenta_corriente` (fuera de tx o en cola async):
 - Líneas: producto × cant × precio
 - Total venta
 - **Deuda total** y **crédito disponible**
-- Footer: "Clavis by Claver — Libreta Fiado"
+- Footer: "Claver by Claver — Libreta Fiado"
 
 Destinatarios: `emailNotificacionFiado`, `emailNotificacionFiado2`, y `cliente.email` si `notificarClienteFiado`.
 

@@ -1,3 +1,9 @@
+export type AppLocale = "es" | "en"
+export const i18nConfig = {
+  defaultLocale: "es" as AppLocale,
+  supportedLocales: ["es", "en"] as AppLocale[],
+}
+
 // Configuración centralizada de la aplicación
 export const config = {
   // Base de datos

@@ -183,7 +183,7 @@ export const MODULO_CATEGORIAS: ModuloCategoria[] = [
   },
   {
     id: "agro",
-    label: "Agro / Acopio",
+    label: "Clavergrow",
     tagline: "Cereales, balanza, liquidaciones y campo.",
     color: "text-lime-700",
     gradient: "from-lime-600/20 to-green-500/10",
@@ -199,16 +199,16 @@ export const MODULO_CATEGORIAS: ModuloCategoria[] = [
   {
     id: "rubro",
     label: "Servicios por Rubro",
-    tagline: "Hospitalidad, salud, belleza y más.",
+    tagline: "Hospitalidad, salud, belleza y canchas.",
     color: "text-pink-600",
     gradient: "from-pink-500/20 to-fuchsia-500/10",
     icon: UtensilsCrossed,
     highlights: [
       "Mesas, comandas y KDS de cocina",
-      "Agenda de turnos y peluquería móvil",
+      "Agenda de turnos para canchas y estética",
+      "Sistema de señas online con MercadoPago",
       "Historia clínica y veterinaria",
       "Membresías para gimnasios",
-      "Recetas y costos por plato",
     ],
   },
   {
@@ -284,6 +284,22 @@ export const MODULO_CATEGORIAS: ModuloCategoria[] = [
       "Diagnóstico de gaps de implementación",
       "Soporte con tickets",
       "Documentación técnica embebida",
+    ],
+  },
+  {
+    id: "afiliados",
+    label: "Afiliados & Referidos B2B",
+    tagline: "Tu propio motor de revendedores.",
+    color: "text-blue-600",
+    gradient: "from-blue-500/20 to-cyan-500/10",
+    icon: Target,
+    badge: "Nuevo",
+    highlights: [
+      "Links de afiliado únicos por revendedor",
+      "Liquidación automática de comisiones",
+      "Panel para revendedores (Dashboard externo)",
+      "Tracking de clientes referidos (MRR/One-off)",
+      "Integrado a portal mayorista B2B",
     ],
   },
 ]

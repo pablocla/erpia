@@ -69,7 +69,7 @@ function getModuleSummary() {
     descripcion: m.descripcion,
     paraQueSirve: m.paraQueSirve,
     opoEntities: m.opoEntities,
-    clavisApps: m.clavisApps,
+    claverApps: m.claverApps,
     monetizacion: m.monetizacion,
   }))
 }

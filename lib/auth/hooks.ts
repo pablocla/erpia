@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { clearAuthTokenCookie, setAuthTokenCookie } from "@/lib/auth/token-cookie"
+import { useAuthStore } from "@/lib/stores/auth-store"
 
 interface Usuario {
   id: number
@@ -39,6 +40,8 @@ export function useAuth() {
       if (response.ok) {
         const data = await response.json()
         setUsuario(data.usuario)
+        // Sync to Zustand store
+        useAuthStore.getState().login(tokenActual, data.usuario)
       } else {
         // If token expired, try to refresh it
         const data = await response.json().catch(() => ({}))
@@ -50,6 +53,7 @@ export function useAuth() {
         localStorage.removeItem("token")
         clearAuthTokenCookie()
         setToken(null)
+        useAuthStore.getState().logout()
         if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
           window.location.href = "/login"
         }
@@ -72,7 +76,11 @@ export function useAuth() {
         if (data.token) {
           localStorage.setItem("token", data.token)
           setToken(data.token)
-          if (data.usuario) setUsuario(data.usuario)
+          if (data.usuario) {
+            setUsuario(data.usuario)
+            // Sync to Zustand store
+            useAuthStore.getState().login(data.token, data.usuario)
+          }
           return true
         }
       }
@@ -96,6 +104,8 @@ export function useAuth() {
       setAuthTokenCookie(data.token)
       setToken(data.token)
       setUsuario(data.usuario)
+      // Sync to Zustand store
+      useAuthStore.getState().login(data.token, data.usuario)
       return { success: true, usuario: data.usuario, token: data.token as string }
     }
 
@@ -110,6 +120,8 @@ export function useAuth() {
     clearAuthTokenCookie()
     setToken(null)
     setUsuario(null)
+    // Sync to Zustand store
+    useAuthStore.getState().logout()
   }
 
   const loginConToken = (tokenNuevo: string, usuarioData: Usuario) => {
@@ -117,6 +129,8 @@ export function useAuth() {
     setAuthTokenCookie(tokenNuevo)
     setToken(tokenNuevo)
     setUsuario(usuarioData)
+    // Sync to Zustand store
+    useAuthStore.getState().login(tokenNuevo, usuarioData)
   }
 
   return {

@@ -226,7 +226,7 @@ const doc = new Document({
             ["Versión", "1.0 — Junio 2026"],
             ["Clasificación", "Confidencial — Uso exclusivo inversionistas"],
             ["Contacto", "claver.com.ar"],
-            ["Producto flagship", "Clavis — ERP & POS con AFIP"],
+            ["Producto flagship", "Claver — ERP & POS con AFIP"],
           ],
           [3200, 6160]
         ),
@@ -246,7 +246,7 @@ const doc = new Document({
           ["Pilar", "Descripción"],
           [
             ["Problema", "Más de 600.000 comercios y PyMEs operan con software fragmentado, doble carga de datos y riesgo fiscal permanente"],
-            ["Solución", "Ecosistema integrado: Clavis (ERP) + Claver Cloud (ops) + Marketplace (51 SKUs auto-provisionables)"],
+            ["Solución", "Ecosistema integrado: Claver (ERP) + Claver Cloud (ops) + Marketplace (51 SKUs auto-provisionables)"],
             ["Modelo", "SaaS recurrente en ARS + add-ons + implementación one-shot + servicios intangibles de alto margen"],
             ["Diferenciador", "AFIP nativo, multi-tenant, activación automática en minutos, contexto Argentina (IVA, IIBB, CAEA, fiado)"],
             ["Expansión", "Land-and-expand: enganche de bajo ticket → ERP Core → bundles omnicanal → Premium ERP 7"],
@@ -266,17 +266,17 @@ const doc = new Document({
           [
             "Usan 3–5 sistemas que no se hablan (facturador, Excel, ML, WhatsApp)",
             "Un solo ERP con stock unificado y factura en el mismo evento de venta",
-            "Clavis Core",
+            "Claver Core",
           ],
           [
             "Miedo constante a AFIP: CAE vencido, libros desactualizados, apócrifos",
             "Facturación electrónica nativa, CAE/CAEA, CITI y bloqueo de proveedores apócrifos",
-            "Clavis + Fiscal",
+            "Claver + Fiscal",
           ],
           [
             "Venden en ML y mostrador pero el stock no coincide — quiebres y sobrestock",
             "Sincronización multicanal en tiempo real entre POS, web y marketplaces",
-            "Clavis Omnicanal",
+            "Claver Omnicanal",
           ],
           [
             "No pueden pagar consultoras SAP/Odoo pero necesitan automatización enterprise",
@@ -305,14 +305,14 @@ const doc = new Document({
         // ── 3. CONGLOMERADO ──
         h1("3. Arquitectura del conglomerado Grupo Claver"),
         p(
-          "Claver es la matriz (conglomerado). Clavis es el producto ERP flagship. Alrededor orbitan líneas complementarias, la plataforma cloud de operaciones y un marketplace de 51 servicios auto-provisionables."
+          "Claver es la matriz (conglomerado). Claver es el producto ERP flagship. Alrededor orbitan líneas complementarias, la plataforma cloud de operaciones y un marketplace de 51 servicios auto-provisionables."
         ),
         spacer(),
         table(
           ["Entidad", "Rol", "Estado"],
           [
             ["Grupo Claver", "Paraguas corporativo — sistemas, servicios e implementación", "Activo"],
-            ["Clavis", "ERP & POS con 40+ módulos y AFIP nativo", "Disponible"],
+            ["Claver", "ERP & POS con 40+ módulos y AFIP nativo", "Disponible"],
             ["Claver Cloud", "Multi-tenant: aprovisionamiento, ops, implementación CCA", "Disponible"],
             ["Claver Apps Marketplace", "51 SKUs, bundles, AutoPool — activación en minutos", "Disponible"],
             ["ClavPay", "Cobros QR, links, conciliación con caja", "Beta"],
@@ -325,7 +325,7 @@ const doc = new Document({
         ),
 
         h2("3.1 Las seis líneas de negocio"),
-        h3("Clavis — ERP & POS con AFIP"),
+        h3("Claver — ERP & POS con AFIP"),
         bullet("40+ módulos: ventas, stock, compras, caja, contabilidad, ecommerce, logística, industria, agro"),
         bullet("POS táctil con factura CAE en menos de 30 segundos"),
         bullet("Onboarding IA por rubro en 14 verticales (kiosco, distribuidora, industria, agro, etc.)"),
@@ -359,9 +359,9 @@ const doc = new Document({
 
         h2("4.1 Operación diaria y punto de venta"),
         painTable([
-          ["Cajero lento — pierde ventas en hora pico", "POS táctil con atajos F12, modo foco y catálogo por grupos", "Clavis POS"],
-          ["Factura tarda y el cliente se va", "CAE AFIP en <30 seg integrado al cierre de venta", "Clavis + AFIP"],
-          ["Sin internet no puedo facturar", "Contingencia CAEA offline con sync IndexedDB", "Clavis POS"],
+          ["Cajero lento — pierde ventas en hora pico", "POS táctil con atajos F12, modo foco y catálogo por grupos", "Claver POS"],
+          ["Factura tarda y el cliente se va", "CAE AFIP en <30 seg integrado al cierre de venta", "Claver + AFIP"],
+          ["Sin internet no puedo facturar", "Contingencia CAEA offline con sync IndexedDB", "Claver POS"],
           ["Robo hormiga: anulaciones y descuentos sospechosos", "Score diario ALTO/MEDIO/BAJO + alerta WhatsApp al dueño", "Guardián de Caja POS"],
           ["Arqueo donde el cajero ve el saldo antes de contar", "Arqueo ciego — solo el dueño ve diferencias", "Pack Almacén Rosario"],
           ["Vende debajo del costo cuando sube la lista", "Bloqueo automático bajo margen mínimo configurable", "Guardián de Margen"],
@@ -384,12 +384,12 @@ const doc = new Document({
           [
             "Libro IVA y CITI en Excel el día antes del vencimiento",
             "Exportadores listos para AFIP desde el ERP",
-            "Clavis Fiscal",
+            "Claver Fiscal",
           ],
           [
             "Contador pide datos en planillas cada mes",
             "Rol contador multi-cliente con export fiscal y dashboard",
-            "Clavis + Partners",
+            "Claver + Partners",
           ],
           [
             "Horas cargando facturas de compra manualmente",
@@ -403,7 +403,7 @@ const doc = new Document({
           [
             "Pedidos de ML/Tienda Nube se cargan a mano en el ERP",
             "Sync automática pedidos → stock → factura",
-            "Clavis Omnicanal",
+            "Claver Omnicanal",
           ],
           [
             "Publicó en ML y se quedó sin stock en mostrador",
@@ -413,7 +413,7 @@ const doc = new Document({
           [
             "Mayorista consulta precios por teléfono",
             "Portal B2B con login CUIT, lista de precios y pedidos online",
-            "Clavis Portal B2B",
+            "Claver Portal B2B",
           ],
           [
             "Cliente mayorista dejó de comprar — nadie lo notó",
@@ -423,7 +423,7 @@ const doc = new Document({
           [
             "No sabe qué canal le deja más margen",
             "KPIs por canal y motor de precios por cliente/canal",
-            "Clavis + Analytics",
+            "Claver + Analytics",
           ],
         ]),
 
@@ -492,12 +492,12 @@ const doc = new Document({
           [
             "Cotiza envíos en 3 portales distintos",
             "Andreani + OCA + Correo Argentino en un panel del ERP",
-            "Clavis Envíos Pro",
+            "Claver Envíos Pro",
           ],
           [
             "Cliente pregunta «¿dónde está mi pedido?» todo el día",
             "Tracking automático por WhatsApp al despachar",
-            "Clavis Comunica",
+            "Claver Comunica",
           ],
           [
             "Chofer con rutas ineficientes — más combustible, menos entregas",
@@ -507,12 +507,12 @@ const doc = new Document({
           [
             "Vendedor en calle sin sistema — preventa en papel",
             "App vendedor en ruta con operación offline y sync",
-            "ClavLog + Clavis",
+            "ClavLog + Claver",
           ],
           [
             "Despacha sin picking — errores y devoluciones",
             "Lista de picking automática desde pedidos confirmados",
-            "Clavis Picking",
+            "Claver Picking",
           ],
         ]),
 
@@ -521,25 +521,25 @@ const doc = new Document({
           [
             "Pedido de venta no se convierte en orden de fabricación",
             "BOM multi-nivel + órdenes de producción + MRP",
-            "Clavis Industria",
+            "Claver Industria",
           ],
           [
             "No sabe cuánto comprar para la próxima temporada",
             "MRP con inventario de seguridad y sugerencias de OC",
-            "Clavis Industria",
+            "Claver Industria",
           ],
           [
             "Pesada de camiones en planilla — errores en liquidación",
             "Balanza digital integrada + telemetría IoT de campo",
-            "Clavis Agro"],
+            "Claver Agro"],
           [
             "Liquidaciones de granos con retenciones mal calculadas",
             "Motor de liquidaciones con retenciones AFIP automáticas",
-            "Clavis Agro"],
+            "Claver Agro"],
           [
             "No ve estado del cultivo hasta recorrer el campo",
             "Mapas NDVI satelitales integrados al módulo de lotes",
-            "Clavis Agro + IoT",
+            "Claver Agro + IoT",
           ],
         ]),
 
@@ -577,7 +577,7 @@ const doc = new Document({
 
         h2("4.9 Verticales especializadas (14 rubros con onboarding IA)"),
         table(
-          ["Rubro", "Problemas típicos", "Módulos Clavis que resuelven"],
+          ["Rubro", "Problemas típicos", "Módulos Claver que resuelven"],
           [
             ["Kiosco / Almacén", "Fiado, envases, listas distribuidora, margen", "POS, Pack Almacén, Fiado, AFIP"],
             ["Distribuidora", "Rutas, morosidad, picking, B2B", "Logística, Portal B2B, App ruta, CxC"],
@@ -603,8 +603,8 @@ const doc = new Document({
         table(
           ["Producto", "Precio", "Problema que elimina"],
           [
-            ["Clavis Core", "$39.900", "Tener 3 sistemas para compras, ventas, stock y AFIP"],
-            ["Clavis Core Industria", "$49.900", "ERP genérico sin rubro metalúrgico preconfigurado"],
+            ["Claver Core", "$39.900", "Tener 3 sistemas para compras, ventas, stock y AFIP"],
+            ["Claver Core Industria", "$49.900", "ERP genérico sin rubro metalúrgico preconfigurado"],
           ],
           [2800, 1800, 4760]
         ),
@@ -673,7 +673,7 @@ const doc = new Document({
           ["Mes", "Acción", "Trigger de upsell", "ARPU acumulado ref."],
           [
             ["0", "Enganche Fiado o Cobranzas WA", "Dolor inmediato barrio", "$4.990–$20.000"],
-            ["1", "Clavis Core", "Necesita stock + AFIP", "$39.900"],
+            ["1", "Claver Core", "Necesita stock + AFIP", "$39.900"],
             ["2", "+ 1 canal (ML o TN)", "Primer pedido web", "$56.800"],
             ["3", "Omnicanal", "Segundo canal / stock desfasado", "$84.800"],
             ["4", "Envíos Pro + Comunica", "Despacho manual / consultas", "$105.600"],
@@ -728,7 +728,7 @@ const doc = new Document({
 
         // ── 8. ESTADO Y TRACCIÓN ──
         h1("8. Estado actual del producto"),
-        p("Clavis y Claver Cloud están operativos con pruebas automatizadas (Vitest) en módulos críticos."),
+        p("Claver y Claver Cloud están operativos con pruebas automatizadas (Vitest) en módulos críticos."),
         table(
           ["Área", "Estado", "Evidencia"],
           [

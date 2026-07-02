@@ -1,5 +1,5 @@
 /**
- * Catálogo comercial Clavis 2026 — Core + 8 bundles + à la carte
+ * Catálogo comercial Claver 2026 — Core + 8 bundles + à la carte
  * Fuente única para landing, propuestas y seed de SKUs.
  */
 
@@ -12,7 +12,7 @@ export const PRICING_META = {
   extraBranchMonthly: 9_900,
 } as const
 
-export interface ClavisBundle {
+export interface ClaverBundle {
   id: string
   sku: string
   name: string
@@ -48,10 +48,10 @@ export interface ProductLine {
 }
 
 /** Plataforma base obligatoria */
-export const CLAVIS_CORE: ClavisBundle = {
+export const CLAVER_CORE: ClaverBundle = {
   id: "core",
-  sku: "core.clavis",
-  name: "Clavis Core",
+  sku: "core.claver",
+  name: "Claver Core",
   tagline: "Tu sistema operativo + cumplimiento fiscal",
   valueProp:
     "Compras, stock, ventas, caja y AFIP en un solo lugar. Sin software paralelo ni doble carga.",
@@ -69,27 +69,27 @@ export const CLAVIS_CORE: ClavisBundle = {
   cta: "Empezar con Core",
 }
 
-export const CLAVIS_CORE_INDUSTRIA: ClavisBundle = {
-  ...CLAVIS_CORE,
+export const CLAVER_CORE_INDUSTRIA: ClaverBundle = {
+  ...CLAVER_CORE,
   id: "core-industria",
-  sku: "core.clavis_industria",
-  name: "Clavis Core Industria",
+  sku: "core.claver_industria",
+  name: "Claver Core Industria",
   tagline: "ERP base para metalmecánica y producción",
   priceMonthly: 49_900,
   priceAnnual: 499_000,
   modules: [
-    ...CLAVIS_CORE.modules,
+    ...CLAVER_CORE.modules,
     "Rubro metalúrgico preconfigurado",
     "Centros de costo básicos",
   ],
 }
 
 /** 7 add-ons + Core = 8 paquetes comerciales */
-export const CLAVIS_BUNDLES: ClavisBundle[] = [
+export const CLAVER_BUNDLES: ClaverBundle[] = [
   {
     id: "tienda-conectada",
     sku: "bundle.tienda_conectada",
-    name: "Clavis Tienda Conectada",
+    name: "Claver Tienda Conectada",
     tagline: "Tu tienda web habla con el depósito",
     valueProp:
       "Pedidos web que bajan solos al ERP. Un solo stock para mostrador y e-commerce.",
@@ -100,12 +100,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     isAddOn: true,
     cta: "Conectar mi tienda",
     setupFee: 60_000,
-    totalMonthly: CLAVIS_CORE.priceMonthly + 22_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 22_900,
   },
   {
     id: "marketplace-pro",
     sku: "bundle.marketplace_ml",
-    name: "Clavis Marketplace Pro",
+    name: "Claver Marketplace Pro",
     tagline: "Mercado Libre sin quiebre de stock",
     valueProp:
       "Publicaciones, pedidos y stock sincronizados. Vendé en ML sin Excel ni doble carga.",
@@ -116,12 +116,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     isAddOn: true,
     cta: "Activar Mercado Libre",
     setupFee: 60_000,
-    totalMonthly: CLAVIS_CORE.priceMonthly + 16_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 16_900,
   },
   {
     id: "omnicanal",
     sku: "bundle.multicanal_ar",
-    name: "Clavis Omnicanal Argentina",
+    name: "Claver Omnicanal Argentina",
     tagline: "Un stock, todos los canales, una factura",
     valueProp:
       "ML + tienda propia + pagos integrados. El bundle estrella para PyMEs que venden en todos lados.",
@@ -144,12 +144,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     badge: "Más elegido",
     cta: "Quiero Omnicanal",
     setupFee: 120_000,
-    totalMonthly: CLAVIS_CORE.priceMonthly + 44_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 44_900,
   },
   {
     id: "envios-pro",
     sku: "bundle.envios_ar",
-    name: "Clavis Envíos Pro",
+    name: "Claver Envíos Pro",
     tagline: "Cotizá, etiquetá y rastreá sin salir del ERP",
     valueProp:
       "Andreani, OCA y Correo Argentino en un solo panel. Sin portales externos ni copiar tracking.",
@@ -160,12 +160,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     isAddOn: true,
     cta: "Unificar mis envíos",
     setupFee: 60_000,
-    totalMonthly: CLAVIS_CORE.priceMonthly + 12_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 12_900,
   },
   {
     id: "comunica",
     sku: "bundle.comunica",
-    name: "Clavis Comunica",
+    name: "Claver Comunica",
     tagline: "Avisos donde tu cliente realmente lee",
     valueProp:
       "WhatsApp y Telegram para confirmaciones, tracking y cobranza. Menos llamadas, más cobros.",
@@ -175,12 +175,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     priceAnnual: 79_000,
     isAddOn: true,
     cta: "Activar mensajería",
-    totalMonthly: CLAVIS_CORE.priceMonthly + 7_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 7_900,
   },
   {
     id: "industria",
     sku: "bundle.industria",
-    name: "Clavis Industria",
+    name: "Claver Industria",
     tagline: "De pedido de venta a orden de fabricación",
     valueProp:
       "BOM, órdenes de fabricación y MRP con trazabilidad. Para talleres y metalmecánica.",
@@ -196,12 +196,12 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     isAddOn: true,
     cta: "Digitalizar mi taller",
     setupFee: 120_000,
-    totalMonthly: CLAVIS_CORE_INDUSTRIA.priceMonthly + 24_900,
+    totalMonthly: CLAVER_CORE_INDUSTRIA.priceMonthly + 24_900,
   },
   {
     id: "almacen-rosario",
     sku: "pool-almacen-rosario",
-    name: "Clavis Almacén Rosario",
+    name: "Claver Almacén Rosario",
     tagline: "Margen, merma y caja para el barrio",
     valueProp:
       "18 módulos POS para kioscos y almacenes: envases, vales, listas distribuidora, 2×1, arqueo ciego. Todo visible; activás lo que usás.",
@@ -217,12 +217,27 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     highlighted: true,
     badge: "Retail barrio",
     cta: "Activar pack almacén",
-    totalMonthly: CLAVIS_CORE.priceMonthly + 34_900,
+    totalMonthly: CLAVER_CORE.priceMonthly + 34_900,
+  },
+  {
+    id: "kiosco-barrio",
+    sku: "pool-kiosco-barrio",
+    name: "Claver Kiosco de Barrio",
+    tagline: "Escaneá, cobrá y cerrá caja sin vueltas",
+    valueProp: "Control de caja + Libreta Fiado + Arqueo ciego + escáner HID.",
+    integrations: ["HID Scanner API", "Libreta de Fiado", "Arqueo ciego de caja"],
+    modules: ["POS", "Caja", "Clientes (Fiado)", "Stock básico"],
+    priceMonthly: 24_900,
+    priceAnnual: 249_000,
+    isAddOn: true,
+    highlighted: false,
+    cta: "Activar pack kiosco",
+    totalMonthly: CLAVER_CORE.priceMonthly + 24_900,
   },
   {
     id: "operacion-completa",
     sku: "bundle.operacion_completa",
-    name: "Clavis Operación Completa",
+    name: "Claver Operación Completa",
     tagline: "Todo Tier A en un solo contrato",
     valueProp:
       "Omnicanal + envíos + comunicación. Para distribuidoras que quieren operar sin fricción.",
@@ -246,7 +261,7 @@ export const CLAVIS_BUNDLES: ClavisBundle[] = [
     badge: "Mejor valor",
     cta: "Hablar con ventas",
     setupFee: 180_000,
-    totalMonthly: CLAVIS_CORE_INDUSTRIA.priceMonthly + 79_900,
+    totalMonthly: CLAVER_CORE_INDUSTRIA.priceMonthly + 79_900,
   },
 ]
 
@@ -262,7 +277,7 @@ export const ALA_CARTE: AlaCarteItem[] = [
   { id: "carriers-pack", name: "Los 3 carriers", tier: "A", priceMonthly: 12_900, note: "Siempre mejor que por separado" },
   { id: "whatsapp", name: "WhatsApp Business", tier: "B", priceMonthly: 7_900 },
   { id: "telegram", name: "Telegram", tier: "B", priceMonthly: 2_900, note: "Gratis con Comunica" },
-  { id: "automate", name: "Clavis Automate (n8n)", tier: "B", priceMonthly: 11_900, note: "10.000 eventos/mes" },
+  { id: "automate", name: "Claver Automate (n8n)", tier: "B", priceMonthly: 11_900, note: "10.000 eventos/mes" },
   { id: "vtex", name: "VTEX", tier: "C", priceMonthly: 24_900, note: "Early Access" },
   { id: "amazon", name: "Amazon Seller", tier: "C", priceMonthly: 22_900, note: "Early Access" },
   { id: "hubspot", name: "HubSpot / RD Station", tier: "C", priceMonthly: 18_900, note: "Early Access" },
@@ -273,12 +288,12 @@ export const ALA_CARTE: AlaCarteItem[] = [
 
 /** Líneas de producto (branding) */
 export const PRODUCT_LINES: ProductLine[] = [
-  { id: "core", name: "Clavis Core", color: "blue", description: "ERP + fiscal base" },
-  { id: "connect", name: "Clavis Connect", color: "amber", description: "Canales y marketplaces" },
-  { id: "ship", name: "Clavis Ship", color: "emerald", description: "Logística nacional" },
-  { id: "comunica", name: "Clavis Comunica", color: "green", description: "WhatsApp y alertas" },
-  { id: "industria", name: "Clavis Industria", color: "slate", description: "Producción y MRP" },
-  { id: "omnicanal", name: "Clavis Omnicanal", color: "violet", description: "Bundle estrella multicanal" },
+  { id: "core", name: "Claver Core", color: "blue", description: "ERP + fiscal base" },
+  { id: "connect", name: "Claver Connect", color: "amber", description: "Canales y marketplaces" },
+  { id: "ship", name: "Claver Ship", color: "emerald", description: "Logística nacional" },
+  { id: "comunica", name: "Claver Comunica", color: "green", description: "WhatsApp y alertas" },
+  { id: "industria", name: "Claver Industria", color: "slate", description: "Producción y MRP" },
+  { id: "omnicanal", name: "Claver Omnicanal", color: "violet", description: "Bundle estrella multicanal" },
 ]
 
 /** Matriz paquetes vs integraciones (para tabla comparativa) */
@@ -364,8 +379,8 @@ export const UPSELL_LADDER = [
   { month: 0, action: "Core (+ Industria si metalúrgica)", trigger: "Onboarding inicial" },
   { month: 1, action: "+ 1 canal (el que ya usa)", trigger: "Primer pedido web o ML" },
   { month: 2, action: "Empujar Omnicanal", trigger: "Segundo canal o stock desfasado" },
-  { month: 3, action: "Clavis Envíos Pro", trigger: "Pedido sin guía / despacho manual" },
-  { month: 4, action: "Clavis Comunica", trigger: "Consultas de tracking / cobranza" },
+  { month: 3, action: "Claver Envíos Pro", trigger: "Pedido sin guía / despacho manual" },
+  { month: 4, action: "Claver Comunica", trigger: "Consultas de tracking / cobranza" },
   { month: 6, action: "Operación Completa", trigger: "Descuento por upgrade total" },
   { month: 12, action: "Automate o Early Access", trigger: "Power users / enterprise" },
 ] as const
@@ -374,7 +389,7 @@ export const SALES_MESSAGES: Record<string, { headline: string; message: string 
   comercio: {
     headline: "Dejá de cargar pedidos a mano",
     message:
-      "Con Clavis Omnicanal, cada venta de ML o tu tienda baja sola al ERP y descuenta el mismo stock del mostrador.",
+      "Con Claver Omnicanal, cada venta de ML o tu tienda baja sola al ERP y descuenta el mismo stock del mostrador.",
   },
   distribuidora: {
     headline: "Un depósito, todos los canales",
@@ -408,7 +423,7 @@ export const TRUST_MESSAGES = [
 export const OBJECTION_HANDLERS = [
   {
     objection: "Ya tengo un sistema de facturación",
-    response: "Clavis unifica fiscal + operación. Dejás de exportar a Excel y tenés stock y factura en el mismo evento.",
+    response: "Claver unifica fiscal + operación. Dejás de exportar a Excel y tenés stock y factura en el mismo evento.",
   },
   {
     objection: "Solo necesito Mercado Libre",

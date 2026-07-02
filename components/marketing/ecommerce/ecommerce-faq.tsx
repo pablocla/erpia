@@ -13,7 +13,7 @@ export function EcommerceFaq() {
   const faqs = [
     {
       q: "¿Necesito otro sistema para gestionar la tienda?",
-      a: "No. Toda la gestión se hace desde el panel central de Clavis. Cuando subís un producto en el ERP, podés decidir si lo hacés visible en la tienda minorista o en el portal mayorista con un solo clic. No hay sincronizaciones externas lentas ni integraciones con parches."
+      a: "No. Toda la gestión se hace desde el panel central de Claver. Cuando subís un producto en el ERP, podés decidir si lo hacés visible en la tienda minorista o en el portal mayorista con un solo clic. No hay sincronizaciones externas lentas ni integraciones con parches."
     },
     {
       q: "¿El stock se descuenta automáticamente al vender online?",
@@ -33,7 +33,7 @@ export function EcommerceFaq() {
     },
     {
       q: "¿Cuánto tarda la implementación?",
-      a: "Si ya usás Clavis, la activación es inmediata. El onboarding inteligente de IA te permite configurar las variables operativas de tu rubro, categorías de productos y pasarelas de pago en menos de 5 minutos para que puedas empezar a vender en el día."
+      a: "Si ya usás Claver, la activación es inmediata. El onboarding inteligente de IA te permite configurar las variables operativas de tu rubro, categorías de productos y pasarelas de pago en menos de 5 minutos para que puedas empezar a vender en el día."
     }
   ]
 

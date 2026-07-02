@@ -2,15 +2,15 @@ import { describe, it, expect } from "vitest"
 import { ENGANCHES, resumenEnganches, getEnganchesPorNicho } from "@/lib/marketplace/enganche-catalog"
 
 describe("enganche-catalog", () => {
-  it("tiene 17 enganches definidos (incl. Premium 7)", () => {
-    expect(ENGANCHES).toHaveLength(17)
+  it("tiene 18 enganches definidos (incl. Premium 7)", () => {
+    expect(ENGANCHES).toHaveLength(18)
   })
 
   it("resumenEnganches cuenta tiers correctamente", () => {
     const r = resumenEnganches()
-    expect(r.totalEnganches).toBe(17)
+    expect(r.totalEnganches).toBe(18)
     expect(r.porTier.implementado).toBe(3)
-    expect(r.porTier.parcial).toBe(7)
+    expect(r.porTier.parcial).toBe(8)
     expect(r.porTier.catalogo).toBe(7)
     expect(r.skusMarketplaceTotal).toBeGreaterThanOrEqual(57)
     expect(r.intangiblesTop5).toBe(5)

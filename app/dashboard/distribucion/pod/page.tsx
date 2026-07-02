@@ -20,10 +20,6 @@
  *     a. Selecciona motivo (parametrizable)
  *     b. Foto del local cerrado / evidencia
  *     c. Reagendamiento o devolución al depósito
- *
- * TODO (requiere schema migration):
- *  - Modelo ParadaRuta: agregar campos fotoUrl, firmaBase64, latEntrega, lngEntrega, motivoNoEntrega
- *  - Actualmente se registra vía PATCH /api/distribucion/paradas/[id]
  */
 
 import { useState, useRef, useEffect, useCallback } from "react"

@@ -3,6 +3,7 @@
 import type React from "react"
 import { Suspense, useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -57,6 +58,7 @@ import { AfipConnectionTest } from "@/components/fiscal/afip-connection-test"
 import { CaeaPanel } from "@/components/fiscal/caea-panel"
 import { CaeaConfigPanel } from "@/components/fiscal/caea-config-panel"
 import { FiscalEmisionConfigPanel } from "@/components/fiscal/fiscal-emision-config-panel"
+import { type CountryFeatures } from "@/lib/country/country-features"
 
 type SectionKey =
   | "empresa"
@@ -153,6 +155,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
 
 function ConfiguracionPageContent() {
   const { toast } = useToast()
+  const t = useTranslations("settings")
   const [seccionActiva, setSeccionActiva] = useState<SectionKey | null>(null)
   const [guardado, setGuardado] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -181,6 +184,7 @@ function ConfiguracionPageContent() {
   const [arbaCotPesoMinimo, setArbaCotPesoMinimo] = useState("4500")
   const [arbaCotValorMinimo, setArbaCotValorMinimo] = useState("45000")
   const [cargandoFiscal, setCargandoFiscal] = useState(false)
+  const [countryFeatures, setCountryFeatures] = useState<CountryFeatures | null>(null)
 
   // ─── Usuarios state ────────────────────────────────────────────────
   interface UsuarioRow { id: number; nombre: string; email: string; rol: string; activo: boolean }
@@ -197,6 +201,21 @@ function ConfiguracionPageContent() {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
+
+  useEffect(() => {
+    async function cargarCountryFeatures() {
+      try {
+        const res = await fetch("/api/config/country-context", { headers: authHeaders() })
+        if (res.ok) {
+          const data = await res.json()
+          setCountryFeatures(data.features)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    cargarCountryFeatures()
+  }, [authHeaders])
 
   const searchParams = useSearchParams()
   useEffect(() => {
@@ -583,7 +602,7 @@ function ConfiguracionPageContent() {
         <div className="space-y-6">
           {/* Priority CTA — AFIP + Empresa */}
           <div className="grid gap-4 sm:grid-cols-2">
-            {SECCIONES.filter(s => s.key === "empresa" || s.key === "afip").map((sec) => {
+            {SECCIONES.filter(s => s.key === "empresa" || (s.key === "afip" && (!countryFeatures || countryFeatures.showAfip !== false))).map((sec) => {
               const Icon = sec.icon
               return (
                 <button
@@ -597,7 +616,7 @@ function ConfiguracionPageContent() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-base">{sec.label}</h3>
+                        <h3 className="font-semibold text-base">{t(sec.key === "empresa" ? "company" : sec.key === "afip" ? "fiscal" : "users")}</h3>
                         <Badge variant="outline" className="text-[9px] h-4 border-primary/30 text-primary">Prioritario</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{sec.descripcion}</p>
@@ -644,7 +663,7 @@ function ConfiguracionPageContent() {
                               <Icon className={cn("h-5 w-5", sec.color)} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-sm mb-0.5">{sec.label}</h3>
+                              <h3 className="font-medium text-sm mb-0.5">{t(sec.key === "empresa" ? "company" : sec.key === "afip" ? "fiscal" : "users")}</h3>
                               <p className="text-xs text-muted-foreground line-clamp-2">{sec.descripcion}</p>
                             </div>
                             <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
@@ -701,7 +720,7 @@ function ConfiguracionPageContent() {
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-1.5">
-                  <Label>Razón Social</Label>
+                  <Label>{t("businessName")}</Label>
                   <Input
                     value={empresaForm.razonSocial}
                     onChange={(e) => setEmpresaForm((prev) => ({ ...prev, razonSocial: e.target.value }))}
@@ -751,7 +770,7 @@ function ConfiguracionPageContent() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Teléfono</Label>
+                  <Label>{t("phone")}</Label>
                   <Input
                     value={empresaForm.telefono}
                     onChange={(e) => setEmpresaForm((prev) => ({ ...prev, telefono: e.target.value }))}
@@ -806,7 +825,7 @@ function ConfiguracionPageContent() {
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Punto de Venta y Entorno</CardTitle>
+                <CardTitle className="text-sm">{t("salePoint")} y Entorno</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -819,7 +838,7 @@ function ConfiguracionPageContent() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Entorno</Label>
+                  <Label>{t("environment")}</Label>
                   <Select
                     value={afipConfig.entorno}
                     onValueChange={(v) => setAfipConfig((prev) => ({ ...prev, entorno: v as AfipEntorno }))}
@@ -828,7 +847,7 @@ function ConfiguracionPageContent() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="homologacion">🧪 Homologación (pruebas)</SelectItem>
-                      <SelectItem value="produccion">✅ Producción</SelectItem>
+                      <SelectItem value="produccion">✅ {t("production")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

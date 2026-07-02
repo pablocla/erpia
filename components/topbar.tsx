@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ThemeCustomizer } from "@/components/theme-customizer"
 import { ContextualHelp } from "@/components/contextual-help"
 import { Breadcrumbs } from "@/components/breadcrumbs"
+import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -337,6 +338,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           </Tooltip>
         </TooltipProvider>
 
+        <LocaleFlagToggle />
         <ThemeCustomizer />
         <ContextualHelp />
 

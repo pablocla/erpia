@@ -151,11 +151,11 @@ export default function CajaPage() {
     // Pre-calculate system totals for display
     const mov = cajaActual.movimientos
     const porMedio = (medio: string) =>
-      mov.filter((m) => m.medioPago === medio).reduce((s, m) => s + (m.tipo === "ingreso" ? m.monto : -m.monto), 0)
+      mov.filter((m) => m.medioPago === medio).reduce((s, m) => s + (m.tipo === "ingreso" ? Number(m.monto) : -Number(m.monto)), 0)
 
     setArqueoResultado({
       diferencia: 0,
-      sistemaEfectivo: cajaActual.saldoInicial + porMedio("efectivo"),
+      sistemaEfectivo: Number(cajaActual.saldoInicial || 0) + porMedio("efectivo"),
       sistemaTarjeta: porMedio("tarjeta_debito") + porMedio("tarjeta_credito"),
       sistemaTransferencia: porMedio("transferencia"),
       sistemaCheque: porMedio("cheque"),
@@ -251,13 +251,13 @@ export default function CajaPage() {
   }
 
   const calcularTotales = (movimientos: MovimientoCaja[]) => {
-    const ingresos = movimientos.filter((m) => m.tipo === "ingreso").reduce((s, m) => s + m.monto, 0)
-    const egresos = movimientos.filter((m) => m.tipo === "egreso").reduce((s, m) => s + m.monto, 0)
+    const ingresos = movimientos.filter((m) => m.tipo === "ingreso").reduce((s, m) => s + Number(m.monto), 0)
+    const egresos = movimientos.filter((m) => m.tipo === "egreso").reduce((s, m) => s + Number(m.monto), 0)
     return { ingresos, egresos }
   }
 
   const totales = cajaActual ? calcularTotales(cajaActual.movimientos) : { ingresos: 0, egresos: 0 }
-  const saldoActual = cajaActual ? cajaActual.saldoInicial + totales.ingresos - totales.egresos : 0
+  const saldoActual = cajaActual ? Number(cajaActual.saldoInicial || 0) + totales.ingresos - totales.egresos : 0
 
   // Arqueo: calculated diff in real-time
   const arqueoDiff = arqueoResultado
@@ -344,7 +344,7 @@ export default function CajaPage() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-sm text-muted-foreground">Saldo Inicial</p>
-                <p className="text-2xl font-bold">${cajaActual.saldoInicial.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${Number(cajaActual.saldoInicial || 0).toFixed(2)}</p>
               </CardContent>
             </Card>
             <Card className="border-green-200">
@@ -405,7 +405,7 @@ export default function CajaPage() {
                   { key: "concepto", header: "Concepto", cell: (m) => <span className="font-medium">{m.concepto}</span> },
                   { key: "medioPago", header: "Medio de Pago", cell: (m) => <span className="capitalize">{m.medioPago.replace("_", " ")}</span> },
                   { key: "referencia", header: "Referencia", cell: (m) => <span className="text-muted-foreground text-sm">{m.referencia || "—"}</span> },
-                  { key: "monto", header: "Monto", align: "right", sortable: true, cell: (m) => <span className={`font-bold ${m.tipo === "ingreso" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>{m.tipo === "ingreso" ? "+" : "-"}${m.monto.toFixed(2)}</span> },
+                  { key: "monto", header: "Monto", align: "right", sortable: true, cell: (m) => <span className={`font-bold ${m.tipo === "ingreso" ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>{m.tipo === "ingreso" ? "+" : "-"}${Number(m.monto || 0).toFixed(2)}</span> },
                   { key: "createdAt", header: "Hora", cell: (m) => <span className="text-sm text-muted-foreground">{new Date(m.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}</span> },
                 ] as DataTableColumn<MovimientoCaja>[]}
                 rowKey="id"

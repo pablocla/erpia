@@ -19,6 +19,35 @@ export async function GET(request: NextRequest) {
     const esPlato = searchParams.get("esPlato")
     const esInsumo = searchParams.get("esInsumo")
 
+    const codigoBarras = searchParams.get("codigoBarras")
+    if (codigoBarras) {
+      const exact = await prisma.producto.findMany({
+        where: {
+          empresaId: ctx.auth.empresaId,
+          activo: soloActivos,
+          OR: [
+            { codigoBarras: codigoBarras },
+            { codigo: codigoBarras }
+          ]
+        },
+        include: { categoria: true }
+      })
+      if (exact.length > 0) return NextResponse.json(exact)
+      
+      const contains = await prisma.producto.findMany({
+        where: {
+          empresaId: ctx.auth.empresaId,
+          activo: soloActivos,
+          OR: [
+            { codigoBarras: { contains: codigoBarras, mode: "insensitive" } },
+            { codigo: { contains: codigoBarras, mode: "insensitive" } }
+          ]
+        },
+        include: { categoria: true }
+      })
+      return NextResponse.json(contains)
+    }
+
     const where: Record<string, unknown> = { empresaId: ctx.auth.empresaId }
 
     if (soloActivos) where.activo = true

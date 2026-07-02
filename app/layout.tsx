@@ -7,6 +7,8 @@ import { Toaster } from '@/components/ui/toaster'
 import { ReportErrorButton } from '@/components/report-error-button'
 import { CommandPalette } from '@/components/command-palette'
 import { ChatWidget } from '@/components/chat-widget'
+import { getEffectiveLocale } from '@/lib/i18n/request-locale'
+import { I18nProvider } from '@/components/i18n-provider'
 import './globals.css'
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
@@ -19,13 +21,13 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Clavis by Claver — ERP & POS Argentina',
-  description: 'Clavis by Claver del grupo Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
+  title: 'Claver by Claver — ERP & POS Argentina',
+  description: 'Claver by Claver del grupo Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Clavis',
+    title: 'Claver',
   },
   icons: {
     icon: [
@@ -46,27 +48,37 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getEffectiveLocale();
+  let messages;
+  try {
+    messages = (await import(`@/messages/${locale}.json`)).default;
+  } catch (error) {
+    messages = (await import(`@/messages/es-AR.json`)).default;
+  }
+
   return (
-    <html lang="es-AR" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} ${inter.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ThemeConfigProvider>
-            {children}
-            <CommandPalette />
-            <ChatWidget />
-            <ReportErrorButton />
-            <Toaster />
-          </ThemeConfigProvider>
-        </ThemeProvider>
+        <I18nProvider locale={locale} messages={messages}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ThemeConfigProvider>
+              {children}
+              <CommandPalette />
+              <ChatWidget />
+              <ReportErrorButton />
+              <Toaster />
+            </ThemeConfigProvider>
+          </ThemeProvider>
+        </I18nProvider>
         <Analytics />
         <script
           dangerouslySetInnerHTML={{

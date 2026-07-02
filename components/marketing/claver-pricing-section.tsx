@@ -19,9 +19,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollReveal } from "@/components/ui/motion"
 import { cn } from "@/lib/utils"
 import {
-  CLAVIS_CORE,
-  CLAVIS_CORE_INDUSTRIA,
-  CLAVIS_BUNDLES,
+  CLAVER_CORE,
+  CLAVER_CORE_INDUSTRIA,
+  CLAVER_BUNDLES,
   ALA_CARTE,
   PRODUCT_LINES,
   COMPARISON_INTEGRATIONS,
@@ -34,12 +34,12 @@ import {
 
 type BillingCycle = "monthly" | "annual"
 
-interface ClavisPricingSectionProps {
+interface ClaverPricingSectionProps {
   /** Mostrar solo la sección compacta (para embed en landing principal) */
   compact?: boolean
 }
 
-export function ClavisPricingSection({ compact = false }: ClavisPricingSectionProps) {
+export function ClaverPricingSection({ compact = false }: ClaverPricingSectionProps) {
   const [billing, setBilling] = useState<BillingCycle>("monthly")
   const [showAlaCarte, setShowAlaCarte] = useState(!compact)
   const [showMatrix, setShowMatrix] = useState(!compact)
@@ -62,7 +62,7 @@ export function ClavisPricingSection({ compact = false }: ClavisPricingSectionPr
             Un Core. Bundles que resuelven. Sin laberinto de precios.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-slate-600">
-            Empezá con Clavis Core (ERP + AFIP) y sumá solo lo que tu operación necesita.
+            Empezá con Claver Core (ERP + AFIP) y sumá solo lo que tu operación necesita.
             Los bundles cuestan menos que comprar canal por canal.
           </p>
 
@@ -120,7 +120,7 @@ export function ClavisPricingSection({ compact = false }: ClavisPricingSectionPr
             Plataforma base (obligatoria)
           </p>
           <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-            {[CLAVIS_CORE, CLAVIS_CORE_INDUSTRIA].map((core) => (
+            {[CLAVER_CORE, CLAVER_CORE_INDUSTRIA].map((core) => (
               <Card
                 key={core.id}
                 className="border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm"
@@ -177,7 +177,7 @@ export function ClavisPricingSection({ compact = false }: ClavisPricingSectionPr
           </ScrollReveal>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {CLAVIS_BUNDLES.map((bundle) => (
+            {CLAVER_BUNDLES.map((bundle) => (
               <ScrollReveal key={bundle.id} className="flex">
                 <Card
                   className={cn(
@@ -218,7 +218,7 @@ export function ClavisPricingSection({ compact = false }: ClavisPricingSectionPr
                           Total ref. {formatArs(
                             billing === "monthly"
                               ? bundle.totalMonthly
-                              : Math.round((bundle.priceAnnual + CLAVIS_CORE.priceAnnual) / 12),
+                              : Math.round((bundle.priceAnnual + CLAVER_CORE.priceAnnual) / 12),
                           )}
                           /mes con Core
                         </p>

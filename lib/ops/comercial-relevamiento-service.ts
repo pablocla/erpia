@@ -61,6 +61,7 @@ export type RelevamientoRow = {
   lat: number | null
   lon: number | null
   leadId: number | null
+  leadEmpresaId: number | null
   creadoPor: string
   createdAt: string
 }
@@ -94,6 +95,7 @@ function mapRow(row: Record<string, unknown>): RelevamientoRow {
     lat: (row.lat as number | null) ?? null,
     lon: (row.lon as number | null) ?? null,
     leadId: (row.leadId as number | null) ?? null,
+    leadEmpresaId: (row.leadEmpresaId as number | null) ?? null,
     creadoPor: row.creadoPor as string,
     createdAt: new Date(row.createdAt as string).toISOString(),
   }
@@ -115,12 +117,37 @@ export async function listRelevamientos(limit = 50): Promise<RelevamientoRow[]> 
     orderBy: { fechaVisita: "desc" },
     take: limit,
   })
-  return rows.map(mapRow)
+
+  const leadIds = rows.map((r: { leadId: number | null }) => r.leadId).filter(Boolean) as number[]
+  const leads =
+    leadIds.length > 0
+      ? await db().comercialPipelineLead.findMany({
+          where: { id: { in: leadIds } },
+          select: { id: true, empresaId: true },
+        })
+      : []
+  const empresaPorLead = new Map(leads.map((l: { id: number; empresaId: number | null }) => [l.id, l.empresaId]))
+
+  return rows.map((row: Record<string, unknown>) =>
+    mapRow({
+      ...row,
+      leadEmpresaId: row.leadId ? (empresaPorLead.get(row.leadId as number) ?? null) : null,
+    }),
+  )
 }
 
 export async function getRelevamiento(id: number): Promise<RelevamientoRow | null> {
   const row = await db().comercialRelevamientoVisita.findUnique({ where: { id } })
-  return row ? mapRow(row) : null
+  if (!row) return null
+  let leadEmpresaId: number | null = null
+  if (row.leadId) {
+    const lead = await db().comercialPipelineLead.findUnique({
+      where: { id: row.leadId },
+      select: { empresaId: true },
+    })
+    leadEmpresaId = lead?.empresaId ?? null
+  }
+  return mapRow({ ...row, leadEmpresaId })
 }
 
 export async function createRelevamiento(

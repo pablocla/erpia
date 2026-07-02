@@ -14,7 +14,7 @@ export const OPO_FEATURE = FEATURES.OPO_STUDIO
 const DEFAULT_CONFIG: OpoTenantConfig = {
   activo: false,
   modoErp: "full",
-  origen: "clavis_db",
+  origen: "claver_db",
   conector: "rest",
   baseUrl: "",
   agentApiKey: "",
@@ -136,5 +136,5 @@ export async function getEmpresaNombre(empresaId: number) {
     where: { id: empresaId },
     select: { nombre: true, razonSocial: true },
   })
-  return empresa?.razonSocial ?? empresa?.nombre ?? "Clavis Tenant"
+  return empresa?.razonSocial ?? empresa?.nombre ?? "Claver Tenant"
 }

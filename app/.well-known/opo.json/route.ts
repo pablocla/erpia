@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 /**
- * Discovery público del protocolo OPO en Clavis.
+ * Discovery público del protocolo OPO en Claver.
  * El manifiesto tenant-específico (con datos reales) está en /api/opo/discovery (JWT).
  */
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     {
       opo_version: "0.1.0",
       system_identity: {
-        erp_name: "Clavis by Claver — OPO Bridge",
+        erp_name: "Claver by Claver — OPO Bridge",
         version: "0.1.0",
         jurisdictions: ["AR"],
       },

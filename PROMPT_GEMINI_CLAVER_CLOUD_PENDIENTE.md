@@ -9,7 +9,7 @@
 ## PROMPT (copiar desde acá)
 
 ```
-Sos arquitecto full-stack del ERP Clavis (grupo CLAVER). Tenés acceso al shell del repo.
+Sos arquitecto full-stack del ERP Claver (grupo CLAVER). Tenés acceso al shell del repo.
 
 ## Contexto
 

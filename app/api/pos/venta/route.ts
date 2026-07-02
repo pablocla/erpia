@@ -567,7 +567,7 @@ export async function GET(request: NextRequest) {
 
     const empresaId = ctx.auth.empresaId
 
-    const [caja, afip, ventasHoy, fiadoAcceso, envasesAcceso, valesAcceso, ...retailAccesos] = await Promise.all([
+    const [caja, afip, ventasHoy] = await Promise.all([
       prisma.caja.findFirst({
         where: { empresaId, estado: "abierta" },
         include: {
@@ -584,11 +584,16 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         },
       }),
-      canUseSku(empresaId, "pos.fiado_barrio"),
-      canUseSku(empresaId, "pos.envases_gaseosas"),
-      canUseSku(empresaId, "pos.vale_dinero"),
-      ...RETAIL_EXTENSION_SKUS.map((sku) => canUseSku(empresaId, sku)),
     ])
+
+    const fiadoAcceso = await canUseSku(empresaId, "pos.fiado_barrio")
+    const envasesAcceso = await canUseSku(empresaId, "pos.envases_gaseosas")
+    const valesAcceso = await canUseSku(empresaId, "pos.vale_dinero")
+
+    const retailAccesos = []
+    for (const sku of RETAIL_EXTENSION_SKUS) {
+      retailAccesos.push(await canUseSku(empresaId, sku))
+    }
 
     const retailActivo = Object.fromEntries(
       RETAIL_EXTENSION_SKUS.map((sku, i) => [sku, retailAccesos[i]?.ok ?? false]),

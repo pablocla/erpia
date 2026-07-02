@@ -5,7 +5,7 @@
 
 export const ENGANCHE_POR_RUBRO: Record<string, string> = {
   almacen: "pos.fiado_barrio",
-  kiosco: "pool-almacen-rosario",
+  kiosco: "pool-kiosco-barrio",
   ferreteria: "pos.core",
   carniceria: "pos.balanza_peso",
   fiambreria: "pos.balanza_peso",
@@ -18,7 +18,6 @@ export const ENGANCHE_POR_RUBRO: Record<string, string> = {
 
 /** Packs documentados pero aún sin bundle en marketplace — no auto-seleccionar */
 export const ENGANCHES_SOLO_PIPELINE = new Set([
-  "pool-kiosco-barrio",
   "pool-ferreteria",
   "pool-panaderia-produccion",
 ])

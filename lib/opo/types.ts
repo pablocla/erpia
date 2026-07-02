@@ -1,5 +1,5 @@
 export type ModoErp = "full" | "legacy_front" | "hibrido"
-export type OpoOrigen = "clavis_db" | "protheus"
+export type OpoOrigen = "claver_db" | "protheus"
 export type OpoConector = "rest" | "sql"
 /** direct = vistas SQL en BD legacy; via_rest = vistas expuestas por REST AdvPL */
 export type SqlModo = "direct" | "via_rest"

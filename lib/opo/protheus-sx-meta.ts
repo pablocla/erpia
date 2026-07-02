@@ -77,7 +77,7 @@ export const PROTHEUS_SETUP_CHECKLIST = [
   {
     id: "vpn",
     titulo: "Red / VPN al AppServer",
-    descripcion: "La PC Clavis o el Edge Agent debe alcanzar el puerto REST (ej. 8073).",
+    descripcion: "La PC Claver o el Edge Agent debe alcanzar el puerto REST (ej. 8073).",
     href: "/claver-cloud/protheus-setup#red",
   },
   {

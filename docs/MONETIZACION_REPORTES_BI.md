@@ -345,7 +345,7 @@ await resolveEventLimit(empresaId, "analytics.pro") // soft cap
 
 | Plan | Incluye | Precio orientativo |
 |------|---------|-------------------|
-| **Clavis Base** | Dashboard, KPIs básicos, CSV 5 exports/mes | Incluido en ERP |
+| **Claver Base** | Dashboard, KPIs básicos, CSV 5 exports/mes | Incluido en ERP |
 | **Clav Analytics Starter** | KPIs históricos 12 meses, 3 dashboards custom, email semanal | +$9.900/mes |
 | **Clav Analytics Pro** | Builder drag-drop, exports ilimitados, alertas umbral, 1 vertical | +$19.900/mes |
 | **Clav Analytics API** | 10k queries/mes, webhooks, acceso contador | +$29.900/mes |

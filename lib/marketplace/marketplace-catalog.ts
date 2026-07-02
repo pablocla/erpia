@@ -1,4 +1,5 @@
 import { RETAIL_EXTENSION_CATALOG } from "./retail-extension-catalog"
+import { GENERATIVE_CATALOG } from "./generative-catalog"
 
 export type AutoCertLevel = "GLOBAL_AUTO" | "REGION_AUTO" | "SEMI_AUTO" | "HUMAN_GATE"
 
@@ -16,11 +17,33 @@ export interface MarketplaceSku {
   dependeDe?: string[]
   status: "disponible" | "beta" | "planned"
   trialDias?: number
+  // --- Partner Network (Revenue Share) ---
+  creadorId?: string // Si es creado por un Dev externo
+  revSplit?: {
+    claverPct: number
+    devPct: number
+    sellerPctMax?: number
+  }
+  implementadoresAutorizados?: string[] // IDs de Teachers/Implementadores
 }
 
 // 45 Servicios listados en el prompt
 export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
-  // --- Seguridad ---
+  // --- Infraestructura y Core ---
+  {
+    sku: "core.ia",
+    nombre: "Motor de IA (Gemini)",
+    categoria: "Infraestructura",
+    precioArs: 0,
+    tipoCobro: "mensual",
+    autoCertLevel: "GLOBAL_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: { "es-AR": { nombre: "Motor de IA", descripcion: "Habilita la generación de contenido y agentes", packOnboardSubject: "Motor de IA activado" } },
+    segmentoAds: ["general"],
+    status: "disponible",
+  },
+  
+  // --- Ventas y Front-Office ---
   {
     sku: "sec.vpn_corp",
     nombre: "VPN Corporativa",
@@ -1093,16 +1116,119 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
       "es-AR": {
         nombre: "OPO Studio Bridge",
         descripcion:
-          "Capa semántica sobre Protheus o Clavis: ontología, introspección REST/SQL y playground IA",
+          "Capa semántica sobre Protheus o Claver: ontología, introspección REST/SQL y playground IA",
         packOnboardSubject: "Tu puente OPO está listo — conectá legacy en minutos",
       },
     },
     segmentoAds: ["erp", "protheus", "digitalizacion"],
     playbookId: "playbook.bridge.opo_studio",
-    dependeDe: ["core.clavis"],
+    dependeDe: ["core.claver"],
     status: "beta",
     trialDias: 14,
   },
 
+  {
+    sku: "intang.delivery_hub",
+    nombre: "Hub de Delivery Unificado",
+    categoria: "Intangibles",
+    precioArs: 35000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "REGION_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: {
+      "es-AR": {
+        nombre: "Hub Delivery (Otter/Deliverect)",
+        descripcion: "Sincroniza pedidos de PedidosYa/Rappi/UberEats directo al POS y cocina",
+        packOnboardSubject: "Conectá tus apps de delivery al POS",
+      },
+    },
+    segmentoAds: ["restaurante", "gastronomia"],
+    playbookId: "playbook.intang.delivery_hub",
+    status: "disponible",
+    trialDias: 14,
+  },
+  {
+    sku: "intang.agenda_smart",
+    nombre: "Agenda Inteligente Anti No-Shows",
+    categoria: "Intangibles",
+    precioArs: 18000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "GLOBAL_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: {
+      "es-AR": {
+        nombre: "Agenda Anti No-Shows WA",
+        descripcion: "Turnos con recordatorio y confirmación por WhatsApp automática",
+        packOnboardSubject: "Automatizá tus turnos por WhatsApp",
+      },
+    },
+    segmentoAds: ["salud", "servicios", "peluqueria"],
+    playbookId: "playbook.intang.agenda_smart",
+    dependeDe: ["com.whatsapp"],
+    status: "disponible",
+    trialDias: 7,
+  },
+  {
+    sku: "intang.b2b_portal",
+    nombre: "Portal Mayorista B2B",
+    categoria: "Intangibles",
+    precioArs: 60000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "GLOBAL_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: {
+      "es-AR": {
+        nombre: "Portal B2B (Mini E-commerce)",
+        descripcion: "Tus clientes mayoristas piden por la web con su propia lista de precios",
+        packOnboardSubject: "Tu portal B2B está online",
+      },
+    },
+    segmentoAds: ["distribuidora", "industria", "mayorista"],
+    playbookId: "playbook.intang.b2b_portal",
+    status: "disponible",
+  },
+  {
+    sku: "bridge.n8n_automations",
+    nombre: "n8n Automation Engine",
+    categoria: "Integraciones",
+    precioArs: 40000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "SEMI_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: {
+      "es-AR": {
+        nombre: "Motor de Automatización n8n",
+        descripcion: "Instancia dedicada de n8n para crear flujos industriales y RPA visuales sobre Claver",
+        packOnboardSubject: "Credenciales de acceso a tu servidor n8n",
+      },
+    },
+    segmentoAds: ["industria", "enterprise", "tecnologia"],
+    playbookId: "playbook.bridge.n8n_automations",
+    dependeDe: ["core.claver"],
+    status: "beta",
+  },
+
+  // --- Apps de Partners (Revenue Share) ---
+  {
+    sku: "ext.menu_digital_pro",
+    nombre: "Menú Digital QR Pro (By DevAgency)",
+    categoria: "Partners",
+    precioArs: 25000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "GLOBAL_AUTO",
+    paisesHabilitados: ["*"],
+    i18n: { "es-AR": { nombre: "Menú QR Animado", descripcion: "Menú digital interactivo creado por DevAgency Partner", packOnboardSubject: "Tu menú QR Pro está activo" } },
+    segmentoAds: ["gastronomia"],
+    status: "disponible",
+    creadorId: "partner_dev_agency",
+    revSplit: {
+      claverPct: 30, // Claver hostea y cobra
+      devPct: 50,    // El creador se lleva la mitad
+      sellerPctMax: 20 // Quien lo refiera se lleva el 20%
+    },
+    implementadoresAutorizados: ["partner_teacher_1"]
+  },
+
   ...RETAIL_EXTENSION_CATALOG,
+  ...GENERATIVE_CATALOG,
 ]

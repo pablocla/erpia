@@ -42,7 +42,7 @@
 
 | SKU | Producto | Vigencia desde | Límite eventos/mes |
 |-----|----------|----------------|-------------------|
-| core.clavis | | | |
+| core.claver | | | |
 | | | | |
 
 ### Módulos / features incluidos

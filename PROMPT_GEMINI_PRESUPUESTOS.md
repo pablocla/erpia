@@ -11,7 +11,7 @@
 ## PROMPT (copiar desde acá)
 
 ```
-Sos arquitecto full-stack del ERP Clavis by Claver (Next.js 15, Prisma, PostgreSQL, TypeScript strict).
+Sos arquitecto full-stack del ERP Claver by Claver (Next.js 15, Prisma, PostgreSQL, TypeScript strict).
 
 ## Problema reportado
 

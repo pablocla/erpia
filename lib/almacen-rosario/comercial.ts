@@ -2,7 +2,7 @@
  * Mensajería comercial Pack Almacén Rosario — lenguaje dueño de almacén, no técnico.
  */
 import { MODULOS_ALMACEN_ROSARIO } from "./modulos-catalog"
-import { CLAVIS_CORE } from "@/lib/marketing/pricing-catalog"
+import { CLAVER_CORE } from "@/lib/marketing/pricing-catalog"
 
 export const ALMACEN_ROSARIO_BUNDLE_ID = "pool-almacen-rosario"
 
@@ -108,7 +108,7 @@ export const ALMACEN_ROSARIO_FAQ = [
   },
   {
     pregunta: "¿Cuánto pago en total con el ERP?",
-    respuesta: `Clavis Core (ERP + AFIP) desde ${CLAVIS_CORE.priceMonthly.toLocaleString("es-AR")} ARS/mes + Pack Almacén Rosario $34.900/mes si tomás el pack completo. También podés sumar módulos sueltos.`,
+    respuesta: `Claver Core (ERP + AFIP) desde ${CLAVER_CORE.priceMonthly.toLocaleString("es-AR")} ARS/mes + Pack Almacén Rosario $34.900/mes si tomás el pack completo. También podés sumar módulos sueltos.`,
   },
   {
     pregunta: "¿Funciona sin internet?",

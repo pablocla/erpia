@@ -57,7 +57,7 @@ export function OpoStudioPanel() {
   const [config, setConfig] = useState<OpoTenantConfig>({
     activo: false,
     modoErp: "full",
-    origen: "clavis_db",
+    origen: "claver_db",
     conector: "rest",
     baseUrl: "",
     sqlViewPrefix: "vw_opo_",
@@ -166,11 +166,11 @@ export function OpoStudioPanel() {
     }
   }
 
-  function usarClavisNativo() {
+  function usarClaverNativo() {
     void guardar({
       activo: true,
       modoErp: "full",
-      origen: "clavis_db",
+      origen: "claver_db",
       conector: "rest",
     })
   }
@@ -196,7 +196,7 @@ export function OpoStudioPanel() {
             <Badge variant="outline">beta · 80%</Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Capa semántica entre Clavis y sistemas legacy (Protheus, SQL, REST).
+            Capa semántica entre Claver y sistemas legacy (Protheus, SQL, REST).
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -218,9 +218,9 @@ export function OpoStudioPanel() {
           <Sparkles className="h-4 w-4 mr-1" />
           Demo Protheus
         </Button>
-        <Button size="sm" variant="secondary" onClick={usarClavisNativo} disabled={saving}>
+        <Button size="sm" variant="secondary" onClick={usarClaverNativo} disabled={saving}>
           <Database className="h-4 w-4 mr-1" />
-          Datos Clavis nativos
+          Datos Claver nativos
         </Button>
         <Button asChild size="sm" variant="outline">
           <Link href="/dashboard/ia">Asistente IA</Link>
@@ -288,7 +288,7 @@ export function OpoStudioPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="clavis_db">Clavis DB (Prisma)</SelectItem>
+                  <SelectItem value="claver_db">Claver DB (Prisma)</SelectItem>
                   <SelectItem value="protheus">Protheus (demo / bridge)</SelectItem>
                 </SelectContent>
               </Select>
@@ -312,7 +312,7 @@ export function OpoStudioPanel() {
 
             <div className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground space-y-1">
               <p><strong>PC VPN:</strong> 192.168.100.3 — corré el agente con <code>services/opo-edge-agent/start.ps1</code></p>
-              <p><strong>PC Clavis:</strong> 192.168.100.2 — apuntá baseUrl al agente, no a Protheus directo.</p>
+              <p><strong>PC Claver:</strong> 192.168.100.2 — apuntá baseUrl al agente, no a Protheus directo.</p>
             </div>
 
             <div className="space-y-2">

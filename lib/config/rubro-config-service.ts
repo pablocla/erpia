@@ -256,6 +256,7 @@ export const FEATURES = {
   AGRO_PORTAL_PRODUCTOR: "agro_portal_productor",
   AGRO_CLIMA: "agro_clima",
   AGRO_NDVI_MAPAS: "agro_ndvi_mapas",
+  AGRO_CANNABIS: "agro_cannabis",
 
   // Integraciones
   WHATSAPP_BUSINESS: "whatsapp_business",

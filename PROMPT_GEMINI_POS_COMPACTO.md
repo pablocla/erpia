@@ -10,7 +10,7 @@
 ## PROMPT (copiar desde acá)
 
 ```
-Sos diseñador+dev senior del POS de Clavis by Claver (Next.js 15, shadcn/ui, Tailwind v4).
+Sos diseñador+dev senior del POS de Claver by Claver (Next.js 15, shadcn/ui, Tailwind v4).
 
 ## Problema reportado
 

@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
-import { setFeature, FEATURES } from "@/lib/config/rubro-config-service"
+import { provisionIndustryDemo } from "@/lib/comercial/industry-demo-service"
+import { getIndustryTemplate, DEMO_INDUSTRY_IDS } from "@/lib/comercial/industry-templates"
 
 /**
  * POST /api/auth/demo
  *
- * Creates (or finds) a demo empresa with admin + demo users and returns a real JWT.
+ * Demo segmentada por rubro — provisiona industria y devuelve JWT + goldenPath.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,11 +20,19 @@ export async function POST(request: NextRequest) {
     const ADMIN_PASSWORD = DEMO_ADMIN_PASSWORD
 
     const body = await request.json().catch(() => ({}))
-    const requestedRubro = typeof body.rubro === "string" ? body.rubro : "salon_belleza"
-    const allowedRubros = ["salon_belleza", "bar_restaurant", "farmacia", "veterinaria"]
-    const demoRubro = allowedRubros.includes(requestedRubro) ? requestedRubro : "salon_belleza"
+    const requestedIndustry =
+      typeof body.industryId === "string"
+        ? body.industryId
+        : typeof body.rubro === "string"
+          ? body.rubro
+          : "veterinaria"
 
-    // 1. Ensure demo empresa exists
+    const industryId = getIndustryTemplate(requestedIndustry)
+      ? requestedIndustry
+      : DEMO_INDUSTRY_IDS.includes(requestedIndustry)
+        ? requestedIndustry
+        : "veterinaria"
+
     let empresa = await prisma.empresa.findFirst({
       where: { cuit: "20-00000000-0" },
     })
@@ -39,19 +48,15 @@ export async function POST(request: NextRequest) {
           email: ADMIN_EMAIL,
           puntoVenta: 1,
           entorno: "homologacion",
-          rubro: demoRubro,
+          rubro: "otro",
         },
-      })
-    } else if (empresa.rubro !== demoRubro) {
-      empresa = await prisma.empresa.update({
-        where: { id: empresa.id },
-        data: { rubro: demoRubro },
       })
     }
 
+    const provision = await provisionIndustryDemo(empresa.id, industryId)
+
     const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10)
 
-    // 2. Ensure admin user exists and keep demo credentials in sync
     let usuario = await prisma.usuario.findUnique({
       where: { email: ADMIN_EMAIL },
     })
@@ -78,19 +83,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 2b. Habilitar Automation Hub en demo (no bloquea login si Prisma aún no tiene esos modelos)
-    try {
-      await setFeature(empresa.id, FEATURES.AUTOMATION_N8N, { activado: true })
-      await setFeature(empresa.id, FEATURES.FACTURA_MIPYMES, { activado: true })
-      const { seedAutomationDefaults } = await import("@/lib/automation/automation-service")
-      await seedAutomationDefaults(empresa.id)
-      const { ensureDemoAutomationSubscription } = await import("@/lib/platform/commercial-service")
-      await ensureDemoAutomationSubscription(empresa.id)
-    } catch (automationError) {
-      console.warn("Demo: automation seed omitido:", automationError)
-    }
-
-    // 3. Generate real JWT
     const authService = new AuthService()
     const token = await authService.generarToken({
       userId: usuario.id,
@@ -102,6 +94,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       token,
+      goldenPath: provision.goldenPath,
+      industryId: provision.industryId,
+      rubro: provision.rubro,
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,

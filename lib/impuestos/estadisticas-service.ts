@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma"
 
 export class EstadisticasService {
-  async obtenerEstadisticasVentas(fechaDesde: Date, fechaHasta: Date) {
+  async obtenerEstadisticasVentas(fechaDesde: Date, fechaHasta: Date, empresaId?: string) {
     const facturas = await prisma.factura.findMany({
       where: {
+        ...(empresaId ? { empresaId } : {}),
         createdAt: {
           gte: fechaDesde,
           lte: fechaHasta,

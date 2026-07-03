@@ -19,10 +19,10 @@ export async function onCompraRegistrada(compraId: number): Promise<void> {
   }
 }
 
-export async function registrarAsientoCompra(compra: any): Promise<void> {
+export async function registrarAsientoCompra(compra: any, tx?: any): Promise<void> {
   try {
     const asientoService = new AsientoService()
-    await asientoService.generarAsientoCompra(compra.id)
+    await asientoService.generarAsientoCompra(compra.id, compra.empresaId, tx)
   } catch (error) {
     console.error("Error al registrar asiento de compra:", error)
     throw error

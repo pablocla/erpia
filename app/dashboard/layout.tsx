@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useEffect, useState } from "react"
 import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,6 +40,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isKioskMode,
     handleLogout,
   } = useDashboardShell()
+
+  const [freshSignup, setFreshSignup] = useState(false)
+  useEffect(() => {
+    if (!mounted) return
+    const fresh = localStorage.getItem("claver_fresh_signup") === "1"
+    setFreshSignup(fresh)
+    if (fresh) localStorage.removeItem("claver_fresh_signup")
+  }, [mounted])
 
   if (isKioskMode) {
     return (
@@ -157,7 +166,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {!isPosShell && <MobileBottomNav />}
       </div>
 
-      <OnboardingTour enabled={!!demoIndustryId && mounted} />
+      <OnboardingTour
+        enabled={mounted && !!demoIndustryId}
+        industryId={demoIndustryId}
+        variant="demo"
+      />
+      <OnboardingTour enabled={mounted && !demoIndustryId && freshSignup} variant="web" />
 
       {compactShell && mobileSidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">

@@ -13,6 +13,7 @@ import {
   Shield,
   Store,
   Target,
+  UserPlus,
   Wrench,
 } from "lucide-react"
 
@@ -35,6 +36,7 @@ export const navSections: NavSection[] = [
     label: "ceo",
     items: [
       { name: "commandCenter", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+      { name: "webRegistrations", href: "/claver-cloud/registros", icon: UserPlus },
       { name: "salesPipeline", href: "/claver-cloud/comercial", icon: Target },
       { name: "fieldSurvey", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
       { name: "mapAndRoute", href: "/claver-cloud/comercial/campo", icon: Map },

@@ -62,7 +62,7 @@ const prismaModels = [
   "kPIDefinicion", "kPISnapshot",
   "gastoRecurrente", "ajusteInflacion", "coeficienteInflacion",
   // Sprint competitive gap #2 — MercadoPago, CITI, RRHH, Mantenimiento, Alertas, etc.
-  "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion",
+  "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion", "tiendaConfig",
   "reglaAlerta", "configuracionIANotificacion", "empleado", "generacionCITI", "cotizacionAutomatica",
   "planMantenimiento", "ordenTrabajo",
   // Agro

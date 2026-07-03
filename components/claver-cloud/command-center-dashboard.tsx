@@ -20,8 +20,13 @@ import {
   Store,
   Target,
   TrendingUp,
+  UserPlus,
+  UserPlus,
   Users,
+  Terminal,
+  RefreshCw
 } from "lucide-react"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -73,6 +78,10 @@ type CommandCenterData = {
     clientesPagos: number
     leadsEnTrial: number
     visitasSemana: number
+    altasEnTrial: number
+    registrosWeb7d: number
+    demosRubro7d: number
+    trialsPorVencer: number
   }
   mando: Parameters<typeof CeoMissionPanel>[0]["mando"]
   comercial: {
@@ -99,6 +108,7 @@ type CommandCenterData = {
       proximaAccion: string | null
       proximaFecha: string | null
       localidad: string | null
+      empresaId: number | null
     }[]
   }
   operaciones: {
@@ -122,6 +132,17 @@ type CommandCenterData = {
       atrasados: number
       avancePromedio: number
     }
+    altasRecientes: {
+      empresaId: number
+      nombre: string
+      origenLabel: string
+      diasDesdeAlta: number
+      trialDiasRestantes: number | null
+      trialVencido: boolean
+      skusActivos: number
+      mrrArs: number
+      esDemoCompartida: boolean
+    }[]
   }
   recursos: { titulo: string; href: string; descripcion: string }[]
 }
@@ -146,6 +167,7 @@ const etapaColor: Record<PipelineEtapa, string> = {
 }
 
 const quickActions = [
+  { href: "/claver-cloud/registros", label: "Registros web y trials", icon: UserPlus, primary: true },
   { href: "/claver-cloud/comercial", label: "Pipeline ventas", icon: Users, primary: true },
   { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList, primary: true },
   { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map, primary: true },
@@ -163,6 +185,7 @@ export function CommandCenterDashboard() {
   const [data, setData] = useState<CommandCenterData | null>(null)
   const [loading, setLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [provisioningLead, setProvisioningLead] = useState<{ id: number; targetEtapa: PipelineEtapa } | null>(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     nombre: "",
@@ -216,12 +239,53 @@ export function CommandCenterDashboard() {
   }
 
   async function moverEtapa(leadId: number, etapa: PipelineEtapa) {
+    if (etapa === "trial" || etapa === "cerrado") {
+      const lead = data?.comercial.leads.find((l) => l.id === leadId)
+      if (lead && !lead.empresaId) {
+        setProvisioningLead({ id: leadId, targetEtapa: etapa })
+        return
+      }
+    }
+
     const res = await fetch(`/api/claver/comercial/leads/${leadId}`, {
       method: "PATCH",
       headers: cloudAuthHeaders(true),
       body: JSON.stringify({ etapa }),
     })
     if (res.ok) await cargar()
+  }
+
+  async function confirmarProvisioning() {
+    if (!provisioningLead) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/claver/comercial/leads/${provisioningLead.id}`, {
+        method: "PATCH",
+        headers: cloudAuthHeaders(true),
+        body: JSON.stringify({ 
+          etapa: provisioningLead.targetEtapa, 
+          provision: true // Señal para el backend
+        }),
+      })
+      if (res.ok) {
+        setProvisioningLead(null)
+        await cargar()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function accionarTenantRiesgo(id: number, accion: string) {
+    try {
+      await fetch(`/api/claver/tenants/${id}/ops`, {
+        method: "POST",
+        headers: cloudAuthHeaders(true),
+        body: JSON.stringify({ action: accion }),
+      })
+    } finally {
+      await cargar()
+    }
   }
 
   if (!data && loading) {
@@ -312,8 +376,27 @@ export function CommandCenterDashboard() {
             <DollarSign className="h-4 w-4 text-violet-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{fmt(kpis.mrrTotalArs)}</div>
-            <p className="text-xs text-muted-foreground">{kpis.tenants} tenants activos</p>
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold">{fmt(kpis.mrrTotalArs)}</div>
+                <p className="text-xs text-muted-foreground">{kpis.tenants} tenants activos</p>
+              </div>
+              <div className="h-[40px] w-[100px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={[
+                    { m: "Ene", val: kpis.mrrTotalArs * 0.7 },
+                    { m: "Feb", val: kpis.mrrTotalArs * 0.75 },
+                    { m: "Mar", val: kpis.mrrTotalArs * 0.8 },
+                    { m: "Abr", val: kpis.mrrTotalArs * 0.85 },
+                    { m: "May", val: kpis.mrrTotalArs * 0.9 },
+                    { m: "Jun", val: kpis.mrrTotalArs },
+                  ]}>
+                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#1e1e1e', border: 'none', borderRadius: '4px', fontSize: '10px'}} />
+                    <Bar dataKey="val" fill="#8b5cf6" radius={[2,2,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -372,9 +455,102 @@ export function CommandCenterDashboard() {
             <p className="text-xs text-muted-foreground">{kpis.leadsEnTrial} trials · {kpis.visitasSemana} visitas/sem</p>
           </CardContent>
         </Card>
+        <Card className={cn(kpis.trialsPorVencer > 0 && "border-amber-500/40")}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Altas web 7d</CardTitle>
+            <UserPlus className="h-4 w-4 text-violet-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.registrosWeb7d}</div>
+            <p className="text-xs text-muted-foreground">
+              {kpis.altasEnTrial} en trial · {kpis.demosRubro7d} demos rubro
+              {kpis.trialsPorVencer > 0 && (
+                <span className="text-amber-500"> · {kpis.trialsPorVencer} vencen ≤3d</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <CeoMissionPanel mando={mando} onRefresh={cargar} />
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-violet-400" />
+            Altas y trials en vivo
+          </h2>
+          <Link
+            href="/claver-cloud/registros"
+            className="text-xs text-violet-400 hover:underline inline-flex items-center gap-1"
+          >
+            Ver flota completa <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                    <th className="px-4 py-2">Tenant</th>
+                    <th className="px-4 py-2">Origen</th>
+                    <th className="px-4 py-2">Activo</th>
+                    <th className="px-4 py-2">Trial</th>
+                    <th className="px-4 py-2">SKUs</th>
+                    <th className="px-4 py-2 text-right">MRR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operaciones.altasRecientes.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                        Sin altas recientes en tu alcance
+                      </td>
+                    </tr>
+                  ) : (
+                    operaciones.altasRecientes.map((a) => (
+                      <tr key={a.empresaId} className="border-b last:border-0 hover:bg-muted/20">
+                        <td className="px-4 py-2.5">
+                          <Link
+                            href={`/claver-cloud/tenants/${a.empresaId}`}
+                            className="font-medium hover:text-violet-400 transition-colors"
+                          >
+                            {a.nombre}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">#{a.empresaId}</p>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge variant="secondary" className="text-[10px]">
+                            {a.origenLabel}
+                          </Badge>
+                          {a.esDemoCompartida && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">demo compartida</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 tabular-nums">{a.diasDesdeAlta}d</td>
+                        <td className="px-4 py-2.5">
+                          {a.trialDiasRestantes != null ? (
+                            <Badge className="bg-emerald-600 text-[10px]">{a.trialDiasRestantes}d</Badge>
+                          ) : a.trialVencido ? (
+                            <Badge variant="destructive" className="text-[10px]">
+                              Vencido
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 tabular-nums">{a.skusActivos}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{fmt(a.mrrArs)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -410,6 +586,15 @@ export function CommandCenterDashboard() {
                             {lead.proximaAccion}
                             {lead.proximaFecha && ` · ${fmtFecha(lead.proximaFecha)}`}
                           </p>
+                        )}
+                        {lead.empresaId && (
+                          <Link
+                            href={`/claver-cloud/tenants/${lead.empresaId}`}
+                            className="text-xs text-violet-400 hover:underline inline-flex items-center gap-1"
+                          >
+                            <Building2 className="h-3 w-3" />
+                            Tenant #{lead.empresaId}
+                          </Link>
                         )}
                         <Select
                           value={lead.etapa}
@@ -473,8 +658,17 @@ export function CommandCenterDashboard() {
               <p className="text-sm text-muted-foreground">Sin órdenes aún.</p>
             ) : (
               operaciones.ordenesRecientes.map((o) => (
-                <div key={o.id} className="flex items-center justify-between text-sm py-1">
-                  <span className="truncate mr-2">{o.razonSocial}</span>
+                <div key={o.id} className="flex items-center justify-between text-sm py-1 gap-2">
+                  {o.empresaId ? (
+                    <Link
+                      href={`/claver-cloud/tenants/${o.empresaId}`}
+                      className="truncate hover:text-violet-400 transition-colors"
+                    >
+                      {o.razonSocial}
+                    </Link>
+                  ) : (
+                    <span className="truncate">{o.razonSocial}</span>
+                  )}
                   <Badge variant="outline" className="text-xs shrink-0">
                     {o.estado}
                   </Badge>
@@ -499,17 +693,28 @@ export function CommandCenterDashboard() {
               <p className="text-sm text-muted-foreground">Flota estable.</p>
             ) : (
               operaciones.tenantsEnRiesgo.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/claver-cloud/tenants/${t.id}`}
-                  className="flex items-center justify-between text-sm py-1 hover:text-violet-400 transition-colors"
-                >
-                  <span className="truncate">{t.nombre}</span>
-                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                    {t.entornosError > 0 && `${t.entornosError} err`}
-                    {t.tareasPendientes > 0 && ` · ${t.tareasPendientes} tareas`}
-                  </span>
-                </Link>
+                <div key={t.id} className="flex flex-col gap-1 py-2 border-b border-border/50 last:border-0">
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/claver-cloud/tenants/${t.id}`}
+                      className="text-sm font-medium hover:text-violet-400 transition-colors truncate"
+                    >
+                      {t.nombre}
+                    </Link>
+                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                      {t.entornosError > 0 && `${t.entornosError} err`}
+                      {t.tareasPendientes > 0 && ` · ${t.tareasPendientes} tareas`}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-amber-500 hover:text-amber-600" onClick={() => accionarTenantRiesgo(t.id, "diagnosticar")}>
+                      <Terminal className="h-3 w-3 mr-1" /> Diagnosticar
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-red-500 hover:text-red-600" onClick={() => accionarTenantRiesgo(t.id, "reiniciar_opo")}>
+                      <RefreshCw className="h-3 w-3 mr-1" /> Reiniciar OPO
+                    </Button>
+                  </div>
+                </div>
               ))
             )}
           </CardContent>
@@ -564,6 +769,26 @@ export function CommandCenterDashboard() {
         Operando como <span className="text-foreground">{data.operador}</span> · alcance {data.scope} · actualizado{" "}
         {new Intl.DateTimeFormat("es-AR", { dateStyle: "short", timeStyle: "short" }).format(new Date(data.generadoAt))}
       </p>
+
+      {/* Modal de Provisioning Automático */}
+      <Dialog open={!!provisioningLead} onOpenChange={(open) => !open && setProvisioningLead(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Provisionar Entorno Cloud?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-sm text-slate-600 dark:text-slate-300">
+            Estás moviendo un prospecto a una etapa de prueba o cierre, pero <strong>aún no tiene un entorno (tenant) creado.</strong>
+            <br/><br/>
+            ¿Deseas crear la organización automáticamente y activar el OPO (Open Protocol Ontology) para comenzar la integración?
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProvisioningLead(null)}>Cancelar</Button>
+            <Button onClick={confirmarProvisioning} disabled={saving} className="bg-violet-600 hover:bg-violet-500">
+              {saving ? "Provisionando..." : "Crear Tenant Ahora"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

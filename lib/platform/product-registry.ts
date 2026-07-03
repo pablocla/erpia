@@ -7,6 +7,7 @@ import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { INTANGIBLE_PREMIUM_7 } from "@/lib/marketplace/intangible-premium-7"
 import { RETAIL_EXTENSION_SKUS, RETAIL_SKU_META } from "@/lib/almacen-rosario/retail-skus"
+import { FEATURES } from "@/lib/config/rubro-config-service"
 
 export interface ProductoHorizontal {
   sku: string
@@ -84,6 +85,17 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
   fromEnganche(ENGANCHES.find((e) => e.sku === "intang.cobranzas_wa")!, ["/dashboard/cuentas-cobrar"]),
   fromEnganche(ENGANCHES.find((e) => e.sku === "com.whatsapp")!, []),
   fromEnganche(ENGANCHES.find((e) => e.sku === "fiscal.clavpay_link")!, ["/dashboard/mercadopago"]),
+  {
+    sku: "ECOM-B2C-01",
+    nombre: "Tienda Online B2C",
+    lema: "Tu catálogo ERP, tienda pública con checkout.",
+    tier: "implementado",
+    horizontal: true,
+    precioArs: 34900,
+    dependeDe: ["core.claver"],
+    navPaths: ["/dashboard/ventas", "/tienda"],
+    featureKey: FEATURES.TIENDA_ONLINE,
+  },
   fromEnganche(ENGANCHES.find((e) => e.sku === "data.reportes_prog")!, []),
   {
     ...fromEnganche(ENGANCHES.find((e) => e.sku === "bridge.opo_studio")!, ["/dashboard/apps/opo"]),

@@ -1,12 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { handleMercadoPagoWebhook } from "@/lib/billing/mercadopago-subscription"
+import { validarFirmaWebhook } from "@/lib/auth/webhook-guard"
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json()
+    const signature = request.headers.get("x-signature")
+    const requestId = request.headers.get("x-request-id")
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET
     
-    // In production, we would verify the MP signature/hmac here.
+    const rawBody = await request.text()
+    let payload
+    try {
+      payload = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    }
     
+    if (!validarFirmaWebhook(request, rawBody)) {
+      return NextResponse.json({ error: "Firma inválida o faltante" }, { status: 401 })
+    }
     await handleMercadoPagoWebhook(payload)
     
     return NextResponse.json({ success: true })

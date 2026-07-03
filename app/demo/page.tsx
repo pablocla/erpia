@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { IndustrySelector } from "@/components/onboarding/industry-selector"
+import { DemoFeaturedPacks } from "@/components/onboarding/demo-featured-packs"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 import { CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import { useAuth } from "@/lib/auth/hooks"
@@ -65,7 +66,12 @@ export default function DemoSensorPage() {
           </Alert>
         )}
 
+        <div className="mt-8">
+          <DemoFeaturedPacks onSelect={handleSelect} loadingId={loadingId} />
+        </div>
+
         <div className="mt-8 rounded-2xl border border-white/10 bg-slate-950/60 p-4 sm:p-6 backdrop-blur">
+          <p className="mb-4 text-sm text-slate-400">O elegí otro rubro del catálogo completo</p>
           <IndustrySelector onSelect={handleSelect} loadingId={loadingId} />
         </div>
 

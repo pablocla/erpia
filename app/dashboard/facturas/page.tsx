@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2, Sparkles } from "lucide-react"
+import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2, Sparkles, Ban } from "lucide-react"
 import { PageShell, PageHeader, PageToolbar, KpiStrip, StatusBadge } from "@/components/layout"
 import { facturaEstadoLabel, facturaEstadoVariant } from "@/lib/ui/status-map"
 import Link from "next/link"
@@ -91,6 +91,22 @@ export default function FacturasPage() {
     } finally {
       setReintentando(false)
       setReintentandoId(null)
+    }
+  }
+
+  const anularFactura = async (id: number) => {
+    if (!confirm("¿Estás seguro de anular esta venta? Se devolverá el stock y se marcará como anulada.")) return;
+    try {
+      const res = await authFetch(`/api/ventas/${id}/anular`, { method: "POST" })
+      if (!res.ok) {
+        const json = await res.json()
+        toast({ variant: "destructive", title: "Error al anular", description: json.error })
+        return
+      }
+      toast({ title: "Venta anulada", description: "El stock ha sido devuelto." })
+      mutate()
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" })
     }
   }
 
@@ -250,9 +266,19 @@ export default function FacturasPage() {
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   ),
-              },
               { key: "_count" as any, header: "NC", cell: (f) => f._count?.notasCredito ?? 0, exportFn: (f) => String(f._count?.notasCredito ?? 0) },
-              { key: "acciones" as any, header: "", cell: (f) => <Link href={`/dashboard/facturas/${f.id}`}><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></Link> },
+              {
+                key: "acciones" as any, header: "", cell: (f) => (
+                  <div className="flex gap-1 justify-end">
+                    <Link href={`/dashboard/facturas/${f.id}`}><Button variant="ghost" size="icon" title="Ver detalle"><Eye className="h-4 w-4" /></Button></Link>
+                    {f.estado !== "anulada" && (
+                      <Button variant="ghost" size="icon" title="Anular venta" onClick={() => anularFactura(f.id)}>
+                        <Ban className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
+                )
+              },
             ] as DataTableColumn<Factura>[]}
             rowKey="id"
             searchPlaceholder="Buscar factura..."

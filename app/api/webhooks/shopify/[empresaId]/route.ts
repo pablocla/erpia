@@ -1,19 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { recibirPedidoShopify } from "@/lib/shopify/shopify-service"
 import { shopifyFetch, type ShopifyOrder } from "@/lib/shopify/shopify-api"
-import { createHmac, timingSafeEqual } from "crypto"
-
-function verifyShopifyHmac(raw: string, hmac: string | null): boolean {
-  const secret = process.env.SHOPIFY_CLIENT_SECRET
-  if (!secret || !hmac) return !secret
-  const expected = createHmac("sha256", secret).update(raw, "utf8").digest("base64")
-  try {
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(hmac))
-  } catch {
-    return false
-  }
-}
-
+import { validarFirmaWebhook } from "@/lib/auth/webhook-guard"
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ empresaId: string }> },
@@ -25,8 +13,7 @@ export async function POST(
   }
 
   const raw = await request.text()
-  const hmac = request.headers.get("x-shopify-hmac-sha256")
-  if (!verifyShopifyHmac(raw, hmac)) {
+  if (!validarFirmaWebhook(request, raw)) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
   }
 

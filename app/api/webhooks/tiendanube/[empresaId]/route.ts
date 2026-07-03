@@ -1,19 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { recibirPedidoTN } from "@/lib/tiendanube/tiendanube-service"
 import { tnFetch, type TNOrder } from "@/lib/tiendanube/tiendanube-api"
-import { createHmac, timingSafeEqual } from "crypto"
-
-function verifyTNSignature(raw: string, signature: string | null): boolean {
-  const secret = process.env.TN_WEBHOOK_SECRET
-  if (!secret || !signature) return !secret
-  const expected = createHmac("sha256", secret).update(raw).digest("hex")
-  try {
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
-  } catch {
-    return false
-  }
-}
-
+import { validarFirmaWebhook } from "@/lib/auth/webhook-guard"
 /**
  * POST /api/webhooks/tiendanube/{empresaId}
  * Eventos: order/created, order/paid, etc.
@@ -29,8 +17,7 @@ export async function POST(
   }
 
   const raw = await request.text()
-  const signature = request.headers.get("x-linkedstore-hmac-sha256")
-  if (!verifyTNSignature(raw, signature)) {
+  if (!validarFirmaWebhook(request, raw)) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 })
   }
 

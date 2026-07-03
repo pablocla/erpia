@@ -7,13 +7,18 @@ export type SkuCatalogStatus = "disponible" | "beta" | "planned"
 
 /** Catálogo vendible hoy; el resto = planned hasta implementar hook/UI real */
 export const SKUS_PLANNED_ONLY = new Set([
+  // Falsos Parciales (sin motor end-to-end)
+  "data.reportes_prog",
+  "fiscal.ocr",
   "sec.backup",
   "sec.mfa",
-  "data.nps",
+  "bridge.opo_studio",
+  // Catálogo (Planned)
   "intang.reactivador_clientes",
   "intang.reputation_firewall",
   "intang.legal_shield",
   "intang.subs_tax_scanner",
+  "data.nps",
   "mkt.pixel",
   "mkt.pixel_ads",
   "releva.formulario_web",

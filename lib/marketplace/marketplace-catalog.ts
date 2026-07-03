@@ -642,6 +642,29 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     status: "disponible",
   },
 
+  // --- Ecommerce B2C (storefront ERP) ---
+  {
+    sku: "ECOM-B2C-01",
+    nombre: "Tienda Online B2C",
+    categoria: "Ventas",
+    precioArs: 34900,
+    tipoCobro: "recurrente",
+    autoCertLevel: "REGION_AUTO",
+    paisesHabilitados: ["AR"],
+    i18n: {
+      "es-AR": {
+        nombre: "Tienda Online B2C",
+        descripcion: "Catálogo público conectado al ERP, checkout con Mercado Pago y transferencia",
+        packOnboardSubject: "Tu tienda online ya está en línea",
+      },
+    },
+    segmentoAds: ["ecommerce", "retail", "distribuidora"],
+    playbookId: "playbook.ECOM-B2C-01",
+    dependeDe: ["core.claver"],
+    status: "disponible",
+    trialDias: 14,
+  },
+
   // --- Libreta Fiado (almacenes de barrio) ---
   {
     sku: "pos.fiado_barrio",

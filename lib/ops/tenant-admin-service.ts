@@ -14,6 +14,7 @@ import { getEmpresaReadiness, type ReadinessReport } from "@/lib/ops/readiness-s
 import { getProyectoPorEmpresa } from "@/lib/ops/implementacion-service"
 import { getTenantPlan, validarLimiteActivacion, type TenantPlanLimits } from "@/lib/ops/tenant-plan-service"
 import { getTenantBilling, type TenantBillingRow } from "@/lib/ops/tenant-billing-service"
+import { getSignupMeta, ORIGEN_LABELS, diasDesde, type SignupMeta } from "@/lib/ops/signup-tracking"
 
 function db() {
   return prisma as any
@@ -66,10 +67,17 @@ export interface TenantOverview {
   horizontales: Awaited<ReturnType<typeof obtenerEstadoProductos>>
   plan: TenantPlanLimits
   billing: TenantBillingRow
+  comercial: {
+    createdAt: string
+    diasDesdeAlta: number
+    signup: SignupMeta
+    origenLabel: string
+  }
 }
 
 export async function getTenantOverview(empresaId: number): Promise<TenantOverview> {
-  const [empresa, readiness, horizontales, proyecto, tareasPendientes, suscripciones, plan, billing] = await Promise.all([
+  const [empresa, readiness, horizontales, proyecto, tareasPendientes, suscripciones, plan, billing, signup] =
+    await Promise.all([
     db().empresa.findUnique({
       where: { id: empresaId },
       select: {
@@ -80,6 +88,7 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
         rubro: true,
         entornoAfip: true,
         planHosting: true,
+        createdAt: true,
       },
     }),
     getEmpresaReadiness(empresaId),
@@ -94,6 +103,7 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
     }),
     getTenantPlan(empresaId),
     getTenantBilling(empresaId),
+    getSignupMeta(empresaId),
   ])
 
   if (!empresa) throw new Error("Empresa no encontrada")
@@ -147,6 +157,12 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
     horizontales,
     plan,
     billing,
+    comercial: {
+      createdAt: empresa.createdAt.toISOString(),
+      diasDesdeAlta: diasDesde(empresa.createdAt),
+      signup,
+      origenLabel: signup.origen ? ORIGEN_LABELS[signup.origen] : "Sin etiqueta",
+    },
   }
 }
 

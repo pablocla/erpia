@@ -184,6 +184,7 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     tagline: "Turnos, historia clínica y facturación OS.",
     wowMoment: "Agenda por especialidad con cobranza integrada.",
     goldenPath: "/dashboard/agenda",
+    engancheId: "niche.consultorio_solo",
     menuLabels: {
       "/dashboard/agenda": "Turnos",
       "/dashboard/historia-clinica": "Historia clínica",
@@ -199,9 +200,11 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     tagline: "Socios, cuotas y morosos en semáforo.",
     wowMoment: "Reclamá cuota vencida por WhatsApp con un botón.",
     goldenPath: "/dashboard/membresias",
+    engancheId: "niche.gimnasio_barrio",
     featured: true,
     menuLabels: {
       "/dashboard/membresias": "Socios",
+      "/dashboard/nicho/gimnasio": "Cuotas barrio",
       "/dashboard/agenda": "Clases",
       "/dashboard/clientes": "Socios",
       "/dashboard/cuentas-cobrar": "Cuotas vencidas",
@@ -218,6 +221,8 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     tagline: "Turnos, comisiones y venta de insumos.",
     wowMoment: "Recordatorio WhatsApp 24hs antes del turno.",
     goldenPath: "/dashboard/agenda",
+    engancheId: "niche.consultorio_solo",
+    featured: true,
     menuLabels: {
       "/dashboard/agenda": "Turnos",
       "/dashboard/ventas": "Cobro servicios",
@@ -354,11 +359,12 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     group: "Industria & especializados",
     tagline: "Préstamos, pagarés y cobranza en ruta.",
     wowMoment: "Agenda de cobros del día con un clic.",
-    goldenPath: "/dashboard/nicho/prestamista",
+    goldenPath: "/dashboard/fiado",
     engancheId: "niche.prestamo_barrio",
+    featured: true,
     menuLabels: {
-      "/dashboard/nicho/prestamista": "Préstamos",
       "/dashboard/fiado": "Libreta de deudores",
+      "/dashboard/prestamos": "Cartera préstamos",
       "/dashboard/clientes": "Deudores",
     },
   }),

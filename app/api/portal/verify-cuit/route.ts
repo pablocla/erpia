@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { getOpoConfig } from "@/lib/opo/opo-config-service"
+import { resolveErpAdapter } from "@/lib/legacy-bridge/adapter-registry"
 
 const schema = z.object({
   cuit: z.string().min(10).max(13),
@@ -10,8 +11,7 @@ const schema = z.object({
 /**
  * POST /api/portal/verify-cuit
  * Verifica que el CUIT pertenece a un cliente activo de la empresa.
- * En producción, agregar modelo PortalUsuario con hash de contraseña.
- * Por ahora: acceso solo con CUIT (autenticación mínima viable).
+ * Enrutado vía OPO Legacy Bridge.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,40 +22,43 @@ export async function POST(request: NextRequest) {
     }
 
     const { cuit, empresaId } = parsed.data
+    const cleanCuit = cuit.replace(/-/g, "")
 
-    const cliente = await prisma.cliente.findFirst({
-      where: {
-        cuit: { contains: cuit.replace(/-/g, "") },
-        empresaId,
-        activo: true,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        nombre: true,
-        cuit: true,
-        saldoCuentaCorriente: true,
-        limiteCredito: true,
-        condicionIva: true,
-        email: true,
-        telefono: true,
-      },
-    })
+    const config = await getOpoConfig(empresaId)
+    const adapter = resolveErpAdapter(config)
 
-    if (!cliente) {
+    // Fetch via Legacy Bridge (OPO)
+    const result = await adapter.query(empresaId, {
+      entity: "Customer",
+      action: "read",
+      params: { 
+        cuit: cleanCuit,
+        limit: 1
+      }
+    }, config)
+
+    if (result.count === 0 || !result.data[0]) {
       return NextResponse.json(
         { error: "No encontramos un cliente activo con ese CUIT. Contactá a tu vendedor." },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({
-      cliente: {
-        ...cliente,
-        saldoCuentaCorriente: Number(cliente.saldoCuentaCorriente),
-        limiteCredito: Number(cliente.limiteCredito),
-      },
-    })
+    const rawCustomer = result.data[0] as any
+
+    // Mapear de OPO Canonical a la estructura que espera el Frontend del Portal B2B
+    const cliente = {
+      id: Number(rawCustomer.id) || 0,
+      nombre: rawCustomer.legalName || rawCustomer.tradeName || "",
+      cuit: rawCustomer.partyId || cleanCuit,
+      saldoCuentaCorriente: Number(rawCustomer.outstandingBalance) || 0,
+      limiteCredito: Number(rawCustomer.creditLimit) || 0,
+      condicionIva: rawCustomer.taxCondition || "Responsable Inscripto",
+      email: rawCustomer.email || "",
+      telefono: rawCustomer.phone || ""
+    }
+
+    return NextResponse.json({ cliente })
   } catch (error) {
     console.error("portal/verify-cuit:", error)
     return NextResponse.json({ error: "Error interno" }, { status: 500 })

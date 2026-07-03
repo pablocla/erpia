@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 import { ensureProyectoImplementacion } from "@/lib/ops/implementacion-service"
+import { ensureWebSignupTrial, setSignupOrigen } from "@/lib/ops/signup-tracking"
 import { z } from "zod"
 
 const signupSchema = z.object({
@@ -65,6 +66,11 @@ export async function POST(request: NextRequest) {
       SELECT id, nombre, email, rol, "empresaId" FROM usuarios WHERE email = ${email} LIMIT 1
     `
     const usuario = usuarioRows[0]
+
+    await Promise.all([
+      setSignupOrigen(empresaId, "web_register", `email:${email}`),
+      ensureWebSignupTrial(empresaId, 14),
+    ])
 
     void ensureProyectoImplementacion({
       empresaId,

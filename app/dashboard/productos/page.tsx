@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package } from "lucide-react"
+import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package, Upload } from "lucide-react"
 import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
@@ -80,6 +80,8 @@ export default function ProductosPage() {
   const [bulkEditIds, setBulkEditIds] = useState<number[]>([])
   const [bulkValor, setBulkValor] = useState("")
   const [aplicandoBulk, setAplicandoBulk] = useState(false)
+  const [importandoCSV, setImportandoCSV] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { toast } = useToast()
 
@@ -180,6 +182,59 @@ export default function ProductosPage() {
       toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
     } finally {
       setAplicandoBulk(false)
+    }
+  }
+
+  const procesarCSV = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const text = e.target?.result
+      if (typeof text !== "string") return
+      
+      const lineas = text.split("\n").filter(l => l.trim() !== "")
+      const headers = lineas[0].split(",").map(h => h.trim().toLowerCase())
+      
+      const productosAImportar = lineas.slice(1).map(linea => {
+        const valores = linea.split(",").map(v => v.trim().replace(/^"|"$/g, ""))
+        const prod: any = {}
+        headers.forEach((header, i) => {
+          prod[header] = valores[i]
+        })
+        return prod
+      }).filter(p => p.codigo && p.nombre)
+
+      if (productosAImportar.length === 0) {
+        toast({ title: "Error", description: "No se encontraron productos válidos en el CSV. Asegúrese de incluir 'codigo' y 'nombre'.", variant: "destructive" })
+        return
+      }
+
+      setImportandoCSV(true)
+      try {
+        const res = await fetch("/api/productos/importar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ productos: productosAImportar })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          toast({ title: "Importación exitosa", description: `Insertados: ${data.insertados}. Actualizados: ${data.actualizados}.` })
+          cargarProductos()
+        } else {
+          toast({ title: "Error al importar", description: data.error, variant: "destructive" })
+        }
+      } catch {
+        toast({ title: "Error de conexión", description: "Falló la importación", variant: "destructive" })
+      } finally {
+        setImportandoCSV(false)
+        if (fileInputRef.current) fileInputRef.current.value = ""
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarCSV(e.target.files[0])
     }
   }
 
@@ -294,10 +349,23 @@ export default function ProductosPage() {
           </span>
         }
         actions={
-          <Button onClick={abrirNuevo}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Producto
-          </Button>
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              accept=".csv" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importandoCSV}>
+              {importandoCSV ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              Importar CSV
+            </Button>
+            <Button onClick={abrirNuevo}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Producto
+            </Button>
+          </div>
         }
       />
 

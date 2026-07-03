@@ -186,14 +186,13 @@ export const CLAVER_ROUTES = {
 } as const
 
 export const CLAVER_NAV = [
-  { href: "/claver", label: "Claver" },
-  { href: "/claver/claverp", label: "Claver" },
+  { href: "/", label: "Inicio" },
+  { href: "/demo", label: "Demos" },
+  { href: "/claver/claverp", label: "Claver ERP" },
   { href: "/claver/clavergrow", label: "Clavergrow" },
-  { href: "/claver-cloud", label: "Claver Cloud" },
   { href: "/claver/claverp/pos-afip", label: "POS & AFIP" },
-  { href: "/claver/ecommerce", label: "Ecommerce" },
-  { href: "/claver/claverp/distribuidoras", label: "Distribuidoras" },
   { href: "/claver/claverp/precios", label: "Precios" },
+  { href: "/claver/ecommerce", label: "Ecommerce" },
   { href: "/claver/marca", label: "Marca" },
 ] as const
 

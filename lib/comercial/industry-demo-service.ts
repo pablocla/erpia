@@ -15,6 +15,15 @@ import { setIndustryModules } from "@/lib/comercial/industry-modules"
 import { seedIndustryDemoData } from "@/lib/comercial/industry-demo-seeds"
 import { normalizeRubroValue } from "@/lib/onboarding/onboarding-ia"
 import { setTrialExpiresAt } from "@/lib/comercial/trial-service"
+import { activarPack, activarProducto } from "@/lib/platform/product-lifecycle"
+import { getPackHorizontal } from "@/lib/platform/product-registry"
+import { getActiveSubscription } from "@/lib/platform/commercial-service"
+import {
+  inferModoLiteFromEnganche,
+  resolvePackCalle,
+  skusParaActivar,
+  type ModoLite,
+} from "@/lib/comercial/pack-calle-catalog"
 
 export interface ProvisionIndustryDemoResult {
   industryId: string
@@ -29,6 +38,55 @@ export interface ProvisionIndustryDemoResult {
 
 export function resolveIndustryId(raw: string): IndustryTemplate | null {
   return getIndustryTemplate(raw) ?? getIndustryTemplate(normalizeRubroValue(raw))
+}
+
+async function applyIndustryEnganche(
+  empresaId: number,
+  engancheId: string,
+  trialDias: number,
+): Promise<{ skusActivados: string[]; modoLite: ModoLite }> {
+  const pack = resolvePackCalle(engancheId)
+  const modoLite = pack?.modoLite ?? inferModoLiteFromEnganche(engancheId)
+  const trialExpiresAt = new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000)
+  const origen = "industry_demo"
+  const activados: string[] = []
+
+  await prisma.empresa.update({
+    where: { id: empresaId },
+    data: { modoLite },
+  })
+
+  if (pack?.tipo === "pack" && getPackHorizontal(engancheId)) {
+    await activarPack(empresaId, engancheId, origen)
+    activados.push(...pack.skus)
+  } else {
+    for (const sku of skusParaActivar(engancheId)) {
+      try {
+        await activarProducto(empresaId, sku, origen)
+        activados.push(sku)
+      } catch (err) {
+        console.warn(`[industry-demo] No se pudo activar ${sku}:`, err)
+      }
+    }
+  }
+
+  const skusActivados = new Set(activados)
+  for (const sku of skusParaActivar(engancheId)) {
+    const sub = await getActiveSubscription(empresaId, sku)
+    if (sub) skusActivados.add(sku)
+  }
+  const fiado = await getActiveSubscription(empresaId, "pos.fiado_barrio")
+  if (fiado) skusActivados.add("pos.fiado_barrio")
+
+  for (const sku of skusActivados) {
+    await prisma.suscripcionModulo.upsert({
+      where: { empresaId_sku: { empresaId, sku } },
+      update: { activo: true, vigenciaHasta: trialExpiresAt },
+      create: { empresaId, sku, activo: true, vigenciaHasta: trialExpiresAt },
+    })
+  }
+
+  return { skusActivados: [...skusActivados], modoLite }
 }
 
 export async function provisionIndustryDemo(
@@ -85,6 +143,13 @@ export async function provisionIndustryDemo(
         pais: "AR",
       },
     })
+
+    if (template.engancheId) {
+      const trialDiasNicho = 14
+      const enganche = await applyIndustryEnganche(empresaId, template.engancheId, trialDiasNicho)
+      skusActivados = enganche.skusActivados
+      modoLite = enganche.modoLite
+    }
   }
 
   const seeds = await seedIndustryDemoData(empresaId, template)

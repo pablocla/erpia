@@ -90,6 +90,35 @@ describe("industry-demo-seeds", () => {
     expect(result.membresias).toBeGreaterThan(0)
   })
 
+  it("prestamista siembra deudores con fiado habilitado y saldo negativo", async () => {
+    const template = getIndustryTemplate("prestamista")!
+    vi.mocked(prisma.producto.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.producto.create).mockResolvedValue({ id: 1 } as never)
+    vi.mocked(prisma.cliente.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+    vi.mocked(prisma.cliente.create).mockResolvedValue({ id: 1 } as never)
+    vi.mocked(prisma.empresa.update).mockResolvedValue({ id: 1 } as never)
+
+    const result = await seedIndustryDemoData(99, template)
+
+    expect(result.clientes).toBeGreaterThan(0)
+    expect(prisma.empresa.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ fiadoRequiereLimite: false }),
+      }),
+    )
+    expect(prisma.cliente.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fiadoHabilitado: true,
+          saldoCuentaCorriente: -28000,
+        }),
+      }),
+    )
+  })
+
   it("siembra perfil REPROCANN, sala, ciclo e insumos para cultivo regulado", async () => {
     const template = getIndustryTemplate("agro_cannabis")!
     vi.mocked(prisma.producto.findFirst).mockResolvedValue(null)

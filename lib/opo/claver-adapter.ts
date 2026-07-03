@@ -53,6 +53,10 @@ function mapCliente(c: {
   nombreFantasia: string | null
   cuit: string | null
   saldoCuentaCorriente: { toString(): string }
+  limiteCredito: { toString(): string }
+  condicionIva: string | null
+  email: string | null
+  telefono: string | null
   codigo: string | null
 }) {
   return {
@@ -61,6 +65,10 @@ function mapCliente(c: {
     tradeName: c.nombreFantasia ?? c.nombre,
     legalName: c.nombre,
     outstandingBalance: Number(c.saldoCuentaCorriente),
+    creditLimit: Number(c.limiteCredito),
+    taxCondition: c.condicionIva ?? undefined,
+    email: c.email ?? undefined,
+    phone: c.telefono ?? undefined,
     code: c.codigo ?? undefined,
     nativeTable: "Cliente",
   }
@@ -70,15 +78,21 @@ function mapProducto(p: {
   id: number
   codigo: string
   nombre: string
+  descripcion: string | null
   precioVenta: { toString(): string }
   stock: number
+  unidad: string | null
+  categoria?: { id: number; nombre: string } | null
 }) {
   return {
     id: String(p.id),
     sku: p.codigo,
     name: p.nombre,
+    description: p.descripcion,
     unitPrice: Number(p.precioVenta),
     stock: p.stock,
+    unit: p.unidad ?? "UN",
+    category: p.categoria ? p.categoria.nombre : undefined,
     nativeTable: "Producto",
   }
 }
@@ -129,9 +143,13 @@ export async function queryClaverEntity(empresaId: number, input: OpoQueryInput)
         select: {
           id: true,
           nombre: true,
-          nombreFantasia: true,
           cuit: true,
+          nombreFantasia: true,
           saldoCuentaCorriente: true,
+          limiteCredito: true,
+          condicionIva: true,
+          email: true,
+          telefono: true,
           codigo: true,
         },
       })
@@ -156,8 +174,11 @@ export async function queryClaverEntity(empresaId: number, input: OpoQueryInput)
           id: true,
           codigo: true,
           nombre: true,
+          descripcion: true,
           precioVenta: true,
           stock: true,
+          unidad: true,
+          categoria: { select: { id: true, nombre: true } },
         },
       })
       return { entity: "Product", source: "claver_db", count: rows.length, data: rows.map(mapProducto) }

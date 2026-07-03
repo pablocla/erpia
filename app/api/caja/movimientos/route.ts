@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { withAuthAndTenant } from "@/lib/auth/empresa-guard"
 import { z } from "zod"
 
 const movimientoSchema = z.object({
@@ -12,10 +12,8 @@ const movimientoSchema = z.object({
   referencia: z.string().optional(),
 })
 
-export async function GET(request: NextRequest) {
+export const GET = withAuthAndTenant(async (request: NextRequest, auth) => {
   try {
-    const ctx = await getAuthContext(request)
-    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
     const cajaId = searchParams.get("cajaId")
@@ -33,7 +31,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!caja) return NextResponse.json({ error: "Caja no encontrada" }, { status: 404 })
-    if (caja.empresaId !== ctx.auth.empresaId) {
+    if (caja.empresaId !== auth.empresaId) {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
     }
 
@@ -47,12 +45,10 @@ export async function GET(request: NextRequest) {
     console.error("Error al obtener movimientos:", error)
     return NextResponse.json({ error: "Error al obtener movimientos" }, { status: 500 })
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAuthAndTenant(async (request: NextRequest, auth) => {
   try {
-    const ctx = await getAuthContext(request)
-    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const validacion = movimientoSchema.safeParse(body)
@@ -66,7 +62,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, estado: true, empresaId: true },
     })
     if (!caja) return NextResponse.json({ error: "Caja no encontrada" }, { status: 404 })
-    if (caja.empresaId !== ctx.auth.empresaId) {
+    if (caja.empresaId !== auth.empresaId) {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
     }
     if (caja.estado === "cerrada") {
@@ -82,4 +78,4 @@ export async function POST(request: NextRequest) {
     console.error("Error al registrar movimiento:", error)
     return NextResponse.json({ error: "Error al registrar movimiento" }, { status: 500 })
   }
-}
+})

@@ -71,8 +71,8 @@ export class AsientoService {
     })
   }
 
-  async generarAsientoCompra(compraId: number, empresaId?: number): Promise<void> {
-    const compra = await prisma.compra.findUnique({
+  async generarAsientoCompra(compraId: number, empresaId?: number, client: TxClient | PrismaClient = prisma): Promise<void> {
+    const compra = await client.compra.findUnique({
       where: { id: compraId },
       include: { lineas: true, proveedor: true },
     })
@@ -87,7 +87,7 @@ export class AsientoService {
       getCuentaLabel(resolvedEmpresaId, "compra", "proveedores", "2.1", "Proveedores"),
     ])
 
-    await prisma.$transaction(async (tx) => {
+    const execute = async (tx: TxClient) => {
       const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
 
       await tx.asientoContable.create({
@@ -108,7 +108,13 @@ export class AsientoService {
           },
         },
       })
-    })
+    }
+
+    if ('$transaction' in client) {
+      await (client as PrismaClient).$transaction(execute)
+    } else {
+      await execute(client)
+    }
   }
 
   async crearAsientoManual(data: AsientoContableData & { empresaId?: number }): Promise<void> {

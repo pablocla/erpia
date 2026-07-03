@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { activoVariant, activoLabel } from "@/lib/ui/status-map"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { getIndustryExperience, getNicheExperience } from "@/lib/comercial/app-experience"
 
 interface Consulta {
   id: number
@@ -62,13 +64,21 @@ export default function HistoriaClinicaPage() {
   const [modalNuevaConsulta, setModalNuevaConsulta] = useState(false)
   const [formPaciente, setFormPaciente] = useState({ nombre: "", especie: "", raza: "", sexo: "", fechaNac: "", peso: "", clienteId: "" })
   const [formConsulta, setFormConsulta] = useState({ motivo: "", diagnostico: "", tratamiento: "", observaciones: "", peso: "", temperatura: "" })
+  const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
 
   const cargarDatos = useCallback(async () => {
     try {
       const q = busqueda ? `?q=${encodeURIComponent(busqueda)}` : ""
-      const res = await fetch(`/api/historia-clinica${q}`)
+      const [res, eRes] = await Promise.all([
+        fetch(`/api/historia-clinica${q}`),
+        fetch("/api/config/empresa"),
+      ])
       if (!res.ok) return
       const data = await res.json()
+      if (eRes.ok) {
+        const empresa = await eRes.json()
+        setDemoIndustryId(empresa.demoIndustryId ?? null)
+      }
       setPacientes(data.pacientes ?? [])
       setResumen(data.resumen ?? { totalPacientes: 0, totalConsultas: 0, activos: 0 })
     } catch { /* silently fail */ } finally { setLoading(false) }
@@ -114,8 +124,19 @@ export default function HistoriaClinicaPage() {
 
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
 
+  const experience = demoIndustryId
+    ? getIndustryExperience(demoIndustryId) ?? getNicheExperience(demoIndustryId)
+    : null
+
   return (
     <PageShell>
+      {experience && (
+        <AppExperienceHeader
+          guide={experience}
+          onPrimaryClick={() => setModalNuevoPaciente(true)}
+          className="mb-4"
+        />
+      )}
       <PageHeader
         title="Historias Clínicas"
         description="Ficha digital de pacientes, antecedentes, consultas veterinarias y registro de signos clínicos."

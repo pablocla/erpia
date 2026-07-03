@@ -63,6 +63,11 @@ export default function RegisterPage() {
       }
 
       loginConToken(data.token, data.usuario)
+      try {
+        localStorage.setItem("claver_fresh_signup", "1")
+      } catch {
+        /* ignore */
+      }
       const dest = await resolvePostLoginPathAsync(data.token, data.usuario.rol)
       router.push(dest)
     } catch {

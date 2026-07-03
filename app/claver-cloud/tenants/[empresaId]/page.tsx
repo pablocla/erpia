@@ -55,6 +55,16 @@ type Overview = {
   }
   plan?: { id: string; maxSkusActivos: number; playbooksCustom: boolean }
   billing?: { mrrTotalArs: number; skusActivos: number; limiteSkus: number; plan: string; mpSubscriptionStatus: string | null }
+  comercial?: {
+    createdAt: string
+    diasDesdeAlta: number
+    origenLabel: string
+    signup: {
+      origen: string | null
+      demoIndustryId: string | null
+      trial: { activo: boolean; diasRestantes: number; expirado: boolean } | null
+    }
+  }
   productosActivos: number
   productosCatalogo: number
   proyecto: { id: number; codigo: string; faseActual: string; porcentajeAvance: number } | null
@@ -150,6 +160,45 @@ export default function ClaverTenantSuperAdminPage() {
     window.location.href = session.redirectUrl ?? "/dashboard/configuracion"
   }
 
+  const impersonarYActivarFiado = async () => {
+    setActionSku("pos.fiado_barrio")
+    try {
+      await fetch(`/api/claver/tenants/${empresaId}/productos`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ action: "provision", sku: "pos.fiado_barrio" }),
+      })
+      await fetch(`/api/claver/tenants/${empresaId}/productos`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ action: "activate", sku: "pos.fiado_barrio" }),
+      })
+      
+      const analystToken = localStorage.getItem("token")
+      const analystUser = useAuthStore.getState().user
+      if (analystToken) sessionStorage.setItem("claver_analyst_token", analystToken)
+      if (analystUser) sessionStorage.setItem("claver_analyst_user", JSON.stringify(analystUser))
+
+      const res = await fetch(`/api/claver/tenants/${empresaId}/impersonate`, {
+        method: "POST",
+        headers: authHeaders(),
+      })
+      if (!res.ok) return
+      const session = await res.json()
+      login(session.token, {
+        id: String(analystUser?.id ?? "0"),
+        email: analystUser?.email ?? "",
+        nombre: `Analista → ${session.empresa.nombre}`,
+        rol: "administrador",
+        empresaId: session.empresa.id,
+        empresaNombre: session.empresa.nombre,
+      })
+      window.location.href = "/dashboard/fiado"
+    } finally {
+      setActionSku(null)
+    }
+  }
+
   const accion = async (
     action: string,
     extra?: { sku?: string; packId?: string },
@@ -222,12 +271,20 @@ export default function ClaverTenantSuperAdminPage() {
       )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" asChild className="mb-2 -ml-2">
-            <Link href="/claver-cloud/organizations">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Organizaciones
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2 mb-2 -ml-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/claver-cloud">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Centro de mando
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/claver-cloud/registros">
+                <Link2 className="h-4 w-4 mr-1" />
+                Registros web
+              </Link>
+            </Button>
+          </div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Building2 className="h-6 w-6 text-primary" />
             {empresa.nombre}
@@ -263,6 +320,18 @@ export default function ClaverTenantSuperAdminPage() {
                 <CreditCard className="h-3 w-3 mr-1 inline" />
                 {fmtArs(data.billing.mrrTotalArs)}/mes
               </Badge>
+            )}
+            {data.comercial && (
+              <>
+                <Badge variant="outline">{data.comercial.origenLabel}</Badge>
+                <Badge variant="outline">{data.comercial.diasDesdeAlta}d activo</Badge>
+                {data.comercial.signup.trial?.activo && (
+                  <Badge className="bg-amber-600">Trial {data.comercial.signup.trial.diasRestantes}d</Badge>
+                )}
+                {data.comercial.signup.demoIndustryId && (
+                  <Badge variant="secondary">Demo: {data.comercial.signup.demoIndustryId}</Badge>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -336,6 +405,10 @@ export default function ClaverTenantSuperAdminPage() {
         <Button size="sm" variant="default" onClick={() => void abrirErpImpersonado()}>
           <UserCog className="h-3 w-3 mr-1" />
           Abrir ERP (impersonar)
+        </Button>
+        <Button size="sm" variant="secondary" onClick={() => void impersonarYActivarFiado()} disabled={actionSku === "pos.fiado_barrio"}>
+          <UserCog className="h-3 w-3 mr-1" />
+          Impersonar + Fiado
         </Button>
       </div>
 

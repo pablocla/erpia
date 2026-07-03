@@ -151,6 +151,7 @@ model Empresa {
   documentosAdjuntos          DocumentoAdjunto[]
   facturasRecurrentes         FacturaRecurrente[]
   mercadoPagoConfig           MercadoPagoConfig?
+  tiendaConfig                TiendaConfig?
   transaccionesMp             MercadoPagoTransaccion[]
   reglasAlerta                ReglaAlerta[]
   empleados                   Empleado[]
@@ -2487,7 +2488,7 @@ model PedidoVenta {
   subtotal         Decimal   @db.Decimal(18, 2)
   impuestos        Decimal   @default(0) @db.Decimal(18, 2)
   total            Decimal   @db.Decimal(18, 2)
-  /// "borrador" | "confirmado" | "en_picking" | "remitido" | "facturado" | "anulado"
+  /// "borrador" | "pendiente_pago" | "confirmado" | "en_picking" | "remitido" | "facturado" | "anulado"
   estado           String    @default("borrador")
   observaciones    String?
   /// "dine_in" | "takeaway" | "delivery"
@@ -2511,6 +2512,7 @@ model PedidoVenta {
   listasPicking ListaPicking[]
   remitos       Remito[]
   envios        Envio[]
+  transaccionesMp MercadoPagoTransaccion[]
 
   /// FIX A-001: índices para gestión de pedidos
   @@index([empresaId, estado, createdAt])
@@ -5660,6 +5662,32 @@ model FacturaRecurrente {
 // conciliación automática con CxC.
 // ══════════════════════════════════════════════════════════════════════════════
 
+/// Configuración pública de la tienda B2C por empresa (slug, branding, medios de pago).
+model TiendaConfig {
+  id                   Int      @id @default(autoincrement())
+  /// URL pública: /tienda/[slug]
+  slug                 String   @unique
+  nombreTienda         String?
+  logoUrl              String?
+  colorPrimario        String?
+  activa               Boolean  @default(true)
+  /// { mercadopago, transferencia, confirmarSinPago }
+  mediosPago           Json?
+  transferenciaCbu     String?
+  transferenciaAlias   String?
+  transferenciaTitular String?
+  textoEnvio           String?
+  textoFooter          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  empresaId Int     @unique
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, activa])
+  @@map("tienda_config")
+}
+
 model MercadoPagoConfig {
   id                 Int      @id @default(autoincrement())
   /// Access token (encrypted at rest)
@@ -5711,6 +5739,9 @@ model MercadoPagoTransaccion {
   facturaId      Int?
   /// FK a CxC si se concilió
   cuentaCobrarId Int?
+  /// FK a pedido ecommerce si se concilió
+  pedidoVentaId  Int?
+  pedidoVenta    PedidoVenta? @relation(fields: [pedidoVentaId], references: [id])
   /// Si ya se concilió automáticamente
   conciliado     Boolean   @default(false)
   /// Fecha del pago en MP

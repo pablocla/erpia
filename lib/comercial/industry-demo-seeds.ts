@@ -91,8 +91,22 @@ const CLIENTES_POR_RUBRO: Partial<Record<Rubro, ClienteSeed[]>> = {
     { nombre: "Cliente frecuente — Barbería" },
   ],
   prestamista: [
-    { nombre: "Roberto Díaz — Cuota diaria", saldoCuentaCorriente: 28000 },
-    { nombre: "Comercio San Martín — Préstamo B2B", saldoCuentaCorriente: 150000 },
+    {
+      nombre: "Roberto Díaz — Cuota diaria",
+      telefono: "11-5544-3322",
+      deudaFiado: 28000,
+      fiadoHabilitado: true,
+      limiteCredito: 80000,
+      observaciones: "Cuota diaria — vence hoy",
+    },
+    {
+      nombre: "Comercio San Martín — Préstamo B2B",
+      telefono: "0341-422-1100",
+      deudaFiado: 150000,
+      fiadoHabilitado: true,
+      limiteCredito: 250000,
+      observaciones: "Préstamo comercial — 12 cuotas",
+    },
   ],
 }
 
@@ -302,8 +316,226 @@ async function seedCannabisDemo(empresaId: number): Promise<boolean> {
   return true
 }
 
+function templateUsaLibretaFiado(template: IndustryTemplate): boolean {
+  if (template.isRetail) return true
+  return (
+    template.engancheId === "pos.fiado_barrio" ||
+    template.engancheId === "niche.prestamo_barrio" ||
+    template.id === "prestamista"
+  )
+}
+
+async function seedConsorciosDemo(empresaId: number): Promise<void> {
+  const periodo = new Date().toISOString().slice(0, 7)
+  let consorcio = await prisma.consorcio.findFirst({
+    where: { empresaId, nombre: "Edificio Demo — Rivadavia 1200" },
+  })
+  if (!consorcio) {
+    consorcio = await prisma.consorcio.create({
+      data: {
+        empresaId,
+        nombre: "Edificio Demo — Rivadavia 1200",
+        direccion: "Av. Rivadavia 1200, CABA",
+      },
+    })
+  }
+
+  const unidades = [
+    { numero: "1° A", porceps: 12, residenteNombre: "María López — Inquilina" },
+    { numero: "2° B", porceps: 15, residenteNombre: "Carlos Pérez — Propietario" },
+    { numero: "PB Local", porceps: 8, residenteNombre: "Kiosco Rivadavia SA" },
+  ]
+
+  for (const u of unidades) {
+    let residente = await prisma.cliente.findFirst({
+      where: { empresaId, nombre: u.residenteNombre },
+    })
+    if (!residente) {
+      residente = await prisma.cliente.create({
+        data: {
+          empresaId,
+          nombre: u.residenteNombre,
+          telefono: "11-4000-0000",
+          condicionIva: "Consumidor Final",
+          activo: true,
+        },
+      })
+    }
+
+    const existe = await prisma.unidadFuncional.findFirst({
+      where: { consorcioId: consorcio.id, numero: u.numero },
+    })
+    if (!existe) {
+      await prisma.unidadFuncional.create({
+        data: {
+          consorcioId: consorcio.id,
+          numero: u.numero,
+          porceps: u.porceps,
+          residenteId: residente.id,
+        },
+      })
+    }
+  }
+
+  const gastos = [
+    { descripcion: "Limpieza edificio", monto: 85000 },
+    { descripcion: "Luz ascensor", monto: 42000 },
+  ]
+  for (const g of gastos) {
+    const existe = await prisma.consorcioGasto.findFirst({
+      where: { consorcioId: consorcio.id, periodo, descripcion: g.descripcion },
+    })
+    if (!existe) {
+      await prisma.consorcioGasto.create({
+        data: {
+          consorcioId: consorcio.id,
+          descripcion: g.descripcion,
+          monto: g.monto,
+          fecha: new Date(),
+          periodo,
+        },
+      })
+    }
+  }
+}
+
+const NICHE_MOVIMIENTO_SEEDS: Record<
+  string,
+  { titulo: string; categoria: string; monto: number; estado?: string }[]
+> = {
+  "niche.obra_changas": [
+    { titulo: "Jornal — Juan P.", categoria: "jornal", monto: 45000, estado: "pendiente" },
+    { titulo: "Adelanto — Martín L.", categoria: "adelanto", monto: 15000, estado: "pendiente" },
+    { titulo: "Jornal — Rosa G.", categoria: "jornal", monto: 38000, estado: "pagado" },
+  ],
+  "niche.gimnasio_barrio": [
+    { titulo: "Cuota marzo — Ana M.", categoria: "cuota", monto: 18500, estado: "pendiente" },
+    { titulo: "Cuota marzo — Diego L.", categoria: "cuota", monto: 12000, estado: "pagado" },
+    { titulo: "Cuota marzo — Sofía R.", categoria: "cuota", monto: 9200, estado: "pendiente" },
+  ],
+  "niche.feria_puesto": [
+    { titulo: "Venta turno mañana", categoria: "venta", monto: 125000, estado: "pagado" },
+    { titulo: "Cuota feria semana", categoria: "cuota_feria", monto: 8500, estado: "pendiente" },
+  ],
+  "niche.base_remis": [
+    { titulo: "Viajes chofer García", categoria: "viaje", monto: 67000, estado: "pendiente" },
+    { titulo: "Gasto combustible", categoria: "gasto", monto: 12000, estado: "pagado" },
+  ],
+  "niche.acopio_grano": [
+    { titulo: "Entrega soja — Estancia Norte", categoria: "entrega", monto: 890000, estado: "pendiente" },
+    { titulo: "Liquidación parcial marzo", categoria: "liquidacion", monto: 420000, estado: "pagado" },
+  ],
+}
+
+const NICHE_CUOTA_CLIENTES: Record<string, { nombre: string; telefono?: string }[]> = {
+  "niche.gimnasio_barrio": [
+    { nombre: "Ana Martínez — Cuota Pilates", telefono: "11-3333-2211" },
+    { nombre: "Diego López — Plan mensual" },
+    { nombre: "Sofía Ruiz — Trimestral", telefono: "11-2222-3344" },
+  ],
+}
+
+async function seedNicheMovimientosDemo(empresaId: number, appSku: string): Promise<void> {
+  const samples = NICHE_MOVIMIENTO_SEEDS[appSku]
+  if (!samples?.length) return
+
+  const existentes = await prisma.nicheMovimiento.count({
+    where: { empresaId, appSku },
+  })
+  if (existentes > 0) return
+
+  const periodo = new Date().toISOString().slice(0, 7)
+  const clienteDefs = NICHE_CUOTA_CLIENTES[appSku] ?? []
+
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i]
+    let clienteId: number | undefined
+
+    const def = clienteDefs[i]
+    if (def) {
+      let cliente = await prisma.cliente.findFirst({
+        where: { empresaId, nombre: def.nombre },
+      })
+      if (!cliente) {
+        cliente = await prisma.cliente.create({
+          data: {
+            empresaId,
+            nombre: def.nombre,
+            telefono: def.telefono,
+            condicionIva: "Consumidor Final",
+            activo: true,
+          },
+        })
+      }
+      clienteId = cliente.id
+    }
+
+    await prisma.nicheMovimiento.create({
+      data: {
+        empresaId,
+        appSku,
+        titulo: s.titulo,
+        categoria: s.categoria,
+        monto: s.monto,
+        estado: s.estado ?? "pendiente",
+        periodo,
+        clienteId,
+      },
+    })
+  }
+}
+
+async function seedAgendaDemo(empresaId: number, template: IndustryTemplate): Promise<void> {
+  const pros = [
+    {
+      nombre: template.id === "salon_belleza" ? "Valentina — Colorista" : "Dr. Martín Reyes",
+      especialidad: template.id === "salon_belleza" ? "Coloración" : "Clínica general",
+      color: "#8b5cf6",
+    },
+    {
+      nombre: template.id === "salon_belleza" ? "Lucas — Barbería" : "Dra. Ana Soto",
+      especialidad: template.id === "salon_belleza" ? "Corte y barba" : "Pediatría",
+      color: "#0ea5e9",
+    },
+  ]
+
+  for (const p of pros) {
+    const existe = await prisma.profesional.findFirst({
+      where: { empresaId, nombre: p.nombre },
+    })
+    if (!existe) {
+      await prisma.profesional.create({
+        data: { empresaId, nombre: p.nombre, especialidad: p.especialidad, color: p.color, activo: true },
+      })
+    }
+  }
+
+  const servicios =
+    template.id === "salon_belleza"
+      ? [
+          { nombre: "Corte dama", duracionMinutos: 45 },
+          { nombre: "Barba", duracionMinutos: 30 },
+          { nombre: "Coloración", duracionMinutos: 90 },
+        ]
+      : [
+          { nombre: "Consulta general", duracionMinutos: 30 },
+          { nombre: "Control", duracionMinutos: 20 },
+        ]
+
+  for (const s of servicios) {
+    const existe = await prisma.servicio.findFirst({
+      where: { empresaId, nombre: s.nombre },
+    })
+    if (!existe) {
+      await prisma.servicio.create({
+        data: { empresaId, nombre: s.nombre, duracionMinutos: s.duracionMinutos, activo: true },
+      })
+    }
+  }
+}
+
 async function enableFiadoDemo(empresaId: number, template: IndustryTemplate): Promise<void> {
-  if (!template.isRetail) return
+  if (!templateUsaLibretaFiado(template)) return
 
   await prisma.empresa.update({
     where: { id: empresaId },
@@ -439,6 +671,22 @@ export async function seedIndustryDemoData(
 
   if (template.id === "agro_cannabis" || rubro === "agro_cannabis") {
     result.cannabis = await seedCannabisDemo(empresaId)
+  }
+
+  if (template.id === "consorcios_admin") {
+    await seedConsorciosDemo(empresaId)
+  }
+
+  if (
+    template.id === "salon_belleza" ||
+    template.id === "clinica" ||
+    template.goldenPath === "/dashboard/agenda"
+  ) {
+    await seedAgendaDemo(empresaId, template)
+  }
+
+  if (template.engancheId?.startsWith("niche.")) {
+    await seedNicheMovimientosDemo(empresaId, template.engancheId)
   }
 
   return result

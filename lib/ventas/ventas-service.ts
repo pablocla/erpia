@@ -1,7 +1,7 @@
 /**
  * Ventas Service — PedidoVenta → Picking → Remito → Factura flow
  *
- * State machine: borrador → confirmado → en_picking → remitido → facturado → anulado
+ * State machine: borrador → pendiente_pago → confirmado → en_picking → remitido → facturado → anulado
  *
  * 1. crearPedidoVenta()    — borrador with client, lines, condición pago
  * 2. confirmarPedido()      — locks prices, emits for picking
@@ -135,13 +135,31 @@ export class VentasService {
     })
   }
 
+  async marcarPendientePago(pedidoId: number, empresaId: number) {
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
+    })
+    if (!pedido) throw new Error("Pedido no encontrado")
+    if (pedido.estado !== "borrador") {
+      throw new Error(`Pedido en estado '${pedido.estado}', se requiere 'borrador'`)
+    }
+
+    return prisma.pedidoVenta.update({
+      where: { id: pedidoId },
+      data: { estado: "pendiente_pago" },
+      include: { lineas: true, cliente: true },
+    })
+  }
+
   async confirmarPedido(pedidoId: number, empresaId: number) {
     const pedido = await prisma.pedidoVenta.findFirst({
       where: { id: pedidoId, empresaId },
       include: { lineas: true },
     })
     if (!pedido) throw new Error("Pedido no encontrado")
-    if (pedido.estado !== "borrador") throw new Error(`Pedido en estado '${pedido.estado}', se requiere 'borrador'`)
+    if (!["borrador", "pendiente_pago"].includes(pedido.estado)) {
+      throw new Error(`Pedido en estado '${pedido.estado}', se requiere 'borrador' o 'pendiente_pago'`)
+    }
 
     // Reserve stock for each product line
     for (const linea of pedido.lineas) {

@@ -612,9 +612,6 @@ export default function CajaPage() {
               <div key={key} className="grid grid-cols-3 items-center gap-2">
                 <div>
                   <p className="text-sm font-medium">{label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Sistema: ${sistema.toFixed(2)}
-                  </p>
                 </div>
                 <Input
                   type="number"
@@ -624,43 +621,22 @@ export default function CajaPage() {
                   value={arqueo[key as keyof typeof arqueo]}
                   onChange={(e) => setArqueo({ ...arqueo, [key]: e.target.value })}
                 />
-                <div className="text-right text-sm">
-                  {arqueo[key as keyof typeof arqueo] ? (
-                    <span className={
-                      Math.abs(parseFloat(arqueo[key as keyof typeof arqueo] || "0") - sistema) > 0.01
-                        ? "text-amber-600 font-medium"
-                        : "text-green-600"
-                    }>
-                      {parseFloat(arqueo[key as keyof typeof arqueo] || "0") - sistema >= 0 ? "+" : ""}
-                      ${(parseFloat(arqueo[key as keyof typeof arqueo] || "0") - sistema).toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                <div className="text-right text-sm text-muted-foreground">
+                  (Oculto)
                 </div>
               </div>
             ))}
 
             <Separator />
 
-            {/* Total difference */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <span className="font-medium">Diferencia Total</span>
-              <span className={`text-lg font-bold ${
-                Math.abs(arqueoDiff) > 0.01
-                  ? Math.abs(arqueoDiff) > 100 ? "text-red-600" : "text-amber-600"
-                  : "text-green-600"
-              }`}>
-                ${arqueoDiff.toFixed(2)}
-              </span>
-            </div>
+            {/* Total difference hidden in blind mode */}
 
-            {/* Justification (required for large variance) */}
-            {Math.abs(arqueoDiff) > 100 && (
+            {/* Justification (required for large variance after API validation) */}
+            {error && error.includes("Justifique") && (
               <div className="space-y-2">
                 <Label className="text-amber-600 flex items-center gap-1">
                   <AlertTriangle className="h-3.5 w-3.5" />
-                  Justificación requerida (diferencia &gt; $100)
+                  Justificación requerida
                 </Label>
                 <Textarea
                   value={arqueo.justificacion}
@@ -689,7 +665,7 @@ export default function CajaPage() {
             <Button
               variant="destructive"
               onClick={cerrarConArqueo}
-              disabled={guardando || (Math.abs(arqueoDiff) > 100 && !arqueo.justificacion)}
+              disabled={guardando || (error.includes("Justifique") && !arqueo.justificacion)}
             >
               <Lock className="h-4 w-4 mr-2" />
               Cerrar Caja

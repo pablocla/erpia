@@ -2,7 +2,40 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Code, Store, Globe, Truck, UtensilsCrossed, Factory, Layers, Calculator, CreditCard, Palette, HelpCircle, FileText, Package, BookOpen, Cpu, Bot, Check, Sparkles, ShoppingCart, Wallet, Target, UserCircle, GraduationCap, Search, Star, TrendingUp, Shield, Zap, Building2, MessageSquare } from "lucide-react"
+import {
+  ArrowRight,
+  Bot,
+  BookOpen,
+  Calculator,
+  Check,
+  Code,
+  Cpu,
+  CreditCard,
+  Factory,
+  FileCheck,
+  FileText,
+  Globe,
+  GraduationCap,
+  HelpCircle,
+  Layers,
+  MessageSquare,
+  Package,
+  Palette,
+  Search,
+  Shield,
+  ShoppingCart,
+  Sparkles,
+  Star,
+  Store,
+  Target,
+  Timer,
+  Truck,
+  UserCircle,
+  UtensilsCrossed,
+  Wallet,
+} from "lucide-react"
+import { ClaverpLandingFaq } from "@/components/marketing/claverp-landing-faq"
+import { CLAVERP_FEATURED_DEMOS, CLAVERP_TRUST_ITEMS } from "@/lib/marketing/claverp-landing-seo"
 
 
 const IconMap = {
@@ -120,11 +153,18 @@ export function ClavERPProductHub() {
   return (
     <ClaverShell context="claverp">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 pt-28 pb-24 text-white sm:pt-32">
+      <section
+        aria-labelledby="claverp-hero-heading"
+        className="relative overflow-hidden bg-[#0A1628] pt-28 pb-20 text-white sm:pt-32 sm:pb-24"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-5%,rgba(37,99,235,0.28),transparent)]"
+          aria-hidden
+        />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <MotionFadeDown>
             <Link
-              href="/claver"
+              href="/"
               className="mb-6 inline-flex items-center text-sm text-slate-400 hover:text-white"
             >
               ← Grupo {CLAVER_GROUP.name}
@@ -133,69 +173,133 @@ export function ClavERPProductHub() {
               <BrandLogo size="lg" theme="dark" variant="claverp-full" />
             </div>
             <Badge className="mb-4 border-blue-400/30 bg-blue-500/15 text-blue-200">
-              Línea ERP · 40+ módulos
+              ERP & POS · Facturación AFIP · Argentina
             </Badge>
-            <h1 className="max-w-4xl font-[var(--font-fraunces)] text-4xl font-semibold leading-tight sm:text-5xl">
+            <h1
+              id="claverp-hero-heading"
+              className="max-w-4xl font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.25rem]"
+            >
               {CLAVERP_PRODUCT.tagline}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg text-slate-400">{CLAVERP_PRODUCT.descriptor}</p>
-            <div className="mt-10 flex flex-wrap gap-3">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-500" asChild>
-                <Link href="/login">
-                  Probar demo
-                  <ArrowRight className="ml-2 h-4 w-4" />
+            <p className="mt-6 max-w-2xl text-lg text-slate-300 leading-relaxed">
+              {CLAVERP_PRODUCT.descriptor}. Activá solo los módulos que necesitás: desde libreta
+              fiado hasta logística, industria y ecommerce.
+            </p>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                size="lg"
+                className="h-12 bg-blue-600 px-8 text-base font-semibold shadow-lg shadow-blue-600/25 hover:bg-blue-500"
+                asChild
+              >
+                <Link href="/login/register?trial=14">
+                  Probar gratis 14 días
+                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                 </Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white/20 bg-white/5 hover:bg-white/10"
+                className="h-12 border-white/20 bg-white/5 px-8 text-base text-white hover:bg-white/10"
                 asChild
               >
-                <Link href="/claver/claverp/modulos">Ver módulos</Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-teal-400/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-100"
-                asChild
-              >
-                <Link href="/claver/claverp/conexiones">30+ conexiones nativas</Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-100"
-                asChild
-              >
-                <Link href="#precios">Ver planes y precios</Link>
+                <Link href="/demo">Demo por rubro</Link>
               </Button>
             </div>
+
+            <p className="mt-5 text-sm text-slate-500">
+              <Link
+                href="/claver/claverp/modulos"
+                className="text-blue-400 underline-offset-4 hover:underline"
+              >
+                Ver 40+ módulos
+              </Link>
+              {" · "}
+              <Link
+                href="/claver/claverp/precios"
+                className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
+              >
+                Precios
+              </Link>
+              {" · "}
+              <Link
+                href="/claver/claverp/conexiones"
+                className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
+              >
+                Integraciones
+              </Link>
+            </p>
+
+            <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/10 pt-8">
+              {CLAVERP_TRUST_ITEMS.map((item) => (
+                <li key={item.label} className="flex items-center gap-2 text-sm text-slate-400">
+                  <Check className="h-4 w-4 text-blue-400" aria-hidden />
+                  {item.label}
+                </li>
+              ))}
+            </ul>
           </MotionFadeDown>
           <LogoShowcase variant="claverp" />
         </div>
       </section>
 
+      {/* Demos ERP */}
+      <section
+        aria-labelledby="claverp-demos-heading"
+        className="border-b border-slate-200 bg-white py-14"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <h2 id="claverp-demos-heading" className="text-center font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
+            Probalo con tu rubro
+          </h2>
+          <p className="mx-auto mt-2 max-w-lg text-center text-sm text-slate-600">
+            Demo aislada con módulos y datos de ejemplo — sin tarjeta.
+          </p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {CLAVERP_FEATURED_DEMOS.map((pack) => (
+              <Link
+                key={pack.id}
+                href={`/demo/${pack.id}`}
+                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 transition hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm"
+              >
+                <span className="text-2xl" aria-hidden>
+                  {pack.emoji}
+                </span>
+                <span className="text-sm font-medium text-slate-800 group-hover:text-blue-800">
+                  {pack.label}
+                </span>
+                <ArrowRight className="ml-auto h-4 w-4 text-slate-400 opacity-0 transition group-hover:opacity-100" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <IntegrationsNovedades variant="novedades" showStats={false} />
 
-      {/* Métricas / Social Proof strip */}
-      <section className="border-b border-slate-200 bg-white py-12">
+      {/* Capacidades clave */}
+      <section aria-labelledby="claverp-capabilities" className="border-b border-slate-200 bg-[#f8fafc] py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+          <h2 id="claverp-capabilities" className="sr-only">
+            Capacidades principales
+          </h2>
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             {[
-              { value: "40+", label: "Módulos integrados", icon: Zap },
-              { value: "500+", label: "PyMEs activas", icon: Building2 },
-              { value: "$2.4B+", label: "Facturado con CAE", icon: TrendingUp },
-              { value: "99.7%", label: "Uptime garantizado", icon: Shield },
+              { value: "40+", label: "Módulos integrados", icon: Layers },
+              { value: "AFIP", label: "CAE y libros IVA", icon: FileCheck },
+              { value: "14 días", label: "Trial sin tarjeta", icon: Timer },
+              { value: "SaaS", label: "Web · sin instalación", icon: Shield },
             ].map((stat) => {
               const Icon = stat.icon
               return (
                 <div key={stat.label} className="text-center">
-                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-                    <Icon className="h-5 w-5 text-blue-600" />
+                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100/80">
+                    <Icon className="h-5 w-5 text-blue-700" aria-hidden />
                   </div>
-                  <div className="font-[var(--font-fraunces)] text-3xl font-bold text-slate-900">{stat.value}</div>
-                  <div className="mt-1 text-sm text-slate-500">{stat.label}</div>
+                  <div className="font-[var(--font-fraunces)] text-2xl font-bold text-slate-900 sm:text-3xl">
+                    {stat.value}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-600">{stat.label}</div>
                 </div>
               )
             })}
@@ -204,10 +308,13 @@ export function ClavERPProductHub() {
       </section>
 
       {/* Soluciones por vertical */}
-      <section className="bg-[#f8fafc] px-4 py-20 sm:px-6">
+      <section aria-labelledby="claverp-verticals" className="bg-white px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <ScrollReveal className="text-center">
-            <h2 className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
+            <h2
+              id="claverp-verticals"
+              className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900"
+            >
               Soluciones Claver por vertical
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-slate-600">
@@ -231,8 +338,8 @@ export function ClavERPProductHub() {
                           </div>
                           <span className="text-2xl">{sol.emoji}</span>
                         </div>
-                        <CardTitle className="mt-4 font-[var(--font-fraunces)] text-lg group-hover:text-blue-700">
-                          {sol.headline.split(" ").slice(0, 5).join(" ")}…
+                        <CardTitle className="mt-4 line-clamp-2 font-[var(--font-fraunces)] text-lg leading-snug group-hover:text-blue-700">
+                          {sol.headline}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -473,10 +580,10 @@ export function ClavERPProductHub() {
                       </div>
                     </div>
 
-                    <Button className="w-full h-11 bg-slate-900 text-white hover:bg-slate-800" asChild>
-                      <Link href="/login">
-                        Probar este proceso integral
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                    <Button className="h-11 w-full bg-blue-600 text-white hover:bg-blue-500" asChild>
+                      <Link href="/login/register?trial=14">
+                        Probar este pack 14 días
+                        <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                       </Link>
                     </Button>
                   </div>
@@ -496,20 +603,23 @@ export function ClavERPProductHub() {
               <Link href="/claver/claverp/precios">Precios completos</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/claver">Volver a {CLAVER_GROUP.name}</Link>
+              <Link href="/">Volver a {CLAVER_GROUP.name}</Link>
             </Button>
           </ScrollReveal>
 
-          {/* TESTIMONIOS */}
+          {/* Casos de uso */}
           <ScrollReveal className="mt-24 border-t border-slate-200/60 pt-16">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="border-yellow-300 bg-yellow-50 text-yellow-800">
-                <Star className="mr-1.5 h-3.5 w-3.5 inline fill-yellow-400 text-yellow-400" />
-                Testimonios
+            <div className="mb-12 text-center">
+              <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-900">
+                <Star className="mr-1.5 inline h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
+                Casos de uso
               </Badge>
               <h3 className="mt-4 font-[var(--font-fraunces)] text-3xl font-bold text-slate-900">
-                Lo que dicen nuestros clientes
+                Cómo lo usan las PyMEs
               </h3>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                Ejemplos representativos de implementación — no testimonios verificados.
+              </p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[
@@ -587,6 +697,55 @@ export function ClavERPProductHub() {
               })}
             </div>
           </ScrollReveal>
+        </div>
+      </section>
+
+      {/* FAQ SEO */}
+      <section aria-labelledby="claverp-faq" className="bg-[#f8fafc] px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <ScrollReveal className="text-center">
+            <h2 id="claverp-faq" className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
+              Preguntas sobre Claver ERP
+            </h2>
+            <p className="mt-3 text-slate-600">
+              POS, AFIP, módulos, precios y trial — respuestas directas.
+            </p>
+          </ScrollReveal>
+          <div className="mt-10 rounded-2xl border border-slate-200/80 bg-white px-4 py-2 shadow-sm sm:px-6">
+            <ClaverpLandingFaq />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section
+        aria-labelledby="claverp-cta"
+        className="bg-gradient-to-br from-blue-950 via-[#0A1628] to-slate-950 px-4 py-20 text-white sm:px-6"
+      >
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 id="claverp-cta" className="font-[var(--font-fraunces)] text-3xl font-semibold sm:text-4xl">
+            Empezá con el módulo que más te duele hoy
+          </h2>
+          <p className="mt-4 text-slate-400">
+            Registrate, probá 14 días y activá POS, fiado o stock cuando estés listo.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              className="h-12 bg-blue-600 px-8 font-semibold hover:bg-blue-500"
+              asChild
+            >
+              <Link href="/login/register?trial=14">Crear cuenta gratis</Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 border-white/20 bg-transparent px-8 text-white hover:bg-white/10"
+              asChild
+            >
+              <Link href="/demo">Elegir demo por rubro</Link>
+            </Button>
+          </div>
         </div>
       </section>
     </ClaverShell>

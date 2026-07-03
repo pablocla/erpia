@@ -1,144 +1,102 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { withAuthAndTenant, zodErrorResponse } from "@/lib/auth/empresa-guard"
 import { logError } from "@/lib/monitoring/error-logger"
 import { ventasService } from "@/lib/ventas/ventas-service"
 import { prisma } from "@/lib/prisma"
-import { z } from "zod"
+import {
+  crearPedidoVentaSchema,
+  pedidoVentaActionSchema,
+} from "@/lib/schemas/ventas"
 
-const lineaPedidoSchema = z.object({
-  productoId: z.number().int().positive().optional(),
-  descripcion: z.string().min(1),
-  cantidad: z.number().positive(),
-  precioUnitario: z.number().positive().optional(),
+export const GET = withAuthAndTenant(async (request, auth) => {
+  const { searchParams } = new URL(request.url)
+  const clienteId = searchParams.get("clienteId")
+  const estado = searchParams.get("estado")
+  const page = parseInt(searchParams.get("page") ?? "1", 10)
+  const limit = parseInt(searchParams.get("limit") ?? "20", 10)
+
+  const result = await ventasService.listarPedidos({
+    empresaId: auth.empresaId,
+    clienteId: clienteId ? parseInt(clienteId, 10) : undefined,
+    estado: estado ?? undefined,
+    page,
+    limit,
+  })
+
+  return NextResponse.json(result)
 })
 
-const pedidoSchema = z.object({
-  clienteId: z.number().int().positive(),
-  vendedorId: z.number().int().positive().optional(),
-  condicionPagoId: z.number().int().positive().optional(),
-  canalVentaId: z.number().int().positive().optional(),
-  fechaEntregaEst: z.string().date().optional(),
-  observaciones: z.string().optional(),
-  lineas: z.array(lineaPedidoSchema).min(1),
-})
+export const POST = withAuthAndTenant(async (request, auth) => {
+  const body = await request.json()
 
-const actionSchema = z.object({
-  action: z.enum(["confirmar", "picking", "remito", "anular", "facturar", "clonar"]),
-  pedidoId: z.number().int().positive(),
-  depositoId: z.number().int().positive().optional(),
-  // Datos para facturación (solo cuando action=facturar)
-  tipo: z.enum(["A", "B", "C"]).optional(),
-  tipoCbte: z.number().int().optional(),
-  puntoVenta: z.number().int().positive().optional(),
-  cae: z.string().optional(),
-  condicionPagoId: z.number().int().positive().optional(),
-})
+  const actionResult = pedidoVentaActionSchema.safeParse(body)
+  if (actionResult.success) {
+    const { action, pedidoId, depositoId } = actionResult.data
+    let result: unknown
 
-// ─── GET — List pedidos de venta ────────────────────────────────────────────
-
-export async function GET(request: NextRequest) {
-  try {
-    const ctx = await getAuthContext(request)
-    if (!ctx.ok) return ctx.response
-
-    const { searchParams } = new URL(request.url)
-    const clienteId = searchParams.get("clienteId")
-    const estado = searchParams.get("estado")
-    const page = parseInt(searchParams.get("page") ?? "1", 10)
-    const limit = parseInt(searchParams.get("limit") ?? "20", 10)
-
-    const result = await ventasService.listarPedidos({
-      empresaId: ctx.auth.empresaId,
-      clienteId: clienteId ? parseInt(clienteId, 10) : undefined,
-      estado: estado ?? undefined,
-      page,
-      limit,
-    })
-
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error("Error al listar pedidos:", error)
-    logError("api/ventas/pedidos:GET", error, request)
-    return NextResponse.json({ error: "Error al listar pedidos" }, { status: 500 })
-  }
-}
-
-// ─── POST — Create pedido OR execute action (confirmar/picking/remito/anular)
-
-export async function POST(request: NextRequest) {
-  try {
-    const ctx = await getAuthContext(request)
-    if (!ctx.ok) return ctx.response
-
-    const body = await request.json()
-
-    // Check if it's an action on existing pedido
-    const actionResult = actionSchema.safeParse(body)
-    if (actionResult.success) {
-      const { action, pedidoId, depositoId } = actionResult.data
-      let result: any
-      switch (action) {
-        case "confirmar":
-          result = await ventasService.confirmarPedido(pedidoId, ctx.auth.empresaId)
-          break
-        case "picking":
-          result = await ventasService.generarListaPicking(pedidoId, ctx.auth.empresaId)
-          break
-        case "remito":
-          result = await ventasService.generarRemito(pedidoId, ctx.auth.empresaId, depositoId)
-          break
-        case "anular":
-          result = await ventasService.anularPedido(pedidoId, ctx.auth.empresaId)
-          break
-        case "clonar":
-          result = await ventasService.clonarPedido(pedidoId, ctx.auth.empresaId)
-          break
-        case "facturar": {
-          const pedidoCtx = await prisma.pedidoVenta.findFirst({
-            where: { id: pedidoId, empresaId: ctx.auth.empresaId },
-            include: { cliente: { select: { condicionIva: true } } },
-          })
-          const { tipoFacturaSugerido } = await import("@/lib/pos/pos-tipo-factura")
-          const tipoLetra = tipoFacturaSugerido(pedidoCtx?.cliente?.condicionIva)
-          const tipo = actionResult.data.tipo ?? (tipoLetra === "ticket" ? "B" : tipoLetra)
-          const tipoCbteMap: Record<string, number> = { A: 1, B: 6, C: 11 }
-          const empresaPv = await prisma.empresa.findUnique({
-            where: { id: ctx.auth.empresaId },
-            select: { puntoVenta: true },
-          })
-          result = await ventasService.facturarPedido(pedidoId, {
-            empresaId: ctx.auth.empresaId,
-            tipo,
-            tipoCbte: actionResult.data.tipoCbte ?? tipoCbteMap[tipo] ?? 6,
-            puntoVenta: actionResult.data.puntoVenta ?? empresaPv?.puntoVenta ?? 1,
-            cae: actionResult.data.cae,
-            condicionPagoId: actionResult.data.condicionPagoId,
-            depositoId: actionResult.data.depositoId ?? null,
-          })
-          break
-        }
+    switch (action) {
+      case "confirmar":
+        result = await ventasService.confirmarPedido(pedidoId, auth.empresaId)
+        break
+      case "picking":
+        result = await ventasService.generarListaPicking(pedidoId, auth.empresaId)
+        break
+      case "remito":
+        result = await ventasService.generarRemito(pedidoId, auth.empresaId, depositoId)
+        break
+      case "anular":
+        result = await ventasService.anularPedido(pedidoId, auth.empresaId)
+        break
+      case "clonar":
+        result = await ventasService.clonarPedido(pedidoId, auth.empresaId)
+        break
+      case "facturar": {
+        const pedidoCtx = await prisma.pedidoVenta.findFirst({
+          where: { id: pedidoId, empresaId: auth.empresaId },
+          include: { cliente: { select: { condicionIva: true } } },
+        })
+        const { tipoFacturaSugerido } = await import("@/lib/pos/pos-tipo-factura")
+        const tipoLetra = tipoFacturaSugerido(pedidoCtx?.cliente?.condicionIva)
+        const tipo = actionResult.data.tipo ?? (tipoLetra === "ticket" ? "B" : tipoLetra)
+        const tipoCbteMap: Record<string, number> = { A: 1, B: 6, C: 11 }
+        const empresaPv = await prisma.empresa.findUnique({
+          where: { id: auth.empresaId },
+          select: { puntoVenta: true },
+        })
+        result = await ventasService.facturarPedido(pedidoId, {
+          empresaId: auth.empresaId,
+          tipo,
+          tipoCbte: actionResult.data.tipoCbte ?? tipoCbteMap[tipo] ?? 6,
+          puntoVenta: actionResult.data.puntoVenta ?? empresaPv?.puntoVenta ?? 1,
+          cae: actionResult.data.cae,
+          condicionPagoId: actionResult.data.condicionPagoId,
+          depositoId: actionResult.data.depositoId ?? null,
+        })
+        break
       }
-      return NextResponse.json(result, { status: 200 })
     }
 
-    // Otherwise, create new pedido
-    const validacion = pedidoSchema.safeParse(body)
-    if (!validacion.success) {
-      return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
-    }
+    return NextResponse.json(result, { status: 200 })
+  }
 
+  const validacion = crearPedidoVentaSchema.safeParse(body)
+  if (!validacion.success) {
+    return zodErrorResponse(validacion.error)
+  }
+
+  try {
     const pedido = await ventasService.crearPedidoVenta({
       ...validacion.data,
-      empresaId: ctx.auth.empresaId,
+      empresaId: auth.empresaId,
       fechaEntregaEst: validacion.data.fechaEntregaEst
         ? new Date(validacion.data.fechaEntregaEst)
         : undefined,
     })
 
     return NextResponse.json(pedido, { status: 201 })
-  } catch (error: any) {
-    console.error("Error en pedido de venta:", error)
-    const message = error?.message ?? "Error interno"
+  } catch (error: unknown) {
+    logError("api/ventas/pedidos:POST", error, request as NextRequest)
+    const message = error instanceof Error ? error.message : "Error en pedido de venta"
     return NextResponse.json({ error: message }, { status: 400 })
   }
-}
+})

@@ -1,0 +1,7 @@
+---
+pid: 16976
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx next build 2>&1 | Select-Object -Last 25"
+started_at: 2026-07-03T04:16:04.492Z
+running_for_ms: 6005007  
+---

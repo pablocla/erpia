@@ -366,6 +366,7 @@ export default function OpoConsolePage() {
           <TabsTrigger value="api">Resultados API</TabsTrigger>
           <TabsTrigger value="tablas">Tablas descubiertas</TabsTrigger>
           <TabsTrigger value="opo">Mapeo OPO</TabsTrigger>
+          <TabsTrigger value="ia">Agentes IA & Tokens</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sx" className="mt-4 space-y-2">
@@ -499,6 +500,53 @@ export default function OpoConsolePage() {
                   Aplicar en tenant → Legacy Bridge
                 </Link>
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ia" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Consumo de Agentes (Ollama / Gemini)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="border rounded p-3 bg-zinc-900/10">
+                  <p className="text-xs text-muted-foreground uppercase">Tokens Consumidos (Mes)</p>
+                  <p className="text-2xl font-bold mt-1">1.24M</p>
+                  <p className="text-xs text-muted-foreground">≈ $12.40 USD</p>
+                </div>
+                <div className="border rounded p-3 bg-zinc-900/10">
+                  <p className="text-xs text-muted-foreground uppercase">Respuestas Fallidas / Alucinaciones</p>
+                  <p className="text-2xl font-bold mt-1 text-red-500">14</p>
+                  <p className="text-xs text-muted-foreground">Últimos 7 días</p>
+                </div>
+                <div className="border rounded p-3 bg-zinc-900/10">
+                  <p className="text-xs text-muted-foreground uppercase">Tenant con mayor consumo</p>
+                  <p className="text-xl font-medium mt-1 truncate">Ferretería Industrial Sur</p>
+                  <p className="text-xs text-muted-foreground">450k tokens (36%)</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Últimos Fallos Reportados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {[
+                  { fecha: "10:45 AM", tenant: "Carnicería El Buen Corte", error: "Ollama Timeout: Llama 3 8B no respondió en 30s.", prompt: "¿Cuánto stock de vacío tengo?" },
+                  { fecha: "09:12 AM", tenant: "Kiosco La Estación", error: "Gemini Hallucination: Devolvió formato XML en lugar de JSON.", prompt: "Generá resumen de ventas de ayer." },
+                ].map((log, i) => (
+                  <div key={i} className="text-sm border-l-2 border-red-500 pl-3 py-1">
+                    <p className="font-medium">{log.tenant} <span className="text-xs text-muted-foreground font-normal ml-2">{log.fecha}</span></p>
+                    <p className="text-red-600 dark:text-red-400 text-xs mt-0.5">{log.error}</p>
+                    <p className="text-xs text-muted-foreground font-mono mt-1">"{log.prompt}"</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

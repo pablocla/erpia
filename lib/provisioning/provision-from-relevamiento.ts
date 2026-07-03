@@ -18,6 +18,7 @@ import {
   inferModoLiteFromEnganche,
   resolvePackCalle,
 } from "@/lib/comercial/pack-calle-catalog"
+import { setSignupOrigen } from "@/lib/ops/signup-tracking"
 
 export interface ProvisionDesdeRelevamientoInput {
   relevamientoId: number
@@ -94,6 +95,7 @@ export async function provisionarDesdeRelevamiento(
     },
   })
 
+  await setSignupOrigen(empresa.id, "relevamiento", `relevamiento:${input.relevamientoId}`)
   await ensureTenantEntornos(empresa.id)
 
   const usuario = await db.usuario.create({

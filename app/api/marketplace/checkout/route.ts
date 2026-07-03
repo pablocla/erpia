@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { withAuthAndTenant } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { resolveSku } from "@/lib/marketplace/catalog-resolver"
 import { provisionOrden } from "@/lib/marketplace/provision-service"
+import { initialMarketplaceOrdenEstado } from "@/lib/billing/marketplace-checkout-policy"
 
-export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
-  if (!auth.ok) return auth.response
-
+export const POST = withAuthAndTenant(async (request, auth) => {
   try {
     const { items, origen = "dashboard", bundleId } = await request.json()
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -26,28 +24,36 @@ export async function POST(request: NextRequest) {
     })
 
     const totalArs = normalized.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+    const estado = initialMarketplaceOrdenEstado()
 
     const orden = await prisma.marketplaceOrden.create({
       data: {
-        empresaId: auth.auth.empresaId,
-        estado: "paid",
+        empresaId: auth.empresaId,
+        estado,
         items: normalized,
         totalArs,
         origen: bundleId ? `${origen}:bundle:${bundleId}` : origen,
       },
     })
 
-    const provisionResults = await provisionOrden(auth.auth.empresaId, orden.id)
+    let provisionResults: Awaited<ReturnType<typeof provisionOrden>> = []
+    if (estado === "paid") {
+      provisionResults = await provisionOrden(auth.empresaId, orden.id)
+    }
 
     return NextResponse.json({
       success: true,
       ordenId: orden.id,
       totalArs,
+      estado,
       provisionResults,
-      message: "Orden pagada y provisión iniciada",
+      message:
+        estado === "paid"
+          ? "Orden pagada y provisión iniciada"
+          : "Orden pendiente de pago — los SKUs se activan al confirmar Mercado Pago",
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Error interno"
     return NextResponse.json({ error: message }, { status: 500 })
   }
-}
+})

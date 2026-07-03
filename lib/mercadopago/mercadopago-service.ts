@@ -44,6 +44,11 @@ export interface PreferenciaInput {
   cuentaCobrarId?: number
   emailPagador?: string
   externalReference?: string
+  backUrls?: {
+    success?: string
+    failure?: string
+    pending?: string
+  }
 }
 
 export async function crearPreferenciaPago(input: PreferenciaInput) {
@@ -68,7 +73,7 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
       ],
       external_reference: input.externalReference ?? `fac-${input.facturaId ?? "manual"}`,
       payer: input.emailPagador ? { email: input.emailPagador } : undefined,
-      back_urls: {
+      back_urls: input.backUrls ?? {
         success: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-exitoso`,
         failure: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-fallido`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-pendiente`,
@@ -158,6 +163,27 @@ export async function procesarWebhookMP(
 // ─── Conciliación automática ────────────────────────────────────────────────
 
 async function conciliarPagoMP(empresaId: number, transaccionId: number, externalRef: string) {
+  const pedidoMatch = externalRef.match(/^pedido-(\d+)$/)
+  if (pedidoMatch) {
+    const pedidoId = parseInt(pedidoMatch[1], 10)
+    const pedido = await prisma.pedidoVenta.findFirst({
+      where: { id: pedidoId, empresaId },
+      select: { id: true, estado: true },
+    })
+    if (!pedido) return
+
+    await prisma.mercadoPagoTransaccion.update({
+      where: { id: transaccionId },
+      data: { pedidoVentaId: pedidoId, conciliado: true },
+    })
+
+    if (pedido.estado === "pendiente_pago") {
+      const { ventasService } = await import("@/lib/ventas/ventas-service")
+      await ventasService.confirmarPedido(pedidoId, empresaId)
+    }
+    return
+  }
+
   // Formato: "fac-123" o "cxc-456"
   const match = externalRef.match(/^(fac|cxc)-(\d+)$/)
   if (!match) return

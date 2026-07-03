@@ -1,11 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { X, ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { getIndustryExperience } from "@/lib/comercial/app-experience"
 
-const STORAGE_KEY = "claver_onboarding_tour_v1"
+const STORAGE_KEY_DEMO = "claver_onboarding_tour_v1"
+const STORAGE_KEY_WEB = "claver_web_onboarding_v1"
 
 type TourStep = {
   title: string
@@ -13,45 +15,105 @@ type TourStep = {
   hint?: string
 }
 
-const STEPS: TourStep[] = [
+const DEFAULT_STEPS: TourStep[] = [
   {
     title: "Bienvenido a tu demo",
-    body: "Este ERP está configurado para tu rubro. El menú lateral muestra solo lo que necesitás para vender en calle.",
+    body: "Este ERP está configurado para tu rubro. El menú lateral muestra solo lo que necesitás.",
     hint: "Podés buscar módulos con la lupa del sidebar.",
   },
   {
     title: "Tu módulo estrella",
-    body: "Entrá al POS o al módulo principal de tu industria — ahí está el wow moment para el cliente.",
+    body: "Entrá al módulo principal de tu industria — ahí está el valor para el cliente.",
     hint: "Usá ?present=1 en la URL para modo presentación sin distracciones.",
   },
   {
-    title: "Claver Nicho",
-    body: "Las mini-apps de barrio (consorcios, club, fiado…) aparecen acá cuando están activas.",
-    hint: "Ideal para upsell después del POS.",
+    title: "Primeros pasos",
+    body: "Seguí los 3 pasos del encabezado en cada pantalla — te guían sin manual.",
+    hint: "Cada app viene empaquetada para tu rubro.",
   },
   {
     title: "Trial y planes",
-    body: "Arriba ves cuántos días de prueba quedan. Desde Apps podés activar más productos del marketplace.",
+    body: "Arriba ves cuántos días de prueba quedan. Desde Apps podés activar más productos.",
     hint: "El banner de trial te avisa 3 días antes del vencimiento.",
   },
 ]
 
-export function OnboardingTour({ enabled }: { enabled: boolean }) {
+function stepsForIndustry(industryId: string | null | undefined): TourStep[] {
+  const guide = getIndustryExperience(industryId)
+  if (!guide?.primaryAction) return DEFAULT_STEPS
+
+  return [
+    {
+      title: `Demo: ${guide.title}`,
+      body: guide.subtitle,
+      hint: guide.wowMoment,
+    },
+    {
+      title: "Empezá acá",
+      body: `Tu acción principal: ${guide.primaryAction.label}.`,
+      hint: guide.steps[0],
+    },
+    {
+      title: "Seguí en orden",
+      body: guide.steps.slice(1).join(" → "),
+      hint: "Modo presentación: agregá ?present=1 a la URL.",
+    },
+    DEFAULT_STEPS[3]!,
+  ]
+}
+
+const WEB_SIGNUP_STEPS: TourStep[] = [
+  {
+    title: "¡Bienvenido a Claver!",
+    body: "Tu trial de 14 días ya está activo. En 3 pasos vas a estar operando sin Excel.",
+    hint: "El banner arriba te muestra los días restantes.",
+  },
+  {
+    title: "Elegí tu app",
+    body: "Entrá a Apps y activá el paquete de tu rubro (fiado, consorcios, turnos, etc.).",
+    hint: "Podés probar rubros en claver.com.ar/demo antes de decidir.",
+  },
+  {
+    title: "Seguí la guía en pantalla",
+    body: "Cada módulo tiene 3 pasos arriba — no hace falta leer un manual.",
+    hint: "Usá el buscador del menú (lupa) si no encontrás un módulo.",
+  },
+  {
+    title: "¿Ayuda humana?",
+    body: "Respondé el mail de bienvenida o escribinos por WhatsApp — te acompañamos el primer fiado o venta.",
+    hint: "Trial: extendemos 7 días si pedís demo guiada.",
+  },
+]
+
+export function OnboardingTour({
+  enabled,
+  industryId,
+  variant = "demo",
+}: {
+  enabled: boolean
+  industryId?: string | null
+  variant?: "demo" | "web"
+}) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
+  const storageKey = variant === "web" ? STORAGE_KEY_WEB : STORAGE_KEY_DEMO
+  const STEPS = useMemo(
+    () => (variant === "web" ? WEB_SIGNUP_STEPS : stepsForIndustry(industryId)),
+    [variant, industryId],
+  )
 
   useEffect(() => {
     if (!enabled) return
     if (typeof window === "undefined") return
-    if (localStorage.getItem(STORAGE_KEY) === "done") return
-    const t = window.setTimeout(() => setOpen(true), 800)
+    if (localStorage.getItem(storageKey) === "done") return
+    const t = window.setTimeout(() => setOpen(true), variant === "web" ? 1200 : 800)
     return () => window.clearTimeout(t)
-  }, [enabled])
+  }, [enabled, storageKey, variant])
 
   const finish = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, "done")
+    localStorage.setItem(storageKey, "done")
     setOpen(false)
-  }, [])
+  }, [storageKey])
 
   const next = useCallback(() => {
     if (step >= STEPS.length - 1) {
@@ -59,7 +121,7 @@ export function OnboardingTour({ enabled }: { enabled: boolean }) {
       return
     }
     setStep((s) => s + 1)
-  }, [step, finish])
+  }, [step, finish, STEPS.length])
 
   const prev = useCallback(() => {
     setStep((s) => Math.max(0, s - 1))

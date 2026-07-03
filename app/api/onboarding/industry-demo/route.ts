@@ -5,6 +5,7 @@ import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
 import { provisionIndustryDemo } from "@/lib/comercial/industry-demo-service"
+import { setSignupOrigen } from "@/lib/ops/signup-tracking"
 
 /**
  * POST /api/onboarding/industry-demo
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
     }
 
     const provision = await provisionIndustryDemo(empresa.id, industryId)
+
+    await setSignupOrigen(
+      empresa.id,
+      "industry_demo",
+      `${industryId}@${new Date().toISOString()}`,
+    )
 
     const hashedPassword = await bcrypt.hash(DEMO_ADMIN_PASSWORD, 10)
 

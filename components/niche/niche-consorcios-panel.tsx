@@ -16,6 +16,8 @@ import {
 import { getAuthHeaders } from "@/lib/stores/auth-store"
 import type { NicheAppDefinition } from "@/lib/niche/types"
 import { NicheClientePicker, type ClienteOption } from "@/components/niche/niche-cliente-picker"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { getNicheExperience } from "@/lib/comercial/app-experience"
 import { useToast } from "@/components/ui/use-toast"
 
 const fmt = (n: number) =>
@@ -191,15 +193,23 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
   }
 
   const selectedConsorcio = consorcios.find((c) => c.id === selected)
+  const guide = getNicheExperience(app.appId)
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <span>{app.emoji}</span> {app.nombre}
-        </h1>
-        <p className="text-muted-foreground mt-1">{app.lema}</p>
-      </div>
+      {guide && <AppExperienceHeader guide={guide} />}
+
+      {consorcios.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="pt-6 text-center space-y-3">
+            <Building2 className="h-10 w-10 mx-auto text-muted-foreground" />
+            <p className="font-medium">Empezá con tu primer edificio</p>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Creá el consorcio, cargá unidades con % de expensas y después los gastos del mes.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {ultimaLiquidacion && (
         <Card className="bg-primary/5 border-primary/20">

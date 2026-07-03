@@ -92,6 +92,16 @@ export const ENGANCHES: EngancheProducto[] = [
     dolorResuelve: "ERP legacy sin capa moderna ni IA con contexto unificado",
   },
   {
+    sku: "ECOM-B2C-01",
+    nombre: "Tienda Online B2C",
+    lema: "Catálogo ERP, checkout real, sin Tienda Nube.",
+    tier: "implementado",
+    nichos: ["ecommerce", "retail", "distribuidora"],
+    precioArs: 34900,
+    upsellA: ["channel.mercadopago", "com.whatsapp", "core.claver"],
+    dolorResuelve: "Vender online sin sincronizar stock a mano ni otro sistema",
+  },
+  {
     sku: "fiscal.ocr",
     nombre: "FotoFactura",
     lema: "Sacale foto al remito y cargá compras.",

@@ -45,7 +45,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
                 ? "/claver/claverp"
                 : context === "clavergrow"
                   ? "/claver/clavergrow"
-                  : "/claver"
+                  : "/"
             }
           >
             <BrandLogo
@@ -103,13 +103,13 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               size="sm"
               className={
                 context === "clavergrow"
-                  ? "bg-emerald-600 hover:bg-emerald-500"
-                  : "bg-blue-600 hover:bg-blue-500"
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-500 text-white"
               }
               asChild
             >
-              <Link href="/login">
-                {context === "clavergrow" ? "Demo Clavergrow" : "Demo Claver"}
+              <Link href="/login/register?trial=14">
+                Probar gratis
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -141,10 +141,11 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               <Button variant="outline" className="mt-2 border-violet-400/40 text-violet-200" asChild>
                 <Link href="/claver-cloud">Claver Cloud</Link>
               </Button>
-              <Button className="mt-2" asChild>
-                <Link href="/login">
-                  {context === "clavergrow" ? "Demo Clavergrow" : "Demo Claver"}
-                </Link>
+              <Button className="mt-2 bg-emerald-600 hover:bg-emerald-500" asChild>
+                <Link href="/login/register?trial=14">Probar gratis 14 días</Link>
+              </Button>
+              <Button variant="ghost" className="mt-1 text-slate-400" asChild>
+                <Link href="/demo">Ver demos</Link>
               </Button>
             </div>
           </div>
@@ -172,16 +173,18 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               <li><Link href="/claver/claverp/modulos" className="hover:text-white">Módulos Claver</Link></li>
               <li><Link href="/claver/claverp/precios" className="hover:text-white">Precios Claver</Link></li>
               <li><Link href="/claver/clavergrow" className="hover:text-white">Clavergrow — Agro</Link></li>
+              <li><Link href="/demo" className="hover:text-white">Demos por rubro</Link></li>
               <li><Link href="/claver/ecommerce" className="hover:text-white">Ecommerce</Link></li>
             </ul>
           </div>
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Claver</p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/" className="hover:text-white">Matriz</Link></li>
+              <li><Link href="/" className="hover:text-white">Inicio</Link></li>
+              <li><Link href="/login/register?trial=14" className="hover:text-white">Registro gratis</Link></li>
               <li><Link href="/claver-cloud" className="hover:text-white">Claver Cloud</Link></li>
               <li><Link href="/claver/marca" className="hover:text-white">Identidad</Link></li>
-              <li><Link href="/login" className="hover:text-white">Demo</Link></li>
+              <li><Link href="/login" className="hover:text-white">Iniciar sesión</Link></li>
             </ul>
           </div>
         </div>

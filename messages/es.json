@@ -86,6 +86,8 @@
     },
     "items": {
       "commandCenter": "Centro de mando",
+      "webRegistrations": "Registros web",
+      "salesPipeline": "Pipeline ventas",
       "fieldSurvey": "Relevamiento calle",
       "mapAndRoute": "Mapa y ruta",
       "superAdmin": "Super Admin",

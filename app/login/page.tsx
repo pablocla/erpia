@@ -22,16 +22,23 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get("next")
-  const { login, loginConToken, cargando, autenticado, token, usuario } = useAuth()
+  const { login, loginConToken, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
+
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [rubro] = useState("veterinaria")
+  const [error, setError] = useState("")
+  const [enviandoLogin, setEnviandoLogin] = useState(false)
+  const [cargandoDemo, setCargandoDemo] = useState(false)
 
   useEffect(() => {
-    if (cargando || !autenticado || !token || !usuario) return
+    if (cargandoSesion || !autenticado || !token || !usuario) return
     void resolvePostLoginPathAsync(token, usuario.rol, nextPath).then((dest) => {
       router.replace(dest)
     })
-  }, [cargando, autenticado, token, usuario, nextPath, router])
+  }, [cargandoSesion, autenticado, token, usuario, nextPath, router])
 
-  if (cargando || (autenticado && token)) {
+  if (cargandoSesion || (autenticado && token)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -49,17 +56,10 @@ function LoginPageContent() {
     router.push(dest)
   }
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [rubro] = useState("veterinaria")
-  const [error, setError] = useState("")
-  const [cargando, setCargando] = useState(false)
-  const [cargandoDemo, setCargandoDemo] = useState(false)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    setCargando(true)
+    setEnviandoLogin(true)
 
     let resultado = await login(email, password)
 
@@ -86,7 +86,7 @@ function LoginPageContent() {
       await redirectAfterLogin(resultado.token, resultado.usuario.rol)
     } else {
       setError(resultado.error || "Error al iniciar sesión")
-      setCargando(false)
+      setEnviandoLogin(false)
     }
   }
 
@@ -164,8 +164,8 @@ function LoginPageContent() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full" disabled={cargando || cargandoDemo}>
-              {cargando ? "Iniciando sesión..." : "Iniciar Sesión"}
+            <Button type="submit" className="w-full" disabled={enviandoLogin || cargandoDemo}>
+              {enviandoLogin ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
 
             <div className="flex items-center justify-between text-sm">
@@ -189,7 +189,7 @@ function LoginPageContent() {
               variant="outline"
               className="w-full"
               onClick={handleDemo}
-              disabled={cargando || cargandoDemo}
+              disabled={enviandoLogin || cargandoDemo}
             >
               {cargandoDemo ? "Preparando demo..." : "Acceder con cuenta Demo"}
             </Button>

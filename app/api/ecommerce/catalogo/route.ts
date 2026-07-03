@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logError } from "@/lib/monitoring/error-logger"
+import { getOpoConfig } from "@/lib/opo/opo-config-service"
+import { resolveErpAdapter } from "@/lib/legacy-bridge/adapter-registry"
 
 function normalizeCanalVentaCodigo(value?: string | null): string | null {
   if (!value) return null
@@ -34,6 +36,9 @@ export async function GET(request: NextRequest) {
     const page = Math.max(Number.parseInt(searchParams.get("page") ?? "1", 10), 1)
     const limit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") ?? "24", 10), 1), 100)
 
+    const config = await getOpoConfig(empresaId)
+    const adapter = resolveErpAdapter(config)
+
     const canalVenta = !Number.isNaN(canalVentaId)
       ? await prisma.canalVenta.findUnique({ where: { id: canalVentaId } })
       : canalVentaCodigo
@@ -47,57 +52,43 @@ export async function GET(request: NextRequest) {
           })
         : null
 
-    const where: Record<string, unknown> = {
-      empresaId,
-      activo: true,
+    const inputParams: Record<string, unknown> = {
+      page,
+      limit,
+      search,
     }
+    if (!Number.isNaN(categoriaId)) inputParams.categoriaId = categoriaId
+    if (soloConStock) inputParams.soloConStock = true
 
-    if (search) {
-      where.OR = [
-        { nombre: { contains: search, mode: "insensitive" } },
-        { codigo: { contains: search, mode: "insensitive" } },
-        { descripcion: { contains: search, mode: "insensitive" } },
-      ]
-    }
+    // Fetch via Legacy Bridge (OPO)
+    const result = await adapter.query(empresaId, {
+      entity: "Product",
+      action: "read",
+      params: inputParams
+    }, config)
 
-    if (!Number.isNaN(categoriaId)) {
-      where.categoriaId = categoriaId
-    }
-
-    if (soloConStock) {
-      where.stock = { gt: 0 }
-    }
-
-    const [productos, total] = await Promise.all([
-      prisma.producto.findMany({
-        where,
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          descripcion: true,
-          precioVenta: true,
-          stock: true,
-          unidad: true,
-          categoria: { select: { id: true, nombre: true } },
-        },
-        orderBy: { nombre: "asc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.producto.count({ where }),
-    ])
+    // Map OPO generic Product fields back to what the E-commerce Frontend expects
+    const mappedProducts = result.data.map((p: any) => ({
+      id: Number(p.id) || 0,
+      codigo: p.sku || "",
+      nombre: p.name || "",
+      descripcion: p.description || null,
+      precioVenta: Number(p.unitPrice) || 0,
+      stock: Number(p.stock) || 0,
+      unidad: p.unit || "UN",
+      categoria: p.category ? { id: 0, nombre: p.category } : null
+    }))
 
     const markupPct = canalVenta ? Number(canalVenta.markupPct) : 0
     const aplicarMarkup = markupPct !== 0
-    const productosConPrecio = productos.map((producto) => ({
+    const productosConPrecio = mappedProducts.map((producto) => ({
       ...producto,
       precioFinal: aplicarMarkup
         ? roundMoney(producto.precioVenta * (1 + markupPct / 100))
         : producto.precioVenta,
     }))
 
-    return NextResponse.json({ productos: productosConPrecio, total, page, limit })
+    return NextResponse.json({ productos: productosConPrecio, total: result.count, page, limit })
   } catch (error) {
     logError("api/ecommerce/catalogo:GET", error, request)
     return NextResponse.json({ error: "Error al cargar catalogo" }, { status: 500 })

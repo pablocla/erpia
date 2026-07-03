@@ -20,6 +20,7 @@ export const SKU_TO_FEATURE: Record<string, string> = {
   "sheets.lite": FEATURES.CLAV_SHEETS,
   "sheets.pro": FEATURES.CLAV_SHEETS,
   "bridge.opo_studio": FEATURES.OPO_STUDIO,
+  "ECOM-B2C-01": FEATURES.TIENDA_ONLINE,
 }
 
 // Inyectar todos los del marketplace automáticamente usando el SKU como feature name (o podes hardcodear)

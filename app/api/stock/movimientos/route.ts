@@ -1,14 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
+import { withAuthAndTenant, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 /**
  * GET /api/stock/movimientos — Stock movement history
  * Query params: ?productoId=&depositoId=&tipo=&desde=&hasta=&page=1&limit=50
  */
-export async function GET(request: NextRequest) {
-  const ctx = await getAuthContext(request)
-  if (!ctx.ok) return ctx.response
+export const GET = withAuthAndTenant(async (request: NextRequest, auth) => {
 
   const params = request.nextUrl.searchParams
   const productoId = params.get("productoId")
@@ -21,7 +19,7 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {
-    producto: whereEmpresa(ctx.auth.empresaId),
+    producto: whereEmpresa(auth.empresaId),
   }
   if (productoId) where.productoId = Number(productoId)
   if (depositoId) where.depositoId = Number(depositoId)
@@ -50,4 +48,4 @@ export async function GET(request: NextRequest) {
     movimientos,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   })
-}
+})

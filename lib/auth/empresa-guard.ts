@@ -4,6 +4,8 @@
  * Every authenticated route MUST call getEmpresaId() or verificarPropietario().
  */
 import { type NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+import { logError } from "@/lib/monitoring/error-logger"
 import { verificarToken } from "./middleware"
 
 export interface AuthContext {
@@ -11,6 +13,24 @@ export interface AuthContext {
   email: string
   rol: string
   empresaId: number
+}
+
+/** Alias compatible con planes de wrapper multi-tenant */
+export type AuthenticatedContext = AuthContext
+
+export type RouteContext<P extends Record<string, string> = Record<string, string>> = {
+  params?: Promise<P>
+}
+
+export type AuthedRouteHandler<P extends Record<string, string> = Record<string, string>> = (
+  req: NextRequest,
+  auth: AuthContext,
+  ctx: RouteContext<P>,
+) => Promise<NextResponse> | NextResponse
+
+export type WithAuthOptions = {
+  /** Si se define, rechaza roles fuera de la lista */
+  roles?: string[]
 }
 
 /**
@@ -55,4 +75,42 @@ export function verificarPropietario(
 ): boolean {
   if (!record) return false
   return record.empresaId === empresaId
+}
+
+/**
+ * Higher-order wrapper para App Router — valida JWT + empresaId y delega al handler.
+ * Usa jose/AuthService (no NextAuth). Ejemplo:
+ *
+ * export const POST = withAuthAndTenant(async (req, auth) => {
+ *   const data = await prisma.cliente.findMany({ where: whereEmpresa(auth.empresaId) })
+ *   return NextResponse.json(data)
+ * })
+ */
+export function zodErrorResponse(error: z.ZodError, status = 400) {
+  return NextResponse.json(
+    { error: "Payload inválido", detalles: error.flatten() },
+    { status },
+  )
+}
+
+export function withAuthAndTenant<P extends Record<string, string> = Record<string, string>>(
+  handler: AuthedRouteHandler<P>,
+  opts?: WithAuthOptions,
+) {
+  return async (req: NextRequest, ctx: RouteContext<P> = {}) => {
+    try {
+      const guard = await getAuthContext(req)
+      if (!guard.ok) return guard.response
+
+      if (opts?.roles?.length && !opts.roles.includes(guard.auth.rol)) {
+        return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+      }
+
+      return await handler(req, guard.auth, ctx)
+    } catch (error) {
+      console.error("[API_ERROR]", error)
+      logError("withAuthAndTenant", error, req)
+      return NextResponse.json({ error: "Error interno del servidor." }, { status: 500 })
+    }
+  }
 }

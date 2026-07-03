@@ -9,6 +9,7 @@ import {
   inferModoLiteFromEnganche,
   resolvePackCalle,
 } from "@/lib/comercial/pack-calle-catalog"
+import { setSignupOrigen } from "@/lib/ops/signup-tracking"
 
 export async function procesarOrdenProvision(ordenId: number) {
   const db = prisma as any
@@ -46,6 +47,8 @@ export async function procesarOrdenProvision(ordenId: number) {
         activo: true,
       },
     })
+
+    await setSignupOrigen(empresa.id, "provisioning", `orden:${ordenId}`)
 
     // 2. Crear Entornos (Dev, Val, Prd)
     await ensureTenantEntornos(empresa.id)

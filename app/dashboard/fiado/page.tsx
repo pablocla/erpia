@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { BookOpen, Plus, RefreshCw, Settings, Users, Wallet } from "lucide-react"
+import { Plus, RefreshCw, Settings, Users, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { getAuthHeaders } from "@/lib/stores/auth-store"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { getFiadoExperience } from "@/lib/comercial/app-experience"
 
 type Deudor = {
   id: number
@@ -58,14 +60,16 @@ export default function LibretaFiadoPage() {
   const [config, setConfig] = useState<ConfigFiado | null>(null)
   const [configOpen, setConfigOpen] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
+  const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
 
   const cargar = async () => {
     setLoading(true)
     try {
-      const [dRes, rRes, cRes] = await Promise.all([
+      const [dRes, rRes, cRes, eRes] = await Promise.all([
         fetch("/api/fiado/deudores", { headers: getAuthHeaders() }),
         fetch("/api/fiado/resumen", { headers: getAuthHeaders() }),
         fetch("/api/fiado/config", { headers: getAuthHeaders() }),
+        fetch("/api/config/empresa", { headers: getAuthHeaders() }),
       ])
       if (dRes.ok) {
         const d = await dRes.json()
@@ -73,6 +77,10 @@ export default function LibretaFiadoPage() {
       }
       if (rRes.ok) setResumen(await rRes.json())
       if (cRes.ok) setConfig(await cRes.json())
+      if (eRes.ok) {
+        const empresa = await eRes.json()
+        setDemoIndustryId(empresa.demoIndustryId ?? null)
+      }
     } finally {
       setLoading(false)
     }
@@ -126,23 +134,18 @@ export default function LibretaFiadoPage() {
     }
   }
 
+  const experience = getFiadoExperience(demoIndustryId)
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-primary mb-1">
-            <BookOpen className="h-5 w-5" />
-            <span className="text-sm font-medium">Almacén de barrio</span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Libreta Fiado</h1>
-          <p className="text-muted-foreground mt-1">
-            Fiá con límite. Cada compra avisa por email, WhatsApp y link de pago si están activos.
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <AppExperienceHeader
+        guide={experience}
+        onPrimaryClick={() => setOpen(true)}
+      />
+      <div className="flex flex-wrap justify-end gap-2">
           <Dialog open={configOpen} onOpenChange={setConfigOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" id="config-fiado">
                 <Settings className="h-4 w-4 mr-2" />
                 Configuración
               </Button>
@@ -204,7 +207,7 @@ export default function LibretaFiadoPage() {
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button id="alta-fiado">
                 <Plus className="h-4 w-4 mr-2" />
                 Cliente fiado
               </Button>
@@ -236,7 +239,6 @@ export default function LibretaFiadoPage() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
       </div>
 
       {resumen && (

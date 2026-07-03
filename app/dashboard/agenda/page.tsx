@@ -8,15 +8,16 @@ import { turnoEstadoLabel, turnoEstadoVariant, type StatusVariant } from "@/lib/
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { turnoEstadoLabel, turnoEstadoVariant, type StatusVariant } from "@/lib/ui/status-map"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { useToast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/stores"
-import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
-import {
-  Calendar, Clock, Plus, ChevronLeft, ChevronRight,
-  User, CheckCircle2, XCircle, Phone, MessageCircle,
-} from "lucide-react"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { AgendaPublicLinkCard } from "@/components/app-experience/agenda-public-link-card"
 
 type EstadoTurno = "confirmado" | "pendiente" | "cancelado" | "completado"
 
@@ -104,6 +105,7 @@ export default function AgendaPage() {
   const [actualizandoTurno, setActualizandoTurno] = useState(false)
   const [cancelandoTurno, setCancelandoTurno] = useState(false)
   const [form, setForm] = useState({ horaInicio: "09:00", motivo: "", notas: "", profesionalId: "", duracion: "30", servicioId: "" })
+  const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const { toast } = useToast()
 
   const { dias: diasConFecha, fechas } = obtenerFechasSemana(semanaOffset)
@@ -112,9 +114,16 @@ export default function AgendaPage() {
   const cargarDatos = useCallback(async () => {
     try {
       const fechaStr = fechaSeleccionada?.toISOString().split("T")[0]
-      const res = await fetch(`/api/agenda?fecha=${fechaStr}`)
+      const [res, eRes] = await Promise.all([
+        fetch(`/api/agenda?fecha=${fechaStr}`),
+        fetch("/api/config/empresa"),
+      ])
       if (!res.ok) return
       const data = await res.json()
+      if (eRes.ok) {
+        const empresa = await eRes.json()
+        setDemoIndustryId(empresa.demoIndustryId ?? null)
+      }
       setTurnos(data.turnos ?? [])
       setProfesionales(data.profesionales ?? [])
       setServicios(data.servicios ?? [])
@@ -286,10 +295,22 @@ export default function AgendaPage() {
     }
   }
 
+  const experience =
+    (demoIndustryId ? (getIndustryExperience(demoIndustryId) ?? getNicheExperience(demoIndustryId)) : null) ??
+    getIndustryExperience("salon_belleza")
+
   if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
 
   return (
     <PageShell>
+      {experience && (
+        <AppExperienceHeader
+          guide={experience}
+          onPrimaryClick={() => setDialogOpen(true)}
+          className="mb-4"
+        />
+      )}
+      <AgendaPublicLinkCard />
       <PageHeader
         title="Agenda de Turnos"
         description="Turnos, reservas y seguimiento de pacientes/clientes"

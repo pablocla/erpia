@@ -28,7 +28,8 @@ export function ClientPortalShell({ children }: { children: React.ReactNode }) {
       <header className="border-b bg-card/50">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-2 font-semibold">
-            <ClaverLogo className="h-8 w-8" />
+            <ClaverLogo className="h-6 w-6" />
+            <span className="text-primary">Claver</span>
             <span className="text-muted-foreground text-sm font-normal">Seguimiento</span>
           </div>
           <Button variant="ghost" size="sm" onClick={logout}>

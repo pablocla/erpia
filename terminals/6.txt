@@ -1,0 +1,27 @@
+---
+pid: 32048
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -Last 20"
+started_at: 2026-07-03T05:32:44.334Z
+running_for_ms: 1405000  
+---
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(6,8): error TS2307: Cannot find module '@/lib/studio/recurringQueries' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(7,42): error TS2307: Cannot find module '@/lib/studio/protheusMockRows' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(8,41): error TS2307: Cannot find module '@/lib/studio/sqlExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(9,37): error TS2307: Cannot find module '@/lib/studio/connectionGuard' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(10,37): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(11,77): error TS2307: Cannot find module 'opo-sdk' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/runOpoQuery.ts(174,34): error TS7006: Parameter 'q' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/sqlExecutor.ts(5,8): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/sqlExecutor.ts(6,37): error TS2307: Cannot find module '@/lib/studio/connectionGuard' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioDeepLink.ts(1,33): error TS2307: Cannot find module '@/lib/studio/agentTemplates' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioDeepLink.ts(19,40): error TS7006: Parameter 't' implicitly has an 'any' type.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(1,31): error TS2307: Cannot find module '@/lib/mesh/vaultResolver' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(2,35): error TS2307: Cannot find module '@/lib/studio/ollamaHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(3,41): error TS2307: Cannot find module '@/lib/studio/sqlExecutor' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/studioHealth.ts(4,37): error TS2307: Cannot find module '@/lib/mesh/adapters/totvs/protheusDbClient' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/useStudioHealth.ts(4,32): error TS2307: Cannot find module '@/store/useStudioStore' or its corresponding type declarations.
+opo/Open-protocol-ontology/lib/studio/useStudioHealth.ts(5,41): error TS2307: Cannot find module '@/lib/studio/studioHealth' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(14,58): error TS2307: Cannot find module '@/lib/studio/mockProtheus' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(15,41): error TS2307: Cannot find module '@/lib/studio/deployAgentTemplate' or its corresponding type declarations.
+opo/Open-protocol-ontology/store/useStudioStore.ts(16,67): error TS2307: Cannot find module '@/lib/studio/studioTypes' or its corresponding type declarations.

@@ -10,6 +10,7 @@ import { getCeoRoadmapState } from "@/lib/ops/ceo-task-service"
 import { generarCeoAlerts } from "@/lib/ops/ceo-alerts-service"
 import { computeFocoHoy } from "@/lib/ops/ceo-focus-service"
 import { CEO_METAS_F1, CEO_RUTINA_DIARIA } from "@/lib/ops/ceo-roadmap-catalog"
+import { listWebRegistrations } from "@/lib/ops/web-registrations-service"
 
 function db() {
   return prisma as any
@@ -27,7 +28,7 @@ export async function getCommandCenter(analystEmail: string) {
   const scope = await getAnalystEmpresaScope(analystEmail)
   const empresaIds = scope.mode === "assigned" ? scope.empresaIds : undefined
 
-  const [metricas, fleet, billing, implementacion, pipelineResumen, leads] = await Promise.all([
+  const [metricas, fleet, billing, implementacion, pipelineResumen, leads, altasWeb] = await Promise.all([
     getPlataformaMetricas(analystEmail),
     getSuperAdminFleetDashboard(analystEmail),
     getFleetBilling(analystEmail),
@@ -46,6 +47,16 @@ export async function getCommandCenter(analystEmail: string) {
       }[],
     })),
     listComercialLeads().catch(() => []),
+    listWebRegistrations(analystEmail, { take: 12 }).catch(() => ({
+      rows: [],
+      resumen: {
+        total: 0,
+        enTrial: 0,
+        registrosWeb7d: 0,
+        demos7d: 0,
+        trialsPorVencer: 0,
+      },
+    })),
   ])
 
   const clientesPagos = contarClientesPagos(leads)
@@ -150,6 +161,10 @@ export async function getCommandCenter(analystEmail: string) {
       leadsEnTrial,
       visitasSemana: leadsVisitaSemana,
       relevamientosSemana,
+      altasEnTrial: altasWeb.resumen.enTrial,
+      registrosWeb7d: altasWeb.resumen.registrosWeb7d,
+      demosRubro7d: altasWeb.resumen.demos7d,
+      trialsPorVencer: altasWeb.resumen.trialsPorVencer,
     },
     mando: {
       focoHoy,
@@ -173,6 +188,17 @@ export async function getCommandCenter(analystEmail: string) {
       ordenesRecientes,
       tenantsEnRiesgo,
       implementacion,
+      altasRecientes: altasWeb.rows.map((r) => ({
+        empresaId: r.empresaId,
+        nombre: r.nombre,
+        origenLabel: r.origenLabel,
+        diasDesdeAlta: r.diasDesdeAlta,
+        trialDiasRestantes: r.trial?.activo ? r.trial.diasRestantes : null,
+        trialVencido: r.trial?.expirado ?? false,
+        skusActivos: r.skusActivos,
+        mrrArs: r.mrrArs,
+        esDemoCompartida: r.esDemoCompartida,
+      })),
     },
     recursos: [
       {

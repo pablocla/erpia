@@ -14,6 +14,7 @@ import {
 import { setIndustryModules } from "@/lib/comercial/industry-modules"
 import { seedIndustryDemoData } from "@/lib/comercial/industry-demo-seeds"
 import { normalizeRubroValue } from "@/lib/onboarding/onboarding-ia"
+import { setTrialExpiresAt } from "@/lib/comercial/trial-service"
 
 export interface ProvisionIndustryDemoResult {
   industryId: string
@@ -100,6 +101,13 @@ export async function provisionIndustryDemo(
       pais: "AR",
     },
   })
+
+  const trialDias = template.isRetail ? 30 : 14
+  await setTrialExpiresAt(
+    empresaId,
+    new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000),
+    trialDias,
+  )
 
   return {
     industryId: template.id,

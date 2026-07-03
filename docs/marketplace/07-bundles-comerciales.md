@@ -88,6 +88,49 @@ flowchart TB
 | SKUs | `intang.cobranzas_wa`, `intang.reactivador_clientes`, `com.whatsapp` |
 | Precio | $39.900/mes |
 
+### pool-claver-nicho — Claver Nicho Starter
+
+| Campo | Valor |
+|-------|-------|
+| Lema | Una app de nicho + WhatsApp para avisar. |
+| SKUs | `niche.consorcios`, `com.whatsapp` |
+| Precio | $19.900/mes |
+| Ahorro | 15% |
+| Destacado | sí |
+
+**Ideal para:** administradores de consorcio, primer contacto nicho LATAM.
+
+---
+
+### pool-propiedad — Claver Propiedad
+
+| Campo | Valor |
+|-------|-------|
+| Lema | Consorcios y contratos bajo control. |
+| SKUs | `niche.consorcios`, `niche.inmo_garantia`, `intang.cobranzas_wa`, `com.whatsapp` |
+| Precio | $29.900/mes |
+| Ahorro | 20% |
+| Destacado | sí |
+
+**Ideal para:** inmobiliarias y administración de edificios.
+
+---
+
+### pool-calle-nicho — Calle + Nicho
+
+| Campo | Valor |
+|-------|-------|
+| Lema | Fiado de almacén + feria o tintorería. |
+| SKUs | `pos.fiado_barrio`, `niche.feria_puesto`, `niche.tintoreria`, `com.whatsapp` |
+| Precio | $24.900/mes |
+| Ahorro | 18% |
+
+**Ideal para:** almacén con feria o lavadero en la misma cuadra.
+
+Documentación completa: [19-claver-nicho-latam](./19-claver-nicho-latam.md).
+
+---
+
 ### pool-premium-erp-7 — Premium ERP 7
 
 | Campo | Valor |

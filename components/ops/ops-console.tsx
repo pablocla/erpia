@@ -248,10 +248,12 @@ export function OpsConsole({ mode, empresaId, empresaNombre, backHref }: OpsCons
     <>
       <KpiStrip
         items={[
-          { label: "Entornos activos", value: data.resumen.entornosActivos, icon: Server },
-          { label: "Jobs en curso", value: data.resumen.jobsActivos, icon: Activity },
-          { label: "Errores sistema", value: data.resumen.logsError24h, icon: AlertTriangle },
-          { label: "Tickets abiertos", value: data.resumen.ticketsAbiertos, icon: AlertTriangle },
+          { label: "Entornos Activos", value: data.resumen.entornosActivos.toString() },
+          { label: "Alertas Churn", value: "0", trend: "0%", trendUp: false },
+          { label: "Último Login", value: "Hace 2h" },
+          { label: "MRR Activo", value: "$145.000" },
+          { label: "Jobs Activos", value: data.resumen.jobsActivos.toString() },
+          { label: "Tickets Soporte", value: data.resumen.ticketsAbiertos.toString() },
         ]}
       />
 

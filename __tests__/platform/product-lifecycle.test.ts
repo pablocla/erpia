@@ -63,4 +63,31 @@ describe("product-lifecycle", () => {
 
     await expect(activarProducto(1, "intang.cobranzas_wa")).rejects.toThrow(/dependencias/i)
   })
+
+  it("prestamista auto-provisiona fiado antes de validar dependencias", async () => {
+    vi.mocked(getActiveSubscription).mockImplementation(async (_empresaId, sku) => {
+      const fiadoProvisionado = vi
+        .mocked(upsertSuscripcion)
+        .mock.calls.some((c) => c[1]?.sku === "pos.fiado_barrio" && c[1]?.activo === true)
+      if (sku === "pos.fiado_barrio" && fiadoProvisionado) {
+        return { sku, activo: true } as Awaited<ReturnType<typeof getActiveSubscription>>
+      }
+      return null
+    })
+
+    mockPrismaClient.empresa = { update: vi.fn().mockResolvedValue({}) }
+    mockPrismaClient.featureEmpresa = { findFirst: vi.fn().mockResolvedValue(null) }
+
+    await activarProducto(1, "niche.prestamo_barrio", "test")
+
+    expect(upsertSuscripcion).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ sku: "pos.fiado_barrio", activo: true }),
+    )
+    expect(upsertSuscripcion).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ sku: "niche.prestamo_barrio", activo: true }),
+    )
+    expect(activarLibretaFiado).toHaveBeenCalledWith(1)
+  })
 })

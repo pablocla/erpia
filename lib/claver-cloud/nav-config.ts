@@ -35,6 +35,7 @@ export const navSections: NavSection[] = [
     label: "ceo",
     items: [
       { name: "commandCenter", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+      { name: "salesPipeline", href: "/claver-cloud/comercial", icon: Target },
       { name: "fieldSurvey", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
       { name: "mapAndRoute", href: "/claver-cloud/comercial/campo", icon: Map },
     ],

@@ -16,12 +16,12 @@ export function RecentlyViewed({ collapsed }: { collapsed?: boolean }) {
   if (favoritePages.length === 0 && recentPages.length === 0) return null
 
   return (
-    <div className="space-y-3 px-3 mt-3">
+    <div className="space-y-3 px-3 mt-2 mb-2">
       {/* Favorites */}
       {favoritePages.length > 0 && (
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
-            <Star className="h-3 w-3" />
+          <p className="text-[11px] font-semibold text-muted-foreground/80 mb-1.5 flex items-center gap-1.5 px-1">
+            <Star className="h-3 w-3 text-amber-500/80" />
             Favoritos
           </p>
           <div className="space-y-0.5">
@@ -29,7 +29,7 @@ export function RecentlyViewed({ collapsed }: { collapsed?: boolean }) {
               <div key={fav.href} className="flex items-center group">
                 <Link
                   href={fav.href}
-                  className="flex-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5 truncate"
+                  className="flex-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-muted/50 truncate"
                 >
                   {fav.label}
                 </Link>
@@ -50,7 +50,7 @@ export function RecentlyViewed({ collapsed }: { collapsed?: boolean }) {
       {/* Recent */}
       {recentPages.length > 0 && (
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1.5 flex items-center gap-1">
+          <p className="text-[11px] font-semibold text-muted-foreground/80 mb-1.5 flex items-center gap-1.5 px-1">
             <Clock className="h-3 w-3" />
             Recientes
           </p>
@@ -59,7 +59,7 @@ export function RecentlyViewed({ collapsed }: { collapsed?: boolean }) {
               <div key={page.href} className="flex items-center group">
                 <Link
                   href={page.href}
-                  className="flex-1 text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5 truncate"
+                  className="flex-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-md hover:bg-muted/50 truncate"
                 >
                   {page.label}
                 </Link>

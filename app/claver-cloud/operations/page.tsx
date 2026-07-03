@@ -67,6 +67,34 @@ export default function ClaverOperationsSelectorPage() {
           </Button>
         </div>
       </div>
+      
+      {/* Resumen Health */}
+      <div className="grid gap-3 sm:grid-cols-4 mb-4">
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Errores (24h)</p>
+            <p className="text-2xl font-bold text-red-600">3</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Backups OK</p>
+            <p className="text-2xl font-bold text-green-600">100%</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Avg Readiness</p>
+            <p className="text-2xl font-bold text-blue-600">85%</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Alertas Churn</p>
+            <p className="text-2xl font-bold text-amber-600">2</p>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {clientes.map((c) => (

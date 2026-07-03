@@ -1,5 +1,6 @@
-import { ClaverMatrixHub } from "@/components/marketing/claver-matrix-hub"
+import { redirect } from "next/navigation"
 
-export default function ClaverPage() {
-  return <ClaverMatrixHub />
+/** Alias histórico → home Grupo Claver */
+export default function ClaverAliasPage() {
+  redirect("/")
 }

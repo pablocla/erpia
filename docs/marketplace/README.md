@@ -43,6 +43,7 @@ flowchart LR
 | [14-pack-almacen-rosario](./14-pack-almacen-rosario.md) | **Pack Almacén Rosario** — 18 módulos retail + diagramas |
 | [09-servicios-intangibles-top5](./09-servicios-intangibles-top5.md) | Top 5 bolsillo + ansiedad |
 | [12-enganches-comerciales](./12-enganches-comerciales.md) | Productos anzuelo |
+| [19-claver-nicho-latam](./19-claver-nicho-latam.md) | **Claver Nicho LATAM** — 11 mini-SaaS + packs |
 
 ## Estructura de código
 

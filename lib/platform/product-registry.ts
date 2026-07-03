@@ -3,6 +3,7 @@
  */
 
 import { ENGANCHES, type EngancheTier } from "@/lib/marketplace/enganche-catalog"
+import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { INTANGIBLE_PREMIUM_7 } from "@/lib/marketplace/intangible-premium-7"
 import { RETAIL_EXTENSION_SKUS, RETAIL_SKU_META } from "@/lib/almacen-rosario/retail-skus"
@@ -186,6 +187,16 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
   ...INTANGIBLE_PREMIUM_7.filter((s) => !ENGANCHE_SKUS.has(s.sku))
     .map((s) => fromPremium(s.sku))
     .filter((p): p is ProductoHorizontal => p !== null),
+  ...NICHE_APPS.map((app) => ({
+    sku: app.sku,
+    nombre: app.nombre,
+    lema: app.lema,
+    tier: "implementado" as const,
+    horizontal: true as const,
+    precioArs: app.precioArs,
+    dependeDe: app.engine === "libreta" ? (["pos.fiado_barrio"] as string[]) : ([] as string[]),
+    navPaths: [app.goldenPath, "/dashboard/nicho", "/dashboard/clientes"],
+  })),
 ]
 
 export interface ProductoPack {
@@ -199,6 +210,9 @@ export interface ProductoPack {
 export const PACKS_HORIZONTALES: ProductoPack[] = MARKETPLACE_BUNDLES.filter(
   (b) =>
     b.id === "pool-almacen-barrio" ||
+    b.id === "pool-claver-nicho" ||
+    b.id === "pool-propiedad" ||
+    b.id === "pool-calle-nicho" ||
     b.id === "pool-cobra-recupera" ||
     b.id === "pool-essentials" ||
     b.id === "pool-premium-erp-7" ||

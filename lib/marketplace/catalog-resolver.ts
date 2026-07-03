@@ -1,6 +1,7 @@
 import { MARKETPLACE_CATALOG } from "./marketplace-catalog"
 import { AUTOPOOL_ENTRIES } from "./autopool-manifest"
 import type { AutoCertLevel } from "./marketplace-catalog"
+import { effectiveSkuStatus, isSkuProvisionable } from "./sku-availability"
 
 export interface ResolvedSku {
   sku: string
@@ -10,11 +11,14 @@ export interface ResolvedSku {
   precioArs: number
   tipoCobro: string
   integracionId?: string
+  status: "disponible" | "beta" | "planned"
+  provisionable: boolean
 }
 
 export function resolveSku(sku: string): ResolvedSku | null {
   const catalog = MARKETPLACE_CATALOG.find((c) => c.sku === sku)
   if (catalog) {
+    const status = effectiveSkuStatus(catalog.sku, catalog.status)
     return {
       sku: catalog.sku,
       nombre: catalog.nombre,
@@ -22,11 +26,14 @@ export function resolveSku(sku: string): ResolvedSku | null {
       playbookId: catalog.playbookId,
       precioArs: catalog.precioArs,
       tipoCobro: catalog.tipoCobro,
+      status,
+      provisionable: isSkuProvisionable(catalog.sku),
     }
   }
 
   const pool = AUTOPOOL_ENTRIES.find((e) => e.sku === sku)
   if (pool) {
+    const status = effectiveSkuStatus(pool.sku, "disponible")
     return {
       sku: pool.sku,
       nombre: pool.nombre,
@@ -35,6 +42,8 @@ export function resolveSku(sku: string): ResolvedSku | null {
       precioArs: pool.precioDesdeArs,
       tipoCobro: pool.tipoCobro,
       integracionId: pool.integracionId,
+      status,
+      provisionable: isSkuProvisionable(pool.sku),
     }
   }
 

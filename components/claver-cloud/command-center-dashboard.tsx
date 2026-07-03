@@ -146,6 +146,7 @@ const etapaColor: Record<PipelineEtapa, string> = {
 }
 
 const quickActions = [
+  { href: "/claver-cloud/comercial", label: "Pipeline ventas", icon: Users, primary: true },
   { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList, primary: true },
   { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map, primary: true },
   { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare },

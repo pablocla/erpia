@@ -32,23 +32,31 @@ export function ClaverIcon({
     <svg
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden
     >
-      <path
-        d="M 28 14 L 14 14 L 14 34 L 28 34"
-        stroke={stroke}
-        strokeWidth="4.5"
+      <path 
+        d="M 20 75 L 20 20 L 80 20 L 80 80 L 70 80" 
+        stroke={stroke} 
+        strokeWidth="6" 
         fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <path
-        d="M 36 10 L 36 38"
-        stroke={blueLine}
-        strokeWidth="4.5"
-      />
+      <text 
+        x="6" 
+        y="86" 
+        fill={stroke} 
+        fontSize="30" 
+        fontFamily="sans-serif" 
+        fontWeight="600" 
+        letterSpacing="-1.5"
+      >
+        Claver
+      </text>
     </svg>
   )
 }

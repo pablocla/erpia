@@ -16,6 +16,7 @@ import {
   type ProductoHorizontal,
 } from "./product-registry"
 import { getProductHooks } from "./product-hooks"
+import { prepararDependenciasNicho } from "@/lib/niche/niche-provision"
 
 export interface ProductoEstado {
   sku: string
@@ -50,6 +51,8 @@ async function dependenciasSatisfechas(empresaId: number, producto: ProductoHori
 }
 
 export async function activarProducto(empresaId: number, sku: string, origen = "manual") {
+  await prepararDependenciasNicho(empresaId, sku)
+
   const producto = getProductoHorizontal(sku)
   if (producto) {
     const deps = await dependenciasSatisfechas(empresaId, producto)

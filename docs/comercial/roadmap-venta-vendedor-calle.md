@@ -109,9 +109,19 @@ sequenceDiagram
     V->>C: Factura mensual (monotributo)
 ```
 
+### Nicho LATAM — speech 30 segundos (jul 2026)
+
+| Vertical | Pack / SKU | Speech |
+|----------|------------|--------|
+| Administrador consorcio | `pool-propiedad` $29.900 | «Liquidá expensas en 5 minutos y avisá a todos por WhatsApp. Sin Excel.» |
+| Club de barrio | `niche.club_barrio` $3.990 | «Marcá quién pagó la cuota y mandá WhatsApp a los morosos antes del partido.» |
+| Tintorería / lavadero | `niche.tintoreria` $3.990 | «Marcá LISTO y el cliente recibe WhatsApp solo. Dejá el ticket de papel.» |
+
+Hub demo: `/dashboard/nicho` · Catálogo público: `/claver/apps?nicho=nicho_latam` · Doc: [19-claver-nicho-latam](../marketplace/19-claver-nicho-latam.md).
+
 ### Fase 2 — Bundle + operación (mes 3–5)
 
-**Objetivo:** subir ticket con **pool-almacen-barrio** ($34.900) o primer **POS + AFIP homologación**.
+**Objetivo:** subir ticket con **pool-almacen-barrio** ($34.900), **pool-propiedad** ($29.900) o primer **POS + AFIP homologación**.
 
 | Oferta | Cuándo | Condición |
 |--------|--------|-----------|

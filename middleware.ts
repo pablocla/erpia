@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { jwtVerify } from "jose"
+import { AUTH_TOKEN_COOKIE } from "@/lib/auth/token-cookie"
 
 // ─── Public routes that skip auth ─────────────────────────────────────────────
 const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh", "/api/ecommerce", "/api/ai/status", "/api/health"]
@@ -29,6 +30,33 @@ export async function middleware(request: NextRequest) {
   // ─── Public routes ────────────────────────────────────────────────────────
   if (RUTAS_PUBLICAS.some((ruta) => pathname.startsWith(ruta))) {
     return addRequestId(NextResponse.next(), request)
+  }
+
+  // ─── Claver Cloud (torre analista) — requiere JWT en cookie ───────────────
+  if (pathname.startsWith("/claver-cloud")) {
+    const rawCookie = request.cookies.get(AUTH_TOKEN_COOKIE)?.value
+    if (!rawCookie) {
+      const loginUrl = new URL("/login", request.url)
+      loginUrl.searchParams.set("next", pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    const token = decodeURIComponent(rawCookie)
+    const secret = getSecret()
+
+    if (secret) {
+      try {
+        await jwtVerify(token, secret)
+      } catch {
+        const loginUrl = new URL("/login", request.url)
+        loginUrl.searchParams.set("next", pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+    }
+
+    const response = NextResponse.next()
+    response.headers.set("Cache-Control", "no-store, max-age=0")
+    return addRequestId(response, request)
   }
 
   // ─── Protected API routes ─────────────────────────────────────────────────

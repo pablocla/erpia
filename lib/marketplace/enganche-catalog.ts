@@ -4,6 +4,7 @@
  * Referencia: docs/marketplace/12-enganches-comerciales.md
  */
 
+import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MARKETPLACE_CATALOG } from "./marketplace-catalog"
 import { MARKETPLACE_BUNDLES } from "./bundles"
 import { INTANGIBLES_TOP5, INTANGIBLE_PREMIUM_7 } from "./intangible-services"
@@ -210,6 +211,16 @@ export const ENGANCHES: EngancheProducto[] = [
     upsellA: ["com.whatsapp", "core.claver"],
     dolorResuelve: "Leads perdidos fuera de horario",
   },
+  ...NICHE_APPS.map((app) => ({
+    sku: app.sku,
+    nombre: app.nombre,
+    lema: app.lema,
+    tier: "implementado" as const,
+    nichos: ["horizontal" as const, "pyme_cobranzas" as const],
+    precioArs: app.precioArs,
+    upsellA: ["com.whatsapp", "core.claver"],
+    dolorResuelve: app.dolorResuelve,
+  })),
 ]
 
 export interface EngancheResumen {

@@ -1,3 +1,5 @@
+import { NICHE_AUTOPOOL_ENTRIES } from "@/lib/niche/niche-marketplace-entries"
+
 /**
  * Claver AutoPool — pool vivo de automatizaciones instantáneas
  *
@@ -125,6 +127,14 @@ export const AUTOPOOL_NICHOS = {
     emoji: "🎯",
     color: "pink",
     descripcion: "Campañas, pixels, SEO, redes y email marketing.",
+  },
+  nicho_latam: {
+    id: "nicho_latam",
+    label: "Nicho LATAM",
+    lema: "Un dolor, una app, WhatsApp incluido.",
+    emoji: "🇦🇷",
+    color: "emerald",
+    descripcion: "Consorcios, clubes, ferias, obras — mini-SaaS de barrio.",
   },
 } as const
 
@@ -1168,6 +1178,7 @@ export const AUTOPOOL_ENTRIES: AutopoolEntry[] = [
       "Ruta óptima por zona + notificación WA al cliente cuando el chofer inicia con link de seguimiento.",
     playbookId: "playbook.intang.ruteador_entregas",
   },
+  ...NICHE_AUTOPOOL_ENTRIES,
 ]
 
 export function getAutopoolByTipo(tipo: AutopoolTipoId): AutopoolEntry[] {

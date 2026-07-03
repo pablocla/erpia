@@ -16,11 +16,12 @@ export interface TenantBillingRow {
   skusActivos: number
   limiteSkus: number
   opsSuperAdmin: boolean
+  mpSubscriptionStatus: string | null
 }
 
 export async function getTenantBilling(empresaId: number): Promise<TenantBillingRow> {
   const [empresa, plan, subs] = await Promise.all([
-    db().empresa.findUnique({ where: { id: empresaId }, select: { id: true, nombre: true } }),
+    db().empresa.findUnique({ where: { id: empresaId }, select: { id: true, nombre: true, mpSubscriptionStatus: true } }),
     getTenantPlan(empresaId),
     db().suscripcionModulo.findMany({
       where: { empresaId, activo: true },
@@ -48,6 +49,7 @@ export async function getTenantBilling(empresaId: number): Promise<TenantBilling
     skusActivos: skus.length,
     limiteSkus: plan.maxSkusActivos,
     opsSuperAdmin,
+    mpSubscriptionStatus: empresa.mpSubscriptionStatus,
   }
 }
 

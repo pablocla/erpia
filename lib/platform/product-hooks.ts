@@ -37,6 +37,8 @@ import {
 } from "@/lib/almacen-rosario/activators"
 import { prisma } from "@/lib/prisma"
 import { provisionOpoDefaults } from "@/lib/opo/opo-config-service"
+import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
+import { activarNicheApp } from "@/lib/niche/niche-provision"
 
 export type ProductHook = (empresaId: number) => Promise<void>
 
@@ -96,6 +98,9 @@ const HOOKS: Record<string, { onActivate?: ProductHook; onDeactivate?: ProductHo
   "pos.cheques_cartera": { onActivate: activarChequesCartera },
   "pos.inventario_express": { onActivate: activarInventarioExpress },
   "bridge.opo_studio": { onActivate: provisionOpoDefaults },
+  ...Object.fromEntries(
+    NICHE_APPS.map((app) => [app.sku, { onActivate: (empresaId: number) => activarNicheApp(empresaId, app.sku) }]),
+  ),
 }
 
 export function getProductHooks(sku: string) {

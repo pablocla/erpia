@@ -42,12 +42,17 @@ beforeEach(() => {
 })
 
 describe("provisionSku", () => {
+  it("bloquea provisioning de SKUs marcados como Próximamente", async () => {
+    await expect(provisionSku(1, "sec.backup")).rejects.toThrow(/Próximamente/)
+    expect(activarProducto).not.toHaveBeenCalled()
+  })
+
   it("activa suscripción automáticamente para GLOBAL_AUTO", async () => {
-    const result = await provisionSku(1, "sec.backup")
+    const result = await provisionSku(1, "sec.ssl_auto")
 
     expect(result.auto).toBe(true)
     expect(result.jobId).toBe("job-1")
-    expect(activarProducto).toHaveBeenCalledWith(1, "sec.backup", "marketplace_auto")
+    expect(activarProducto).toHaveBeenCalledWith(1, "sec.ssl_auto", "marketplace_auto")
     expect(crearTareaMarketplace).not.toHaveBeenCalled()
   })
 
@@ -80,6 +85,17 @@ describe("provisionSku", () => {
   it("activa producto horizontal al provisionar pos.fiado_barrio", async () => {
     await provisionSku(1, "pos.fiado_barrio")
     expect(activarProducto).toHaveBeenCalledWith(1, "pos.fiado_barrio", "marketplace_auto")
+  })
+
+  it("activa producto nicho al provisionar niche.consorcios", async () => {
+    const result = await provisionSku(1, "niche.consorcios")
+    expect(result.auto).toBe(true)
+    expect(activarProducto).toHaveBeenCalledWith(1, "niche.consorcios", "marketplace_auto")
+  })
+
+  it("activa producto nicho al provisionar niche.club_barrio", async () => {
+    await provisionSku(1, "niche.club_barrio")
+    expect(activarProducto).toHaveBeenCalledWith(1, "niche.club_barrio", "marketplace_auto")
   })
 
   it("falla si SKU no existe", async () => {

@@ -1,16 +1,6 @@
-import { ClavernetHero } from "@/components/clavernet/hero-section"
-import { TopSellersBoard } from "@/components/clavernet/top-sellers-board"
+import { redirect } from "next/navigation"
 
-export const metadata = {
-  title: "Clavernet | Partner Network",
-  description: "La red de Partners de Claver ERP. Programá, vendé y enseñá.",
-}
-
-export default function ClavernetLandingPage() {
-  return (
-    <div className="bg-white">
-      <ClavernetHero />
-      <TopSellersBoard />
-    </div>
-  )
+/** Clavernet deprecado — unificado en Grupo Claver */
+export default function ClavernetLegacyRedirectPage() {
+  redirect("/claver")
 }

@@ -54,7 +54,7 @@ type Overview = {
     integraciones?: { id: string; label: string; estado: string; detalle?: string; href?: string }[]
   }
   plan?: { id: string; maxSkusActivos: number; playbooksCustom: boolean }
-  billing?: { mrrTotalArs: number; skusActivos: number; limiteSkus: number; plan: string }
+  billing?: { mrrTotalArs: number; skusActivos: number; limiteSkus: number; plan: string; mpSubscriptionStatus: string | null }
   productosActivos: number
   productosCatalogo: number
   proyecto: { id: number; codigo: string; faseActual: string; porcentajeAvance: number } | null
@@ -247,6 +247,15 @@ export default function ClaverTenantSuperAdminPage() {
             {data.plan && (
               <Badge variant="outline" className="bg-blue-500/10 text-blue-700">
                 Plan {data.plan.id}
+              </Badge>
+            )}
+            {data.billing?.mpSubscriptionStatus && (
+              <Badge variant="outline" className={
+                data.billing.mpSubscriptionStatus === "authorized" ? "border-green-500 text-green-600 bg-green-50" :
+                data.billing.mpSubscriptionStatus === "cancelled" ? "border-red-500 text-red-600 bg-red-50" : 
+                "border-orange-500 text-orange-600 bg-orange-50"
+              }>
+                MP: {data.billing.mpSubscriptionStatus}
               </Badge>
             )}
             {data.billing && (

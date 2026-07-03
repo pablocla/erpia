@@ -85,7 +85,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               className={navDark ? "text-slate-300 hover:text-white" : ""}
               asChild
             >
-              <Link href="/claver">Grupo {CLAVER_GROUP.name}</Link>
+              <Link href="/">Grupo {CLAVER_GROUP.name}</Link>
             </Button>
             <Button
               variant="outline"
@@ -178,7 +178,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Claver</p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/claver" className="hover:text-white">Matriz</Link></li>
+              <li><Link href="/" className="hover:text-white">Matriz</Link></li>
               <li><Link href="/claver-cloud" className="hover:text-white">Claver Cloud</Link></li>
               <li><Link href="/claver/marca" className="hover:text-white">Identidad</Link></li>
               <li><Link href="/login" className="hover:text-white">Demo</Link></li>

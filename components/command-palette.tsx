@@ -43,7 +43,15 @@ import {
   Cloud,
   Sprout,
   Leaf,
+  Building,
+  Shirt,
+  Wheat,
+  Car,
+  Stethoscope,
+  KeyRound,
+  Handshake,
 } from "lucide-react"
+import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { useTheme } from "next-themes"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
@@ -99,6 +107,29 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/hospitalidad/kds", label: "Pantalla Cocina (KDS)", icon: Monitor, section: "Servicios", keywords: ["cocina", "kds", "kitchen"] },
   { href: "/dashboard/hospitalidad", label: "Mesas y Comandas", icon: UtensilsCrossed, section: "Servicios", keywords: ["mesa", "comanda"] },
   { href: "/dashboard/agenda", label: "Agenda de Turnos", icon: CalendarDays, section: "Servicios", keywords: ["turno", "agenda", "cita"] },
+  { href: "/dashboard/nicho", label: "Claver Nicho LATAM", icon: Sparkles, section: "Claver Nicho", keywords: ["nicho", "mini saas", "consorcio", "club", "feria"] },
+  ...NICHE_APPS.map((app) => ({
+    href: app.goldenPath,
+    label: app.nombre,
+    icon:
+      app.appId === "consorcios"
+        ? Building
+        : app.appId === "plancha"
+          ? Shirt
+          : app.appId === "acopio"
+            ? Wheat
+            : app.appId === "remis"
+              ? Car
+              : app.appId === "consultorio"
+                ? Stethoscope
+                : app.appId === "garantia"
+                  ? KeyRound
+                  : app.appId === "mutuo"
+                    ? Handshake
+                    : Sparkles,
+    section: "Claver Nicho" as const,
+    keywords: [app.appId, app.lema, app.dolorResuelve, "nicho", "claver"],
+  })),
   // IA
   { href: "/dashboard/ia", label: "Asistente IA", icon: Bot, section: "Inteligencia", keywords: ["ia", "ai", "chat", "asistente"] },
   { href: "/dashboard/centro-alertas", label: "Centro de Alertas", icon: Bell, section: "Inteligencia", keywords: ["alerta", "alertas", "telegram", "whatsapp", "notificación"] },

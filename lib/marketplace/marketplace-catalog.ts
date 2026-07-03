@@ -1,3 +1,4 @@
+import { NICHE_MARKETPLACE_CATALOG } from "@/lib/niche/niche-marketplace-entries"
 import { RETAIL_EXTENSION_CATALOG } from "./retail-extension-catalog"
 import { GENERATIVE_CATALOG } from "./generative-catalog"
 
@@ -95,7 +96,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     i18n: { "es-AR": { nombre: "MFA", descripcion: "Doble factor de autenticación", packOnboardSubject: "Activación MFA" } },
     segmentoAds: ["general"],
     playbookId: "playbook.sec.mfa",
-    status: "disponible",
+    status: "planned",
   },
   {
     sku: "sec.backup",
@@ -108,7 +109,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     i18n: { "es-AR": { nombre: "Backup Cloud", descripcion: "Respaldo automático de base de datos", packOnboardSubject: "Tus backups están configurados" } },
     segmentoAds: ["general"],
     playbookId: "playbook.sec.backup",
-    status: "disponible",
+    status: "planned",
   },
   {
     sku: "sec.edr",
@@ -547,7 +548,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     i18n: { "es-AR": { nombre: "NPS", descripcion: "Mide la satisfacción", packOnboardSubject: "Encuestas habilitadas" } },
     segmentoAds: ["ecommerce"],
     playbookId: "playbook.data.nps",
-    status: "disponible",
+    status: "planned",
   },
   {
     sku: "data.helpdesk_ia",
@@ -612,7 +613,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     i18n: { "es-AR": { nombre: "Pixels Ad", descripcion: "Inyecta scripts de conversión", packOnboardSubject: "Pixels en línea" } },
     segmentoAds: ["ecommerce"],
     playbookId: "playbook.mkt.pixel",
-    status: "disponible",
+    status: "planned",
   },
   {
     sku: "mkt.giftcard",
@@ -702,7 +703,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["restaurante", "hotel", "salud", "retail"],
     playbookId: "playbook.intang.reputation_firewall",
-    status: "disponible",
+    status: "planned",
     trialDias: 14,
   },
   {
@@ -722,7 +723,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["general", "inmobiliaria", "pyme"],
     playbookId: "playbook.intang.legal_shield",
-    status: "disponible",
+    status: "planned",
     trialDias: 3,
   },
   {
@@ -742,7 +743,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["b2c", "consumidor"],
     playbookId: "playbook.intang.subs_tax_scanner",
-    status: "beta",
+    status: "planned",
     trialDias: 14,
   },
   {
@@ -763,7 +764,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     segmentoAds: ["ecommerce", "retail", "distribuidora"],
     playbookId: "playbook.intang.reactivador_clientes",
     dependeDe: ["com.whatsapp"],
-    status: "disponible",
+    status: "planned",
     trialDias: 7,
   },
 
@@ -1231,4 +1232,5 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
 
   ...RETAIL_EXTENSION_CATALOG,
   ...GENERATIVE_CATALOG,
+  ...NICHE_MARKETPLACE_CATALOG,
 ]

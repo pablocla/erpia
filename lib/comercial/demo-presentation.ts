@@ -4,7 +4,13 @@
 
 import { getIndustryTemplate } from "@/lib/comercial/industry-templates"
 
-const PRESENT_EXTRA = ["/dashboard/configuracion"]
+const PRESENT_EXTRA = [
+  "/dashboard/configuracion",
+  "/dashboard/nicho",
+  "/dashboard/apps",
+  "/dashboard/fiado",
+  "/dashboard/clientes",
+]
 
 export function getDemoPresentationPaths(industryId: string): string[] {
   const template = getIndustryTemplate(industryId)

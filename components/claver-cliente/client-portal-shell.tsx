@@ -4,12 +4,14 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ClipboardList, LayoutDashboard, LogOut, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ClaverLogo } from "@/components/ui/claver-logo"
 import { cn } from "@/lib/utils"
 
 const nav = [
   { href: "/claver-cliente", label: "Resumen", icon: LayoutDashboard },
   { href: "/claver-cliente/tickets", label: "Tickets", icon: Ticket },
   { href: "/claver-cliente/scrum", label: "Servicios", icon: ClipboardList },
+  { href: "/claver-cliente/facturas", label: "Facturas", icon: ClipboardList },
 ]
 
 export function ClientPortalShell({ children }: { children: React.ReactNode }) {
@@ -26,7 +28,7 @@ export function ClientPortalShell({ children }: { children: React.ReactNode }) {
       <header className="border-b bg-card/50">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-2 font-semibold">
-            <span className="text-primary">Claver</span>
+            <ClaverLogo className="h-8 w-8" />
             <span className="text-muted-foreground text-sm font-normal">Seguimiento</span>
           </div>
           <Button variant="ghost" size="sm" onClick={logout}>

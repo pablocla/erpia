@@ -49,6 +49,37 @@ describe("industry-templates", () => {
     expect(t?.rubro).toBe("kiosco")
   })
 
+  it("tiene templates para las 21 apps de nicho", () => {
+    const nicheIds = [
+      "consorcios_admin",
+      "club_barrio",
+      "feria_puesto",
+      "prestamista",
+      "obra_changas",
+      "acopio_grano",
+      "base_remis",
+      "tintoreria",
+      "consultorio_solo",
+      "inmo_garantia",
+      "cooperativa_cuotas",
+      "escuela_barrio",
+      "cancha_barrio",
+      "taller_mecanico",
+      "delivery_barrio",
+      "peluqueria_barrio",
+      "gimnasio_barrio",
+      "colonia_verano",
+      "salon_eventos",
+      "vet_barrio",
+      "pena_folklore",
+    ]
+    for (const id of nicheIds) {
+      const t = getIndustryTemplate(id)
+      expect(t?.engancheId?.startsWith("niche."), id).toBe(true)
+      expect(t?.goldenPath).toMatch(/^\/dashboard/)
+    }
+  })
+
   it("resolveIndustryContext prioriza industryId sobre rubro kiosco", () => {
     const ctx = resolveIndustryContext("kiosco", "almacen")
     expect(ctx?.id).toBe("almacen")

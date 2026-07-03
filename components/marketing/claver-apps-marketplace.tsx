@@ -23,6 +23,7 @@ import { MotionFadeDown, MotionList, MotionListItem } from "@/components/ui/moti
 import { Check, Sparkles, Zap, Clock, Home, Plug, Shield, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AlmacenRosarioVitrine } from "@/components/marketing/almacen-rosario-vitrine"
+import { effectiveSkuStatus, isSkuProvisionable } from "@/lib/marketplace/sku-availability"
 
 const fmtArs = (n: number) =>
   n === 0
@@ -183,7 +184,10 @@ export function ClaverAppsMarketplace() {
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {INTANGIBLE_PREMIUM_7.map((svc) => (
+              {INTANGIBLE_PREMIUM_7.map((svc) => {
+                const status = effectiveSkuStatus(svc.sku, svc.status)
+                const provisionable = isSkuProvisionable(svc.sku)
+                return (
                 <Card key={svc.sku} className="border-slate-200/80 bg-white/90">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
@@ -192,14 +196,14 @@ export function ClaverAppsMarketplace() {
                       </Badge>
                       <Badge
                         className={
-                          svc.status === "disponible"
+                          status === "disponible"
                             ? "bg-emerald-100 text-emerald-800 text-[10px]"
-                            : svc.status === "beta"
+                            : status === "beta"
                               ? "bg-amber-100 text-amber-800 text-[10px]"
                               : "bg-slate-100 text-slate-600 text-[10px]"
                         }
                       >
-                        {svc.status}
+                        {status === "planned" ? "Próximamente" : status}
                       </Badge>
                     </div>
                     <CardTitle className="text-base leading-snug">{svc.nombre}</CardTitle>
@@ -215,15 +219,21 @@ export function ClaverAppsMarketplace() {
                     <p className="text-[10px] text-slate-500">{svc.monetizacionDetalle}</p>
                   </CardContent>
                   <CardFooter className="pt-0">
-                    <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                      <Link href={`/login?activar=${svc.sku}`}>
-                        <Shield className="mr-1 h-3 w-3" />
-                        Activar
-                      </Link>
-                    </Button>
+                    {provisionable ? (
+                      <Button variant="outline" size="sm" className="w-full text-xs" asChild>
+                        <Link href={`/login?activar=${svc.sku}`}>
+                          <Shield className="mr-1 h-3 w-3" />
+                          Activar
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" className="w-full text-xs" disabled>
+                        Próximamente
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
-              ))}
+              )})}
             </div>
           </div>
 
@@ -241,6 +251,8 @@ export function ClaverAppsMarketplace() {
             {entradas.map((entry) => {
               const nicho = AUTOPOOL_NICHOS[entry.nicho]
               const tipo = AUTOPOOL_TIPOS[entry.tipo]
+              const provisionable = isSkuProvisionable(entry.sku)
+              const status = effectiveSkuStatus(entry.sku, "disponible")
               return (
                 <MotionListItem key={entry.sku}>
                   <Card
@@ -281,6 +293,9 @@ export function ClaverAppsMarketplace() {
                         {entry.maturity === "seed" && (
                           <Badge className="text-[10px] bg-violet-100 text-violet-700">Nuevo en el pool</Badge>
                         )}
+                        {status === "planned" && (
+                          <Badge className="text-[10px] bg-slate-100 text-slate-600">Próximamente</Badge>
+                        )}
                       </div>
                       <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
                         <Clock className="h-3.5 w-3.5" />
@@ -305,21 +320,27 @@ export function ClaverAppsMarketplace() {
                       </div>
                     </CardContent>
                     <CardFooter className="border-t border-slate-100 bg-slate-50/50 pt-4">
-                      <Button className="w-full bg-amber-600 hover:bg-amber-500 text-white" asChild>
-                        <Link href={activarHref(entry)}>
-                          {entry.tipo === "integracion" ? (
-                            <>
-                              <Plug className="mr-2 h-4 w-4" />
-                              Conectar ahora
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="mr-2 h-4 w-4" />
-                              Activar ahora
-                            </>
-                          )}
-                        </Link>
-                      </Button>
+                      {provisionable ? (
+                        <Button className="w-full bg-amber-600 hover:bg-amber-500 text-white" asChild>
+                          <Link href={activarHref(entry)}>
+                            {entry.tipo === "integracion" ? (
+                              <>
+                                <Plug className="mr-2 h-4 w-4" />
+                                Conectar ahora
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="mr-2 h-4 w-4" />
+                                Activar ahora
+                              </>
+                            )}
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button className="w-full" variant="secondary" disabled>
+                          Próximamente
+                        </Button>
+                      )}
                     </CardFooter>
                   </Card>
                 </MotionListItem>

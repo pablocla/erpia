@@ -7,57 +7,60 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Empresa {
-  id               Int       @id @default(autoincrement())
-  nombre           String
-  razonSocial      String
-  cuit             String    @unique
-  direccion        String?
-  telefono         String?
-  email            String?
-  certificadoCRT   String? // Base64 encoded
-  certificadoKEY   String? // Base64 encoded
-  puntoVenta       Int       @default(1)
-  entorno          String    @default("homologacion") // "homologacion" o "produccion"
+  id                     Int       @id @default(autoincrement())
+  nombre                 String
+  razonSocial            String
+  cuit                   String    @unique
+  direccion              String?
+  telefono               String?
+  email                  String?
+  certificadoCRT         String? // Base64 encoded
+  certificadoKEY         String? // Base64 encoded
+  puntoVenta             Int       @default(1)
+  entorno                String    @default("homologacion") // "homologacion" o "produccion"
   /// Alias para compatibilidad con código que usa entornoAfip
-  entornoAfip      String    @default("homologacion")
+  entornoAfip            String    @default("homologacion")
   // ── CAEA (RG 5782/2025 — contingencia offline) ──────────────────────────
   /// CAEA vigente para emitir comprobantes offline
-  caeaVigente      String?
+  caeaVigente            String?
   /// Período del CAEA (YYYYMM)
-  caeaPeriodo      String?
+  caeaPeriodo            String?
   /// Quincena: 1 = días 1-15, 2 = días 16 al último
-  caeaQuincena     Int?
+  caeaQuincena           Int?
   /// Fecha inicio de vigencia del CAEA
-  caeaVigDesde     DateTime?
+  caeaVigDesde           DateTime?
   /// Fecha fin de vigencia del CAEA
-  caeaVigHasta     DateTime?
+  caeaVigHasta           DateTime?
   /// Tope para informar comprobantes emitidos con CAEA
-  caeaTopeInformar DateTime?
+  caeaTopeInformar       DateTime?
   /// Rubro de la empresa: define plan de cuentas base y módulos sugeridos
   /// "comercio" | "industria" | "servicios" | "gastronomia" | "salud" | "hoteleria" | "agro" | "construccion" | "transporte" | "educacion" | "otro"
-  rubro            String    @default("comercio")
+  rubro                  String    @default("comercio")
   /// FK al maestro Rubro (coexiste con rubro string para migración gradual)
-  rubroId          Int?
-  rubroRef         Rubro?    @relation("EmpresaRubro", fields: [rubroId], references: [id])
+  rubroId                Int?
+  rubroRef               Rubro?    @relation("EmpresaRubro", fields: [rubroId], references: [id])
   /// "AR" | "CL" | "MX" — país fiscal principal
-  paisFiscal       String    @default("AR")
+  paisFiscal             String    @default("AR")
   /// Condición IVA de la empresa: "Responsable Inscripto" | "Monotributista" | "Exento"
-  condicionIva     String    @default("Responsable Inscripto")
+  condicionIva           String    @default("Responsable Inscripto")
   /// Apariencia global del ERP (definida por dueño/admin, aplica a todos los usuarios)
-  temaConfig       Json?
-  modoLite         String    @default("completo")
+  temaConfig             Json?
+  modoLite               String    @default("completo")
   /// Libreta Fiado — requiere límite de crédito por cliente
-  fiadoRequiereLimite      Boolean   @default(true)
-  emailDuenoAlmacen        String?
-  fiadoNotificarWhatsApp   Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  fiadoRequiereLimite    Boolean   @default(true)
+  emailDuenoAlmacen      String?
+  fiadoNotificarWhatsApp Boolean   @default(true)
+  mpSubscriptionId       String?   // Added for Claver Cloud billing (F2-1)
+  mpSubscriptionStatus   String?   // "authorized", "paused", "cancelled", etc.
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
 
   facturas                    Factura[]
   usuarios                    Usuario[]
@@ -184,6 +187,8 @@ model Empresa {
   agroCannabisAplicaciones    AgroCannabisAplicacion[]
   agroCannabisAnalisisSuelo   AgroCannabisAnalisisSuelo[]
   agroCannabisCosechas        AgroCannabisCosecha[]
+  consorcios                  Consorcio[]
+  nicheMovimientos            NicheMovimiento[]
 
   @@map("empresas")
 }
@@ -322,6 +327,8 @@ model Cliente {
   movimientosEnvase MovimientoEnvase[]
   valesDinero       ValeDinero[]
   agroContratos     AgroContrato[]
+  unidadesResidente UnidadFuncional[]      @relation("ClienteResidente")
+  nicheMovimientos  NicheMovimiento[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -399,7 +406,7 @@ model Proveedor {
   retenciones       RetencionSICORE[]
   cuentasBancarias  CuentaBancaria[]
   cheques           Cheque[]
-  endososRecibidos  Cheque[] @relation("ChequeEndoso")
+  endososRecibidos  Cheque[]                 @relation("ChequeEndoso")
   ordenesCompra     OrdenCompra[]
   cuentasPagar      CuentaPagar[]
   ordenesPago       OrdenPago[]
@@ -410,6 +417,7 @@ model Proveedor {
   agroLiquidaciones AgroLiquidacion[]
   agroLotes         AgroLote[]
   cannabisInsumos   AgroCannabisInsumo[]
+  consorcioGastos   ConsorcioGasto[]
 
   @@map("proveedores")
 }
@@ -488,6 +496,7 @@ model Factura {
   /// Tributos detallados (percepciones IIBB, IVA, imp. internos) — mapea a WSFE Tributos[]
   tributos             TributoFactura[]
   notasDebito          NotaDebito[]
+  consorcioExpensas    ConsorcioExpensa[]
 
   /// FIX A-001: índices críticos para listados y reportes de facturación
   @@index([empresaId, estado, createdAt])
@@ -2072,9 +2081,9 @@ model Cheque {
   /// FIX A-001: endoso de cheques a proveedores
   endosadoAProveedorId Int?
   endosadoAProveedor   Proveedor? @relation("ChequeEndoso", fields: [endosadoAProveedorId], references: [id])
-  
+
   /// Foto capturada del cheque
-  fotoUrl              String?
+  fotoUrl String?
 
   /// FIX A-001: índices para cartera de cheques
   @@index([estado, fechaVencimiento])
@@ -3914,7 +3923,7 @@ model ValeDinero {
   updatedAt        DateTime  @updatedAt
 
   empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  empresa   Empresa  @relation(fields: [empresaId], references: [id])
   clienteId Int?
   cliente   Cliente? @relation(fields: [clienteId], references: [id])
 
@@ -3935,7 +3944,7 @@ model CobroVale {
   vale      ValeDinero @relation(fields: [valeId], references: [id], onDelete: Cascade)
   facturaId Int?
   empresaId Int
-  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  empresa   Empresa    @relation(fields: [empresaId], references: [id])
 
   @@index([valeId])
   @@index([empresaId])
@@ -6148,13 +6157,13 @@ model SuscripcionModulo {
   vigenciaHasta    DateTime?
   limiteEventosMes Int?
   metadata         Json?
-  
+
   // --- Partner Network ---
-  sellerId         String?   // Vendedor que comisiona MRR
-  implementerId    String?   // Técnico que comisionó el Setup
-  
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  sellerId      String? // Vendedor que comisiona MRR
+  implementerId String? // Técnico que comisionó el Setup
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   empresa  Empresa           @relation(fields: [empresaId], references: [id])
   producto ProductoComercial @relation(fields: [sku], references: [sku])
@@ -6490,8 +6499,8 @@ model AgroCannabisSala {
   activa           Boolean  @default(true)
   createdAt        DateTime @default(now())
 
-  empresa       Empresa                    @relation(fields: [empresaId], references: [id])
-  lote          AgroLote?                  @relation(fields: [loteId], references: [id])
+  empresa       Empresa                     @relation(fields: [empresaId], references: [id])
+  lote          AgroLote?                   @relation(fields: [loteId], references: [id])
   ciclos        AgroCannabisCiclo[]
   analisisSuelo AgroCannabisAnalisisSuelo[]
 
@@ -6515,9 +6524,9 @@ model AgroCannabisCiclo {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  empresa       Empresa                    @relation(fields: [empresaId], references: [id])
-  sala          AgroCannabisSala           @relation(fields: [salaId], references: [id])
-  genetica      AgroCannabisGenetica       @relation(fields: [geneticaId], references: [id])
+  empresa       Empresa                     @relation(fields: [empresaId], references: [id])
+  sala          AgroCannabisSala            @relation(fields: [salaId], references: [id])
+  genetica      AgroCannabisGenetica        @relation(fields: [geneticaId], references: [id])
   aplicaciones  AgroCannabisAplicacion[]
   analisisSuelo AgroCannabisAnalisisSuelo[]
   cosechas      AgroCannabisCosecha[]
@@ -6599,18 +6608,18 @@ model AgroCannabisAnalisisSuelo {
 }
 
 model AgroCannabisCosecha {
-  id                 Int      @id @default(autoincrement())
-  empresaId          Int
-  cicloId            Int
-  fecha              DateTime @default(now())
-  pesoHumedoKg       Float?
-  pesoSecoKg         Float?
-  plantasCosechadas  Int
-  rendimientoGp      Float?
-  destino            String?
-  loteTrazabilidad   String?
-  observaciones      String?  @db.Text
-  createdAt          DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  empresaId         Int
+  cicloId           Int
+  fecha             DateTime @default(now())
+  pesoHumedoKg      Float?
+  pesoSecoKg        Float?
+  plantasCosechadas Int
+  rendimientoGp     Float?
+  destino           String?
+  loteTrazabilidad  String?
+  observaciones     String?  @db.Text
+  createdAt         DateTime @default(now())
 
   empresa Empresa           @relation(fields: [empresaId], references: [id])
   ciclo   AgroCannabisCiclo @relation(fields: [cicloId], references: [id])
@@ -6662,37 +6671,37 @@ model CeoTareaProgreso {
 
 // Relevamiento post-visita retail (vendedor en calle — plataforma Claver)
 model ComercialRelevamientoVisita {
-  id                    Int       @id @default(autoincrement())
-  fechaVisita           DateTime  @default(now())
-  negocio               String
-  nombreContacto        String?
-  direccion             String?
-  localidad             String?
-  rubro                 String?
-  telefono              String?
-  engancheCandidato     String?
-  respFiado             String?   @db.Text
-  respTiempoCobrar      String?   @db.Text
-  respFacturaElectronica String?  @db.Text
-  respStockGondola      String?   @db.Text
-  respQuienAtiende      String?   @db.Text
-  dolorPrincipal        String?
-  nivelInteres          String    @default("medio")
-  objecionPrincipal     String?
-  demoMostrada          Boolean   @default(false)
-  trialOfrecido         Boolean   @default(false)
-  trialAceptado         Boolean   @default(false)
-  speechUsado           String?
-  proximaAccion         String?
-  proximaFecha          DateTime?
-  notas                 String?   @db.Text
-  lat                   Float?
-  lon                   Float?
-  geocodedAt            DateTime?
-  leadId                Int?
-  creadoPor             String
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                     Int       @id @default(autoincrement())
+  fechaVisita            DateTime  @default(now())
+  negocio                String
+  nombreContacto         String?
+  direccion              String?
+  localidad              String?
+  rubro                  String?
+  telefono               String?
+  engancheCandidato      String?
+  respFiado              String?   @db.Text
+  respTiempoCobrar       String?   @db.Text
+  respFacturaElectronica String?   @db.Text
+  respStockGondola       String?   @db.Text
+  respQuienAtiende       String?   @db.Text
+  dolorPrincipal         String?
+  nivelInteres           String    @default("medio")
+  objecionPrincipal      String?
+  demoMostrada           Boolean   @default(false)
+  trialOfrecido          Boolean   @default(false)
+  trialAceptado          Boolean   @default(false)
+  speechUsado            String?
+  proximaAccion          String?
+  proximaFecha           DateTime?
+  notas                  String?   @db.Text
+  lat                    Float?
+  lon                    Float?
+  geocodedAt             DateTime?
+  leadId                 Int?
+  creadoPor              String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@index([fechaVisita])
   @@index([creadoPor])
@@ -6702,16 +6711,16 @@ model ComercialRelevamientoVisita {
 
 // Hoja de ruta campo (CEO / cualquier rubro — plataforma Claver, sin tenant)
 model ComercialHojaRuta {
-  id        Int       @id @default(autoincrement())
+  id        Int                       @id @default(autoincrement())
   titulo    String
   fecha     DateTime
-  contexto  String    @default("comercial") // comercial | logistica | servicio | cobranza | implementacion | otro
+  contexto  String                    @default("comercial") // comercial | logistica | servicio | cobranza | implementacion | otro
   rubro     String?
-  estado    String    @default("activa") // borrador | activa | completada
-  notas     String?   @db.Text
+  estado    String                    @default("activa") // borrador | activa | completada
+  notas     String?                   @db.Text
   operador  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
   paradas   ComercialHojaRutaParada[]
 
   @@index([fecha])
@@ -6734,10 +6743,10 @@ model ComercialHojaRutaParada {
   lon        Float?
   origenTipo String? // lead | relevamiento | manual
   origenId   Int?
-  estado     String    @default("pendiente") // pendiente | visitada | omitida
-  notas      String?   @db.Text
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  estado     String            @default("pendiente") // pendiente | visitada | omitida
+  notas      String?           @db.Text
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@index([hojaRutaId])
   @@map("comercial_hoja_ruta_paradas")
@@ -6745,37 +6754,152 @@ model ComercialHojaRutaParada {
 
 // -- Clavernet (Partner Network) --------------------------
 model PartnerProfile {
-  id             Int       @id @default(autoincrement())
-  usuarioId      Int       @unique
-  usuario        Usuario   @relation(fields: [usuarioId], references: [id])
-  tipo           String    // "dev" | "seller" | "implementer" | "hybrid"
+  id             Int      @id @default(autoincrement())
+  usuarioId      Int      @unique
+  usuario        Usuario  @relation(fields: [usuarioId], references: [id])
+  tipo           String // "dev" | "seller" | "implementer" | "hybrid"
   nombreFantasia String?
-  bio            String?   @db.Text
-  nivel          String    @default("novice") // "novice" | "pro" | "elite"
-  comisionGlobal Decimal   @default(0) @db.Decimal(5, 2)
-  activo         Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  bio            String?  @db.Text
+  nivel          String   @default("novice") // "novice" | "pro" | "elite"
+  comisionGlobal Decimal  @default(0) @db.Decimal(5, 2)
+  activo         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   appsPublicadas MarketplaceApp[] @relation("DevApps")
-  
+
   @@map("partner_profiles")
 }
 
 model MarketplaceApp {
-  id             Int       @id @default(autoincrement())
-  sku            String    @unique
-  nombre         String
-  descripcion    String    @db.Text
-  devId          Int
-  developer      PartnerProfile @relation("DevApps", fields: [devId], references: [id])
-  precioMensual  Decimal   @default(0) @db.Decimal(10, 2)
-  comisionSeller Decimal   @default(0) @db.Decimal(5, 2)
-  comisionTeacher Decimal  @default(0) @db.Decimal(5, 2)
-  estado         String    @default("draft") // "draft" | "published" | "deprecated"
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              Int            @id @default(autoincrement())
+  sku             String         @unique
+  nombre          String
+  descripcion     String         @db.Text
+  devId           Int
+  developer       PartnerProfile @relation("DevApps", fields: [devId], references: [id])
+  precioMensual   Decimal        @default(0) @db.Decimal(10, 2)
+  comisionSeller  Decimal        @default(0) @db.Decimal(5, 2)
+  comisionTeacher Decimal        @default(0) @db.Decimal(5, 2)
+  estado          String         @default("draft") // "draft" | "published" | "deprecated"
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@map("marketplace_apps")
 }
 
+// ==========================================
+// M�DULO CONSORCIOS (PROPERTY MANAGEMENT)
+// ==========================================
+
+model Consorcio {
+  id        Int                @id @default(autoincrement())
+  nombre    String
+  direccion String
+  cuit      String?
+  empresaId Int
+  empresa   Empresa            @relation(fields: [empresaId], references: [id])
+  unidades  UnidadFuncional[]
+  gastos    ConsorcioGasto[]
+  mensajes  ConsorcioMensaje[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([empresaId])
+  @@map("consorcios")
+}
+
+model UnidadFuncional {
+  id          Int       @id @default(autoincrement())
+  consorcioId Int
+  consorcio   Consorcio @relation(fields: [consorcioId], references: [id], onDelete: Cascade)
+  numero      String
+  porceps     Float
+  residenteId Int?
+  residente   Cliente?  @relation("ClienteResidente", fields: [residenteId], references: [id])
+  saldo       Decimal   @default(0) @db.Decimal(15, 2)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  expensas ConsorcioExpensa[]
+
+  @@index([consorcioId])
+  @@index([residenteId])
+  @@map("unidades_funcionales")
+}
+
+model ConsorcioGasto {
+  id          Int        @id @default(autoincrement())
+  consorcioId Int
+  consorcio   Consorcio  @relation(fields: [consorcioId], references: [id], onDelete: Cascade)
+  descripcion String
+  monto       Decimal    @db.Decimal(15, 2)
+  fecha       DateTime
+  periodo     String
+  proveedorId Int?
+  proveedor   Proveedor? @relation(fields: [proveedorId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([consorcioId, periodo])
+  @@map("consorcio_gastos")
+}
+
+model ConsorcioExpensa {
+  id               Int             @id @default(autoincrement())
+  unidadId         Int
+  unidad           UnidadFuncional @relation(fields: [unidadId], references: [id], onDelete: Cascade)
+  periodo          String
+  montoTotal       Decimal         @db.Decimal(15, 2)
+  estado           String          @default("pendiente")
+  facturaId        Int?
+  factura          Factura?        @relation(fields: [facturaId], references: [id])
+  fechaVencimiento DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([unidadId, periodo])
+  @@map("consorcio_expensas")
+}
+
+model ConsorcioMensaje {
+  id          Int       @id @default(autoincrement())
+  consorcioId Int
+  consorcio   Consorcio @relation(fields: [consorcioId], references: [id], onDelete: Cascade)
+  asunto      String
+  cuerpo      String    @db.Text
+  fechaEnvio  DateTime  @default(now())
+  canal       String
+  estado      String    @default("enviado")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([consorcioId])
+  @@map("consorcio_mensajes")
+}
+
+// ==========================================
+// CLAVER NICHE APPS — ledger compartido
+// ==========================================
+
+model NicheMovimiento {
+  id        Int       @id @default(autoincrement())
+  empresaId Int
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  appSku    String
+  categoria String
+  titulo    String
+  clienteId Int?
+  cliente   Cliente?  @relation(fields: [clienteId], references: [id])
+  monto     Decimal   @default(0) @db.Decimal(15, 2)
+  estado    String    @default("pendiente")
+  periodo   String?
+  venceEn   DateTime?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([empresaId, appSku])
+  @@index([clienteId])
+  @@map("niche_movimientos")
+}

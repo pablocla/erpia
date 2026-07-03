@@ -16,6 +16,16 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/configuracion",
   ],
   completo: [],
+  niche: [
+    "/dashboard",
+    "/dashboard/nicho",
+    "/dashboard/apps",
+    "/dashboard/clientes",
+    "/dashboard/agenda",
+    "/dashboard/fiado",
+    "/dashboard/historia-clinica",
+    "/dashboard/configuracion",
+  ],
 }
 
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {

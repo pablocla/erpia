@@ -3,6 +3,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { setTrialExpiresAt } from "@/lib/comercial/trial-service"
 import { parametrizarEmpresa } from "@/lib/config/parametrizacion-rubro"
 import { activarPack, activarProducto } from "@/lib/platform/product-lifecycle"
 import { getPackHorizontal } from "@/lib/platform/product-registry"
@@ -195,6 +196,8 @@ export async function applyRetailOnboarding(
       pais: "AR",
     },
   })
+
+  await setTrialExpiresAt(empresaId, trialExpiresAt, trialDias)
 
   return {
     rubro,

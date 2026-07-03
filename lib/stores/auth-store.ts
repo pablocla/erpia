@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import { clearAuthTokenCookie } from "@/lib/auth/token-cookie"
+import { clearAuthTokenCookie, setAuthTokenCookie } from "@/lib/auth/token-cookie"
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AUTH STORE — Centralized authentication state (Zustand)
@@ -41,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
       login: (token, user) => {
         if (typeof window !== "undefined") {
           localStorage.setItem("token", token)
+          setAuthTokenCookie(token)
         }
         set({ token, user, isAuthenticated: true })
       },
@@ -74,6 +75,9 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
+        if (state?.token && typeof window !== "undefined") {
+          setAuthTokenCookie(state.token)
+        }
         state?.setHydrated()
       },
     },

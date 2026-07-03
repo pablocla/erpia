@@ -3,6 +3,7 @@
  * Referencia canónica: docs/marketplace/06-runbooks-por-producto.md
  * Pack Almacén Rosario: docs/marketplace/14-pack-almacen-rosario.md
  */
+import { NICHE_PRODUCT_RUNBOOKS } from "@/lib/niche/niche-runbooks"
 import { ALMACEN_ROSARIO_RUNBOOKS } from "./almacen-rosario-runbooks"
 
 export type EjecutorPaso = "sistema" | "ia" | "analista" | "cliente"
@@ -441,6 +442,7 @@ export const PRODUCT_RUNBOOKS: Record<string, ProductRunbook> = {
 const ALL_RUNBOOKS: Record<string, ProductRunbook> = {
   ...PRODUCT_RUNBOOKS,
   ...ALMACEN_ROSARIO_RUNBOOKS,
+  ...NICHE_PRODUCT_RUNBOOKS,
 }
 
 export function getRunbook(sku: string): ProductRunbook | null {

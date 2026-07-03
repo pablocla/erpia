@@ -41,6 +41,12 @@ export function ClaverMatrixHub() {
               Más líneas de cobros, logística, IA y consultoría bajo el mismo paraguas.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
+              <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold shadow-lg shadow-emerald-500/25" asChild>
+                <Link href="/demo/almacen">
+                  Probar gratis 14 días
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
               <Button size="lg" className="bg-amber-600 hover:bg-amber-500 text-slate-950" asChild>
                 <Link href="/claver/claverp">
                   Conocer Claver
@@ -85,10 +91,10 @@ export function ClaverMatrixHub() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-blue-500/20 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40 hover:text-blue-200"
+                className="border-white/20 bg-white/5 hover:bg-white/10"
                 asChild
               >
-                <Link href="/clavernet">Red Clavernet</Link>
+                <Link href="/login?trial=14">Iniciar sesión</Link>
               </Button>
             </div>
           </MotionFadeDown>

@@ -526,14 +526,14 @@ export default function RelevamientosCallePage() {
                   )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {!r.leadEmpresaId && (r.trialAceptado || r.nivelInteres === "alto") && (
+                  {!r.leadEmpresaId && (r.trialAceptado || r.nivelInteres !== "bajo") && (
                     <Button
                       size="sm"
                       className="h-8 bg-violet-600 hover:bg-violet-500"
                       onClick={() => abrirProvision(r)}
                     >
                       <Rocket className="h-3.5 w-3.5 mr-1" />
-                      Dejar listo hoy
+                      Convertir a cliente
                     </Button>
                   )}
                   {r.leadEmpresaId && (
@@ -567,7 +567,7 @@ export default function RelevamientosCallePage() {
       <Dialog open={provisionOpen} onOpenChange={setProvisionOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Dejar listo — {provisionTarget?.negocio}</DialogTitle>
+            <DialogTitle>Convertir a cliente — {provisionTarget?.negocio}</DialogTitle>
           </DialogHeader>
           {provisionOk ? (
             <div className="space-y-3 text-sm">
@@ -606,7 +606,17 @@ export default function RelevamientosCallePage() {
           )}
           <DialogFooter>
             {provisionOk ? (
-              <Button onClick={() => setProvisionOpen(false)}>Cerrar</Button>
+              <>
+                <Button variant="outline" asChild>
+                  <Link href={`/claver-cloud/tenants/${provisionOk.empresaId}`}>
+                    Ver tenant
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/claver-cloud/provisioning">Provisioning</Link>
+                </Button>
+                <Button onClick={() => setProvisionOpen(false)}>Cerrar</Button>
+              </>
             ) : (
               <>
                 <Button variant="outline" onClick={() => setProvisionOpen(false)}>
@@ -617,7 +627,7 @@ export default function RelevamientosCallePage() {
                   disabled={provisionando || !provisionEmail.includes("@")}
                   onClick={() => void provisionarTrial()}
                 >
-                  {provisionando ? "Creando…" : "Crear tenant + trial 14d"}
+                  {provisionando ? "Provisionando…" : "Convertir a cliente"}
                 </Button>
               </>
             )}

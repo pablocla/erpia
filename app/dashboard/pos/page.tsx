@@ -47,6 +47,7 @@ import {
   BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package,
 } from "lucide-react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { PosPendientesPanel } from "@/components/pos/pos-pendientes-panel"
 import { PosPendientesDrawer } from "@/components/pos/pos-pendientes-drawer"
 import { PosVentasHoyDrawer } from "@/components/pos/pos-ventas-hoy-drawer"
@@ -162,6 +163,7 @@ const NUMPAD_KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "⌫
 
 export default function POSPage() {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   const { promos: promosHoy, refreshPromos } = useAlmacenRosario()
   const searchRef = useRef<HTMLInputElement>(null)
   const montoEfectivoRef = useRef<HTMLInputElement>(null)
@@ -169,6 +171,13 @@ export default function POSPage() {
   // ── Estado general ──────────────────────────────────────────
   const [modo, setModo] = useState<ModoPos>("mostrador")
   const { layout: posLayout } = usePosLayout(modo)
+
+  useEffect(() => {
+    const mode = searchParams.get("mode")
+    if (mode === "kiosk" || mode === "kiosko") {
+      setModo("kiosko")
+    }
+  }, [searchParams])
   const [cajaId, setCajaId] = useState<number | null>(null)
   const [cajaOk, setCajaOk] = useState<boolean | null>(null)
   const [cajaMotivo, setCajaMotivo] = useState<CajaMotivo | null>(null)

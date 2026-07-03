@@ -6,8 +6,9 @@
 import { ENGANCHES } from "@/lib/marketplace/enganche-catalog"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
+import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche"
 
 export interface PackCalle {
   id: string
@@ -27,6 +28,7 @@ const LANDING: Record<ModoLite, string> = {
   cobranza: "/dashboard/cuentas-cobrar",
   pos: "/dashboard/pos",
   completo: "/dashboard",
+  niche: "/dashboard/nicho",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {
@@ -66,6 +68,12 @@ export const PACKS_CALLE: PackCalle[] = [
   packFromSku("pos.fiado_barrio", "fiado")!,
   packFromSku("intang.cobranzas_wa", "cobranza")!,
   packFromBundle("pool-almacen-barrio", "completo")!,
+  packFromBundle("pool-claver-nicho", "niche")!,
+  packFromBundle("pool-propiedad", "niche")!,
+  packFromBundle("pool-calle-nicho", "niche")!,
+  packFromBundle("pool-servicios-barrio", "niche")!,
+  packFromBundle("pool-escuela-barrio", "niche")!,
+  packFromBundle("pool-deportes-barrio", "niche")!,
   packFromBundle("pool-almacen-rosario", "pos")!,
   packFromBundle("pool-kiosco-barrio", "pos")!,
   packFromSku("pos.balanza_peso", "pos")!,
@@ -89,9 +97,18 @@ const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   "pool-almacen-rosario": "pos",
   "pool-kiosco-barrio": "pos",
   "pool-cobra-recupera": "cobranza",
+  "pool-claver-nicho": "niche",
+  "pool-propiedad": "niche",
+  "pool-calle-nicho": "niche",
+  "pool-servicios-barrio": "niche",
+  "pool-escuela-barrio": "niche",
+  "pool-deportes-barrio": "niche",
   "pos.balanza_peso": "pos",
   "pos.core": "pos",
   "core.claver": "pos",
+  ...Object.fromEntries(
+    NICHE_APPS.map((a) => [a.sku, (a.engine === "libreta" ? "fiado" : "niche") as ModoLite]),
+  ),
 }
 
 const MODO_POR_DOLOR: Record<string, ModoLite> = {

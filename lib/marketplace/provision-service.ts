@@ -4,10 +4,12 @@ import { resolveSku } from "./catalog-resolver"
 import { getRunbookOrDefault } from "./product-runbooks"
 import { crearTareaMarketplace, resolverAnalistaEmpresa } from "./analyst-task-service"
 import { activarProducto } from "@/lib/platform/product-lifecycle"
+import { assertSkuProvisionable } from "./sku-availability"
 
 const AUTO_LEVELS = new Set(["GLOBAL_AUTO", "REGION_AUTO"])
 
 export async function provisionSku(empresaId: number, sku: string, opts?: { ordenId?: string; iniciadoPor?: string }) {
+  assertSkuProvisionable(sku)
   const item = resolveSku(sku)
   if (!item) throw new Error(`SKU no encontrado: ${sku}`)
 

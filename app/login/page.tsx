@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { BrandLogo } from "@/components/marketing/brand-logo"
 import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
 import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
 import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
@@ -21,7 +22,27 @@ function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get("next")
-  const { login, loginConToken } = useAuth()
+  const { login, loginConToken, cargando, autenticado, token, usuario } = useAuth()
+
+  useEffect(() => {
+    if (cargando || !autenticado || !token || !usuario) return
+    void resolvePostLoginPathAsync(token, usuario.rol, nextPath).then((dest) => {
+      router.replace(dest)
+    })
+  }, [cargando, autenticado, token, usuario, nextPath, router])
+
+  if (cargando || (autenticado && token)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <BrandLogo size="md" variant="group-full" className="mb-4" />
+            <CardDescription>Redirigiendo…</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
 
   async function redirectAfterLogin(token: string, rol: string, goldenPath?: string) {
     const dest = await resolvePostLoginPathAsync(token, rol, goldenPath ?? nextPath)
@@ -99,7 +120,7 @@ function LoginPageContent() {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{BRAND_NAME}</CardTitle>
+          <BrandLogo size="md" variant="group-full" className="mb-2" />
           <CardDescription>
             by {CLAVER_GROUP.name} — Ingresá tus credenciales para acceder
           </CardDescription>
@@ -182,7 +203,7 @@ function LoginPageContent() {
       </Card>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         <span className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <Link href="/claver" className="text-primary hover:underline">
+          <Link href="/" className="text-primary hover:underline">
             Grupo Claver
           </Link>
           <span aria-hidden>·</span>
@@ -213,7 +234,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle>{BRAND_NAME}</CardTitle>
+              <BrandLogo size="md" variant="group-full" className="mb-4" />
               <CardDescription>Cargando…</CardDescription>
             </CardHeader>
           </Card>

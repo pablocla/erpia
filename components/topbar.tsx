@@ -175,8 +175,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
   }, [])
 
   return (
-    <header className="app-topbar h-14 border-b border-border/40 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/30 flex items-center justify-between gap-2 px-3 sm:px-6 shrink-0 animate-fade-in shadow-sm z-30 relative">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+    <header className="app-topbar h-[52px] border-b flex items-center justify-between gap-2 px-3 sm:px-5 shrink-0 z-30 relative">
 
       <div className="flex items-center gap-2">
         {onMenuClick && (

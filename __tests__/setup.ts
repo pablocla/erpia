@@ -107,6 +107,13 @@ const prismaModels = [
   "marketplaceProvisionJob",
   "marketplaceTareaAnalista",
   "fiadoNotificacionLog",
+  // Claver Nicho
+  "nicheMovimiento",
+  "consorcio",
+  "unidadFuncional",
+  "consorcioGasto",
+  "consorcioExpensa",
+  "consorcioMensaje",
 ]
 
 for (const model of prismaModels) {

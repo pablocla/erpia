@@ -104,7 +104,7 @@ export const INTANGIBLE_PREMIUM_7: IntangiblePremiumMeta[] = [
     precioArs: 12900,
     audiencia: "B2B",
     autoCertLevel: "REGION_AUTO",
-    status: "disponible",
+    status: "planned",
     prioridadBuild: "proximo",
     stackTecnico: ["CRM", "pedidos", "WhatsApp", "cupones", "KPIs"],
     dependeDe: ["com.whatsapp"],

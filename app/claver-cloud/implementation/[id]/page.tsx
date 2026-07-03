@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, CalendarPlus, RefreshCw, UserPlus } from "lucide-react"
+import { ArrowLeft, CalendarPlus, RefreshCw, UserPlus, FileSignature } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -50,6 +50,8 @@ export default function ClaverImplementationDetailPage() {
   const [sprintInicio, setSprintInicio] = useState(hoyIso)
   const [sprintFin, setSprintFin] = useState(enDosSemanasIso)
   const [loading, setLoading] = useState(false)
+  const [uatSignature, setUatSignature] = useState("")
+  const [uatComments, setUatComments] = useState("")
 
   const cargar = useCallback(async () => {
     if (!id) return
@@ -143,6 +145,25 @@ export default function ClaverImplementationDetailPage() {
       }),
     })
     await cargar()
+  }
+
+  const signUat = async () => {
+    if (!uatSignature) return
+    setLoading(true)
+    try {
+      await fetch(`/api/claver/uat/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          signatureName: uatSignature,
+          comments: uatComments
+        }),
+      })
+      alert("Acta firmada exitosamente. El proyecto ahora está en fase Go-Live.")
+      await cargar()
+    } finally {
+      setLoading(false)
+    }
   }
 
   const sprintActivo = sprints.find((s) => s.activo)
@@ -297,6 +318,41 @@ export default function ClaverImplementationDetailPage() {
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground">Sin ítems. Usá Sincronizar para importar fases CCA y tareas.</p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileSignature className="h-4 w-4" />
+            Acta UAT y Go-Live Digital
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Al firmar el Acta UAT, confirmás que el cliente probó el sistema y acepta el paso a Producción (Go-Live).
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Firma del cliente (Nombre completo)</Label>
+              <Input
+                placeholder="Ej. Juan Pérez"
+                value={uatSignature}
+                onChange={(e) => setUatSignature(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Comentarios o salvedades</Label>
+              <Input
+                placeholder="Observaciones finales..."
+                value={uatComments}
+                onChange={(e) => setUatComments(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button onClick={signUat} disabled={loading || !uatSignature}>
+            Firmar Acta y Activar Go-Live
+          </Button>
         </CardContent>
       </Card>
     </div>

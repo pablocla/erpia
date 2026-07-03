@@ -19,6 +19,7 @@ type BillingRow = {
   skusActivos: number
   limiteSkus: number
   opsSuperAdmin: boolean
+  mpSubscriptionStatus: string | null
 }
 
 type FleetBilling = {
@@ -150,6 +151,21 @@ export default function ClaverCloudBillingPage() {
               </span>
               <span className="font-medium">{fmt(r.mrrTotalArs)}/mes</span>
               {r.opsSuperAdmin && <Badge className="bg-primary/80 text-[10px]">ops.superadmin</Badge>}
+              
+              {r.mpSubscriptionStatus ? (
+                <Badge variant="outline" className={
+                  r.mpSubscriptionStatus === "authorized" ? "border-green-500 text-green-600 bg-green-50" :
+                  r.mpSubscriptionStatus === "cancelled" ? "border-red-500 text-red-600 bg-red-50" : 
+                  "border-orange-500 text-orange-600 bg-orange-50"
+                }>
+                  MP: {r.mpSubscriptionStatus}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-gray-300 text-gray-500 bg-gray-50">
+                  Sin MP
+                </Badge>
+              )}
+
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/claver-cloud/tenants/${r.empresaId}`}>Panel</Link>
               </Button>

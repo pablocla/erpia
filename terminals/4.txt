@@ -1,0 +1,37 @@
+---
+pid: 22544
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -First 30"
+started_at: 2026-07-03T02:39:33.964Z
+running_for_ms: 5565004  
+---
+.next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/pos/venta/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/pos/venta/route"), "POST" | "config" | "GET" | "PATCH" | "PUT" | "DELETE" | "revalidate" | "HEAD" | ... 7 more ... | "OPTIONS", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'calcularLinea' is incompatible with index signature.
+    Type '(precioUnitario: number, cantidad: number, porcentajeIva: number, descuento: number) => { neto: number; iva: number; total: number; }' is not assignable to type 'never'.
+.next/types/app/dashboard/configuracion/reportes/[id]/page.ts(34,29): error TS2344: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/validator.ts(2007,31): error TS2344: Type 'typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/agenda-publica/[empresaId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/agenda-publica/[empresaId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: NextRequest, { params }: { params: { empresaId: string; }; }) => Promise<NextResponse<{ error: string; }> | NextResponse<{ success: boolean; empresa: { id: number; nombre: string; }; profesionales: { ...; }[]; servicios: { ...; }[]; disponibilidad: { ...; }[]; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ empresaId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ empresaId: string; }>; }' is not assignable to type '{ params: { empresaId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'empresaId' is missing in type 'Promise<{ empresaId: string; }>' but required in type '{ empresaId: string; }'.
+__tests__/almacen-rosario/comercial.test.ts(22,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '"pos.recargas_servicios" | "pos.balanza_peso" | "pos.promos_cantidad" | "pos.ticket_regalo" | "pos.pedido_distribuidora" | "pos.mermas_roturas" | "pos.arqueo_ciego" | "pos.lista_mayorista_pos" | ... 9 more ... | "pos.vale_dinero"'.
+__tests__/auth/claver-analyst.test.ts(33,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/automation/poll.test.ts(32,48): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(49,45): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(88,47): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.

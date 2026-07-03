@@ -27,6 +27,34 @@ describe("pack-calle-catalog", () => {
     expect(inferModoLiteFromEnganche("indefinido", "fiado")).toBe("fiado")
     expect(inferModoLiteFromEnganche("indefinido", "cobranza")).toBe("cobranza")
   })
+
+  it("resuelve packs nicho con modoLite niche", () => {
+    const starter = resolvePackCalle("pool-claver-nicho")
+    expect(starter?.modoLite).toBe("niche")
+    expect(starter?.landingPath).toBe("/dashboard/nicho")
+    expect(skusParaActivar("pool-propiedad")).toContain("niche.consorcios")
+    expect(skusParaActivar("pool-calle-nicho")).toContain("pos.fiado_barrio")
+  })
+
+  it("resuelve packs calle Tier A", () => {
+    const servicios = resolvePackCalle("pool-servicios-barrio")
+    expect(servicios?.modoLite).toBe("niche")
+    expect(skusParaActivar("pool-servicios-barrio")).toContain("niche.peluqueria_barrio")
+    expect(skusParaActivar("pool-escuela-barrio")).toContain("niche.escuela_barrio")
+    expect(skusParaActivar("pool-deportes-barrio")).toContain("niche.cancha_barrio")
+  })
+
+  it("infiere modo lite niche para SKU individual", () => {
+    expect(inferModoLiteFromEnganche("niche.consorcios")).toBe("niche")
+    expect(inferModoLiteFromEnganche("niche.tintoreria")).toBe("niche")
+  })
+
+  it("prestamista usa modoLite fiado", () => {
+    expect(inferModoLiteFromEnganche("niche.prestamo_barrio")).toBe("fiado")
+    const pack = resolvePackCalle("niche.prestamo_barrio")
+    expect(pack?.modoLite).toBe("fiado")
+    expect(pack?.landingPath).toBe("/dashboard/fiado")
+  })
 })
 
 describe("lite-sidebar", () => {
@@ -51,5 +79,22 @@ describe("lite-sidebar", () => {
 
   it("keeps all menu items in completo mode", () => {
     expect(filterMenuItemsByModoLite(menuMock, "completo")).toHaveLength(menuMock.length)
+  })
+
+  it("filters menu items in niche mode", () => {
+    const nicheMenu = [
+      ...menuMock,
+      { href: "/dashboard/nicho", label: "Claver Nicho" },
+      { href: "/dashboard/nicho/club", label: "Club" },
+      { href: "/dashboard/apps", label: "App Store" },
+      { href: "/dashboard/historia-clinica", label: "Historia clínica" },
+    ]
+    const filtered = filterMenuItemsByModoLite(nicheMenu, "niche")
+    const hrefs = filtered.map((f) => f.href)
+    expect(hrefs).toContain("/dashboard/nicho")
+    expect(hrefs).toContain("/dashboard/nicho/club")
+    expect(hrefs).toContain("/dashboard/apps")
+    expect(hrefs).toContain("/dashboard/historia-clinica")
+    expect(hrefs).not.toContain("/dashboard/pos")
   })
 })

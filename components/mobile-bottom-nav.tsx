@@ -122,8 +122,8 @@ export function MobileBottomNav() {
         </div>
       )}
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 safe-area-pb shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center justify-around h-[3.75rem] max-w-lg mx-auto">
+      <nav className="mobile-tab-bar lg:hidden fixed bottom-0 inset-x-0 z-50 border-t safe-area-pb">
+        <div className="flex items-center justify-around h-[3.25rem] max-w-md mx-auto px-2">
           {items.map((item) => {
             const isMore = item.href === "#more"
             const isActive = isMore
@@ -137,9 +137,9 @@ export function MobileBottomNav() {
                 key={item.href}
                 onClick={() => setShowMore(!showMore)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
-                  "active:scale-95 touch-manipulation min-h-[44px]",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all duration-200",
+                  "active:scale-95 touch-manipulation min-h-[44px] rounded-xl",
+                  isActive ? "text-primary" : "text-muted-foreground/80 hover:text-foreground",
                 )}
               >
                 <item.icon className={cn("h-5 w-5 sm:h-6 sm:w-6", isActive && "drop-shadow-sm")} />
@@ -153,11 +153,9 @@ export function MobileBottomNav() {
                 href={item.href}
                 onClick={() => setShowMore(false)}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
-                  "active:scale-95 touch-manipulation",
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground",
+                  "relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all duration-200",
+                  "active:scale-95 touch-manipulation rounded-xl",
+                  isActive ? "text-primary" : "text-muted-foreground/80 hover:text-foreground",
                 )}
               >
                 <div className="relative">
@@ -175,7 +173,7 @@ export function MobileBottomNav() {
                   {item.label}
                 </span>
                 {isActive && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+                  <div className="absolute -top-px left-1/2 -translate-x-1/2 w-5 h-[3px] bg-primary rounded-full" />
                 )}
               </Link>
             )

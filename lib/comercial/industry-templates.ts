@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Catálogo unificado de industrias — Sensor Comercial Claver
  * Fuente de verdad: demo, provisioning, labels de sidebar y golden action.

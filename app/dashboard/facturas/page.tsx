@@ -266,6 +266,7 @@ export default function FacturasPage() {
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>
                   ),
+              },
               { key: "_count" as any, header: "NC", cell: (f) => f._count?.notasCredito ?? 0, exportFn: (f) => String(f._count?.notasCredito ?? 0) },
               {
                 key: "acciones" as any, header: "", cell: (f) => (

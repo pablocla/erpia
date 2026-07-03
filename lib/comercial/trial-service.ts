@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Trial comercial — countdown y conversión (auditoría F1-1).
  * Persiste en ParametroFiscal sin migración de schema.

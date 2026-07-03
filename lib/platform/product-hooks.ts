@@ -41,7 +41,7 @@ import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { activarNicheApp } from "@/lib/niche/niche-provision"
 import { activarTiendaOnline } from "@/lib/ecommerce/ecommerce-provision"
 
-export type ProductHook = (empresaId: number) => Promise<void>
+export type ProductHook = (empresaId: number, config?: any) => Promise<any>
 
 const REGLA_COBRANZAS = "Secretaria Cobranzas WA (AutoPool)"
 

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getAuthContextServer } from "@/lib/auth/empresa-guard-server"
+import { getAuthContextServer } from "@/lib/auth/empresa-guard"
 import { getEmpresaCountry } from "@/lib/country/get-empresa-country"
 import { getCountryFeatures } from "@/lib/country/country-features"
 import { FiscalRouteGuard } from "./route-guard"

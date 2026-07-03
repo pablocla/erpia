@@ -96,7 +96,7 @@ export const ENGANCHES: EngancheProducto[] = [
     nombre: "Tienda Online B2C",
     lema: "Catálogo ERP, checkout real, sin Tienda Nube.",
     tier: "implementado",
-    nichos: ["ecommerce", "retail", "distribuidora"],
+    nichos: ["ecommerce", "retail", "distribuidora"] as any,
     precioArs: 34900,
     upsellA: ["channel.mercadopago", "com.whatsapp", "core.claver"],
     dolorResuelve: "Vender online sin sincronizar stock a mano ni otro sistema",

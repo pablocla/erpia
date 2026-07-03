@@ -36,7 +36,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     nombre: "Motor de IA (Gemini)",
     categoria: "Infraestructura",
     precioArs: 0,
-    tipoCobro: "mensual",
+    tipoCobro: "recurrente",
     autoCertLevel: "GLOBAL_AUTO",
     paisesHabilitados: ["*"],
     i18n: { "es-AR": { nombre: "Motor de IA", descripcion: "Habilita la generación de contenido y agentes", packOnboardSubject: "Motor de IA activado" } },
@@ -1253,7 +1253,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     implementadoresAutorizados: ["partner_teacher_1"]
   },
 
-  ...RETAIL_EXTENSION_CATALOG,
-  ...GENERATIVE_CATALOG,
-  ...NICHE_MARKETPLACE_CATALOG,
+  ...(RETAIL_EXTENSION_CATALOG as any),
+  ...(GENERATIVE_CATALOG as any),
+  ...(NICHE_MARKETPLACE_CATALOG as any),
 ]

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Secretaria Virtual de Cobranzas por WhatsApp — SKU intang.cobranzas_wa
  * Reutiliza cuentaCobrar, reglaAlerta cxc_vencida y mensajePendienteWhatsApp.

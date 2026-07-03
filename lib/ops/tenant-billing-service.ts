@@ -36,7 +36,7 @@ export async function getTenantBilling(empresaId: number): Promise<TenantBilling
     select: { sku: true, precioArs: true },
   })
   const precioMap = new Map(comerciales.map((p: { sku: string; precioArs: number }) => [p.sku, p.precioArs]))
-  const mrrSkus = skus.reduce((sum: number, sku: string) => sum + (precioMap.get(sku) ?? 0), 0)
+  const mrrSkus = skus.reduce((sum: number, sku: string) => sum + Number(precioMap.get(sku) ?? 0), 0)
   const opsSuperAdmin = skus.includes("ops.claver_superadmin")
 
   return {

@@ -21,7 +21,6 @@ import {
   Target,
   TrendingUp,
   UserPlus,
-  UserPlus,
   Users,
   Terminal,
   RefreshCw

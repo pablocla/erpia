@@ -88,7 +88,7 @@ export function loadProtheusCatalog(): ProtheusCatalogBundle {
         baseUrlExample: "http://10.12.35.70:8073/rest",
       },
       moduleCounts: {},
-      modules: getModuleSummary(),
+      modules: getModuleSummary() as any,
       services: [],
     }
   }
@@ -102,10 +102,10 @@ export function loadProtheusCatalog(): ProtheusCatalogBundle {
   cachedBundle = {
     meta: raw.meta,
     moduleCounts: raw.moduleCounts,
-    modules: getModuleSummary(),
+    modules: getModuleSummary() as any,
     services: raw.services,
   }
-  return cachedBundle
+  return cachedBundle!
 }
 
 export function searchProtheusCatalog(opts: {
@@ -184,7 +184,7 @@ export async function refreshProtheusCatalogLive(creds: ProtheusRestCredentials)
   fs.writeFileSync(CATALOG_PATH, JSON.stringify(bundle))
   cachedBundle = {
     ...bundle,
-    modules: getModuleSummary(),
+    modules: getModuleSummary() as any,
   }
 
   return cachedBundle

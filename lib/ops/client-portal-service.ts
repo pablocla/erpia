@@ -79,13 +79,13 @@ export async function getClientPortalOverview(empresaId: number) {
 
   const ticketsResumen = {
     total: tickets.length,
-    abiertos: tickets.filter((t) => t.estado === "abierto" || t.estado === "en_progreso").length,
-    vencidosSla: tickets.filter((t) =>
+    abiertos: tickets.filter((t: any) => t.estado === "abierto" || t.estado === "en_progreso").length,
+    vencidosSla: tickets.filter((t: any) =>
       estaVencidoSla(t.estado, t.prioridad, new Date(t.createdAt)),
     ).length,
   }
 
-  const pasosCliente = tareasCliente.flatMap((t) => {
+  const pasosCliente = tareasCliente.flatMap((t: any) => {
     const checklist = Array.isArray(t.checklistJson) ? t.checklistJson : []
     return checklist
       .filter((c: { ejecutor?: string }) => c.ejecutor === "cliente")
@@ -110,7 +110,7 @@ export async function getClientPortalOverview(empresaId: number) {
           atrasado: proyecto.atrasado,
         }
       : null,
-    tickets: tickets.map((t) => ({
+    tickets: tickets.map((t: any) => ({
       ...t,
       horasAbierto: Math.round(horasAbierto(t.createdAt) * 10) / 10,
       slaVencido: estaVencidoSla(t.estado, t.prioridad, new Date(t.createdAt)),

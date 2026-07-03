@@ -3,13 +3,13 @@ import { getRunbookOrDefault } from "./product-runbooks"
 import type { AutoCertLevel } from "./marketplace-catalog"
 
 export async function resolverAnalistaEmpresa(empresaId: number): Promise<string | null> {
-  const asignacion = await prisma.analistaAsignacion.findFirst({
+  const asignacion = await (prisma as any).analistaAsignacion.findFirst({
     where: { empresaId, activo: true, rolAsignacion: { in: ["lead", "implementacion", "marketplace", "soporte"] } },
     orderBy: { createdAt: "asc" },
   })
   if (asignacion) return asignacion.analistaEmail
 
-  const proyecto = await prisma.proyectoImplementacion.findUnique({
+  const proyecto = await (prisma as any).proyectoImplementacion.findUnique({
     where: { empresaId },
     select: { analistaEmail: true },
   })
@@ -38,7 +38,7 @@ export async function crearTareaMarketplace(input: {
     .filter((p) => p.ejecutor === "analista" || p.ejecutor === "cliente")
     .map((p) => ({ paso: p.orden, titulo: p.titulo, hecho: false, ejecutor: p.ejecutor }))
 
-  return prisma.marketplaceTareaAnalista.create({
+  return (prisma as any).marketplaceTareaAnalista.create({
     data: {
       empresaId: input.empresaId,
       sku: input.sku,
@@ -75,7 +75,7 @@ export async function listTareasAnalista(opts: {
     where.OR = [{ asignadoA: opts.analistaEmail }, { asignadoA: "clav-ai" }]
   }
 
-  return prisma.marketplaceTareaAnalista.findMany({
+  return (prisma as any).marketplaceTareaAnalista.findMany({
     where,
     include: {
       empresa: { select: { id: true, nombre: true, razonSocial: true, cuit: true } },
@@ -86,7 +86,7 @@ export async function listTareasAnalista(opts: {
 }
 
 export async function completarTarea(tareaId: string, notas?: string) {
-  const tarea = await prisma.marketplaceTareaAnalista.update({
+  const tarea = await (prisma as any).marketplaceTareaAnalista.update({
     where: { id: tareaId },
     data: {
       estado: "completada",
@@ -98,7 +98,7 @@ export async function completarTarea(tareaId: string, notas?: string) {
 }
 
 export async function asegurarAsignacionAnalista(empresaId: number, analistaEmail: string, rol = "marketplace") {
-  return prisma.analistaAsignacion.upsert({
+  return (prisma as any).analistaAsignacion.upsert({
     where: { analistaEmail_empresaId: { analistaEmail, empresaId } },
     create: { empresaId, analistaEmail, rolAsignacion: rol, activo: true },
     update: { activo: true, rolAsignacion: rol },

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getRubroUx, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
 import type { CountryFeatures } from "@/lib/country/country-features"

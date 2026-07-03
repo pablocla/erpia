@@ -13,7 +13,7 @@ export async function signUat(payload: SignUatPayload) {
   // en la tabla de Empresa o en un registro de operaciones.
   
   // Por ahora lo guardaremos como un Log de Actividad
-  const log = await prisma.agenteLog.create({
+  const log = await (prisma as any).agenteLog.create({
     data: {
       empresaId: payload.empresaId,
       accion: "UAT_SIGNED",
@@ -27,12 +27,12 @@ export async function signUat(payload: SignUatPayload) {
   })
 
   // También avanzamos el proyecto a Go-Live si existe
-  const proyecto = await prisma.proyectoImplementacion.findFirst({
+  const proyecto = await (prisma as any).proyectoImplementacion.findFirst({
     where: { empresaId: payload.empresaId }
   })
 
   if (proyecto) {
-    await prisma.proyectoImplementacion.update({
+    await (prisma as any).proyectoImplementacion.update({
       where: { id: proyecto.id },
       data: { faseActual: "go-live" }
     })

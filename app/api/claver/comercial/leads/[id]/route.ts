@@ -5,7 +5,7 @@ import {
   updateComercialLead,
   type PipelineEtapa,
 } from "@/lib/ops/comercial-pipeline-service"
-import { crearEmpresaYTenant } from "@/lib/auth/onboarding"
+import { crearEmpresaYTenant } from "@/lib/auth/empresa-guard"
 
 export async function PATCH(
   request: NextRequest,

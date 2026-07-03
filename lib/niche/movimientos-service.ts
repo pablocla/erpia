@@ -46,7 +46,7 @@ export async function crearMovimientoNiche(
       estado: data.estado ?? "pendiente",
       periodo: data.periodo,
       venceEn: data.venceEn,
-      metadata: data.metadata ?? undefined,
+      metadata: data.metadata as any,
     },
     include: {
       cliente: { select: { id: true, nombre: true, telefono: true } },

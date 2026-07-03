@@ -541,8 +541,8 @@ export async function getEntornoSyncStatus(empresaId: number): Promise<EntornoSy
     }
   })
 
-  const val = mapped.find((e) => e.codigo === "val")
-  const prd = mapped.find((e) => e.codigo === "prd")
+  const val = mapped.find((e: any) => e.codigo === "val")
+  const prd = mapped.find((e: any) => e.codigo === "prd")
 
   const puedePromoverValAPrd = Boolean(val?.snapshotAt)
   const puedeRefrescarValDesdePrd = true

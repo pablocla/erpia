@@ -209,13 +209,13 @@ export async function upsertSuscripcion(
       activo: data.activo ?? true,
       vigenciaHasta: data.vigenciaHasta ?? null,
       limiteEventosMes: data.limiteEventosMes ?? null,
-      metadata: data.metadata ?? undefined,
+      metadata: data.metadata as any,
     },
     update: {
       activo: data.activo,
       vigenciaHasta: data.vigenciaHasta,
       limiteEventosMes: data.limiteEventosMes,
-      ...(data.metadata !== undefined && { metadata: data.metadata }),
+      ...(data.metadata !== undefined && { metadata: data.metadata as any }),
     },
     include: { producto: true },
   })

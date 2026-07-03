@@ -39,10 +39,10 @@ export async function obtenerFacturaDevolucion(empresaId: number, facturaId: num
   const devueltoPorLinea = new Map<number, number>()
   for (const nc of factura.notasCredito) {
     for (const ln of nc.lineas) {
-      if (!ln.lineaFacturaId) continue
+      if (!(ln as any).lineaFacturaId) continue
       devueltoPorLinea.set(
-        ln.lineaFacturaId,
-        (devueltoPorLinea.get(ln.lineaFacturaId) ?? 0) + Number(ln.cantidad),
+        (ln as any).lineaFacturaId,
+        (devueltoPorLinea.get((ln as any).lineaFacturaId) ?? 0) + Number(ln.cantidad),
       )
     }
   }

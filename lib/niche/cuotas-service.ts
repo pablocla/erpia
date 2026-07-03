@@ -6,7 +6,7 @@ import { crearMovimientoNiche, listarMovimientosNiche } from "./movimientos-serv
 /** Club / Mutuo — recicla Membresías + movimientos de cuota */
 export async function listarSociosNiche(empresaId: number, appSku: string) {
   const [membresias, movimientos] = await Promise.all([
-    MembresiasService.listarMembresias(empresaId),
+    new MembresiasService().listarMembresias(empresaId),
     listarMovimientosNiche(empresaId, appSku, { categoria: "cuota", limit: 200 }),
   ])
   return { membresias, movimientos }

@@ -56,8 +56,8 @@ model Empresa {
   fiadoRequiereLimite    Boolean   @default(true)
   emailDuenoAlmacen      String?
   fiadoNotificarWhatsApp Boolean   @default(true)
-  mpSubscriptionId       String?   // Added for Claver Cloud billing (F2-1)
-  mpSubscriptionStatus   String?   // "authorized", "paused", "cancelled", etc.
+  mpSubscriptionId       String? // Added for Claver Cloud billing (F2-1)
+  mpSubscriptionStatus   String? // "authorized", "paused", "cancelled", etc.
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   deletedAt              DateTime?
@@ -190,6 +190,7 @@ model Empresa {
   agroCannabisCosechas        AgroCannabisCosecha[]
   consorcios                  Consorcio[]
   nicheMovimientos            NicheMovimiento[]
+  reporteAuditoriaAccesos     ReporteAuditoriaAcceso[]
 
   @@map("empresas")
 }
@@ -519,6 +520,9 @@ model LineaFactura {
   total          Decimal @db.Decimal(15, 2)
   descuento      Float   @default(0)
 
+  costoUnitarioHistorico  Decimal? @db.Decimal(15, 2)
+  costoUnitarioReposicion Decimal? @db.Decimal(15, 2)
+
   facturaId  Int
   factura    Factura   @relation(fields: [facturaId], references: [id], onDelete: Cascade)
   productoId Int?
@@ -675,14 +679,15 @@ model Usuario {
   updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
 
-  empresaId              Int
-  empresa                Empresa                   @relation(fields: [empresaId], references: [id])
-  vendedor               Vendedor?
-  logs                   LogActividad[]
-  tareas                 TareaPendiente[]
-  virtualWorkers         AutomationVirtualWorker[]
-  solicitudesIntegracion SolicitudIntegracion[]
-  partnerProfile         PartnerProfile?
+  empresaId               Int
+  empresa                 Empresa                   @relation(fields: [empresaId], references: [id])
+  vendedor                Vendedor?
+  logs                    LogActividad[]
+  tareas                  TareaPendiente[]
+  virtualWorkers          AutomationVirtualWorker[]
+  solicitudesIntegracion  SolicitudIntegracion[]
+  partnerProfile          PartnerProfile?
+  reporteAuditoriaAccesos ReporteAuditoriaAcceso[]
 
   @@map("usuarios")
 }
@@ -2508,10 +2513,10 @@ model PedidoVenta {
   canalVenta      CanalVenta?    @relation(fields: [canalVentaId], references: [id])
   presupuestoId   Int?
 
-  lineas        LineaPedidoVenta[]
-  listasPicking ListaPicking[]
-  remitos       Remito[]
-  envios        Envio[]
+  lineas          LineaPedidoVenta[]
+  listasPicking   ListaPicking[]
+  remitos         Remito[]
+  envios          Envio[]
   transaccionesMp MercadoPagoTransaccion[]
 
   /// FIX A-001: índices para gestión de pedidos
@@ -5716,17 +5721,17 @@ model MercadoPagoConfig {
 }
 
 model MercadoPagoTransaccion {
-  id             Int       @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   /// ID de pago en MercadoPago
-  mpPaymentId    String    @unique
+  mpPaymentId    String       @unique
   /// "approved" | "pending" | "rejected" | "refunded" | "cancelled"
   estado         String
   /// Monto cobrado
-  monto          Decimal   @db.Decimal(15, 2)
+  monto          Decimal      @db.Decimal(15, 2)
   /// Monto neto (descontada comisión MP)
-  montoNeto      Decimal?  @db.Decimal(15, 2)
+  montoNeto      Decimal?     @db.Decimal(15, 2)
   /// Comisión de MP
-  comisionMp     Decimal?  @db.Decimal(15, 2)
+  comisionMp     Decimal?     @db.Decimal(15, 2)
   /// "credit_card" | "debit_card" | "account_money" | "qr" | "transfer"
   medioPago      String
   /// Descripción del pago
@@ -5743,12 +5748,12 @@ model MercadoPagoTransaccion {
   pedidoVentaId  Int?
   pedidoVenta    PedidoVenta? @relation(fields: [pedidoVentaId], references: [id])
   /// Si ya se concilió automáticamente
-  conciliado     Boolean   @default(false)
+  conciliado     Boolean      @default(false)
   /// Fecha del pago en MP
   fechaPago      DateTime?
   /// Datos raw del webhook (JSON)
-  rawData        String?   @db.Text
-  createdAt      DateTime  @default(now())
+  rawData        String?      @db.Text
+  createdAt      DateTime     @default(now())
 
   configId  Int
   config    MercadoPagoConfig @relation(fields: [configId], references: [id])
@@ -6933,4 +6938,56 @@ model NicheMovimiento {
   @@index([empresaId, appSku])
   @@index([clienteId])
   @@map("niche_movimientos")
+}
+
+// ==========================================
+// ANALYTICS, RLS Y AUDITORIA
+// ==========================================
+
+model ReporteAuditoriaAcceso {
+  id                   Int       @id @default(autoincrement())
+  empresaId            Int
+  usuarioId            Int
+  rolSnapshot          String    @db.VarChar(50)
+  reporteCodigo        String    @db.VarChar(80)
+  reporteNombre        String    @db.VarChar(200)
+  reporteCategoria     String    @db.VarChar(40)
+  clasificacionCritica String    @db.VarChar(20)
+  accion               String    @db.VarChar(20)
+  formatoExport        String?   @db.VarChar(20)
+  periodoDesde         DateTime? @db.Date
+  periodoHasta         DateTime? @db.Date
+  filtrosJson          Json
+  filtrosHash          String    @db.Char(64)
+  resultadoHash        String?   @db.Char(64)
+  registrosDevueltos   Int?
+  origenModulo         String    @db.VarChar(60)
+  origenRuta           String    @db.VarChar(300)
+  origenTipo           String    @db.VarChar(20)
+  userAgent            String?   @db.VarChar(500)
+  ipOrigen             String? // Not using INET to keep it simple, VARCHAR is fine
+  sessionId            String?   @db.VarChar(64)
+  sucursalId           Int?
+  duracionMs           Int?
+  exito                Boolean
+  errorCodigo          String?   @db.VarChar(50)
+  createdAt            DateTime  @default(now())
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([empresaId, createdAt(sort: Desc)])
+  @@index([empresaId, reporteCodigo, createdAt(sort: Desc)])
+  @@index([empresaId, usuarioId, createdAt(sort: Desc)])
+  @@map("reporte_auditoria_acceso")
+}
+
+model ReporteDefinicion {
+  codigo               String  @id @db.VarChar(80)
+  nombre               String  @db.VarChar(200)
+  clasificacionCritica String  @db.VarChar(20)
+  requiereExportLog    Boolean @default(false)
+  retencionDias        Int     @default(2555) // 7 años
+
+  @@map("reporte_definicion")
 }

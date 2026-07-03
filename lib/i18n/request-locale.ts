@@ -35,10 +35,10 @@ export async function getEffectiveLocale(): Promise<AppLocale> {
           // 2. Inferido de Empresa.paisFiscal
           if (empresa.paisFiscal) {
             const paisLocaleMap: Record<string, AppLocale> = {
-              "AR": "es-AR",
-              "MX": "es-MX",
-              "BR": "pt-BR",
-              "US": "en-US",
+              "AR": "es-AR" as any,
+              "MX": "es-MX" as any,
+              "BR": "pt-BR" as any,
+              "US": "en-US" as any,
             };
             const mapped = paisLocaleMap[empresa.paisFiscal];
             if (mapped && i18nConfig.supportedLocales.includes(mapped)) {

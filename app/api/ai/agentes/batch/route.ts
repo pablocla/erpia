@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { guardAiRequest } from "@/lib/ai"
 import { agentRegistry } from "@/lib/ai/agents"
 
 export async function POST(request: NextRequest) {
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
   if (!["admin", "superadmin"].includes(ctx.auth.rol)) {
     return NextResponse.json({ error: "Solo administradores pueden ejecutar batch" }, { status: 403 })
   }
+
+  const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+  if (blocked) return blocked
 
   const results = await agentRegistry.executeAllForEmpresa(ctx.auth.empresaId, "manual")
 

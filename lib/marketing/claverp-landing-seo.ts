@@ -51,10 +51,10 @@ export const CLAVERP_FAQ = [
 ] as const
 
 export const CLAVERP_TRUST_ITEMS = [
+  { label: "Sin tarjeta de crédito" },
+  { label: "Cancelá cuando quieras" },
   { label: "Facturación AFIP integrada" },
-  { label: "40+ módulos activables" },
-  { label: "Trial 14 días gratis" },
-  { label: "Datos aislados por empresa" },
+  { label: "Demo por rubro en 10 segundos" },
 ] as const
 
 /** Demos ERP más relevantes para conversión desde landing producto */

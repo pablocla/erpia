@@ -1,0 +1,33 @@
+---
+pid: 34196
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"industryId\":\"club_barrio\"}'; $resp = Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body $body; $resp | ConvertTo-Json -Depth 10"
+started_at: 2026-07-03T18:40:31.948Z
+running_for_ms: 360000   
+---
+{
+    "success":  true,
+    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjM3LCJlbWFpbCI6ImRlbW8tZWE3MmQyMjVAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjM5LCJleHAiOjE3ODMxOTA1MTQsImlhdCI6MTc4MzEwNDExNH0.0cnyyUNW9DwTsG4lr2ris0OT1t-MJFrjPwgE1XslcPw",
+    "goldenPath":  "/dashboard/nicho/club",
+    "industryId":  "club_barrio",
+    "rubro":  "otro",
+    "provision":  {
+                      "industryId":  "club_barrio",
+                      "rubro":  "otro",
+                      "goldenPath":  "/dashboard/nicho/club",
+                      "empresaNombre":  "Demo Club de barrio ?? ea72d225",
+                      "productosCreados":  2,
+                      "clientesCreados":  1,
+                      "skusActivados":  [
+                                            "niche.club_barrio"
+                                        ],
+                      "modoLite":  "niche"
+                  },
+    "usuario":  {
+                    "id":  37,
+                    "nombre":  "Administrador Demo",
+                    "email":  "demo-ea72d225@claver.com.ar",
+                    "rol":  "administrador",
+                    "empresaId":  39
+                }
+}

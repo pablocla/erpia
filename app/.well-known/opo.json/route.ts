@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     {
       opo_version: "0.1.0",
       system_identity: {
-        erp_name: "Claver by Claver — OPO Bridge",
+        erp_name: "Claver — OPO Bridge",
         version: "0.1.0",
         jurisdictions: ["AR"],
       },

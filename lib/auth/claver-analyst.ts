@@ -6,18 +6,22 @@ import { prisma } from "@/lib/prisma"
 const ANALYST_ROLE = "analista_claver"
 
 function parseAnalystEmails(): Set<string> {
+  return new Set(getClaverAnalystEmails())
+}
+
+/** Emails que reciben alertas comerciales y de operaciones Claver Cloud */
+export function getClaverAnalystEmails(): string[] {
   const raw = process.env.CLAVER_ANALYST_EMAILS ?? ""
   const emails = raw
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean)
 
-  // Admin real de plataforma si no hay lista explícita en env
   if (emails.length === 0) {
     emails.push(CLAVER_OWNER_EMAIL.toLowerCase())
   }
 
-  return new Set(emails)
+  return emails
 }
 
 export function isClaverAnalyst(email: string, rol?: string): boolean {

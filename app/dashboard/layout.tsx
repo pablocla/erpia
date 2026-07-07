@@ -2,23 +2,36 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Topbar } from "@/components/topbar"
 import { ImpersonationBanner } from "@/components/ops/impersonation-banner"
-import { CajasAbiertasAlert } from "@/components/caja/cajas-abiertas-alert"
-import { DraftAlert } from "@/components/ventas/draft-alert"
+
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
-import { MotionPage, MotionPresence } from "@/components/ui/motion"
+import { MotionPage, MotionPresence, MotionPresenceLite } from "@/components/ui/motion"
+import { isOperationalDashboardRoute } from "@/lib/motion-config"
+import { useIsMobile, useIsTablet } from "@/hooks/use-mobile"
+import { useToast } from "@/hooks/use-toast"
+import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { RecentlyViewed } from "@/components/recently-viewed"
 import { SidebarBrand, SidebarSearch, SidebarUserFooter } from "@/components/dashboard/sidebar-ui"
 import { SidebarCollapseSection } from "@/components/dashboard/sidebar-nav"
-import { TrialBanner } from "@/components/trial-banner"
+import { DashboardAlertsHub } from "@/components/dashboard/dashboard-alerts-hub"
+import { SidebarEssentialsRow } from "@/components/dashboard/sidebar-essentials-row"
+import { SidebarLiteNav } from "@/components/dashboard/sidebar-lite-nav"
+import { SidebarUserCompact } from "@/components/dashboard/sidebar-user-compact"
 import { OnboardingTour } from "@/components/onboarding-tour"
+import { ProductTour } from "@/components/onboarding/product-tour"
 import { useDashboardShell } from "@/hooks/use-dashboard-shell"
+import { getActiveProductShell } from "@/lib/comercial/product-shell"
+import { AppChecklistWidget } from "@/components/marketing/app-checklist-widget"
+import { ProductUpsellPanel } from "@/components/comercial/product-upsell-panel"
+import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
+import { getSubSaasExperience } from "@/lib/comercial/app-experience"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
@@ -39,7 +52,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isPosShell,
     isKioskMode,
     handleLogout,
+    modoLite,
+    productosSku,
   } = useDashboardShell()
+  const router = useRouter()
+
+  const activeShell = getActiveProductShell(modoLite, productosSku)
+  const subSaasExperience = activeShell?.slug ? getSubSaasExperience(activeShell.slug) : null
+  const isLiteShell = modoLite !== "completo" && Boolean(activeShell)
+  const isMobile = useIsMobile()
+  const isTablet = useIsTablet()
+  const effectiveSidebarOpen = isTablet ? false : sidebarOpen
+  const operationalRoute = isOperationalDashboardRoute(pathname)
+  const rol = user?.rol
 
   const [freshSignup, setFreshSignup] = useState(false)
   useEffect(() => {
@@ -48,6 +73,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setFreshSignup(fresh)
     if (fresh) localStorage.removeItem("claver_fresh_signup")
   }, [mounted])
+
+  // Trial enforcement redirect
+  const { toast } = useToast()
+  useEffect(() => {
+    if (!mounted || !user) return
+    if (pathname === "/dashboard/trial-vencido") return
+    
+    fetch("/api/config/trial", { headers: getAuthHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.access?.bloqueoTotal || (data?.trial?.expirado && !data?.access?.tieneAnclaGratis)) {
+          router.replace("/dashboard/trial-vencido")
+        }
+      })
+      .catch(console.error)
+  }, [mounted, user, pathname, router])
 
   if (isKioskMode) {
     return (
@@ -66,73 +107,88 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={cn(
           "sidebar-container flex flex-col z-20 shrink-0 sticky top-0 min-h-0",
           "transition-[width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-          "hidden lg:flex",
-          sidebarOpen ? "w-[17.5rem]" : "w-[4.5rem]",
+          "hidden md:flex",
+          effectiveSidebarOpen ? "w-[17.5rem]" : "w-[4.5rem]",
         )}
       >
         <div
           className={cn(
             "px-3 pt-3 pb-2",
-            sidebarOpen ? "flex items-center gap-2" : "flex flex-col items-center gap-2",
+            effectiveSidebarOpen ? "flex items-center gap-2" : "flex flex-col items-center gap-2",
           )}
         >
-          {sidebarOpen && (
+          {effectiveSidebarOpen && (
             <div className="flex-1 min-w-0">
               <SidebarBrand branding={sidebarBranding} logoUrl={temaConfig.logoUrl} />
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </Button>
-          {!sidebarOpen && (
+          {!isTablet && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
+          )}
+          {!effectiveSidebarOpen && (
             <SidebarBrand branding={sidebarBranding} logoUrl={temaConfig.logoUrl} compact />
           )}
         </div>
 
-        {sidebarOpen && (
+        {effectiveSidebarOpen && modoLite === "completo" && (
           <SidebarSearch value={sidebarSearch} onChange={setSidebarSearch} className="pt-0" />
         )}
 
         <ScrollArea className="flex-1 min-h-0">
-          <nav className="px-2 pb-3 space-y-0.5">
-            {modulosBuscados.map((modulo) => (
-              <SidebarCollapseSection
-                key={modulo.label}
-                modulo={modulo}
-                sidebarOpen={sidebarOpen}
-                defaultExpanded={
-                  modulo.label === "Principal" ||
-                  modulo.label === "Claver Nicho" ||
-                  !!sidebarSearch
-                }
-              />
-            ))}
-            {sidebarSearch && modulosBuscados.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4 px-2">
-                Sin resultados para &ldquo;{sidebarSearch}&rdquo;
-              </p>
-            )}
-          </nav>
-          <RecentlyViewed collapsed={!sidebarOpen} />
+          {modoLite === "completo" ? (
+            <>
+              <SidebarEssentialsRow rol={rol} sidebarOpen={effectiveSidebarOpen} />
+              <nav className="px-2 pb-3 space-y-0.5">
+                {modulosBuscados.map((modulo) => (
+                  <SidebarCollapseSection
+                    key={modulo.label}
+                    modulo={modulo}
+                    sidebarOpen={effectiveSidebarOpen}
+                    defaultExpanded={
+                      modulo.label === "Principal" ||
+                      modulo.label === "Claver Nicho" ||
+                      !!sidebarSearch
+                    }
+                  />
+                ))}
+                {sidebarSearch && modulosBuscados.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4 px-2">
+                    Sin resultados para &ldquo;{sidebarSearch}&rdquo;
+                  </p>
+                )}
+              </nav>
+            </>
+          ) : activeShell ? (
+            <SidebarLiteNav shell={activeShell} sidebarOpen={effectiveSidebarOpen} />
+          ) : null}
+          {modoLite === "completo" && <RecentlyViewed collapsed={!effectiveSidebarOpen} />}
         </ScrollArea>
 
-        {sidebarOpen && (
+        {effectiveSidebarOpen ? (
           <SidebarUserFooter
             nombre={user?.nombre}
             email={user?.email}
             onLogout={handleLogout}
           />
+        ) : (
+          <SidebarUserCompact onLogout={handleLogout} />
         )}
       </aside>
 
       <div className="app-main-frame flex-1 flex flex-col overflow-hidden relative z-10 w-full min-w-0">
         <ImpersonationBanner />
-        <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
+        <Topbar
+          onMenuClick={isMobile ? () => setMobileSidebarOpen(true) : undefined}
+          modoLite={modoLite}
+          productosSku={productosSku}
+        />
         <main
           className={cn(
             "flex-1",
@@ -141,13 +197,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <div className={cn(isPosShell ? "h-full p-0" : "p-3 sm:p-6 dashboard-main-pb")}>
             {!isPosShell && (
-              <div className="mx-auto w-full max-w-[1400px] space-y-2 mb-4">
-                <TrialBanner />
-                <CajasAbiertasAlert />
-                <DraftAlert />
+              <div className="mx-auto w-full max-w-[1400px] mb-3">
+                <DashboardAlertsHub />
+                <ProductUpsellPanel className="mt-3" />
               </div>
             )}
-            {!isPosShell && <Breadcrumbs className="mb-4 max-lg:mb-3" />}
+            {!isPosShell && modoLite === "completo" && <Breadcrumbs className="mb-4 max-lg:mb-3" />}
+            {!isPosShell && isLiteShell && (
+              <LiteBreadcrumb
+                modoLite={modoLite}
+                productosSku={productosSku}
+                className="mb-3 lg:hidden"
+              />
+            )}
             <div
               className={cn(
                 "mx-auto w-full",
@@ -155,15 +217,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isPosShell && "h-full",
               )}
             >
-              <MotionPresence mode="wait">
-                <MotionPage pageKey={pathname} className={isPosShell ? "h-full min-h-0" : undefined}>
-                  {children}
-                </MotionPage>
-              </MotionPresence>
+              {operationalRoute ? (
+                <MotionPresenceLite>
+                  <MotionPage
+                    pageKey={pathname}
+                    transitionMode="lite"
+                    className={isPosShell ? "h-full min-h-0" : undefined}
+                  >
+                    {children}
+                  </MotionPage>
+                </MotionPresenceLite>
+              ) : (
+                <MotionPresence mode="wait">
+                  <MotionPage pageKey={pathname} className={isPosShell ? "h-full min-h-0" : undefined}>
+                    {children}
+                  </MotionPage>
+                </MotionPresence>
+              )}
             </div>
           </div>
         </main>
-        {!isPosShell && <MobileBottomNav />}
+        {!isPosShell && <MobileBottomNav modoLite={modoLite} productosSku={productosSku} />}
       </div>
 
       <OnboardingTour
@@ -172,9 +246,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         variant="demo"
       />
       <OnboardingTour enabled={mounted && !demoIndustryId && freshSignup} variant="web" />
+      <ProductTour />
 
-      {compactShell && mobileSidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+      {subSaasExperience && modoLite !== "completo" && (
+        <AppChecklistWidget appId={activeShell!.slug} guide={subSaasExperience} />
+      )}
+
+      {isMobile && mobileSidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
           <div
             className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => setMobileSidebarOpen(false)}
@@ -184,6 +263,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="flex items-center gap-2 px-3 pt-3 pb-2">
                 <div className="flex-1 min-w-0">
                   <SidebarBrand branding={sidebarBranding} logoUrl={temaConfig.logoUrl} />
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {isLiteShell ? activeShell!.marca : "Todos los módulos"}
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
@@ -195,30 +277,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </Button>
               </div>
 
-              <SidebarSearch value={sidebarSearch} onChange={setSidebarSearch} className="pt-0" />
+              {modoLite === "completo" && (
+                <SidebarSearch value={sidebarSearch} onChange={setSidebarSearch} className="pt-0" />
+              )}
 
               <ScrollArea className="flex-1 min-h-0">
-                <nav className="px-2 pb-3 space-y-0.5">
-                  {modulosBuscados.map((modulo) => (
-                    <SidebarCollapseSection
-                      key={modulo.label}
-                      modulo={modulo}
+                {modoLite === "completo" ? (
+                  <>
+                    <SidebarEssentialsRow
+                      rol={rol}
                       sidebarOpen
-                      defaultExpanded={
-                        modulo.label === "Principal" ||
-                        modulo.label === "Claver Nicho" ||
-                        !!sidebarSearch
-                      }
                       onNavigate={() => setMobileSidebarOpen(false)}
                     />
-                  ))}
-                  {sidebarSearch && modulosBuscados.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-4 px-2">
-                      Sin resultados para &ldquo;{sidebarSearch}&rdquo;
-                    </p>
-                  )}
-                </nav>
-                <RecentlyViewed collapsed={false} />
+                    <nav className="px-2 pb-3 space-y-0.5">
+                      {modulosBuscados.map((modulo) => (
+                        <SidebarCollapseSection
+                          key={modulo.label}
+                          modulo={modulo}
+                          sidebarOpen
+                          defaultExpanded={
+                            modulo.label === "Principal" ||
+                            modulo.label === "Claver Nicho" ||
+                            !!sidebarSearch
+                          }
+                          onNavigate={() => setMobileSidebarOpen(false)}
+                        />
+                      ))}
+                      {sidebarSearch && modulosBuscados.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4 px-2">
+                          Sin resultados para &ldquo;{sidebarSearch}&rdquo;
+                        </p>
+                      )}
+                    </nav>
+                    <RecentlyViewed collapsed={false} />
+                  </>
+                ) : activeShell ? (
+                  <SidebarLiteNav
+                    shell={activeShell}
+                    sidebarOpen
+                    onNavigate={() => setMobileSidebarOpen(false)}
+                  />
+                ) : null}
               </ScrollArea>
 
               <SidebarUserFooter

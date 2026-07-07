@@ -103,7 +103,16 @@ export interface DashboardMenuItem {
   requiredCountryFeature?: string
 }
 
-export const DASHBOARD_SIDEBAR_MODULOS: { label: string; translationKey?: any; color: string; moduloKey?: string; requiredCountryFeature?: string; items: DashboardMenuItem[] }[] = [
+export interface DashboardModuloSection {
+  label: string
+  translationKey?: any
+  color: string
+  moduloKey?: string
+  requiredCountryFeature?: string
+  items: DashboardMenuItem[]
+}
+
+export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
   {
     label: "Principal",
     translationKey: "sections.principal",

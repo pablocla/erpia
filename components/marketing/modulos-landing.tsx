@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -47,7 +47,7 @@ import {
   MotionNumber,
   ScrollReveal,
 } from "@/components/ui/motion"
-import { useToast } from "@/hooks/use-toast"
+import { useVentasConsulta } from "@/hooks/use-ventas-consulta"
 
 const currency = new Intl.NumberFormat("es-AR", {
   style: "currency",
@@ -63,11 +63,10 @@ function scrollToId(id: string) {
 }
 
 export function ModulosLanding() {
-  const { toast } = useToast()
+  const { form, setForm, saving, submit } = useVentasConsulta("contacto")
   const [navOpen, setNavOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<string>("all")
   const [scrolled, setScrolled] = useState(false)
-  const [form, setForm] = useState({ nombre: "", email: "", telefono: "", mensaje: "" })
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -80,22 +79,6 @@ export function ModulosLanding() {
     if (activeCategory === "all") return MODULO_CATEGORIAS
     return MODULO_CATEGORIAS.filter((m) => m.id === activeCategory)
   }, [activeCategory])
-
-  const handleContact = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault()
-      if (!form.nombre.trim() || !form.email.trim()) {
-        toast({ title: "Completá nombre y email", variant: "destructive" })
-        return
-      }
-      toast({
-        title: "¡Gracias!",
-        description: "Te contactamos en menos de 24 hs hábiles.",
-      })
-      setForm({ nombre: "", email: "", telefono: "", mensaje: "" })
-    },
-    [form, toast],
-  )
 
   return (
     <div className="min-h-screen text-slate-900">
@@ -676,7 +659,13 @@ export function ModulosLanding() {
                 <CardTitle className="text-white">Contacto comercial</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleContact} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    void submit({ pagina: "/claver/claverp/modulos" })
+                  }}
+                  className="space-y-4"
+                >
                   <Input
                     placeholder="Nombre"
                     value={form.nombre}
@@ -703,8 +692,12 @@ export function ModulosLanding() {
                     className="border-white/10 bg-white/5 text-white placeholder:text-slate-500"
                     rows={3}
                   />
-                  <Button type="submit" className="w-full bg-white text-slate-900 hover:bg-slate-100">
-                    Quiero que me contacten
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full bg-white text-slate-900 hover:bg-slate-100"
+                  >
+                    {saving ? "Enviando…" : "Quiero que me contacten"}
                   </Button>
                 </form>
               </CardContent>

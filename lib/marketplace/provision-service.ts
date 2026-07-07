@@ -45,7 +45,7 @@ export async function provisionSku(empresaId: number, sku: string, opts?: { orde
       await ejecutarPasosAutomaticos(empresaId, sku, item.nombre)
       await marcarJobReady(job.id, Date.now() - started)
     } else {
-      const tarea = await (prisma as any).marketplaceTareaAnalista.create({
+      const tarea = await crearTareaMarketplace({
         empresaId,
         sku,
         nombre: item.nombre,

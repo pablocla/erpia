@@ -5,38 +5,46 @@ import type React from "react"
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Eye, EyeOff, PlayCircle } from "lucide-react"
 import { useAuth } from "@/lib/auth/hooks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
 import { BrandLogo } from "@/components/marketing/brand-logo"
-import { BRAND_NAME, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
+import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD, CLAVER_GROUP } from "@/lib/brand"
 import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
+import { activarRegisterHref, mensajeActivarTrial, resolveActivarIntent } from "@/lib/comercial/activar-intent"
+import { activarProductoDesdeIntent } from "@/lib/comercial/activar-intent-client"
 import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
 
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const nextPath = searchParams.get("next")
+  const activarParam = searchParams.get("activar")
+  const activarIntent = resolveActivarIntent(activarParam)
+  const nextPath = activarIntent?.landingPath ?? searchParams.get("next")
   const { login, loginConToken, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [rubro] = useState("veterinaria")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [enviandoLogin, setEnviandoLogin] = useState(false)
-  const [cargandoDemo, setCargandoDemo] = useState(false)
 
   useEffect(() => {
     if (cargandoSesion || !autenticado || !token || !usuario) return
-    void resolvePostLoginPathAsync(token, usuario.rol, nextPath).then((dest) => {
-      router.replace(dest)
-    })
-  }, [cargandoSesion, autenticado, token, usuario, nextPath, router])
+    void (async () => {
+      let dest = nextPath
+      if (activarParam && activarIntent) {
+        const r = await activarProductoDesdeIntent(token, activarParam)
+        if (r.landingPath) dest = r.landingPath
+      }
+      const final = await resolvePostLoginPathAsync(token, usuario.rol, dest)
+      router.replace(final)
+    })()
+  }, [cargandoSesion, autenticado, token, usuario, nextPath, router, activarParam, activarIntent])
 
   if (cargandoSesion || (autenticado && token)) {
     return (
@@ -52,8 +60,13 @@ function LoginPageContent() {
   }
 
   async function redirectAfterLogin(token: string, rol: string, goldenPath?: string) {
-    const dest = await resolvePostLoginPathAsync(token, rol, goldenPath ?? nextPath)
-    router.push(dest)
+    let dest = goldenPath ?? nextPath
+    if (activarParam && activarIntent) {
+      const r = await activarProductoDesdeIntent(token, activarParam)
+      if (r.landingPath) dest = r.landingPath
+    }
+    const final = await resolvePostLoginPathAsync(token, rol, dest)
+    router.push(final)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,13 +76,12 @@ function LoginPageContent() {
 
     let resultado = await login(email, password)
 
-    // Si falla con credenciales demo, auto-provisionar la cuenta admin
     if (!resultado.success && email === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD) {
       try {
         const res = await fetch("/api/auth/demo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ industryId: rubro }),
+          body: JSON.stringify({ industryId: "veterinaria" }),
         })
         const data = await res.json()
         if (data.success && data.token) {
@@ -78,7 +90,7 @@ function LoginPageContent() {
           return
         }
       } catch {
-        // fall through to show original error
+        /* fall through */
       }
     }
 
@@ -87,29 +99,6 @@ function LoginPageContent() {
     } else {
       setError(resultado.error || "Error al iniciar sesión")
       setEnviandoLogin(false)
-    }
-  }
-
-  const handleDemo = async () => {
-    setError("")
-    setCargandoDemo(true)
-    try {
-      const res = await fetch("/api/auth/demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ industryId: rubro }),
-      })
-      const data = await res.json()
-      if (data.success && data.token) {
-        loginConToken(data.token, data.usuario)
-        await redirectAfterLogin(data.token, data.usuario.rol, data.goldenPath)
-      } else {
-        setError(data.error || "Error al iniciar sesión demo")
-      }
-    } catch {
-      setError("Error de conexión")
-    } finally {
-      setCargandoDemo(false)
     }
   }
 
@@ -122,10 +111,39 @@ function LoginPageContent() {
         <CardHeader>
           <BrandLogo size="md" variant="group-full" className="mb-2" />
           <CardDescription>
-            by {CLAVER_GROUP.name} — Ingresá tus credenciales para acceder
+            {activarIntent
+              ? mensajeActivarTrial(activarParam)
+              : `by ${CLAVER_GROUP.name} — Ingresá tus credenciales para acceder`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {activarIntent && (
+            <Alert className="border-emerald-500/30 bg-emerald-500/5">
+              <AlertDescription className="text-sm">
+                <span className="font-medium text-foreground">{activarIntent.productName}</span>
+                {activarIntent.lema ? (
+                  <span className="block text-muted-foreground mt-1">{activarIntent.lema}</span>
+                ) : null}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button asChild variant="outline" className="w-full h-11 gap-2">
+            <Link href={activarParam ? `/demo?activar=${activarParam}` : "/demo"}>
+              <PlayCircle className="h-4 w-4" />
+              Probar demo interactiva por rubro
+            </Link>
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">o con tu cuenta</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -142,63 +160,52 @@ function LoginPageContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="tu@email.com"
+                autoComplete="email"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full w-10 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
 
-            <div className="rounded-md border border-dashed p-3 text-center text-sm">
-              <p className="text-muted-foreground">¿Primera vez? Elegí tu rubro y entrá directo a tu demo.</p>
-              <Link href="/demo" className="mt-2 inline-block font-medium text-primary hover:underline">
-                Abrir sensor de rubro →
-              </Link>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={enviandoLogin || cargandoDemo}>
+            <Button type="submit" className="w-full" disabled={enviandoLogin}>
               {enviandoLogin ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
 
             <div className="flex items-center justify-between text-sm">
-              <a href="/login/register" className="text-primary hover:underline">
+              <Link
+                href={activarRegisterHref(activarParam)}
+                className="text-primary hover:underline"
+              >
                 Crear cuenta
-              </a>
+              </Link>
               <a href="/login/forgot-password" className="text-muted-foreground hover:underline">
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
           </form>
-
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">o</span>
-              <Separator className="flex-1" />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleDemo}
-              disabled={enviandoLogin || cargandoDemo}
-            >
-              {cargandoDemo ? "Preparando demo..." : "Acceder con cuenta Demo"}
-            </Button>
-            <div className="rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Credenciales de prueba:</p>
-              <p>Email: <span className="font-mono select-all">{DEMO_ADMIN_EMAIL}</span></p>
-              <p>Contraseña: <span className="font-mono select-all">{DEMO_ADMIN_PASSWORD}</span></p>
-            </div>
-          </div>
         </CardContent>
       </Card>
       <p className="mt-6 text-center text-sm text-muted-foreground">

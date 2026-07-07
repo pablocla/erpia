@@ -18,8 +18,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       include: {
         categoria: { select: { id: true, nombre: true } },
         marca: { select: { id: true, nombre: true } },
-        stockDepositos: { include: { deposito: { select: { id: true, nombre: true } } } },
-        lotes: { where: { cantidadActual: { gt: 0 } }, orderBy: { fechaVencimiento: "asc" } },
+        stocksDeposito: { include: { deposito: { select: { id: true, nombre: true } } } },
+        lotes: { orderBy: { fechaVencimiento: "asc" } },
       },
     })
 

@@ -32,24 +32,29 @@ import {
   CheckSquare,
   Menu,
   Cloud,
+  HelpCircle,
+  Palette,
 } from "lucide-react"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
+import { TrialTopbarPill } from "@/components/dashboard/trial-topbar-pill"
+import { ProductContextPill } from "@/components/dashboard/product-context-pill"
 
 interface TopbarProps {
   onSearchClick?: () => void
+  /** Solo móvil (<768px): abre drawer de todos los módulos */
   onMenuClick?: () => void
+  modoLite?: string
+  productosSku?: Record<string, boolean> | null
 }
 
-export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
-
+export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: TopbarProps) {
   const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
   const toggleChatWidget = useUIStore((s) => s.toggleChatWidget)
   const [tareasPendientes, setTareasPendientes] = useState(0)
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null)
-
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [afipLabel, setAfipLabel] = useState<string | null>(null)
   const [ticketsAbiertos, setTicketsAbiertos] = useState(0)
@@ -174,141 +179,167 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
     return () => clearInterval(interval)
   }, [])
 
+  const cajaBadge =
+    cajaAbierta === null ? (
+      <Badge variant="outline" className="h-4 text-[10px] px-1">Caja…</Badge>
+    ) : cajaAbierta ? (
+      <Badge variant="outline" className="h-4 text-[10px] px-1 bg-emerald-500/10 text-emerald-600 border-emerald-200">
+        Abierta
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="h-4 text-[10px] px-1 bg-red-500/10 text-red-600 border-red-200">
+        Cerrada
+      </Badge>
+    )
+
   return (
     <header className="app-topbar h-[52px] border-b flex items-center justify-between gap-2 px-3 sm:px-5 shrink-0 z-30 relative">
-
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         {onMenuClick && (
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-9 w-9 touch-target"
+            className="md:hidden h-9 w-9 touch-target shrink-0"
             onClick={onMenuClick}
           >
             <Menu className="h-4 w-4" />
-            <span className="sr-only">Abrir menú</span>
+            <span className="sr-only">Todos los módulos</span>
           </Button>
         )}
         <div className="hidden lg:block min-w-0">
           <Breadcrumbs />
         </div>
+        <ProductContextPill modoLite={modoLite} productosSku={productosSku} />
+        <TrialTopbarPill />
       </div>
 
       <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
         <Button
           variant="ghost"
-          size="sm"
-          className="h-8 gap-2 text-muted-foreground hover:text-foreground text-xs"
+          size={onMenuClick ? "icon" : "sm"}
+          className={onMenuClick ? "h-9 w-9 touch-target" : "h-8 gap-2 text-muted-foreground hover:text-foreground text-xs"}
           onClick={() => {
             onSearchClick?.()
             toggleCommandPalette()
           }}
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="hidden md:inline">Buscar</span>
-          <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            Ctrl K
-          </kbd>
+          {!onMenuClick && (
+            <>
+              <span className="hidden md:inline">Buscar</span>
+              <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                Ctrl K
+              </kbd>
+            </>
+          )}
         </Button>
 
-        <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+        <div className="h-4 w-px bg-border mx-0.5 hidden md:block" />
 
-        {isClaverAnalyst && (
+        <div className="hidden md:flex items-center gap-0.5 sm:gap-1">
+          {isClaverAnalyst && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs hidden md:inline-flex text-violet-600 hover:text-violet-700 hover:bg-violet-500/10"
+                    asChild
+                  >
+                    <Link href="/claver-cloud">
+                      <Cloud className="h-3.5 w-3.5" />
+                      <span>Cloud</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Torre Claver Cloud</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
+            <Link href="/dashboard/caja">
+              <Wallet className="h-3.5 w-3.5" />
+              {cajaBadge}
+            </Link>
+          </Button>
+
+          {afipLabel && afipLabel !== "AFIP OK" && (
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs hidden lg:inline-flex" asChild>
+              <Link href="/dashboard/configuracion?seccion=afip">
+                <Badge variant="outline" className="h-4 text-[10px] px-1.5 bg-amber-500/10 text-amber-800 border-amber-200">
+                  {afipLabel}
+                </Badge>
+              </Link>
+            </Button>
+          )}
+
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
+                  <Link href="/dashboard/mis-tareas">
+                    <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                    {tareasPendientes > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-[9px] text-white flex items-center justify-center font-bold">
+                        {tareasPendientes > 9 ? "9+" : tareasPendientes}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">{tareasPendientes} tarea{tareasPendientes !== 1 ? "s" : ""} pendiente{tareasPendientes !== 1 ? "s" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
+                  <Link href="/dashboard/soporte">
+                    <TicketCheck className="h-4 w-4 text-muted-foreground" />
+                    {ticketsAbiertos > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-500 text-[9px] text-white flex items-center justify-center font-bold">
+                        {ticketsAbiertos > 9 ? "9+" : ticketsAbiertos}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">{ticketsAbiertos} ticket{ticketsAbiertos !== 1 ? "s" : ""} abierto{ticketsAbiertos !== 1 ? "s" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs hidden md:inline-flex text-violet-600 hover:text-violet-700 hover:bg-violet-500/10"
-                  asChild
+                  size="icon"
+                  className="h-8 w-8 relative group"
+                  onClick={() => toggleChatWidget()}
                 >
-                  <Link href="/claver-cloud">
-                    <Cloud className="h-3.5 w-3.5" />
-                    <span>Cloud</span>
-                  </Link>
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Torre Claver Cloud — provisioning y operaciones</p>
+                <p className="text-xs">Asistente IA (Ctrl+Shift+I)</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        )}
 
-        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-          <Link href="/dashboard/caja">
-            <Wallet className="h-3.5 w-3.5" />
-            {cajaAbierta === null ? (
-              <Badge variant="outline" className="h-4 text-[10px] px-1">
-                Caja…
-              </Badge>
-            ) : cajaAbierta ? (
-              <Badge variant="outline" className="h-4 text-[10px] px-1 bg-emerald-500/10 text-emerald-600 border-emerald-200">
-                Abierta
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="h-4 text-[10px] px-1 bg-red-500/10 text-red-600 border-red-200">
-                Cerrada
-              </Badge>
-            )}
-          </Link>
-        </Button>
-
-        {afipLabel && afipLabel !== "AFIP OK" && (
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs hidden lg:inline-flex" asChild>
-            <Link href="/dashboard/configuracion?seccion=afip">
-              <Badge variant="outline" className="h-4 text-[10px] px-1.5 bg-amber-500/10 text-amber-800 border-amber-200">
-                {afipLabel}
-              </Badge>
-            </Link>
-          </Button>
-        )}
-
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
-                <Link href="/dashboard/mis-tareas">
-                  <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                  {tareasPendientes > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
-                      {tareasPendientes > 9 ? "9+" : tareasPendientes}
-                    </span>
-                  )}
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">
-                {tareasPendientes} tarea{tareasPendientes !== 1 ? "s" : ""} pendiente
-                {tareasPendientes !== 1 ? "s" : ""}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative" asChild>
-                <Link href="/dashboard/soporte">
-                  <TicketCheck className="h-4 w-4 text-muted-foreground" />
-                  {ticketsAbiertos > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-500 text-[9px] text-white flex items-center justify-center font-bold animate-scale-in">
-                      {ticketsAbiertos > 9 ? "9+" : ticketsAbiertos}
-                    </span>
-                  )}
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">
-                {ticketsAbiertos} ticket{ticketsAbiertos !== 1 ? "s" : ""} abierto{ticketsAbiertos !== 1 ? "s" : ""}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+          <LocaleFlagToggle />
+          <ThemeCustomizer />
+          <ContextualHelp />
+        </div>
 
         <NotificationCenter
           notifications={notifications}
@@ -318,51 +349,88 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
           onClearAll={handleClearAll}
         />
 
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 relative group"
-                onClick={() => toggleChatWidget()}
-              >
-                <Sparkles className="h-4 w-4 text-purple-500 transition-transform group-hover:scale-110 group-hover:rotate-12" />
-                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Asistente IA (Ctrl+Shift+I)</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <LocaleFlagToggle />
-        <ThemeCustomizer />
-        <ContextualHelp />
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-2 px-2">
+            <Button variant="ghost" size="sm" className="h-9 gap-2 px-2 touch-target">
               <UserAvatar />
               <span className="hidden md:inline text-xs font-medium">
                 <UserDisplayName />
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuContent align="end" className="w-56">
             <div className="px-3 py-2 flex items-center gap-2">
               <UserAvatar size="lg" />
-              <div>
-                <p className="text-sm font-medium">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">
                   <UserDisplayName />
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   <UserEmail />
                 </p>
               </div>
             </div>
             <DropdownMenuSeparator />
+
+            <div className="md:hidden">
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/caja" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Caja {cajaAbierta ? "(abierta)" : cajaAbierta === false ? "(cerrada)" : ""}
+                </Link>
+              </DropdownMenuItem>
+              {afipLabel && afipLabel !== "AFIP OK" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/configuracion?seccion=afip" className="gap-2">
+                    <Badge variant="outline" className="text-[10px]">{afipLabel}</Badge>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/mis-tareas" className="gap-2">
+                  <CheckSquare className="h-4 w-4" />
+                  Mis tareas{tareasPendientes > 0 ? ` (${tareasPendientes})` : ""}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/soporte" className="gap-2">
+                  <TicketCheck className="h-4 w-4" />
+                  Soporte{ticketsAbiertos > 0 ? ` (${ticketsAbiertos})` : ""}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  toggleChatWidget()
+                }}
+              >
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                Asistente IA
+              </DropdownMenuItem>
+              {isClaverAnalyst && (
+                <DropdownMenuItem asChild>
+                  <Link href="/claver-cloud" className="gap-2 text-violet-600">
+                    <Cloud className="h-4 w-4" />
+                    Claver Cloud
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/configuracion" className="gap-2">
+                  <Palette className="h-4 w-4" />
+                  Tema y personalización
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/soporte" className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  Ayuda y soporte
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </div>
+
             <DropdownMenuItem asChild>
               <Link href="/dashboard/configuracion" className="gap-2">
                 <Settings className="h-4 w-4" />
@@ -375,14 +443,7 @@ export function Topbar({ onSearchClick, onMenuClick }: TopbarProps) {
                 Mi Perfil
               </Link>
             </DropdownMenuItem>
-            {isClaverAnalyst && (
-              <DropdownMenuItem asChild>
-                <Link href="/claver-cloud" className="gap-2 text-violet-600 focus:text-violet-600">
-                  <Cloud className="h-4 w-4" />
-                  Claver Cloud
-                </Link>
-              </DropdownMenuItem>
-            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2 text-destructive focus:text-destructive cursor-pointer"

@@ -19,7 +19,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Landmark, Search, RefreshCw, CheckCircle2, XCircle, Plus, Sparkles, ArrowLeftRight } from "lucide-react"
+import { Landmark, Search, RefreshCw, CheckCircle2, XCircle, Plus, Sparkles, ArrowLeftRight, Upload } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { cn } from "@/lib/utils"
@@ -39,6 +40,18 @@ type Mov = {
 }
 type CuentaBancariaOption = { id: number; alias: string | null; cbu: string | null; tipo: string; banco: { nombre: string } }
 type Resumen = { saldo: number; pendientes: number; conciliados: number; totalMovimientos: number }
+
+type ReconciliacionResult = {
+  cuentaBancariaId: number
+  periodo: string
+  conciliados: unknown[]
+  pendientesInterno: unknown[]
+  pendientesExtracto: unknown[]
+  saldoLibro: number
+  saldoExtracto: number
+  diferencia: number
+  asientoDiferenciaId?: number
+}
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(v)
@@ -74,6 +87,15 @@ export default function BancoPage() {
   const [tFecha, setTFecha] = useState(new Date().toISOString().split("T")[0])
   const [transferError, setTransferError] = useState("")
   const [transfiriendo, setTransfiriendo] = useState(false)
+
+  // Modal importar extracto CSV
+  const [modalExtracto, setModalExtracto] = useState(false)
+  const [extractoCuentaId, setExtractoCuentaId] = useState("")
+  const [extractoCSV, setExtractoCSV] = useState("")
+  const [extractoPeriodo, setExtractoPeriodo] = useState("")
+  const [importando, setImportando] = useState(false)
+  const [extractoError, setExtractoError] = useState("")
+  const [resultadoConciliacion, setResultadoConciliacion] = useState<ReconciliacionResult | null>(null)
   const { toast } = useToast()
 
   const authHeaders = useCallback((): Record<string, string> => {
@@ -182,6 +204,47 @@ export default function BancoPage() {
     setTransferError("")
   }
 
+  const abrirExtracto = () => {
+    setModalExtracto(true)
+    setExtractoCuentaId(cuentas[0]?.id?.toString() ?? "")
+    setExtractoCSV("fecha;descripcion;referencia;debito;credito\n")
+    setExtractoPeriodo("")
+    setExtractoError("")
+    setResultadoConciliacion(null)
+  }
+
+  const importarExtracto = async () => {
+    setExtractoError("")
+    if (!extractoCuentaId) { setExtractoError("Seleccioná una cuenta"); return }
+    if (extractoCSV.trim().length < 20) { setExtractoError("El extracto está vacío o incompleto"); return }
+
+    setImportando(true)
+    try {
+      const res = await fetch("/api/banco/conciliar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          cuentaBancariaId: parseInt(extractoCuentaId, 10),
+          extractoCSV,
+          periodo: extractoPeriodo.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setExtractoError(data.error || "Error en conciliación")
+        return
+      }
+      setResultadoConciliacion(data)
+      await cargar()
+      toast({
+        title: "Conciliación completada",
+        description: `${data.conciliados?.length ?? 0} movimientos conciliados${data.diferencia ? ` — Diferencia: ${formatCurrency(data.diferencia)}` : ""}`,
+      })
+    } finally {
+      setImportando(false)
+    }
+  }
+
   const transferir = async () => {
     setTransferError("")
     const importe = parseFloat(tImporte)
@@ -228,6 +291,10 @@ export default function BancoPage() {
           <Button variant="outline" onClick={cargar} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Actualizar
+          </Button>
+          <Button variant="outline" onClick={abrirExtracto} disabled={cuentas.length === 0}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar extracto
           </Button>
           <Button variant="outline" onClick={abrirTransferencia} disabled={cuentas.length < 2}>
             <ArrowLeftRight className="h-4 w-4 mr-2" />
@@ -371,6 +438,65 @@ export default function BancoPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalNuevo(false)}>Cancelar</Button>
             <Button onClick={crearMovimiento} disabled={creando}>{creando ? "Guardando..." : "Registrar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal importar extracto CSV */}
+      <Dialog open={modalExtracto} onOpenChange={setModalExtracto}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Importar extracto bancario (CSV)</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            {extractoError && <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">{extractoError}</div>}
+            <div className="space-y-1.5">
+              <Label>Cuenta bancaria</Label>
+              <Select value={extractoCuentaId} onValueChange={setExtractoCuentaId}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectContent>
+                  {cuentas.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.alias ?? c.cbu ?? `${c.banco.nombre} ${c.tipo}`}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Período (opcional)</Label>
+              <Input placeholder="MM/YYYY" value={extractoPeriodo} onChange={(e) => setExtractoPeriodo(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Extracto CSV</Label>
+              <p className="text-xs text-muted-foreground">Formato: fecha;descripcion;referencia;debito;credito (separador punto y coma)</p>
+              <Textarea
+                className="font-mono text-xs min-h-[160px]"
+                value={extractoCSV}
+                onChange={(e) => setExtractoCSV(e.target.value)}
+                placeholder="fecha;descripcion;referencia;debito;credito&#10;01/07/2026;Transferencia recibida;TRX001;0;15000"
+              />
+            </div>
+            {resultadoConciliacion && (
+              <div className="p-3 border rounded-lg bg-muted/40 text-sm space-y-2">
+                <p className="font-semibold">Resultado de conciliación</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <span>Conciliados: <strong>{resultadoConciliacion.conciliados?.length ?? 0}</strong></span>
+                  <span>Pendientes libro: <strong>{resultadoConciliacion.pendientesInterno?.length ?? 0}</strong></span>
+                  <span>Pendientes extracto: <strong>{resultadoConciliacion.pendientesExtracto?.length ?? 0}</strong></span>
+                  <span>Saldo libro: <strong>{formatCurrency(resultadoConciliacion.saldoLibro)}</strong></span>
+                  <span>Saldo extracto: <strong>{formatCurrency(resultadoConciliacion.saldoExtracto)}</strong></span>
+                  <span className={cn(resultadoConciliacion.diferencia !== 0 ? "text-amber-700" : "text-green-700")}>
+                    Diferencia: <strong>{formatCurrency(resultadoConciliacion.diferencia)}</strong>
+                  </span>
+                </div>
+                {resultadoConciliacion.asientoDiferenciaId && (
+                  <p className="text-xs text-muted-foreground">
+                    Asiento de diferencia generado: #{resultadoConciliacion.asientoDiferenciaId}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalExtracto(false)}>Cerrar</Button>
+            <Button onClick={importarExtracto} disabled={importando}>{importando ? "Conciliando..." : "Conciliar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,0 +1,26 @@
+---
+pid: 33880
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "Set-Location \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npm run dev"
+started_at: 2026-07-03T18:22:36.395Z
+running_for_ms: 1455006  
+---
+
+> pos-argentina@1.0.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by process 26904, using available port 3001 instead.
+   ▲ Next.js 15.5.19 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.100.2:3001
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ✓ reactCompiler
+     · serverActions
+     ✓ viewTransition
+
+ ✓ Starting...
+ ✓ Compiled middleware in 111ms
+ ✓ Ready in 2.3s
+ ⚠ Duplicate page detected. app\api\productos\[id]\route.js and app\api\productos\[id]\route.ts resolve to /api/productos/[id]
+ ⚠ Duplicate page detected. app\api\productos\[id]\route.js and app\api\productos\[id]\route.ts resolve to /api/productos/[id]

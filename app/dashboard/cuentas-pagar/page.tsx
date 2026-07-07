@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -68,6 +69,15 @@ type OrdenPago = {
   proveedor?: { id: number; nombre: string; cuit: string | null }
 }
 
+type RetencionesPreview = {
+  retencionIVA: number
+  retencionGanancias: number
+  retencionIIBB: number
+  total: number
+  detalle: { tipo: string; codigoRegimen: string; base: number; alicuota: number; monto: number }[]
+  aplicadas: boolean
+}
+
 const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pendiente: { label: "Pendiente", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
   parcial: { label: "Pago parcial", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
@@ -107,6 +117,12 @@ export default function CuentasPagarPage() {
   const [cuentasBanco, setCuentasBanco] = useState<{ id: number; banco: string; numeroCuenta: string }[]>([])
   const [pagando, setPagando] = useState(false)
   const [errorPago, setErrorPago] = useState("")
+  const [calcularRetencionesAuto, setCalcularRetencionesAuto] = useState(true)
+  const [previewRetenciones, setPreviewRetenciones] = useState<RetencionesPreview | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [dividirPago, setDividirPago] = useState(false)
+  const [segundoMedio, setSegundoMedio] = useState("efectivo")
+  const [montoSegundoMedio, setMontoSegundoMedio] = useState("")
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
@@ -172,6 +188,12 @@ export default function CuentasPagarPage() {
     )
   })
 
+  const netoEstimado = useMemo(() => {
+    const monto = parseFloat(montoPago) || 0
+    const ret = previewRetenciones?.total ?? 0
+    return Math.max(0, monto - ret)
+  }, [montoPago, previewRetenciones])
+
   const abrirPago = (cp: CP) => {
     setModalPago(cp)
     setMontoPago(String(cp.saldo))
@@ -183,7 +205,41 @@ export default function CuentasPagarPage() {
     setChequeVencimiento("")
     setCuentaEmisorId("")
     setErrorPago("")
+    setCalcularRetencionesAuto(true)
+    setPreviewRetenciones(null)
+    setDividirPago(false)
+    setSegundoMedio("efectivo")
+    setMontoSegundoMedio("")
   }
+
+  useEffect(() => {
+    if (!modalPago) return
+    const monto = parseFloat(montoPago)
+    const proveedorId = modalPago.proveedor?.id
+    if (!monto || monto <= 0 || !proveedorId) {
+      setPreviewRetenciones(null)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingPreview(true)
+      try {
+        const res = await fetch("/api/impuestos/retenciones/calcular", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ tipo: "pago", proveedorId, montoBase: monto }),
+        })
+        if (res.ok) setPreviewRetenciones(await res.json())
+        else setPreviewRetenciones(null)
+      } catch {
+        setPreviewRetenciones(null)
+      } finally {
+        setLoadingPreview(false)
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [montoPago, modalPago, authHeaders])
 
   const registrarPago = async () => {
     if (!modalPago) return
@@ -198,20 +254,53 @@ export default function CuentasPagarPage() {
 
     setPagando(true)
     try {
+      const retTotal = calcularRetencionesAuto ? (previewRetenciones?.total ?? 0) : 0
+      const neto = Math.max(0, monto - retTotal)
+
       const payload: Record<string, unknown> = {
         cuentaPagarId: modalPago.id,
         monto,
-        medioPago,
+        calcularRetencionesAuto,
         observaciones: obsPago.trim() || undefined,
       }
-      if (medioPago === "cheque") {
-        payload.cheque = {
-          numero: chequeNumero.trim(),
-          bancoNombre: chequeBanco.trim() || undefined,
-          fechaEmision: chequeEmision,
-          fechaVencimiento: chequeVencimiento,
-          cuentaEmisorId: parseInt(cuentaEmisorId, 10),
-          monto,
+
+      if (dividirPago) {
+        const monto2 = parseFloat(montoSegundoMedio) || 0
+        const monto1 = neto - monto2
+        if (monto2 <= 0 || monto1 <= 0) {
+          setErrorPago("Los montos del split deben ser positivos y sumar el neto")
+          return
+        }
+        if (Math.abs(monto1 + monto2 - neto) > 0.02) {
+          setErrorPago(`La suma de medios debe igualar el neto (${formatCurrency(neto)})`)
+          return
+        }
+        payload.medios = [
+          { tipo: medioPago, monto: monto1 },
+          { tipo: segundoMedio, monto: monto2 },
+        ]
+        const usaCheque = medioPago === "cheque" || segundoMedio === "cheque"
+        if (usaCheque && medioPago === "cheque") {
+          payload.cheque = {
+            numero: chequeNumero.trim(),
+            bancoNombre: chequeBanco.trim() || undefined,
+            fechaEmision: chequeEmision,
+            fechaVencimiento: chequeVencimiento,
+            cuentaEmisorId: parseInt(cuentaEmisorId, 10),
+            monto: monto1,
+          }
+        }
+      } else {
+        payload.medioPago = medioPago
+        if (medioPago === "cheque") {
+          payload.cheque = {
+            numero: chequeNumero.trim(),
+            bancoNombre: chequeBanco.trim() || undefined,
+            fechaEmision: chequeEmision,
+            fechaVencimiento: chequeVencimiento,
+            cuentaEmisorId: parseInt(cuentaEmisorId, 10),
+            monto: neto,
+          }
         }
       }
 
@@ -366,9 +455,16 @@ export default function CuentasPagarPage() {
               { key: "netoPagado", header: "Neto", align: "right", cell: (op) => <span className="font-bold text-primary">{formatCurrency(op.netoPagado)}</span> },
               { key: "medioPago", header: "Medio", cell: (op) => <span className="text-xs text-muted-foreground">{op.medioPago}</span> },
               { key: "acciones" as any, header: "", cell: (op) => (
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=orden-pago&id=${op.id}`, "_blank") }}>
-                  PDF
-                </Button>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=orden-pago&id=${op.id}`, "_blank") }}>
+                    PDF
+                  </Button>
+                  {op.totalRetenciones > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-700" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=certificado-retencion-op&id=${op.id}`, "_blank") }}>
+                      Cert.
+                    </Button>
+                  )}
+                </div>
               ) },
             ] as DataTableColumn<OrdenPago>[]}
             rowKey="id"
@@ -384,7 +480,7 @@ export default function CuentasPagarPage() {
       </Card>
 
       <Dialog open={!!modalPago} onOpenChange={() => setModalPago(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Registrar Pago</DialogTitle></DialogHeader>
           {modalPago && (
             <div className="space-y-3 py-2">
@@ -398,8 +494,49 @@ export default function CuentasPagarPage() {
                 <Label>Importe a pagar</Label>
                 <Input type="number" step="0.01" value={montoPago} onChange={(e) => setMontoPago(e.target.value)} />
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ret-auto-pago"
+                  checked={calcularRetencionesAuto}
+                  onCheckedChange={(v) => setCalcularRetencionesAuto(v === true)}
+                />
+                <Label htmlFor="ret-auto-pago" className="text-sm font-normal cursor-pointer">
+                  Calcular retenciones automáticas
+                </Label>
+              </div>
+              {(loadingPreview || previewRetenciones?.aplicadas) && (
+                <div className="p-3 border border-amber-200 bg-amber-50/50 rounded-lg text-sm space-y-1">
+                  <p className="font-semibold text-amber-800">Retenciones a aplicar</p>
+                  {loadingPreview ? (
+                    <p className="text-xs text-muted-foreground">Calculando...</p>
+                  ) : previewRetenciones?.aplicadas ? (
+                    <>
+                      {previewRetenciones.detalle.map((d, i) => (
+                        <p key={i} className="text-xs text-amber-900">
+                          {d.tipo} ({d.codigoRegimen}): {formatCurrency(d.monto)} — base {formatCurrency(d.base)} @ {d.alicuota}%
+                        </p>
+                      ))}
+                      <p className="font-bold text-amber-800 pt-1">
+                        Total retenido: {formatCurrency(previewRetenciones.total)} — Neto: {formatCurrency(netoEstimado)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sin retenciones aplicables</p>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="split-pago-op"
+                  checked={dividirPago}
+                  onCheckedChange={(v) => setDividirPago(v === true)}
+                />
+                <Label htmlFor="split-pago-op" className="text-sm font-normal cursor-pointer">
+                  Dividir en dos medios de pago
+                </Label>
+              </div>
               <div className="space-y-1.5">
-                <Label>Forma de pago</Label>
+                <Label>{dividirPago ? "Primer medio" : "Forma de pago"}</Label>
                 <Select value={medioPago} onValueChange={setMedioPago}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -410,6 +547,31 @@ export default function CuentasPagarPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {dividirPago && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label>Segundo medio</Label>
+                    <Select value={segundoMedio} onValueChange={setSegundoMedio}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="transferencia">Transferencia</SelectItem>
+                        <SelectItem value="cheque">Cheque propio</SelectItem>
+                        <SelectItem value="efectivo">Efectivo</SelectItem>
+                        <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Monto 2º medio</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={montoSegundoMedio}
+                      onChange={(e) => setMontoSegundoMedio(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
               {medioPago === "cheque" && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/40">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cheque propio</p>

@@ -45,6 +45,14 @@ describe("PrePresentacionService", () => {
       },
     ])
     mockPrismaClient.periodoFiscal.findUnique.mockResolvedValue({ estado: "abierto" })
+    mockPrismaClient.liquidacionImpuesto = {
+      findFirst: vi.fn().mockImplementation(async (query: any) => {
+        if (query.where.tipo === "iva") {
+          return { totales: { saldo: 1300 } }
+        }
+        return null
+      })
+    } as any
 
     const result = await service.evaluar(1, 6, 2026)
 
@@ -63,6 +71,9 @@ describe("PrePresentacionService", () => {
     mockPrismaClient.cheque.count.mockResolvedValue(0)
     mockPrismaClient.asientoContable.findMany.mockResolvedValue([])
     mockPrismaClient.periodoFiscal.findUnique.mockResolvedValue(null)
+    mockPrismaClient.liquidacionImpuesto = {
+      findFirst: vi.fn().mockResolvedValue(null)
+    } as any
 
     const result = await service.evaluar(1, 6, 2026)
 

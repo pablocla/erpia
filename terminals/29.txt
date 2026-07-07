@@ -1,0 +1,47 @@
+---
+pid: 22556
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -First 40"
+started_at: 2026-07-07T05:01:33.314Z
+running_for_ms: 7435012  
+---
+.next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/pos/venta/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/pos/venta/route"), "POST" | "PUT" | "PATCH" | "DELETE" | "GET" | "config" | "revalidate" | "HEAD" | ... 7 more ... | "OPTIONS", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'calcularLinea' is incompatible with index signature.
+    Type '(precioUnitario: number, cantidad: number, porcentajeIva: number, descuento: number) => { neto: number; iva: number; total: number; }' is not assignable to type 'never'.
+.next/types/validator.ts(2160,31): error TS2344: Type 'typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/agenda-publica/[empresaId]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/agenda-publica/[empresaId]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: NextRequest, { params }: { params: { empresaId: string; }; }) => Promise<NextResponse<{ error: string; }> | NextResponse<{ success: boolean; empresa: { id: number; nombre: string; }; profesionales: { ...; }[]; servicios: { ...; }[]; disponibilidad: { ...; }[]; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ empresaId: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ empresaId: string; }>; }' is not assignable to type '{ params: { empresaId: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'empresaId' is missing in type 'Promise<{ empresaId: string; }>' but required in type '{ empresaId: string; }'.
+__tests__/auth/claver-analyst.test.ts(33,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/auth/empresa-guard.test.ts(90,23): error TS2554: Expected 2 arguments, but got 1.
+__tests__/auth/empresa-guard.test.ts(104,23): error TS2554: Expected 2 arguments, but got 1.
+__tests__/auth/empresa-guard.test.ts(124,23): error TS2554: Expected 2 arguments, but got 1.
+__tests__/auth/empresa-guard.test.ts(142,23): error TS2554: Expected 2 arguments, but got 1.
+__tests__/automation/poll.test.ts(32,48): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { total: number; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(49,45): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: {}; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/automation/poll.test.ts(88,47): error TS2345: Argument of type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' is not assignable to parameter of type 'SignedEnvelope<unknown>'.
+  Property 'idempotencyKey' is missing in type '{ eventId: string; event: string; empresaId: number; timestamp: string; data: { ping: boolean; }; signature: string; }' but required in type 'SignedEnvelope<unknown>'.
+__tests__/billing/marketplace-checkout-policy.test.ts(15,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+__tests__/comercial/comercial-access-service.test.ts(50,69): error TS2345: Argument of type '(args: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => Promise<...>' is not assignable to parameter of type '(args?: { select?: SuscripcionModuloSelect<DefaultArgs> | null | undefined; omit?: SuscripcionModuloOmit<DefaultArgs> | null | undefined; ... 6 more ...; distinct?: SuscripcionModuloScalarFieldEnum | ... 1 more ... | undefined; } | undefined) => PrismaPromise<...>'.
+  Call signature return types 'Promise<never>' and 'PrismaPromise<{ empresaId: number; id: number; activo: boolean; createdAt: Date; updatedAt: Date; vigenciaDesde: Date; vigenciaHasta: Date | null; sku: string; limiteEventosMes: number | null; metadata: JsonValue; sellerId: string | null; implementerId: string | null; }[]>' are incompatible.
+    The types of '[Symbol.toStringTag]' are incompatible between these types.
+      Type 'string' is not assignable to type '"PrismaPromise"'.
+__tests__/comercial/industry-demo-seeds.test.ts(51,74): error TS2739: Type 'Promise<never>' is missing the following properties from type 'Prisma__MesaClient<{ id: number; numero: number; estado: string; capacidad: number; posX: number | null; posY: number | null; salonId: number; }, never, DefaultArgs, PrismaClientOptions>': salon, comandas
+__tests__/comercial/industry-demo-seeds.test.ts(79,83): error TS2739: Type 'Promise<never>' is missing the following properties from type 'Prisma__PlanMembresiaClient<{ empresaId: number; id: number; nombre: string; activo: boolean; createdAt: Date; updatedAt: Date; descripcion: string | null; precio: Decimal; periodicidad: string; duracionDias: number; }, never, DefaultArgs, PrismaClientOptions>': empresa, membresias
+__tests__/comercial/trial-guard.test.ts(29,31): error TS2339: Property 'mockResolvedValue' does not exist on type '<T extends EmpresaFindUniqueArgs>(args: SelectSubset<T, EmpresaFindUniqueArgs<DefaultArgs>>) => Prisma__EmpresaClient<GetFindResult<$EmpresaPayload<DefaultArgs>, T, PrismaClientOptions> | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/comercial/trial-guard.test.ts(37,31): error TS2339: Property 'mockResolvedValue' does not exist on type '<T extends EmpresaFindUniqueArgs>(args: SelectSubset<T, EmpresaFindUniqueArgs<DefaultArgs>>) => Prisma__EmpresaClient<GetFindResult<$EmpresaPayload<DefaultArgs>, T, PrismaClientOptions> | null, null, DefaultArgs, PrismaClientOptions>'.
+__tests__/comercial/trial-guard.test.ts(46,31): error TS2339: Property 'mockResolvedValue' does not exist on type '<T extends EmpresaFindUniqueArgs>(args: SelectSubset<T, EmpresaFindUniqueArgs<DefaultArgs>>) => Prisma__EmpresaClient<GetFindResult<$EmpresaPayload<DefaultArgs>, T, PrismaClientOptions> | null, null, DefaultArgs, PrismaClientOptions>'.

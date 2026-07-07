@@ -21,12 +21,13 @@ export const CLAVERP_PRODUCT = {
   parent: "Claver",
 } as const
 
-/** Producto agro — producción, acopio y cultivo regulado */
+/** Producto agro — campo, acopio, ambiente controlado e IoT */
 export const CLAVERGROW_PRODUCT = {
   name: "Clavergrow",
   slug: "clavergrow",
   tagline: "Cultivá con control.",
-  descriptor: "Producción agrícola: lotes, IoT, acopio, comercio B2B y cultivo regulado",
+  descriptor:
+    "Producción agrícola end-to-end: lotes, ambiente controlado, sensores, costos fijos y trazabilidad de ciclo",
   parent: "Claver",
 } as const
 
@@ -180,20 +181,20 @@ export const CLAVER_ROUTES = {
   demo: "/demo",
   ecommerce: "/claver/ecommerce",
   marca: "/claver/marca",
+  contacto: "/claver/contacto",
   cloud: "/claver-cloud",
   login: "/login",
   dashboard: "/dashboard",
 } as const
 
+/** Nav principal comercial — pocas entradas, logo cubre inicio */
 export const CLAVER_NAV = [
-  { href: "/", label: "Inicio" },
-  { href: "/demo", label: "Demos" },
-  { href: "/claver/claverp", label: "Claver ERP" },
-  { href: "/claver/clavergrow", label: "Clavergrow" },
-  { href: "/claver/claverp/pos-afip", label: "POS & AFIP" },
+  { href: "/claver/apps", label: "Apps & Herramientas" },
+  { href: "/claver/claverp", label: "ERP" },
+  { href: "/demo", label: "Demos Interactivos" },
   { href: "/claver/claverp/precios", label: "Precios" },
-  { href: "/claver/ecommerce", label: "Ecommerce" },
-  { href: "/claver/marca", label: "Marca" },
+  { href: "/claver/contacto", label: "Contacto" },
+  { href: "/claver-cloud", label: "Claver Cloud" },
 ] as const
 
 /** @deprecated Usar CLAVER_NAV */

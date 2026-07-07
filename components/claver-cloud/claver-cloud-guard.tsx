@@ -18,11 +18,14 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const loginNextRef = useRef(pathname || "/claver-cloud")
-  const [state, setState] = useState<GuardState>(() => (readVerified() ? "ok" : "loading"))
+  const [state, setState] = useState<GuardState>("loading")
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (state === "ok") return
+    if (readVerified()) {
+      setState("ok")
+      return
+    }
 
     let cancelled = false
 

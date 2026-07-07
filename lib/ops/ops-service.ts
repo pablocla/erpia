@@ -82,17 +82,19 @@ export async function ensureTenantEntornos(empresaId: number) {
       data: {
         empresaId,
         codigo: ent.codigo,
-        nombre: ent.nombre,
         estado: "activo",
-        urlBase: entornoUrl(ent.codigo),
-        version: appVersion(),
-        dbProveedor: "supabase",
-        dbNombre: `claverp_${empresaId}_${ent.codigo}`,
-        metadata: {
-          stack: "vercel+supabase",
-          region: "sa-east-1",
-          vercelProjectId: process.env.VERCEL_PROJECT_ID || `prj_claver_${empresaId}`,
-          supabaseBranchRef: `br_${empresaId}_${ent.codigo}`,
+        deployMeta: {
+          nombre: ent.nombre,
+          urlBase: entornoUrl(ent.codigo),
+          version: appVersion(),
+          dbProveedor: "supabase",
+          dbNombre: `claverp_${empresaId}_${ent.codigo}`,
+          metadata: {
+            stack: "vercel+supabase",
+            region: "sa-east-1",
+            vercelProjectId: process.env.VERCEL_PROJECT_ID || `prj_claver_${empresaId}`,
+            supabaseBranchRef: `br_${empresaId}_${ent.codigo}`,
+          }
         },
       },
     })

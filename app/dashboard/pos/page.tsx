@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 /**
  * Sistema POS — Punto de Venta
@@ -867,12 +867,12 @@ export default function POSPage() {
         /* silencioso */
       }
     }
-    const onDown = (e: KeyboardEvent) => {
+    const onDown = (e: any) => {
       if (e.altKey && e.key === "F12") {
         holdTimer = setTimeout(() => void dispararPanico(), 3000)
       }
     }
-    const onUp = (e: KeyboardEvent) => {
+    const onUp = (e: any) => {
       if (e.key === "F12" && holdTimer) {
         clearTimeout(holdTimer)
         holdTimer = null
@@ -1006,24 +1006,6 @@ export default function POSPage() {
       setError(mensajeCajaBloqueada(cajaMotivo))
       return
     }
-    if (ventasOfflineCount > 0) {
-      items.push({
-        id: "offline_sync",
-        severity: "warning",
-        mensaje: `Sin internet - tenés ${ventasOfflineCount} venta${ventasOfflineCount > 1 ? "s" : ""} guardada${ventasOfflineCount > 1 ? "s" : ""} localmente.`,
-        inline: (
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="h-7 text-[10px] sm:text-xs px-2 ml-2" 
-            onClick={sincronizarVentasOffline}
-            disabled={sincronizando}
-          >
-            {sincronizando ? "Sincronizando..." : "Sincronizar ahora"}
-          </Button>
-        )
-      })
-    }
     if (afipBloqueaFiscal) {
       setError("Configurá el certificado AFIP o usá Ticket (sin CAE)")
       return
@@ -1052,7 +1034,7 @@ export default function POSPage() {
       }
 
       let res
-      let data
+      let data: any
       let isOfflineMode = !navigator.onLine
 
       if (!isOfflineMode) {
@@ -1110,7 +1092,7 @@ export default function POSPage() {
         data = {
           facturaId: null,
           numeroCompleto: `TK-OFFLINE-${offlineId.split("-")[1]}`,
-          total: totalVenta,
+          total: total,
           vuelto: vuelto,
           cae: undefined,
           vencimientoCAE: undefined,
@@ -1865,7 +1847,7 @@ export default function POSPage() {
                     abrirCobro({ indices: [...indicesSeleccionados] })
                   }
                 >
-                  {t("checkout")} selección ({indicesSeleccionados.size})
+                  Cobrar selección ({indicesSeleccionados.size})
                 </Button>
               )}
               {fiadoActivo &&
@@ -2365,7 +2347,7 @@ export default function POSPage() {
         open={balanzaOpen}
         onOpenChange={setBalanzaOpen}
         onConfirm={(result) => {
-          agregarProducto(result.producto, {
+          agregarProducto(result.producto as any, {
             cantidad: result.cantidad,
             precio: result.precioUnitario,
             descripcion: result.descripcion,

@@ -24,17 +24,42 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+type OpsKpis = {
+  entornosEnError: number
+  slaVencidos: number
+  readinessPromedio: number
+  tenantsEnRiesgo: number
+}
+
 export default function ClaverOperationsSelectorPage() {
   const [clientes, setClientes] = useState<ClienteCard[]>([])
+  const [kpis, setKpis] = useState<OpsKpis | null>(null)
   const [loading, setLoading] = useState(false)
 
   const cargar = async () => {
     setLoading(true)
     try {
-      const res = await fetch("/api/claver/ops/clientes", { headers: authHeaders() })
-      if (res.ok) {
-        const data = await res.json()
+      const [clientesRes, metricasRes, fleetRes] = await Promise.all([
+        fetch("/api/claver/ops/clientes", { headers: authHeaders() }),
+        fetch("/api/claver/ops/metricas", { headers: authHeaders() }),
+        fetch("/api/claver/superadmin/dashboard", { headers: authHeaders() }),
+      ])
+      if (clientesRes.ok) {
+        const data = await clientesRes.json()
         setClientes(Array.isArray(data.data) ? data.data : [])
+      }
+      if (metricasRes.ok && fleetRes.ok) {
+        const metricas = await metricasRes.json()
+        const fleet = await fleetRes.json()
+        setKpis({
+          entornosEnError: metricas.entornosEnError ?? fleet.totales?.entornosEnError ?? 0,
+          slaVencidos: metricas.slaVencidos ?? 0,
+          readinessPromedio: fleet.totales?.readinessPromedio ?? 0,
+          tenantsEnRiesgo: (fleet.tenants ?? []).filter(
+            (t: { entornosError?: number; readinessScore?: number }) =>
+              (t.entornosError ?? 0) > 0 || (t.readinessScore ?? 100) < 50,
+          ).length,
+        })
       }
     } finally {
       setLoading(false)
@@ -72,26 +97,28 @@ export default function ClaverOperationsSelectorPage() {
       <div className="grid gap-3 sm:grid-cols-4 mb-4">
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Errores (24h)</p>
-            <p className="text-2xl font-bold text-red-600">3</p>
+            <p className="text-xs text-muted-foreground">Entornos en error</p>
+            <p className="text-2xl font-bold text-red-600">{kpis?.entornosEnError ?? "—"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Backups OK</p>
-            <p className="text-2xl font-bold text-green-600">100%</p>
+            <p className="text-xs text-muted-foreground">SLA vencidos</p>
+            <p className="text-2xl font-bold text-amber-600">{kpis?.slaVencidos ?? "—"}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Avg Readiness</p>
-            <p className="text-2xl font-bold text-blue-600">85%</p>
+            <p className="text-xs text-muted-foreground">Readiness promedio</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {kpis != null ? `${kpis.readinessPromedio}%` : "—"}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Alertas Churn</p>
-            <p className="text-2xl font-bold text-amber-600">2</p>
+            <p className="text-xs text-muted-foreground">Tenants en riesgo</p>
+            <p className="text-2xl font-bold text-amber-600">{kpis?.tenantsEnRiesgo ?? "—"}</p>
           </CardContent>
         </Card>
       </div>

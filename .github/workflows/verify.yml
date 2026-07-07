@@ -28,6 +28,12 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
+      - name: Audit API guards (P0 config routes)
+        run: node scripts/audit-api-guards.mjs
+
+      - name: Sprint 3-7 targeted tests
+        run: npx vitest run __tests__/ops/relevamiento-handoff.test.ts __tests__/nicho/formula-apu.test.ts __tests__/consorcios/consorcios-liquidacion.test.ts __tests__/comercial/go-to-market-vitrine.test.ts
+
       - name: Build
         run: npm run build
         env:

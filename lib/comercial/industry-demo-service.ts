@@ -100,7 +100,10 @@ export async function provisionIndustryDemo(
 
   const rubro = template.rubro
   const goldenPath = template.goldenPath ?? getGoldenPathForRubro(rubro)
-  const demoNombre = `Demo — ${template.label}`
+  
+  const empresaActual = await prisma.empresa.findUniqueOrThrow({ where: { id: empresaId } })
+  const demoHash = empresaActual.cuit.split("-")[1] ?? "demo"
+  const demoNombre = `Demo ${template.label} — ${demoHash}`
 
   await prisma.empresa.update({
     where: { id: empresaId },

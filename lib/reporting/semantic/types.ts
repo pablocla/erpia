@@ -3,7 +3,7 @@ import { z } from "zod"
 export const FILTER_OPS = ["eq", "neq", "gte", "lte", "gt", "lt", "in", "contains"] as const
 export const AGG_FNS = ["sum", "count", "avg", "min", "max"] as const
 export const VISTA_TIPOS = ["plano", "pivot", "grafico"] as const
-export const CHART_TIPOS = ["bar", "line", "pie", "area"] as const
+export const CHART_TIPOS = ["bar", "line", "pie", "area", "radar", "scatter"] as const
 
 export const reportFilterSchema = z.object({
   campo: z.string().min(1),
@@ -91,6 +91,7 @@ export interface QueryResult {
     fuente: string
     vista: string
     ejecutadoEn: string
+    olap?: boolean
   }
   pivot?: {
     filas: string[]

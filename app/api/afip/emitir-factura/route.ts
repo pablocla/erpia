@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { FacturaService } from "@/lib/afip/factura-service"
+import { translateAfipError } from "@/lib/afip/afip-error-translator"
 import { z } from "zod"
 import { verificarToken } from "@/lib/auth/middleware"
 import { prisma } from "@/lib/prisma"
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
     const resultado = await facturaService.emitirFactura(payload)
 
     if (!resultado.success) {
-      return NextResponse.json({ error: resultado.error }, { status: 400 })
+      return NextResponse.json({ error: translateAfipError(resultado.error) }, { status: 400 })
     }
 
     const facturaDb = resultado.facturaId
@@ -177,6 +178,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error en endpoint emitir-factura:", error)
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
+    return NextResponse.json({ error: translateAfipError(error) }, { status: 500 })
   }
 }

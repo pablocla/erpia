@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         condicionPago: true,
         listaPrecio: { select: { id: true, nombre: true } },
         lineas: {
-          include: { producto: { select: { id: true, nombre: true, sku: true } } },
+          include: { producto: { select: { id: true, nombre: true, codigo: true, codigoBarras: true } } },
           orderBy: { orden: "asc" },
         },
       },

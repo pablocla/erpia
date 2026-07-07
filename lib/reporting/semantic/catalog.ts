@@ -7,6 +7,8 @@ export const CLAVERP_SOURCES: CatalogSource[] = [
   { id: "productos", etiqueta: "Productos", descripcion: "Catálogo de productos y stock", connectorId: "claverp" },
   { id: "compras", etiqueta: "Compras", descripcion: "Facturas de compra a proveedores", connectorId: "claverp" },
   { id: "stock_movimientos", etiqueta: "Movimientos de stock", descripcion: "Entradas, salidas y ajustes", connectorId: "claverp" },
+  { id: "pedidos_venta", etiqueta: "Pedidos de venta", descripcion: "Preventa y pedidos comerciales", connectorId: "claverp" },
+  { id: "contabilidad_mayor", etiqueta: "Libro Mayor", descripcion: "Movimientos contables detallados", connectorId: "claverp" },
 ]
 
 export const CLAVERP_CATALOG_SEED: Omit<CatalogField, "connectorId">[] = [
@@ -48,6 +50,24 @@ export const CLAVERP_CATALOG_SEED: Omit<CatalogField, "connectorId">[] = [
   { fuente: "stock_movimientos", campo: "producto", etiqueta: "Producto", tipo: "dimension" },
   { fuente: "stock_movimientos", campo: "tipo", etiqueta: "Tipo movimiento", tipo: "dimension" },
   { fuente: "stock_movimientos", campo: "cantidad", etiqueta: "Cantidad", tipo: "medida", agregacion: "sum" },
+  // pedidos_venta
+  { fuente: "pedidos_venta", campo: "fecha", etiqueta: "Fecha Emisión", tipo: "fecha" },
+  { fuente: "pedidos_venta", campo: "mes", etiqueta: "Mes", tipo: "dimension" },
+  { fuente: "pedidos_venta", campo: "numero", etiqueta: "Número", tipo: "dimension" },
+  { fuente: "pedidos_venta", campo: "cliente", etiqueta: "Cliente", tipo: "dimension" },
+  { fuente: "pedidos_venta", campo: "vendedor", etiqueta: "Vendedor", tipo: "dimension" },
+  { fuente: "pedidos_venta", campo: "estado", etiqueta: "Estado", tipo: "dimension" },
+  { fuente: "pedidos_venta", campo: "total", etiqueta: "Total", tipo: "medida", agregacion: "sum" },
+  { fuente: "pedidos_venta", campo: "cantidad", etiqueta: "Cantidad pedidos", tipo: "medida", agregacion: "count" },
+  // contabilidad_mayor
+  { fuente: "contabilidad_mayor", campo: "fecha", etiqueta: "Fecha", tipo: "fecha" },
+  { fuente: "contabilidad_mayor", campo: "mes", etiqueta: "Mes", tipo: "dimension" },
+  { fuente: "contabilidad_mayor", campo: "asiento_nro", etiqueta: "Asiento Nro", tipo: "dimension" },
+  { fuente: "contabilidad_mayor", campo: "descripcion", etiqueta: "Descripción", tipo: "dimension" },
+  { fuente: "contabilidad_mayor", campo: "cuenta", etiqueta: "Cuenta", tipo: "dimension" },
+  { fuente: "contabilidad_mayor", campo: "debe", etiqueta: "Debe", tipo: "medida", agregacion: "sum" },
+  { fuente: "contabilidad_mayor", campo: "haber", etiqueta: "Haber", tipo: "medida", agregacion: "sum" },
+  { fuente: "contabilidad_mayor", campo: "cantidad", etiqueta: "Cant. Movimientos", tipo: "medida", agregacion: "count" },
 ]
 
 const STATIC_BY_SOURCE = new Map<string, CatalogField[]>()

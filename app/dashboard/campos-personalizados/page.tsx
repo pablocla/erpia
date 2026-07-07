@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 /**
  * Campos Personalizados — Admin page for custom field builder.
@@ -121,7 +121,7 @@ export default function CamposPersonalizadosPage() {
   }
 
   function resetForm() {
-    setForm({ nombreCampo: "", etiqueta: "", tipoDato: "texto", opciones: "", obligatorio: false, visibleEnLista: false, visibleEnFormulario: true, placeholder: "", ayuda: "", valorDefault: "" })
+    setForm({ nombreCampo: "", etiqueta: "", tipoDato: "texto", opciones: "", formula: "", obligatorio: false, visibleEnLista: false, visibleEnFormulario: true, placeholder: "", ayuda: "", valorDefault: "" })
     setEditando(null)
     setMostrarForm(false)
   }

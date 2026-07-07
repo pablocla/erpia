@@ -9,6 +9,9 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
+import { getCuentaLabel } from "@/lib/config/parametro-service"
+import { buildMovimientosConCentro } from "@/lib/contabilidad/movimiento-builder"
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +38,7 @@ export interface ReconciliacionReport {
   saldoLibro: number
   saldoExtracto: number
   diferencia: number
+  asientoDiferenciaId?: number
 }
 
 // ─── SERVICE ──────────────────────────────────────────────────────────────────
@@ -233,6 +237,17 @@ export class ConciliacionService {
     // Calculate balances
     const saldoLibro = pendientesNorm.reduce((s, m) => s + m.importe, 0)
     const saldoExtracto = extracto.reduce((s, e) => s + e.importe, 0)
+    const diferencia = Math.round((saldoExtracto - saldoLibro) * 100) / 100
+
+    let asientoDiferenciaId: number | undefined
+    if (Math.abs(diferencia) >= 0.01) {
+      asientoDiferenciaId = await this.generarAsientoDiferencia({
+        empresaId,
+        cuentaBancariaId,
+        diferencia,
+        periodo: mesAnio,
+      })
+    }
 
     return {
       cuentaBancariaId,
@@ -242,8 +257,58 @@ export class ConciliacionService {
       pendientesExtracto,
       saldoLibro: Math.round(saldoLibro * 100) / 100,
       saldoExtracto: Math.round(saldoExtracto * 100) / 100,
-      diferencia: Math.round((saldoExtracto - saldoLibro) * 100) / 100,
+      diferencia,
+      asientoDiferenciaId,
     }
+  }
+
+  /**
+   * Asiento de ajuste por diferencia de conciliación (Sprint B2).
+   */
+  async generarAsientoDiferencia(input: {
+    empresaId: number
+    cuentaBancariaId: number
+    diferencia: number
+    periodo?: string
+  }): Promise<number> {
+    const fecha = new Date()
+    await periodoFiscalService.validarPeriodoAbierto(fecha, input.empresaId)
+
+    const importe = Math.abs(input.diferencia)
+    const [ctaBanco, ctaAjuste] = await Promise.all([
+      getCuentaLabel(input.empresaId, "conciliacion", "banco", "1.2", "Banco Cuenta Corriente"),
+      getCuentaLabel(input.empresaId, "conciliacion", "ajuste", "5.9", "Gastos Bancarios / Ajustes"),
+    ])
+
+    const movimientos =
+      input.diferencia > 0
+        ? await buildMovimientosConCentro(input.empresaId, [
+            { cuentaLabel: ctaBanco, debe: importe, haber: 0 },
+            { cuentaLabel: ctaAjuste, debe: 0, haber: importe },
+          ])
+        : await buildMovimientosConCentro(input.empresaId, [
+            { cuentaLabel: ctaAjuste, debe: importe, haber: 0 },
+            { cuentaLabel: ctaBanco, debe: 0, haber: importe },
+          ])
+
+    const ultimo = await prisma.asientoContable.findFirst({
+      where: { empresaId: input.empresaId },
+      orderBy: { numero: "desc" },
+      select: { numero: true },
+    })
+
+    const asiento = await prisma.asientoContable.create({
+      data: {
+        empresaId: input.empresaId,
+        fecha,
+        numero: (ultimo?.numero ?? 0) + 1,
+        descripcion: `Ajuste conciliación bancaria ${input.periodo ?? ""} — cuenta #${input.cuentaBancariaId}`,
+        tipo: "conciliacion",
+        movimientos: { create: movimientos },
+      },
+    })
+
+    return asiento.id
   }
 
   /**

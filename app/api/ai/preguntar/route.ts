@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { responderPregunta } from "@/lib/ai"
+import { guardAiRequest, responderPregunta } from "@/lib/ai"
 import { z } from "zod"
 
 const preguntaSchema = z.object({
@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
+
+    const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+    if (blocked) return blocked
 
     const body = await request.json()
     const parsed = preguntaSchema.safeParse(body)

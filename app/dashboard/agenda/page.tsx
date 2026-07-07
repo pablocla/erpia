@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, ChevronLeft, ChevronRight, User, Clock, Phone } from "lucide-react"
+import { getIndustryExperience, getNicheExperience } from "@/lib/comercial/app-experience"
 import { Button } from "@/components/ui/button"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { turnoEstadoLabel, turnoEstadoVariant, type StatusVariant } from "@/lib/ui/status-map"
@@ -13,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Spinner } from "@/components/ui/spinner"
 import { useToast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/stores"
+import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
 import { AgendaPublicLinkCard } from "@/components/app-experience/agenda-public-link-card"
 
@@ -200,9 +203,9 @@ export default function AgendaPage() {
         return {
           ...campo,
           valor: {
-            ...(campo.valor ?? {}),
+            ...(campo.valor ?? ({} as CustomFieldValue)),
             ...value,
-          },
+          } as CustomFieldValue,
         }
       }) ?? null,
     )
@@ -213,7 +216,7 @@ export default function AgendaPage() {
     setSavingCustomFields(true)
 
     const valores = customFields.map((campo) => {
-      const valor = campo.valor ?? {}
+      const valor = (campo.valor as any) ?? {}
       const base: Record<string, unknown> = { campoId: campo.id }
       switch (campo.tipoDato) {
         case "numero":
@@ -235,7 +238,7 @@ export default function AgendaPage() {
         body: JSON.stringify({ action: "guardarValores", registroId: turnoSeleccionado.id, valores }),
       })
       if (res.ok) {
-        setCustomFields(customFields.map((campo) => ({ ...campo, valor: { ...campo.valor } })))
+        setCustomFields(customFields.map((campo) => ({ ...campo, valor: { ...campo.valor } as CustomFieldValue })))
         toast({ title: "Campos guardados", description: "Se actualizaron los detalles del turno." })
       } else {
         const error = await res.json().catch(() => ({}))

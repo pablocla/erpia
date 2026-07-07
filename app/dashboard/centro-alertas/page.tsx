@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
@@ -8,7 +8,7 @@ import { CentroAlertasPanel } from "@/components/ia/centro-alertas-panel"
 function useAuthHeaders(): () => HeadersInit {
   return useCallback(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-    return token ? { Authorization: `Bearer ${token}` } : {}
+    return (token ? { Authorization: `Bearer ${token}` } : {}) as HeadersInit
   }, [])
 }
 

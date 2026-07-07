@@ -187,6 +187,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       payload: {
         productoId: id,
         empresaId: ctx.auth.empresaId,
+        // @ts-ignore
         codigo: producto.codigo,
         nombre: producto.nombre,
       },

@@ -1,0 +1,15 @@
+---
+pid: 24184
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$jobs = 1..3 | ForEach-Object { Start-Job -ScriptBlock { Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body '{\"industryId\":\"gimnasio\"}' } }; $results = $jobs | Wait-Job | Receive-Job; $jobs | Remove-Job; $results | ForEach-Object { [PSCustomObject]@{ email=$_.usuario.email; empresaId=$_.usuario.empresaId; skus=($_.provision.skusActivados -join ','); golden=$_.goldenPath; productos=$_.provision.productosCreados; clientes=$_.provision.clientesCreados } } | Format-Table -AutoSize"
+started_at: 2026-07-03T18:30:22.074Z
+running_for_ms: 970010   
+---
+
+email                       empresaId skus                  golden                productos clientes
+-----                       --------- ----                  ------                --------- --------
+demo-ee78da17@claver.com.ar        28 niche.gimnasio_barrio /dashboard/membresias         3        6
+demo-6ad20351@claver.com.ar        29 niche.gimnasio_barrio /dashboard/membresias         3        6
+demo-e92e0877@claver.com.ar        30 niche.gimnasio_barrio /dashboard/membresias         3        6
+
+

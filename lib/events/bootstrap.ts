@@ -23,6 +23,9 @@ eventBus.on<NCEmitidaPayload>("NC_EMITIDA", "asiento_nc", async (event) => {
   await onNCEmitida(event.payload.notaCreditoId)
 })
 
+// Costeo PPP — debe registrarse antes que stock (actualiza PPP previo al ingreso)
+import "@/lib/costos/costo-event-handlers"
+
 // Stock handlers (self-registering)
 import "@/lib/stock/stock-service"
 

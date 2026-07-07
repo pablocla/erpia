@@ -48,11 +48,19 @@ function defaultAnswers(rubro: Rubro): RespuestasOnboarding {
   }
 }
 
-const CLIENTES_POR_RUBRO: Partial<Record<Rubro, ClienteSeed[]>> = {
+const CLIENTES_POR_RUBRO: Partial<Record<string, ClienteSeed[]>> = {
   kiosco: [
     { nombre: "Juan Pérez — Fiado barrio", telefono: "11-4567-8901", deudaFiado: 8500, fiadoHabilitado: true, limiteCredito: 20000 },
     { nombre: "María del Valle", telefono: "11-2233-4455", deudaFiado: 3200, fiadoHabilitado: true, limiteCredito: 15000 },
     { nombre: "Don Carlos (almacén)", deudaFiado: 12000, fiadoHabilitado: true, limiteCredito: 25000 },
+  ],
+  carniceria: [
+    { nombre: "Restaurante El Fuego — B2B", telefono: "11-3322-1100", deudaFiado: 45000, fiadoHabilitado: true, limiteCredito: 150000 },
+    { nombre: "Doña Marta (vecina)", deudaFiado: 3500, fiadoHabilitado: true, limiteCredito: 10000 },
+  ],
+  panaderia: [
+    { nombre: "Escuela San José (desayunos)", deudaFiado: 12500, fiadoHabilitado: true, limiteCredito: 50000 },
+    { nombre: "Familia González", deudaFiado: 2100, fiadoHabilitado: true, limiteCredito: 5000 },
   ],
   veterinaria: [
     { nombre: "María González — Tutora de Bobby", telefono: "11-5555-1234", email: "maria.gonzalez@email.com" },
@@ -107,6 +115,14 @@ const CLIENTES_POR_RUBRO: Partial<Record<Rubro, ClienteSeed[]>> = {
       limiteCredito: 250000,
       observaciones: "Préstamo comercial — 12 cuotas",
     },
+  ],
+  inmobiliaria: [
+    { nombre: "Juan Inquilino", telefono: "11-2233-4455", observaciones: "Inquilino - depto Belgrano" },
+    { nombre: "María Propietaria", telefono: "11-9988-7766", observaciones: "Dueña local comercial" },
+  ],
+  consorcios: [
+    { nombre: "Consorcio Rivadavia 1200", observaciones: "Administración externa" },
+    { nombre: "Residente 4B", telefono: "11-5566-7788", observaciones: "Expensas al día" },
   ],
 }
 
@@ -399,6 +415,51 @@ async function seedConsorciosDemo(empresaId: number): Promise<void> {
   }
 }
 
+async function seedVetDemo(empresaId: number): Promise<void> {
+  const tutores = [
+    { nombreCliente: "María González — Tutora de Bobby", nombrePaciente: "Bobby", especie: "Canino", raza: "Mestizo", sexo: "M" },
+    { nombreCliente: "Lucas Fernández — Max (Labrador)", nombrePaciente: "Max", especie: "Canino", raza: "Labrador Retriever", sexo: "M" },
+  ]
+
+  for (const t of tutores) {
+    const cliente = await prisma.cliente.findFirst({
+      where: { empresaId, nombre: t.nombreCliente }
+    })
+    
+    if (cliente) {
+      const pacienteExiste = await prisma.paciente.findFirst({
+        where: { clienteId: cliente.id, nombre: t.nombrePaciente }
+      })
+      
+      if (!pacienteExiste) {
+        const paciente = await prisma.paciente.create({
+          data: {
+            clienteId: cliente.id,
+            nombre: t.nombrePaciente,
+            especie: t.especie,
+            raza: t.raza,
+            sexo: t.sexo,
+            peso: 15,
+            fechaNac: new Date("2020-01-01"),
+            activo: true,
+          }
+        })
+        
+        await prisma.consulta.create({
+          data: {
+            pacienteId: paciente.id,
+            motivo: "Control anual y vacunación",
+            diagnostico: "Paciente sano. Se aplica vacuna séxtuple.",
+            peso: 15.5,
+            temperatura: 38.5,
+            fecha: new Date(),
+          }
+        })
+      }
+    }
+  }
+}
+
 const NICHE_MOVIMIENTO_SEEDS: Record<
   string,
   { titulo: string; categoria: string; monto: number; estado?: string }[]
@@ -425,6 +486,14 @@ const NICHE_MOVIMIENTO_SEEDS: Record<
     { titulo: "Entrega soja — Estancia Norte", categoria: "entrega", monto: 890000, estado: "pendiente" },
     { titulo: "Liquidación parcial marzo", categoria: "liquidacion", monto: 420000, estado: "pagado" },
   ],
+  "niche.taller_mecanico": [
+    { titulo: "Reparación motor - Ford Ranger", categoria: "reparacion", monto: 450000, estado: "pendiente" },
+    { titulo: "Cambio de aceite y filtros - Gol Trend", categoria: "mantenimiento", monto: 85000, estado: "pagado" },
+  ],
+  "niche.club_barrio": [
+    { titulo: "Cuota Social - Juan Pérez", categoria: "cuota", monto: 12000, estado: "pagado" },
+    { titulo: "Alquiler Cancha 1 - Turno Noche", categoria: "alquiler", monto: 35000, estado: "pendiente" },
+  ],
 }
 
 const NICHE_CUOTA_CLIENTES: Record<string, { nombre: string; telefono?: string }[]> = {
@@ -433,6 +502,86 @@ const NICHE_CUOTA_CLIENTES: Record<string, { nombre: string; telefono?: string }
     { nombre: "Diego López — Plan mensual" },
     { nombre: "Sofía Ruiz — Trimestral", telefono: "11-2222-3344" },
   ],
+  "niche.taller_mecanico": [
+    { nombre: "Empresa Logística Sur (Flota Ford)", telefono: "11-9988-7766" },
+    { nombre: "Martín Gómez (Gol Trend)" },
+  ],
+  "niche.club_barrio": [
+    { nombre: "Juan Pérez - Socio Activo", telefono: "11-5555-1234" },
+    { nombre: "Equipo Los Pumas - Torneo Amateur" },
+  ],
+}
+
+async function seedClubDemo(empresaId: number): Promise<void> {
+  const socios = [
+    { nombre: "Juan Pérez - Socio Activo", plan: "Socio Activo Mensual", precio: 12000 },
+    { nombre: "Familia Gómez - Grupo Familiar", plan: "Grupo Familiar", precio: 35000 },
+  ]
+  
+  for (const s of socios) {
+    let cliente = await prisma.cliente.findFirst({ where: { empresaId, nombre: s.nombre } })
+    if (!cliente) {
+      cliente = await prisma.cliente.create({
+        data: { empresaId, nombre: s.nombre, activo: true }
+      })
+    }
+    
+    let plan = await prisma.planMembresia.findFirst({ where: { empresaId, nombre: s.plan } })
+    if (!plan) {
+      plan = await prisma.planMembresia.create({
+        data: { empresaId, nombre: s.plan, precio: s.precio, periodicidad: "mensual", duracionDias: 30 }
+      })
+    }
+    
+    const membresiaExiste = await prisma.membresia.findFirst({ where: { clienteId: cliente.id, planId: plan.id } })
+    if (!membresiaExiste) {
+      await prisma.membresia.create({
+        data: {
+          clienteId: cliente.id,
+          planId: plan.id,
+          fechaInicio: new Date(),
+          fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          estado: "activa",
+        }
+      })
+    }
+  }
+}
+
+async function seedPresupuestoDemo(empresaId: number): Promise<void> {
+  const existe = await prisma.presupuesto.findFirst({
+    where: { empresaId, numero: "PRES-DEMO-001" },
+  })
+  if (existe) return
+
+  let cliente = await prisma.cliente.findFirst({
+    where: { empresaId, nombre: "Cliente Demo — Servicios" },
+  })
+  if (!cliente) {
+    cliente = await prisma.cliente.create({
+      data: {
+        empresaId,
+        nombre: "Cliente Demo — Servicios",
+        telefono: "11-5555-0100",
+        condicionIva: "Consumidor Final",
+        activo: true,
+      },
+    })
+  }
+
+  const subtotal = 185000
+  await prisma.presupuesto.create({
+    data: {
+      empresaId,
+      clienteId: cliente.id,
+      numero: "PRES-DEMO-001",
+      fechaEmision: new Date(),
+      subtotal,
+      total: subtotal,
+      estado: "enviado",
+      observaciones: "Demo monotributo / servicios — instalación y mano de obra",
+    },
+  })
 }
 
 async function seedNicheMovimientosDemo(empresaId: number, appSku: string): Promise<void> {
@@ -571,7 +720,7 @@ export async function seedIndustryDemoData(
     const codigo = "codigo" in p ? p.codigo : `DEMO-${rubro.toUpperCase().slice(0, 4)}-${index + 1}`
     const nombre = p.nombre
     const precio = "precioVenta" in p ? p.precioVenta : p.precio
-    const iva = "porcentajeIva" in p ? (p.porcentajeIva ?? 21) : p.iva
+    const iva = "porcentajeIva" in p ? (p.porcentajeIva ?? 21) : ("iva" in p ? (p as any).iva : 21)
 
     const existe = await prisma.producto.findFirst({
       where: { empresaId, codigo },
@@ -614,7 +763,7 @@ export async function seedIndustryDemoData(
     }
   }
 
-  const clientes = CLIENTES_POR_RUBRO[rubro] ?? []
+  const clientes = CLIENTES_POR_RUBRO[template.id] ?? CLIENTES_POR_RUBRO[rubro] ?? []
   for (const c of clientes) {
     const existe = await prisma.cliente.findFirst({
       where: { empresaId, nombre: c.nombre },
@@ -663,6 +812,10 @@ export async function seedIndustryDemoData(
     result.comandas = bar.comandas
   }
 
+  if (template.id === "veterinaria" || rubro === "veterinaria") {
+    await seedVetDemo(empresaId)
+  }
+
   if (template.id === "gimnasio" || rubro === "gimnasio") {
     const gym = await seedGymDemo(empresaId)
     result.planes = gym.planes
@@ -673,16 +826,33 @@ export async function seedIndustryDemoData(
     result.cannabis = await seedCannabisDemo(empresaId)
   }
 
-  if (template.id === "consorcios_admin") {
+  if (template.id === "consorcios_admin" || template.id === "inmobiliaria") {
     await seedConsorciosDemo(empresaId)
+  }
+
+  if (template.id === "inmobiliaria") {
+    await seedNicheMovimientosDemo(empresaId, "niche.inmo_garantia")
+  }
+
+  if (template.id === "freelance_mt" || template.id === "servicios_pro") {
+    await seedPresupuestoDemo(empresaId)
+  }
+
+  if (template.id === "contratista_obra") {
+    await seedNicheMovimientosDemo(empresaId, "niche.obra_changas")
   }
 
   if (
     template.id === "salon_belleza" ||
     template.id === "clinica" ||
+    template.id === "servicios_pro" ||
     template.goldenPath === "/dashboard/agenda"
   ) {
     await seedAgendaDemo(empresaId, template)
+  }
+
+  if (template.id === "club_barrio") {
+    await seedClubDemo(empresaId)
   }
 
   if (template.engancheId?.startsWith("niche.")) {

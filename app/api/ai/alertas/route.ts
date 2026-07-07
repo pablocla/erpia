@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { generarAlertasInteligentes, isIAEnabled } from "@/lib/ai"
+import { generarAlertasInteligentes, guardAiRequest } from "@/lib/ai"
 import { crearAlertaIAConNotificacion, actualizarSeguimientoAlerta, alertaVisibleParaUsuario } from "@/lib/ai/notificacion-ia-service"
 import { parseAlertaMetadata } from "@/lib/ai/alerta-seguimiento"
 import { prisma } from "@/lib/prisma"
@@ -14,9 +14,8 @@ export async function POST(request: NextRequest) {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    if (!(await isIAEnabled(ctx.auth.empresaId))) {
-      return NextResponse.json({ error: "Módulo IA no está habilitado para esta empresa" }, { status: 403 })
-    }
+    const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+    if (blocked) return blocked
 
     const empresa = await prisma.empresa.findUnique({
       where: { id: ctx.auth.empresaId },

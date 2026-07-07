@@ -81,6 +81,7 @@ type CommandCenterData = {
     registrosWeb7d: number
     demosRubro7d: number
     trialsPorVencer: number
+    consultasWeb7d: number
   }
   mando: Parameters<typeof CeoMissionPanel>[0]["mando"]
   comercial: {
@@ -108,6 +109,18 @@ type CommandCenterData = {
       proximaFecha: string | null
       localidad: string | null
       empresaId: number | null
+    }[]
+    consultasWeb: {
+      id: number
+      nombre: string
+      email: string | null
+      telefono: string | null
+      negocio: string | null
+      rubro: string | null
+      etapa: PipelineEtapa
+      proximaAccion: string | null
+      createdAt: string
+      notas: string | null
     }[]
   }
   operaciones: {
@@ -469,6 +482,16 @@ export function CommandCenterDashboard() {
             </p>
           </CardContent>
         </Card>
+        <Card className={cn(kpis.consultasWeb7d > 0 && "border-blue-500/40")}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Funnel digital 7d</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-400">{kpis.consultasWeb7d}</div>
+            <p className="text-xs text-muted-foreground">Consultas + trials + demos rubro</p>
+          </CardContent>
+        </Card>
       </div>
 
       <CeoMissionPanel mando={mando} onRefresh={cargar} />
@@ -541,6 +564,70 @@ export function CommandCenterDashboard() {
                         </td>
                         <td className="px-4 py-2.5 tabular-nums">{a.skusActivos}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{fmt(a.mrrArs)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Target className="h-5 w-5 text-blue-400" />
+            Consultas web recientes
+          </h2>
+          <Link
+            href="/claver-cloud/comercial"
+            className="text-xs text-blue-400 hover:underline inline-flex items-center gap-1"
+          >
+            Pipeline completo <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <Card className="mb-8">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                    <th className="px-4 py-2">Contacto</th>
+                    <th className="px-4 py-2">Email / tel</th>
+                    <th className="px-4 py-2">Rubro</th>
+                    <th className="px-4 py-2">Acción</th>
+                    <th className="px-4 py-2">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comercial.consultasWeb.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                        Sin consultas desde el sitio — compartí{" "}
+                        <Link href="/claver/contacto" className="text-blue-400 hover:underline">
+                          /claver/contacto
+                        </Link>
+                      </td>
+                    </tr>
+                  ) : (
+                    comercial.consultasWeb.map((c) => (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-muted/20">
+                        <td className="px-4 py-2.5">
+                          <p className="font-medium">{c.nombre}</p>
+                          {c.negocio && <p className="text-xs text-muted-foreground">{c.negocio}</p>}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                          {c.email && <p>{c.email}</p>}
+                          {c.telefono && <p>{c.telefono}</p>}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs">{c.rubro ?? "—"}</td>
+                        <td className="px-4 py-2.5 text-xs text-amber-400/90 max-w-[200px] truncate">
+                          {c.proximaAccion ?? "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs tabular-nums text-muted-foreground">
+                          {fmtFecha(c.createdAt)}
+                        </td>
                       </tr>
                     ))
                   )}

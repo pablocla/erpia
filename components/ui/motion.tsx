@@ -19,6 +19,7 @@ import {
   FADE_DOWN,
   SCALE_IN,
   PAGE_VARIANTS,
+  PAGE_VARIANTS_LITE,
   NUMBER_SPRING,
   REDUCED_VARIANTS,
   REDUCED_CONTAINER,
@@ -161,18 +162,23 @@ export function MotionNumber({
 interface MotionPageProps extends HTMLMotionProps<"div"> {
   /** Unique key for AnimatePresence — typically the pathname */
   pageKey?: string
+  /** "lite" = fade rápido para pantallas operativas */
+  transitionMode?: "default" | "lite"
 }
 
 export function MotionPage({
   children,
   pageKey,
+  transitionMode = "default",
   className,
   ...props
 }: MotionPageProps) {
   const reduced = useReducedMotion()
   const variants = reduced
     ? { initial: { opacity: 1 }, animate: { opacity: 1 }, exit: { opacity: 1 } }
-    : PAGE_VARIANTS
+    : transitionMode === "lite"
+      ? PAGE_VARIANTS_LITE
+      : PAGE_VARIANTS
 
   return (
     <motion.div
@@ -199,6 +205,11 @@ export function MotionPresence({
   mode?: "wait" | "sync" | "popLayout"
 }) {
   return <AnimatePresence mode={mode}>{children}</AnimatePresence>
+}
+
+/** Presencia sin espera entre rutas — mejor para navegación operativa */
+export function MotionPresenceLite({ children }: { children: React.ReactNode }) {
+  return <AnimatePresence mode="sync">{children}</AnimatePresence>
 }
 
 // ─── ScrollReveal ───────────────────────────────────────────────────────

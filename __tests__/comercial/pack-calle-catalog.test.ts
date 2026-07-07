@@ -33,6 +33,11 @@ describe("pack-calle-catalog", () => {
     expect(starter?.modoLite).toBe("niche")
     expect(starter?.landingPath).toBe("/dashboard/nicho")
     expect(skusParaActivar("pool-propiedad")).toContain("niche.consorcios")
+    expect(skusParaActivar("pool-monotributo")).toContain("core.claver")
+    expect(skusParaActivar("pool-servicios-pro")).toContain("niche.consultorio_solo")
+    expect(skusParaActivar("pool-obra")).toContain("niche.obra_changas")
+    expect(inferModoLiteFromEnganche("pool-monotributo")).toBe("servicios")
+    expect(inferModoLiteFromEnganche("pool-obra")).toBe("niche")
     expect(skusParaActivar("pool-calle-nicho")).toContain("pos.fiado_barrio")
   })
 

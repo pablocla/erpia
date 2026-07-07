@@ -13,7 +13,7 @@ const productSchema = z.object({
 
 const onboardingSchema = z.object({
   rubro: z.string().min(1),
-  modoLite: z.enum(["fiado", "cobranza", "pos", "completo"]),
+  modoLite: z.enum(["fiado", "cobranza", "pos", "completo", "niche"]),
   engancheId: z.string().optional(),
   productos: z.array(productSchema).optional(),
 })

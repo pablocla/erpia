@@ -4,7 +4,7 @@ import { BRAND_FULL } from "@/lib/brand"
 
 export const metadata: Metadata = {
   title: `Portal de Clientes | ${BRAND_FULL}`,
-  description: "Portal B2B Claver by Claver — pedidos, estado de cuenta y facturas",
+  description: "Portal B2B Claver — pedidos, estado de cuenta y facturas",
   manifest: "/manifest.json",
   themeColor: "#0f172a",
 }

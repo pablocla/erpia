@@ -1,0 +1,33 @@
+---
+pid: 23576
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"industryId\":\"almacen\"}'; $resp = Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body $body; $resp | ConvertTo-Json -Depth 10"
+started_at: 2026-07-03T18:22:43.948Z
+running_for_ms: 1430000  
+---
+{
+    "success":  true,
+    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjIxLCJlbWFpbCI6ImRlbW8tNDc5MTdiMGZAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjIzLCJleHAiOjE3ODMxODk0NTMsImlhdCI6MTc4MzEwMzA1M30.i0KyI4exI_DVE94atk4-uqMNuai1SZ7ulGUs9178ltE",
+    "goldenPath":  "/dashboard/fiado",
+    "industryId":  "almacen",
+    "rubro":  "kiosco",
+    "provision":  {
+                      "industryId":  "almacen",
+                      "rubro":  "kiosco",
+                      "goldenPath":  "/dashboard/fiado",
+                      "empresaNombre":  "Demo AlmacǸn de barrio ?? 47917b0f",
+                      "productosCreados":  10,
+                      "clientesCreados":  3,
+                      "skusActivados":  [
+
+                                        ],
+                      "modoLite":  "fiado"
+                  },
+    "usuario":  {
+                    "id":  21,
+                    "nombre":  "Administrador Demo",
+                    "email":  "demo-47917b0f@claver.com.ar",
+                    "rol":  "administrador",
+                    "empresaId":  23
+                }
+}

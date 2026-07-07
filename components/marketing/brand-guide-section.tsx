@@ -1,6 +1,6 @@
 "use client"
 
-import { ClaverIcon, ClavERPIcon, ClavergrowIcon, BrandLogo } from "@/components/marketing/brand-logo"
+import { ClaverIcon, BrandLogo } from "@/components/marketing/brand-logo"
 import {
   BRAND_COLORS,
   BRAND_TYPOGRAPHY,
@@ -113,11 +113,11 @@ export function BrandGuideSection() {
               <p className="mt-2 text-xs text-slate-500">{CLAVER_GROUP.name}</p>
             </div>
             <div className="text-center">
-              <ClavERPIcon size={32} theme="light" className="mx-auto" />
+              <ClaverIcon size={32} theme="light" className="mx-auto opacity-80" />
               <p className="mt-2 text-xs text-slate-500">{CLAVERP_PRODUCT.name}</p>
             </div>
             <div className="text-center">
-              <ClavergrowIcon size={32} theme="light" className="mx-auto" />
+              <ClaverIcon size={32} theme="light" className="mx-auto opacity-80" />
               <p className="mt-2 text-xs text-slate-500">{CLAVERGROW_PRODUCT.name}</p>
             </div>
             <div className="text-center">
@@ -141,9 +141,6 @@ export function BrandGuideSection() {
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
               { src: BRAND_ASSETS.claverIcon, label: "Claver icon" },
-              { src: BRAND_ASSETS.claverpIcon, label: "Claver icon" },
-              { src: BRAND_ASSETS.clavergrowIcon, label: "Clavergrow icon" },
-              { src: BRAND_ASSETS.claverpLockup, label: "Lockup" },
             ].map((asset) => (
               <div key={asset.src} className="rounded-xl border bg-slate-50 p-4 text-center">
                 <Image src={asset.src} alt="" width={64} height={64} className="mx-auto" unoptimized />

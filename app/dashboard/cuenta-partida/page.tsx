@@ -1,9 +1,10 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { Topbar } from "@/components/topbar"
 import { MotionPage } from "@/components/ui/motion"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

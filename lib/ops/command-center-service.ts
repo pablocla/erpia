@@ -11,6 +11,8 @@ import { generarCeoAlerts } from "@/lib/ops/ceo-alerts-service"
 import { computeFocoHoy } from "@/lib/ops/ceo-focus-service"
 import { CEO_METAS_F1, CEO_RUTINA_DIARIA } from "@/lib/ops/ceo-roadmap-catalog"
 import { listWebRegistrations } from "@/lib/ops/web-registrations-service"
+import { countConsultasWeb7d, listConsultasWebRecientes } from "@/lib/comercial/ventas-consulta-service"
+import { getPropiedadFleetKpis } from "@/lib/ops/tenant-propiedad-service"
 
 function db() {
   return prisma as any
@@ -28,7 +30,8 @@ export async function getCommandCenter(analystEmail: string) {
   const scope = await getAnalystEmpresaScope(analystEmail)
   const empresaIds = scope.mode === "assigned" ? scope.empresaIds : undefined
 
-  const [metricas, fleet, billing, implementacion, pipelineResumen, leads, altasWeb] = await Promise.all([
+  const [metricas, fleet, billing, implementacion, pipelineResumen, leads, altasWeb, consultasWeb7d, consultasWeb, propiedadKpis] =
+    await Promise.all([
     getPlataformaMetricas(analystEmail),
     getSuperAdminFleetDashboard(analystEmail),
     getFleetBilling(analystEmail),
@@ -56,6 +59,14 @@ export async function getCommandCenter(analystEmail: string) {
         demos7d: 0,
         trialsPorVencer: 0,
       },
+    })),
+    countConsultasWeb7d().catch(() => 0),
+    listConsultasWebRecientes(8).catch(() => []),
+    getPropiedadFleetKpis(empresaIds).catch(() => ({
+      tenantsPropiedad: 0,
+      sinLiquidarMes: 0,
+      checklistIncompleto: 0,
+      morososActivos: 0,
     })),
   ])
 
@@ -165,6 +176,11 @@ export async function getCommandCenter(analystEmail: string) {
       registrosWeb7d: altasWeb.resumen.registrosWeb7d,
       demosRubro7d: altasWeb.resumen.demos7d,
       trialsPorVencer: altasWeb.resumen.trialsPorVencer,
+      consultasWeb7d,
+      tenantsPropiedad: propiedadKpis.tenantsPropiedad,
+      propiedadSinLiquidar: propiedadKpis.sinLiquidarMes,
+      propiedadChecklistIncompleto: propiedadKpis.checklistIncompleto,
+      propiedadMorososActivos: propiedadKpis.morososActivos,
     },
     mando: {
       focoHoy,
@@ -183,6 +199,18 @@ export async function getCommandCenter(analystEmail: string) {
     comercial: {
       resumen: pipelineResumen,
       leads,
+      consultasWeb: consultasWeb.map((c) => ({
+        id: c.id,
+        nombre: c.nombre,
+        email: c.email,
+        telefono: c.telefono,
+        negocio: c.negocio,
+        rubro: c.rubro,
+        etapa: c.etapa,
+        proximaAccion: c.proximaAccion,
+        createdAt: c.createdAt,
+        notas: c.notas,
+      })),
     },
     operaciones: {
       ordenesRecientes,
@@ -225,6 +253,11 @@ export async function getCommandCenter(analystEmail: string) {
         titulo: "Sitio comercial Claver",
         href: "/claver",
         descripcion: "Landing matriz y ecommerce",
+      },
+      {
+        titulo: "Consultas web",
+        href: "/claver/contacto",
+        descripcion: "Formulario público de ventas y demos",
       },
     ],
   }

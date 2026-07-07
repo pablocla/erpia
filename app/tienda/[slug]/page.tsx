@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Suspense, useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
@@ -51,9 +51,9 @@ function TiendaSlugContent() {
     <TiendaStorefront
       empresaId={empresaId}
       slug={slug}
-      canalVentaCodigo={searchParams.get("canal")}
-      pagoReturn={searchParams.get("pago")}
-      pedidoReturn={searchParams.get("pedido")}
+      canalVentaCodigo={searchParams.get("canal") ?? undefined}
+      pagoReturn={searchParams.get("pago") ?? undefined}
+      pedidoReturn={searchParams.get("pedido") ?? undefined}
     />
   )
 }

@@ -1,0 +1,47 @@
+---
+pid: 39308
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -First 40"
+started_at: 2026-07-07T01:30:46.973Z
+running_for_ms: 20080004 
+---
+.next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
+  Types of property 'params' are incompatible.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/agenda-publica/[empresaId]/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: { params: { empresaId: string; }; }; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  The types of '__param_type__.params' are incompatible between these types.
+    Type '{ empresaId: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+.next/types/app/api/caja/movimientos/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/caja/movimientos/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/compras/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/compras/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/marketplace/checkout/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/pos/venta/route.ts(12,13): error TS2344: Type 'OmitWithTag<typeof import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/app/api/pos/venta/route"), "POST" | "config" | "GET" | "PATCH" | "PUT" | "DELETE" | "revalidate" | "HEAD" | ... 7 more ... | "OPTIONS", "">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'calcularLinea' is incompatible with index signature.
+    Type '(precioUnitario: number, cantidad: number, porcentajeIva: number, descuento: number) => { neto: number; iva: number; total: number; }' is not assignable to type 'never'.
+.next/types/app/api/productos/importar/route.ts(166,7): error TS2344: Type '{ __tag__: "POST"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.
+.next/types/app/api/stock/movimientos/route.ts(49,7): error TS2344: Type '{ __tag__: "GET"; __param_position__: "second"; __param_type__: RouteContext<Record<string, string>> | undefined; }' does not satisfy the constraint 'ParamCheck<RouteContext>'.
+  Types of property '__param_type__' are incompatible.
+    Type 'RouteContext<Record<string, string>> | undefined' is not assignable to type 'RouteContext'.
+      Type 'undefined' is not assignable to type 'RouteContext'.

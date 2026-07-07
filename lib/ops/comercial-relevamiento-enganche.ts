@@ -13,6 +13,7 @@ export const ENGANCHE_POR_RUBRO: Record<string, string> = {
   indumentaria: "pos.core",
   farmacia: "pos.core",
   restaurant: "indefinido",
+  inmobiliaria: "pool-propiedad",
   otro: "indefinido",
 }
 

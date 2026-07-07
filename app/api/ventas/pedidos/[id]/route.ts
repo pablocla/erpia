@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         vendedor: { select: { id: true, nombre: true } },
         condicionPago: true,
         lineas: {
-          include: { producto: { select: { id: true, nombre: true, sku: true } } },
+          include: { producto: { select: { id: true, nombre: true, codigo: true, codigoBarras: true } } },
           orderBy: { orden: "asc" },
         },
         remitos: { select: { id: true, numero: true, estado: true, createdAt: true } },

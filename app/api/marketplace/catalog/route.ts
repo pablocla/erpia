@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { MARKETPLACE_CATALOG } from "@/lib/marketplace/marketplace-catalog"
@@ -8,7 +8,7 @@ import { getRunbook } from "@/lib/marketplace/product-runbooks"
 import { getEmpresaCountry } from "@/lib/country/get-empresa-country"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const countryContext = await getEmpresaCountry(auth.auth.empresaId)
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     select: { sku: true, limiteEventosMes: true },
   })
 
-  const jobsPendientes = await prisma.marketplaceProvisionJob.findMany({
+  const jobsPendientes = await prisma.ordenProvision.findMany({
     where: {
       empresaId: auth.auth.empresaId,
       estado: { in: ["pending", "running"] },
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   })
 
   const suscripcionesMap = new Map(suscripciones.map((s) => [s.sku, s]))
-  const jobsMap = new Map(jobsPendientes.map((j) => [j.sku, j]))
+  const jobsMap = new Map(jobsPendientes.map((j: any) => [j.sku, j]))
 
   const catalogWithStatus = MARKETPLACE_CATALOG
     .filter((item) => !item.paisesHabilitados || item.paisesHabilitados.includes(pais))
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       limiteActual: sub?.limiteEventosMes ?? null,
       provisionEstado: job?.estado ?? null,
       provisionJobId: job?.id ?? null,
-      activacionCliente: runbook?.activacionCliente ?? `Marketplace → Activar ${item.nombre}`,
+      activacionCliente: runbook?.activacionCliente ?? `Marketplace â†’ Activar ${item.nombre}`,
     }
   })
 
@@ -69,3 +69,6 @@ export async function GET(request: NextRequest) {
     bundles,
   })
 }
+
+
+

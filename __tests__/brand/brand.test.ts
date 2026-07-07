@@ -11,18 +11,22 @@ import {
 import { CLAVERGROW_PRODUCT } from "@/lib/marketing/brand-system"
 import { CLAVERGROW_PACKS } from "@/lib/marketing/clavergrow-catalog"
 
-describe("brand — Claver by Claver", () => {
+describe("brand — Claver", () => {
   it("usa Claver por defecto", () => {
     const r = resolveSidebarBranding(null)
     expect(r.title).toBe("Claver")
-    expect(r.subtitle).toBe("by Claver")
+    expect(r.subtitle).toBe("Un sistema. Toda tu operación.")
     expect(r.showLiveIndicator).toBe(true)
+  })
+
+  it("BRAND_FULL no repite el nombre del grupo", () => {
+    expect(BRAND_FULL).toBe("Claver")
   })
 
   it("muestra powered-by con nombre de empresa custom", () => {
     const r = resolveSidebarBranding("Panadería La Rosa")
     expect(r.title).toBe("Panadería La Rosa")
-    expect(r.subtitle).toBe(BRAND_FULL)
+    expect(r.subtitle).toBe("Claver")
     expect(r.showLiveIndicator).toBe(false)
   })
 

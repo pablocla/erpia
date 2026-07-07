@@ -21,8 +21,8 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Claver by Claver — ERP & POS Argentina',
-  description: 'Claver by Claver del grupo Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
+  title: 'Claver — ERP & POS Argentina',
+  description: 'Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -31,14 +31,6 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',

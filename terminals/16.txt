@@ -1,0 +1,33 @@
+---
+pid: 28440
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"industryId\":\"taller_mecanico\"}'; $resp = Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body $body; $resp | ConvertTo-Json -Depth 10"
+started_at: 2026-07-03T18:36:29.307Z
+running_for_ms: 604995   
+---
+{
+    "success":  true,
+    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjMzLCJlbWFpbCI6ImRlbW8tNWQ5MjBlZWFAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjM1LCJleHAiOjE3ODMxOTAyNzMsImlhdCI6MTc4MzEwMzg3M30.09NMMfjQ1ZmlGwdeAfZqpqrXisWHwRripw9FheNL7_A",
+    "goldenPath":  "/dashboard/nicho/taller",
+    "industryId":  "taller_mecanico",
+    "rubro":  "otro",
+    "provision":  {
+                      "industryId":  "taller_mecanico",
+                      "rubro":  "otro",
+                      "goldenPath":  "/dashboard/nicho/taller",
+                      "empresaNombre":  "Demo Taller mecǭnico ?? 5d920eea",
+                      "productosCreados":  2,
+                      "clientesCreados":  1,
+                      "skusActivados":  [
+                                            "niche.taller_mecanico"
+                                        ],
+                      "modoLite":  "niche"
+                  },
+    "usuario":  {
+                    "id":  33,
+                    "nombre":  "Administrador Demo",
+                    "email":  "demo-5d920eea@claver.com.ar",
+                    "rol":  "administrador",
+                    "empresaId":  35
+                }
+}

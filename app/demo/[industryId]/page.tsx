@@ -18,6 +18,7 @@ export default function DemoIndustryDeepLinkPage() {
   const { loginConToken } = useAuth()
   const industryId = typeof params.industryId === "string" ? params.industryId : ""
   const present = searchParams.get("present") === "1"
+  const activarParam = searchParams.get("activar")
   const template = getIndustryTemplate(industryId)
 
   const [error, setError] = useState("")
@@ -33,7 +34,7 @@ export default function DemoIndustryDeepLinkPage() {
     let cancelled = false
     ;(async () => {
       try {
-        const dest = await launchIndustryDemo(industryId, loginConToken, { present })
+        const dest = await launchIndustryDemo(industryId, loginConToken, { present, activar: activarParam })
         if (!cancelled) router.replace(dest)
       } catch (err) {
         if (!cancelled) {

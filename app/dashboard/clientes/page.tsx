@@ -351,7 +351,7 @@ export default function ClientesPage() {
             }}
             title="Importar Clientes desde CSV"
           />
-          <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />{t("newCustomer")}</Button>
+          <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />Nuevo Cliente</Button>
           </>
         }
       />

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useProductEntitlements } from "@/hooks/use-product-entitlements"
@@ -104,9 +104,9 @@ export function ProductControlPanel() {
                   onCheckedChange={(v) => void togglePack(pack.id, v)}
                 />
               </CardTitle>
-              <p className="text-xs text-muted-foreground">{pack.lema}</p>
+              <p className="text-xs text-muted-foreground">{(pack as any).lema}</p>
             </CardHeader>
-            <CardContent className="text-[11px] text-muted-foreground">{pack.skus.join(" + ")}</CardContent>
+            <CardContent className="text-[11px] text-muted-foreground">{(pack as any).skus?.join(" + ")}</CardContent>
           </Card>
         ))}
       </div>

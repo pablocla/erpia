@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+﻿import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { isAdminRole } from "@/lib/auth/admin-roles"
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
   const parsed = ConnectSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
+    return NextResponse.json({ error: "Datos invÃ¡lidos" }, { status: 400 })
   }
 
   const { guardarConexion } = await import("@/lib/integrations/connection-service")

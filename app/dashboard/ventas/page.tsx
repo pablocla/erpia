@@ -84,7 +84,6 @@ interface Serie {
 }
 
 export default function VentasPage() {
-  const t = useTranslations("sales")
   const { toast } = useToast()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [productos, setProductos] = useState<Producto[]>([])

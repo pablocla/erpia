@@ -10,10 +10,14 @@ import {
   Server,
   Shield,
   Wifi,
+  Save,
+  Play
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type CheckItem = {
   id: string
@@ -31,6 +35,12 @@ export default function ProtheusSetupPage() {
   const [checklist, setChecklist] = useState<CheckItem[]>([])
   const [loading, setLoading] = useState(true)
   const [done, setDone] = useState<Record<string, boolean>>({})
+  
+  const [baseUrl, setBaseUrl] = useState("http://10.12.35.70:8073/rest")
+  const [user, setUser] = useState("admin")
+  const [password, setPassword] = useState("")
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<string | null>(null)
 
   useEffect(() => {
     void (async () => {
@@ -41,6 +51,10 @@ export default function ProtheusSetupPage() {
         if (res.ok) {
           const data = await res.json()
           setChecklist(data.checklist ?? [])
+          if (data.restDefaults) {
+            setBaseUrl(data.restDefaults.baseUrl || "")
+            setUser(data.restDefaults.user || "")
+          }
         }
       } finally {
         setLoading(false)
@@ -49,6 +63,38 @@ export default function ProtheusSetupPage() {
   }, [])
 
   const completed = Object.values(done).filter(Boolean).length
+
+  async function testConnection() {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch("/api/claver-cloud/protheus-api/introspect", {
+        method: "POST",
+        headers: {
+          ...authHeaders(),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          canal: "rest",
+          baseUrl,
+          user,
+          password
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setTestResult(`Conexión exitosa. ¡Encontradas ${data.sxTables?.length || 0} tablas clave y ${data.steps?.length || 0} endpoints!`)
+        // Marcamos el paso 2 como hecho
+        setDone(prev => ({ ...prev, rest_discovery: true }))
+      } else {
+        setTestResult(`Error: ${data.error || "Falló la conexión"}`)
+      }
+    } catch (err: any) {
+      setTestResult(`Error: ${err.message}`)
+    } finally {
+      setTesting(false)
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -71,13 +117,53 @@ export default function ProtheusSetupPage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Wifi className="h-4 w-4" />
-            Tu Protheus de referencia
+            Parámetros REST (Introspección)
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm space-y-2 font-mono text-xs">
-          <p>REST: http://10.12.35.70:8073/rest</p>
-          <p>Discovery: /tlpp/rest/list/service</p>
-          <p>Auth: Basic admin / (password en OPO Console)</p>
+        <CardContent className="space-y-4 pt-2">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="baseUrl">Base URL REST</Label>
+              <Input 
+                id="baseUrl"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="https://oxforduniversity172971.protheus.cloudtotvs.com.br:4050"
+              />
+            </div>
+            <div className="grid gap-4 grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="user">Usuario</Label>
+                <Input 
+                  id="user"
+                  value={user}
+                  onChange={(e) => setUser(e.target.value)}
+                  placeholder="admin"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input 
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button onClick={testConnection} disabled={testing} variant="secondary">
+              {testing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+              Probar Conexión
+            </Button>
+            {testResult && (
+              <p className={`text-sm ${testResult.startsWith("Error") ? "text-destructive" : "text-emerald-600"}`}>
+                {testResult}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -5,17 +5,32 @@ export { CLAVER_GROUP, CLAVERP_PRODUCT, CLAVERGROW_PRODUCT, BRAND_RECOMMENDED } 
 /** Producto ERP del grupo Claver */
 export const BRAND_NAME = CLAVERP_PRODUCT.name
 
-/** Lockup comercial: Claver by Claver */
-export const BRAND_FULL = `${CLAVERP_PRODUCT.name} by ${CLAVER_GROUP.name}`
+/** Evita lockups redundantes cuando producto y grupo comparten nombre */
+export function brandByLine(
+  productName: string,
+  groupName: string = CLAVER_GROUP.name,
+): string | null {
+  if (productName.trim().toLowerCase() === groupName.trim().toLowerCase()) return null
+  return `by ${groupName}`
+}
 
-/** Lockup comercial: Clavergrow by Claver */
-export const CLAVERGROW_FULL = `${CLAVERGROW_PRODUCT.name} by ${CLAVER_GROUP.name}`
+/** Lockup comercial: "Claver" o "Clavergrow by Claver" */
+export function brandLockup(
+  productName: string,
+  groupName: string = CLAVER_GROUP.name,
+): string {
+  const by = brandByLine(productName, groupName)
+  return by ? `${productName} ${by}` : productName
+}
+
+export const BRAND_FULL = brandLockup(CLAVERP_PRODUCT.name)
+export const CLAVERGROW_FULL = brandLockup(CLAVERGROW_PRODUCT.name)
 
 /** Remitente por defecto en emails transaccionales */
 export const BRAND_EMAIL_FROM = BRAND_FULL
 
 /** Pie de firma en emails */
-export const BRAND_EMAIL_FOOTER = `${BRAND_FULL} — Notificación automática · ${CLAVER_GROUP.name}`
+export const BRAND_EMAIL_FOOTER = `${BRAND_FULL} — Notificación automática`
 
 /** Nombres legacy que se tratan como branding de plataforma (no personalización empresa) */
 export const LEGACY_PLATFORM_APP_NAMES = ["ERP Argentina", "NegocioOS", "NexoOS"] as const
@@ -34,7 +49,7 @@ export function resolveSidebarBranding(appName: string | null | undefined) {
     title: custom ? appName!.trim() : CLAVERP_PRODUCT.name,
     subtitle: custom
       ? BRAND_FULL
-      : `by ${CLAVER_GROUP.name}`,
+      : brandByLine(CLAVERP_PRODUCT.name) ?? CLAVERP_PRODUCT.tagline,
     showLiveIndicator: !custom,
   }
 }
@@ -54,7 +69,7 @@ export function resolveAgroBranding(appName: string | null | undefined) {
   const custom = isCustomAppName(appName)
   return {
     title: custom ? appName!.trim() : CLAVERGROW_PRODUCT.name,
-    subtitle: custom ? CLAVERGROW_FULL : `by ${CLAVER_GROUP.name}`,
+    subtitle: custom ? CLAVERGROW_FULL : (brandByLine(CLAVERGROW_PRODUCT.name) ?? CLAVERGROW_PRODUCT.tagline),
     tagline: CLAVERGROW_PRODUCT.tagline,
     showLiveIndicator: !custom,
   }

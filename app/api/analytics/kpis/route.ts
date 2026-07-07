@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth/empresa-guard";
 import { calculateAnalyticsKpis } from "@/lib/analytics/kpi-engine";
 import { logReportAccess } from "@/lib/analytics/audit-logger";
 import { RoleContext } from "@/lib/analytics/rls-guard";
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request);
+  const auth = await getAuthContext(request);
   if (!auth.ok) return auth.response;
 
   const searchParams = request.nextUrl.searchParams;

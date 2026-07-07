@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Building2, MessageCircle, Plus, RefreshCw } from "lucide-react"
+import Link from "next/link"
+import { AlertTriangle, Building2, FileDown, Globe, MessageCircle, Plus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,12 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { getAuthHeaders } from "@/lib/stores/auth-store"
+import { authFetch, getAuthHeaders } from "@/lib/stores/auth-store"
 import type { NicheAppDefinition } from "@/lib/niche/types"
 import { NicheClientePicker, type ClienteOption } from "@/components/niche/niche-cliente-picker"
 import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
 import { getNicheExperience } from "@/lib/comercial/app-experience"
 import { useToast } from "@/components/ui/use-toast"
+import {
+  PropiedadOnboardingChecklist,
+  completarPasoOnboardingPropiedad,
+} from "@/components/comercial/propiedad-onboarding-checklist"
 
 const fmt = (n: number) =>
   n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })
@@ -37,6 +42,16 @@ type Unidad = {
   residente?: { id: number; nombre: string; telefono: string | null } | null
 }
 
+type Moroso = {
+  expensaId: number
+  periodo: string
+  monto: number
+  diasMora: number
+  unidadNumero: string
+  residenteNombre: string | null
+  residenteTelefono: string | null
+}
+
 export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
   const { toast } = useToast()
   const [consorcios, setConsorcios] = useState<Consorcio[]>([])
@@ -52,6 +67,7 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
     total: number
     unidades: number
   } | null>(null)
+  const [morosos, setMorosos] = useState<Moroso[]>([])
 
   const cargar = useCallback(async () => {
     const res = await fetch("/api/consorcios", { headers: getAuthHeaders() })
@@ -68,12 +84,25 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
 
   useEffect(() => {
     void cargar()
+    void completarPasoOnboardingPropiedad("abrir_consorcios")
   }, [cargar])
 
+  const cargarMorosos = useCallback(async (consorcioId?: number) => {
+    const q = consorcioId ? `?consorcioId=${consorcioId}` : ""
+    const res = await fetch(`/api/consorcios/morosos${q}`, { headers: getAuthHeaders() })
+    if (res.ok) setMorosos(await res.json())
+    else setMorosos([])
+  }, [])
+
   useEffect(() => {
-    if (selected) void cargarUnidades(selected)
-    else setUnidades([])
-  }, [selected, cargarUnidades])
+    if (selected) {
+      void cargarUnidades(selected)
+      void cargarMorosos(selected)
+    } else {
+      setUnidades([])
+      setMorosos([])
+    }
+  }, [selected, cargarUnidades, cargarMorosos])
 
   async function crearEdificio(nombre: string, direccion: string) {
     const res = await fetch("/api/consorcios", {
@@ -166,7 +195,57 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
       title: "Expensas liquidadas",
       description: `${count} unidades · ${fmt(Number(data?.totalProrrateado ?? 0))} total`,
     })
+    void completarPasoOnboardingPropiedad("liquidar_pdf")
     void cargar()
+    if (selected) void cargarMorosos(selected)
+  }
+
+  async function avisarMoroso(expensaId: number) {
+    const res = await fetch("/api/consorcios/morosos", {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ expensaId }),
+    })
+    const data = res.ok ? null : await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast({
+        variant: "destructive",
+        title: "No se pudo avisar",
+        description: data?.error ?? "Revisá teléfono y WhatsApp.",
+      })
+      return
+    }
+    toast({ title: "Aviso encolado", description: "WhatsApp al inquilino moroso." })
+    void completarPasoOnboardingPropiedad("primer_wa")
+  }
+
+  async function descargarPdf() {
+    if (!selected) return
+    try {
+      const res = await authFetch(
+        `/api/consorcios/${selected}/liquidacion/pdf?periodo=${encodeURIComponent(periodo)}`,
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast({
+          variant: "destructive",
+          title: "PDF no disponible",
+          description: err.error ?? "¿Hay gastos cargados para el período?",
+        })
+        return
+      }
+      const html = await res.text()
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" })
+      const url = URL.createObjectURL(blob)
+      const w = window.open(url, "_blank")
+      if (!w) {
+        toast({ variant: "destructive", title: "Permití ventanas emergentes para el PDF" })
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      void completarPasoOnboardingPropiedad("liquidar_pdf")
+    } catch {
+      toast({ variant: "destructive", title: "Error al generar PDF" })
+    }
   }
 
   async function comunicado() {
@@ -198,6 +277,7 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {guide && <AppExperienceHeader guide={guide} />}
+      <PropiedadOnboardingChecklist />
 
       {consorcios.length === 0 && (
         <Card className="border-dashed">
@@ -220,7 +300,7 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
         </Card>
       )}
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         <Dialog>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -237,6 +317,18 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
         </Dialog>
         <Button variant="outline" size="sm" onClick={() => void cargar()}>
           <RefreshCw className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/nicho/portales">
+            <Globe className="h-4 w-4 mr-1" />
+            Portales
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/nicho/inmobiliaria">Cartera inmo</Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dashboard/nicho/garantia">Contratos legacy</Link>
         </Button>
       </div>
 
@@ -265,6 +357,37 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
           </Card>
         ))}
       </div>
+
+      {morosos.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="h-4 w-4" />
+              Morosos expensas ({morosos.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {morosos.map((m) => (
+              <div
+                key={m.expensaId}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-100 bg-white px-3 py-2 text-sm"
+              >
+                <div>
+                  <strong>{m.unidadNumero}</strong> — {m.residenteNombre ?? "Sin residente"}
+                  <p className="text-xs text-muted-foreground">
+                    {m.periodo} · {fmt(m.monto)}
+                    {m.diasMora > 0 ? ` · ${m.diasMora}d mora` : ""}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => void avisarMoroso(m.expensaId)}>
+                  <MessageCircle className="h-4 w-4 mr-1" />
+                  Cobrar / WA
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {selected && selectedConsorcio && (
         <div className="space-y-4">
@@ -327,6 +450,10 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
                 <Button onClick={() => void cargarGasto()}>Cargar gasto</Button>
                 <Button variant="secondary" onClick={() => void liquidar()}>
                   {app.accionPrincipal} ({periodo})
+                </Button>
+                <Button variant="outline" onClick={() => void descargarPdf()}>
+                  <FileDown className="h-4 w-4 mr-1" />
+                  Descargar PDF
                 </Button>
               </div>
               <div className="border-t pt-4 space-y-2">

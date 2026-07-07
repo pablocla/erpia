@@ -4,7 +4,8 @@ import Link from "next/link"
 import { ArrowRight, Check, ExternalLink } from "lucide-react"
 import type { SolutionPage } from "@/lib/marketing/solutions-catalog"
 import { ClaverShell } from "@/components/marketing/claver-shell"
-import { CLAVER_GROUP, CLAVERP_PRODUCT } from "@/lib/marketing/brand-system"
+import { brandLockup } from "@/lib/brand"
+import { CLAVERP_PRODUCT } from "@/lib/marketing/brand-system"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,7 +43,7 @@ const IconMap = {
 
 export function SolutionLanding({ solution, extra }: SolutionLandingProps) {
   const Icon = IconMap[solution.icon as keyof typeof IconMap] || HelpCircle
-  const ctaHref = solution.demoLink ?? "/login"
+  const ctaHref = solution.demoLink ?? "/claver/contacto"
 
   return (
     <ClaverShell context="claverp">
@@ -69,7 +70,7 @@ export function SolutionLanding({ solution, extra }: SolutionLandingProps) {
               href="/claver/claverp"
               className="mb-4 inline-block text-sm text-white/60 hover:text-white"
             >
-              {CLAVERP_PRODUCT.name} · by {CLAVER_GROUP.name}
+              {brandLockup(CLAVERP_PRODUCT.name)}
             </Link>
             <Badge className="mb-4 border-white/20 bg-white/10 text-white">
               {solution.emoji} Solución vertical

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +34,7 @@ export default function InflacionPage() {
   const [coeficiente, setCoeficiente] = useState("")
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
+  const headers = (token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }) as Record<string, string>
 
   const fetchAjustes = useCallback(async () => {
     setLoading(true)

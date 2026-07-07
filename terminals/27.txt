@@ -1,0 +1,732 @@
+---
+pid: 20112
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npm test"
+started_at: 2026-07-07T01:43:47.416Z
+running_for_ms: 19300005 
+---
+
+> pos-argentina@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.2 C:/Users/Pablo Clavero/Downloads/pos-system-argentina
+
+ ❯ __tests__/integration/backoffice-funcional.test.ts (2 tests | 2 skipped) 5ms
+stderr | __tests__/integration/backoffice-funcional.test.ts > Testing Funcional Backoffice (Integración)
+Cleanup E2E fallido, ignorando. Error: TypeError: Cannot read properties of undefined (reading 'catch')
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/integration/backoffice-funcional.test.ts:104:69
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+     ↓ 1. Circuito de Compras: OC -> Recepción -> Compra -> Asiento
+     ↓ 2. Circuito de Ventas: Pedido -> Remito -> Facturación -> Asiento
+ ❯ __tests__/comercial/industry-demo-service.test.ts (2 tests | 2 failed) 6ms
+     × prestamista activa SKU de nicho y libreta fiado 4ms
+     × supermercado sin enganche no activa SKUs de marketplace 1ms
+
+ ✓ __tests__/erp/erp-coverage.test.ts (34 tests) 438ms
+stdout | __tests__/smoke/readiness.test.ts > readiness — módulos críticos > agent registry tiene agentes registrados
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+
+ ✓ __tests__/smoke/readiness.test.ts (7 tests) 564ms
+ ✓ __tests__/automation/virtual-worker.test.ts (2 tests) 627ms
+     ✓ ejecuta playbook stock_bajo cuando cron coincide  625ms
+ ✓ __tests__/automation/n8n-bridge.test.ts (2 tests) 687ms
+     ✓ omite envío si automation inactivo  632ms
+ ✓ __tests__/ops/ops-service.test.ts (4 tests) 226ms
+ ✓ __tests__/printer/printer-transport.test.ts (1 test) 160ms
+ ✓ __tests__/api/ia.test.ts (26 tests) 148ms
+ ✓ __tests__/arba/cot-remitos.test.ts (5 tests) 1227ms
+     ✓ debe tramitar el COT exitosamente si supera el umbral de valor  611ms
+     ✓ debe tramitar el COT exitosamente si supera el umbral de peso  611ms
+ ✓ __tests__/ops/stakeholder-service.test.ts (1 test) 132ms
+ ✓ __tests__/ops/tenant-admin-service.test.ts (3 tests) 61ms
+ ✓ __tests__/auth/claver-analyst.test.ts (5 tests) 82ms
+ ✓ __tests__/ops/job-wait.test.ts (2 tests) 69ms
+ ✓ __tests__/fiscal/factura-especial.test.ts (4 tests) 70ms
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe facturar con tipo comprobante normal si no se superan los umbrales de FCE
+Error en hook onFacturaEmitida: Error: Factura no encontrada
+    at AsientoService.generarAsientoVenta (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:42:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at onFacturaEmitida (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/factura-hooks.ts:6:5)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:510:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:94:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+ ✓ __tests__/ops/analyst-playbooks.test.ts (3 tests) 59ms
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe facturar con tipo comprobante normal si no se superan los umbrales de FCE
+[EVENT] Error al generar asiento CMV: Error: Factura no encontrada
+    at AsientoService.generarAsientoCMV (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:326:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.fn (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/stock/stock-service.ts:317:5)
+    at EventBus.emit (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/events/event-bus.ts:59:9)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:513:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:94:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe ruteo automático a FCE (tipoCbte 201) si cliente es Gran Empresa y total >= umbral
+Error en hook onFacturaEmitida: Error: Factura no encontrada
+    at AsientoService.generarAsientoVenta (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:42:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at onFacturaEmitida (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/factura-hooks.ts:6:5)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:510:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:131:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe ruteo automático a FCE (tipoCbte 201) si cliente es Gran Empresa y total >= umbral
+[EVENT] Error al generar asiento CMV: Error: Factura no encontrada
+    at AsientoService.generarAsientoCMV (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:326:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.fn (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/stock/stock-service.ts:317:5)
+    at EventBus.emit (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/events/event-bus.ts:59:9)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:513:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:131:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe ruteo automático a Factura de Exportación E (tipoCbte 19) si cliente es de Exportación
+Error en hook onFacturaEmitida: Error: Factura no encontrada
+    at AsientoService.generarAsientoVenta (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:42:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at onFacturaEmitida (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/factura-hooks.ts:6:5)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:510:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:168:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe ruteo automático a Factura de Exportación E (tipoCbte 19) si cliente es de Exportación
+[EVENT] Error al generar asiento CMV: Error: Factura no encontrada
+    at AsientoService.generarAsientoCMV (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:326:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.fn (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/stock/stock-service.ts:317:5)
+    at EventBus.emit (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/events/event-bus.ts:59:9)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:513:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:168:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe resolver dinámicamente el punto de venta utilizando la tabla de Series si está configurado
+Error en hook onFacturaEmitida: Error: Factura no encontrada
+    at AsientoService.generarAsientoVenta (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:42:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at onFacturaEmitida (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/factura-hooks.ts:6:5)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:510:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:216:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+stderr | __tests__/fiscal/factura-especial.test.ts > FacturaService - Regímenes Especiales de Facturación > debe resolver dinámicamente el punto de venta utilizando la tabla de Series si está configurado
+[EVENT] Error al generar asiento CMV: Error: Factura no encontrada
+    at AsientoService.generarAsientoCMV (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:326:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.fn (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/stock/stock-service.ts:317:5)
+    at EventBus.emit (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/events/event-bus.ts:59:9)
+    at FacturaService.emitirFactura (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/afip/factura-service.ts:513:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/fiscal/factura-especial.test.ts:216:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+
+ ✓ __tests__/ventas/ventas-service.test.ts (7 tests) 21ms
+ ✓ __tests__/integrations/credential-vault.test.ts (2 tests) 59ms
+ ✓ __tests__/ops/entorno-sync-service.test.ts (6 tests) 52ms
+ ❯ __tests__/ventas/pedidos-route.test.ts (0 test)
+ ✓ __tests__/scheduling/dispatcher.test.ts (3 tests) 27ms
+ ✓ __tests__/ai/agentes.test.ts (10 tests) 27ms
+ ✓ __tests__/ops/ticket-stakeholder-service.test.ts (2 tests) 11ms
+ ✓ __tests__/automation/poll.test.ts (4 tests) 16ms
+ ❯ __tests__/compras/page.test.tsx (1 test | 1 failed) 16ms
+stderr | __tests__/productos/inventario/page.test.tsx > InventarioPage > renders correctly
+An update to InventarioPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InventarioPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InventarioPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to InventarioPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+     × renders correctly 15ms
+ ✓ __tests__/agro/contratos.test.tsx (1 test) 140ms
+ ✓ __tests__/productos/inventario/page.test.tsx (1 test) 138ms
+ ✓ __tests__/ventas/presupuestos/page.test.tsx (1 test) 133ms
+ ✓ __tests__/automation/playbook-runner-extended.test.ts (2 tests) 25ms
+ ✓ __tests__/logistica/page.test.tsx (1 test) 212ms
+
+stderr | __tests__/ventas/presupuestos/page.test.tsx > PresupuestosPage > renders correctly
+An update to PresupuestosPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to PresupuestosPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | __tests__/ventas/presupuestos/page.test.tsx > PresupuestosPage > renders correctly
+An update to PresupuestosPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | __tests__/logistica/page.test.tsx > LogisticaPage > renders correctly
+An update to LogisticaPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to LogisticaPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to LogisticaPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ __tests__/ops/ops-notificaciones.test.ts (6 tests) 21ms
+ ✓ __tests__/ops/scrum-service.test.ts (4 tests) 27ms
+ ✓ __tests__/ops/afip-produccion-approval.test.ts (3 tests) 19ms
+ ✓ __tests__/api/niche-routes.test.ts (11 tests) 20ms
+ ✓ __tests__/docs/docs-index.test.ts (5 tests) 20ms
+ ✓ __tests__/almacen-rosario/vale-dinero-service.test.ts (5 tests) 19ms
+ ✓ __tests__/ventas/facturacion-recurrente-service.test.ts (5 tests) 24ms
+ ✓ __tests__/comercial/industry-demo-seeds.test.ts (5 tests) 12ms
+stderr | __tests__/ventas/facturacion-recurrente-service.test.ts > Facturación Recurrente Service > procesarFacturasRecurrentes > should process active invoices due today
+Error en hook onFacturaEmitida: Error: Factura no encontrada
+    at AsientoService.generarAsientoVenta (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/asiento-service.ts:42:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at onFacturaEmitida (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/contabilidad/factura-hooks.ts:6:5)
+    at Module.procesarFacturasRecurrentes (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/ventas/facturacion-recurrente-service.ts:143:7)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/ventas/facturacion-recurrente-service.test.ts:87:22
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+ ✓ __tests__/ops/custom-playbooks.test.ts (2 tests) 15ms
+
+ ✓ __tests__/alertas/whatsapp-regla-dispatcher.test.ts (2 tests) 16ms
+ ✓ __tests__/fiado/fiado-whatsapp.test.ts (3 tests) 17ms
+ ✓ __tests__/marketplace/pedido-automatico.test.ts (1 test) 17ms
+ ✓ __tests__/i18n/formatters.test.ts (4 tests) 17ms
+ ✓ __tests__/membresias/membresias-service.test.ts (11 tests) 14ms
+ ✓ __tests__/stock/stock-service.test.ts (8 tests) 15ms
+ ✓ __tests__/auth/empresa-guard.test.ts (10 tests) 14ms
+stderr | __tests__/auth/empresa-guard.test.ts > withAuthAndTenant > captura errores no manejados con 500
+[API_ERROR] Error: boom
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/auth/empresa-guard.test.ts:140:13
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/auth/empresa-guard.ts:134:20
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/auth/empresa-guard.test.ts:142:17
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20
+{"timestamp":"2026-07-07T01:43:55.401Z","requestId":"f332e34d-7b34-4c5f-9106-6af494c24775","severity":"error","context":"withAuthAndTenant","message":"boom","stack":"Error: boom\n    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/auth/empresa-guard.test.ts:140:13\n    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/auth/empresa-guard.ts:134:20\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/auth/empresa-guard.test.ts:142:17\n    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:20","path":"/api/test","method":"GET"}
+
+ ✓ __tests__/almacen-rosario/retail-extensions.test.ts (3 tests) 12ms
+ ✓ __tests__/automation/outbound-job.test.ts (2 tests) 13ms
+ ✓ __tests__/auth/auth-service.test.ts (4 tests) 17ms
+ ✓ __tests__/format/currency.test.ts (3 tests) 12ms
+stderr | __tests__/auth/auth-service.test.ts > AuthService JWT > rechaza token inválido o manipulado
+Error al verificar token: JWSInvalid: JWS Protected Header is invalid
+    at flattenedVerify (file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/jose/dist/webapi/jws/flattened/verify.js:38:19)
+    at compactVerify (file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/jose/dist/webapi/jws/compact/verify.js:15:28)
+    at jwtVerify (file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/jose/dist/webapi/jwt/verify.js:5:28)
+    at AuthService.verificarToken (C:/Users/Pablo Clavero/Downloads/pos-system-argentina/lib/auth/auth-service.ts:182:33)
+    at C:/Users/Pablo Clavero/Downloads/pos-system-argentina/__tests__/auth/auth-service.test.ts:32:35
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:1893:26
+    at file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:2316:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///C:/Users/Pablo%20Clavero/Downloads/pos-system-argentina/node_modules/@vitest/runner/dist/chunk-artifact.js:2313:10) {
+  code: 'ERR_JWS_INVALID'
+}
+
+ ✓ __tests__/niche/niche-provision.test.ts (5 tests) 9ms
+ ✓ __tests__/banco/cashflow-service.test.ts (3 tests) 13ms
+ ✓ __tests__/almacen-rosario/margen-pos.test.ts (1 test) 12ms
+ ✓ __tests__/rrhh/empleados-service.test.ts (9 tests) 13ms
+ ✓ __tests__/contabilidad/periodo-fiscal-service.test.ts (7 tests) 11ms
+ ❯ __tests__/marketplace/provision-service.test.ts (9 tests | 2 failed) 15ms
+     ✓ bloquea provisioning de SKUs marcados como Próximamente 4ms
+     ✓ activa suscripción automáticamente para GLOBAL_AUTO 2ms
+     × crea tarea analista para SEMI_AUTO 3ms
+     × Mercado Libre SEMI_AUTO: pago cliente → tarea analista sin activar SKU 1ms
+     ✓ activa producto al provisionar intang.cobranzas_wa 1ms
+     ✓ activa producto horizontal al provisionar pos.fiado_barrio 1ms
+     ✓ activa producto nicho al provisionar niche.consorcios 1ms
+     ✓ activa producto nicho al provisionar niche.club_barrio 1ms
+     ✓ falla si SKU no existe 1ms
+ ✓ __tests__/ventas/notas-credito-route.test.ts (2 tests) 10ms
+ ✓ __tests__/config/workflow-engine.test.ts (5 tests) 8ms
+ ✓ __tests__/contabilidad/asiento-service.test.ts (8 tests) 13ms
+ ✓ __tests__/api/transferencias-route.test.ts (3 tests) 12ms
+ ✓ __tests__/alertas/alertas-service.test.ts (9 tests) 13ms
+ ✓ __tests__/aprobaciones/aprobaciones-service.test.ts (7 tests) 10ms
+ ✓ __tests__/cc-cp/cuentas-service.test.ts (6 tests) 10ms
+ ✓ __tests__/niche/niche-api.test.ts (1 test) 9ms
+ ✓ __tests__/events/event-bus.test.ts (5 tests) 12ms
+stderr | __tests__/events/event-bus.test.ts > EventBus > should isolate errors — one handler failure doesn't block others
+[EventBus] Error in handler "failing_handler": boom
+ ✓ __tests__/comercial/ventas-consulta-service.test.ts (2 tests) 7ms
+
+ ✓ __tests__/platform/product-lifecycle.test.ts (4 tests) 10ms
+ ✓ __tests__/marketplace/premium-cron.test.ts (2 tests) 10ms
+ ✓ __tests__/hospitalidad/facturar-route.test.ts (2 tests) 11ms
+ ✓ __tests__/crm/crm-service.test.ts (7 tests) 11ms
+ ✓ __tests__/hospitalidad/platos-route.test.ts (3 tests) 12ms
+ ✓ __tests__/contabilidad/activo-fijo-service.test.ts (7 tests) 10ms
+ ✓ __tests__/mercadolibre/mercadolibre-service.test.ts (6 tests) 10ms
+ ✓ __tests__/config/rubro-config-service.test.ts (9 tests) 10ms
+ ✓ __tests__/ai/gemini-provider.test.ts (6 tests) 9ms
+stderr | __tests__/ai/gemini-provider.test.ts > Gemini provider > aiService.chat() > hace fallback Ollama → Gemini cuando Ollama falla
+[AI] Ollama error undefined: error
+ ✓ __tests__/mantenimiento/mantenimiento-service.test.ts (6 tests) 9ms
+ ✓ __tests__/documentos/documentos-service.test.ts (7 tests) 9ms
+
+ ✓ __tests__/api/ordenes-pago-route.test.ts (2 tests) 9ms
+ ✓ __tests__/api/recibos-route.test.ts (2 tests) 11ms
+ ❯ __tests__/marketplace/mercado-libre-checkout-flow.test.ts (7 tests | 2 failed | 3 skipped) 9ms
+     ✓ integ.mercado_libre es SEMI_AUTO (analista tras el pago) 3ms
+     ✓ tiene runbook con paso de validación analista 1ms
+     × provisionSku crea tarea analista y NO activa el SKU 3ms
+     × provisionOrden (checkout paid) deja provisión pendiente para analista 1ms
+     ↓ access token válido — GET /users/:sellerId
+     ↓ listar publicaciones activas del seller
+     ↓ credenciales de test alimentan listarPublicaciones vía servicio
+ ✓ __tests__/impuestos/citi-service.test.ts (4 tests) 7ms
+ ✓ __tests__/tiendanube/tiendanube-service.test.ts (5 tests) 9ms
+ ✓ __tests__/impuestos/declaracion-jurada-service.test.ts (4 tests) 9ms
+ ✓ __tests__/niche/movimientos-service.test.ts (3 tests) 6ms
+ ✓ __tests__/impuestos/retencion-calculo-service.test.ts (7 tests) 11ms
+ ✓ __tests__/ops/implementacion-service.test.ts (7 tests) 8ms
+ ✓ __tests__/ecommerce/checkout-service.test.ts (5 tests) 9ms
+ ✓ __tests__/ventas/presupuesto-service.test.ts (5 tests) 9ms
+ ✓ __tests__/ops/tenant-plan-service.test.ts (3 tests) 8ms
+ ✓ __tests__/industria/mrp-service.test.ts (5 tests) 9ms
+ ✓ __tests__/comercial/sub-saas-catalog.test.ts (7 tests) 5ms
+ ✓ __tests__/almacen-rosario/envase-pos-service.test.ts (3 tests) 7ms
+ ✓ __tests__/agro/cannabis-service.test.ts (3 tests) 7ms
+ ✓ __tests__/pagos/pagos-service.test.ts (1 test) 4ms
+ ✓ __tests__/marketplace/premium-activators.test.ts (3 tests) 7ms
+ ✓ __tests__/presupuesto/presupuesto-service.test.ts (4 tests) 8ms
+ ✓ __tests__/precios/motor-precios.test.ts (6 tests) 7ms
+ ❯ __tests__/banco/transferencias-service.test.ts (3 tests | 1 failed) 9ms
+     × should create paired bank movements 6ms
+     ✓ should reject same origin and destination 2ms
+     ✓ should reject accounts outside empresa 1ms
+ ✓ __tests__/comercial/activar-producto-service.test.ts (2 tests) 7ms
+ ✓ __tests__/caja/arqueo-service.test.ts (2 tests) 5ms
+ ✓ __tests__/ventas/ventas-precios.test.ts (1 test) 5ms
+ ✓ __tests__/automation/inbound-webhook.test.ts (2 tests) 8ms
+ ✓ __tests__/compras/compras-service.test.ts (3 tests) 6ms
+ ✓ __tests__/platform/entitlements.test.ts (4 tests) 7ms
+ ✓ __tests__/config/workflow-approval.test.ts (3 tests) 7ms
+ ✓ __tests__/impuestos/liquidacion-impuesto.test.ts (2 tests) 6ms
+ ✓ __tests__/fiado/fiado-service.test.ts (5 tests) 7ms
+ ✓ __tests__/comercial/pack-calle-catalog.test.ts (10 tests) 4ms
+ ✓ __tests__/calidad/calidad-service.test.ts (3 tests) 6ms
+ ✓ __tests__/comercial/industry-templates.test.ts (9 tests) 4ms
+ ✓ __tests__/comercial/trial-guard.test.ts (5 tests) 7ms
+ ✓ __tests__/fiado/fiado-pago-link.test.ts (2 tests) 6ms
+ ✓ __tests__/cheques/cheque-service.test.ts (3 tests) 7ms
+ ✓ __tests__/kpis/kpi-service.test.ts (2 tests) 6ms
+ ✓ __tests__/reporting/sheets-entitlements.test.ts (4 tests) 6ms
+ ✓ __tests__/marketplace/niche-provision.test.ts (4 tests) 5ms
+ ✓ __tests__/ops/dossier-export.test.ts (2 tests) 6ms
+ ✓ __tests__/contabilidad/centro-costo-default.test.ts (3 tests) 6ms
+ ✓ __tests__/impuestos/pre-presentacion-service.test.ts (2 tests) 5ms
+ ✓ __tests__/pos/devolucion-venta-pos.test.ts (2 tests) 6ms
+ ✓ __tests__/marketplace/cobranzas-wa.test.ts (2 tests) 5ms
+ ✓ __tests__/ops/signup-tracking.test.ts (4 tests) 5ms
+ ✓ __tests__/shopify/shopify-service.test.ts (2 tests) 5ms
+ ✓ __tests__/costos/costo-service.test.ts (2 tests) 5ms
+ ✓ __tests__/ops/worker-client.test.ts (3 tests) 5ms
+ ✓ __tests__/ops/readiness-service.test.ts (2 tests) 7ms
+ ✓ __tests__/comercial/home-redirect-industry.test.ts (4 tests) 2ms
+ ✓ __tests__/agro/agro-service.test.ts (3 tests) 5ms
+ ✓ __tests__/marketplace/analyst-task.test.ts (3 tests) 5ms
+ ✓ __tests__/legacy-bridge/technical-bulletins.test.ts (4 tests) 4ms
+ ✓ __tests__/marketplace/sku-availability.test.ts (6 tests) 4ms
+ ✓ __tests__/logistica/shipping-orchestrator.test.ts (1 test) 4ms
+ ✓ __tests__/onboarding/onboarding-ia.test.ts (4 tests) 4ms
+ ✓ __tests__/niche/niche-apps.test.ts (6 tests) 4ms
+ ✓ __tests__/cobros/cobros-service.test.ts (1 test) 5ms
+ ✓ __tests__/contabilidad/medio-pago-cuentas.test.ts (3 tests) 4ms
+ ✓ __tests__/comercial/go-to-market-vitrine.test.ts (5 tests) 4ms
+ ✓ __tests__/soporte/tickets-service.test.ts (4 tests) 5ms
+ ✓ __tests__/brand/brand.test.ts (13 tests) 4ms
+ ✓ __tests__/impuestos/pre-presentacion-checklist.test.ts (1 test) 5ms
+ ✓ __tests__/precios/resolver-precios-lineas.test.ts (3 tests) 5ms
+ ✓ __tests__/woocommerce/woocommerce-service.test.ts (2 tests) 4ms
+ ✓ __tests__/pendientes/pendientes-service.test.ts (2 tests) 5ms
+ ✓ __tests__/almacen-rosario/modulos-catalog.test.ts (4 tests) 4ms
+ ✓ __tests__/afip/mipyme-fce.test.ts (7 tests) 4ms
+ ✓ __tests__/automation/sign-payload.test.ts (4 tests) 4ms
+stdout | __tests__/telegram/telegram-service.test.ts > TelegramService > sendMessage en dev mode no llama a Telegram API
+[Telegram DEV] → 12345: Alerta de prueba
+
+ ✓ __tests__/telegram/telegram-service.test.ts (3 tests) 4ms
+ ✓ __tests__/legacy-bridge/demo-benchmark-run.test.ts (1 test) 4ms
+ ✓ __tests__/contabilidad/movimiento-builder.test.ts (2 tests) 4ms
+ ✓ __tests__/marketplace/intangible-premium-7.test.ts (4 tests) 4ms
+ ✓ __tests__/marketplace/recuperador-fiscal-service.test.ts (1 test) 8ms
+stdout | __tests__/whatsapp/whatsapp-service.test.ts > WhatsappService > sendMessage en dev mode no llama a Twilio
+[WhatsApp DEV] → whatsapp:+5491112345678: Hola cliente...
+
+ ✓ __tests__/whatsapp/whatsapp-service.test.ts (2 tests) 4ms
+ ✓ __tests__/ops/test-runner.test.ts (3 tests) 3ms
+ ✓ __tests__/ai/alerta-seguimiento.test.ts (2 tests) 4ms
+ ✓ __tests__/analytics/drill-down-resolver.test.ts (6 tests) 4ms
+ ✓ __tests__/onboarding/onboarding-retail.test.ts (4 tests) 4ms
+ ✓ __tests__/fiscal/qr-fiscal.test.ts (2 tests) 3ms
+ ✓ __tests__/comercial/provision-relevamiento.test.ts (3 tests) 2ms
+ ✓ __tests__/comercial/product-shell.test.ts (5 tests) 3ms
+ ✓ __tests__/auth/roles.test.ts (7 tests) 3ms
+ ✓ __tests__/tes/fiscal-internacional.test.ts (3 tests) 3ms
+ ✓ __tests__/schemas/ventas.test.ts (3 tests) 3ms
+ ✓ __tests__/analytics/olap-engine.test.ts (5 tests) 3ms
+ ✓ __tests__/almacen-rosario/lista-distribuidora.test.ts (2 tests) 3ms
+ ✓ __tests__/reporting/templates-registry.test.ts (4 tests) 3ms
+ ✓ __tests__/legacy-bridge/adapter-registry.test.ts (6 tests) 3ms
+ ✓ __tests__/integrations/catalog.test.ts (5 tests) 3ms
+ ✓ __tests__/pos/pos-layout-config.test.ts (6 tests) 3ms
+ ❯ __tests__/marketplace/enganche-catalog.test.ts (3 tests | 2 failed) 7ms
+     × tiene 29 enganches definidos (incl. Premium 7 y Nicho LATAM) 5ms
+     × resumenEnganches cuenta tiers correctamente 1ms
+     ✓ almacen de barrio tiene al menos 6 enganches 0ms
+ ✓ __tests__/docs/path-to-slug.test.ts (9 tests) 3ms
+ ✓ __tests__/ops/logs-aggregator.test.ts (1 test) 3ms
+ ✓ __tests__/pos/pos-ux-checklist.test.ts (4 tests) 3ms
+ ✓ __tests__/comercial/app-experience.test.ts (3 tests) 3ms
+ ✓ __tests__/legacy-bridge/api-contracts.test.ts (3 tests) 3ms
+ ❯ __tests__/auth/home-redirect.test.ts (10 tests | 1 failed) 10ms
+     ✓ redirige cajero al POS 1ms
+     ✓ redirige contador a impuestos 0ms
+     ✓ redirige vendedor ruta a app móvil 0ms
+     ✓ redirige analista_claver a Claver Cloud 0ms
+     ✓ rol desconocido cae en dashboard 0ms
+     ✓ respeta ?next= cuando es ruta interna 0ms
+     × envía analista a Cloud sin next 7ms
+     ✓ cuenta demo va al ERP aunque sea analista 0ms
+     ✓ envía cliente a dashboard por rol 0ms
+     ✓ ignora next inválido 0ms
+ ✓ __tests__/automation/playbook-catalog.test.ts (3 tests) 3ms
+ ✓ __tests__/integrations/oauth-state.test.ts (3 tests) 3ms
+ ✓ __tests__/comercial/demo-presentation.test.ts (3 tests) 3ms
+ ✓ __tests__/almacen-rosario/zero-waste.test.ts (1 test) 3ms
+ ❯ __tests__/billing/marketplace-checkout-policy.test.ts (2 tests | 1 failed) 6ms
+     ✓ prod sin mock → pending_payment 1ms
+     × MARKETPLACE_CHECKOUT_MOCK=true → paid 4ms
+ ✓ __tests__/ventas/crear-venta-stock.test.ts (2 tests) 3ms
+ ✓ __tests__/api/parse-list-response.test.ts (3 tests) 3ms
+ ✓ __tests__/ops/handler-log-filter.test.ts (2 tests) 4ms
+ ✓ __tests__/fiscal/emission-flow.test.ts (5 tests) 2ms
+ ✓ __tests__/afip/caea-config.test.ts (4 tests) 3ms
+ ✓ __tests__/almacen-rosario/comercial.test.ts (3 tests) 3ms
+ ✓ __tests__/niche/niche-marketplace.test.ts (3 tests) 3ms
+ ✓ __tests__/comercial/activar-intent.test.ts (4 tests) 2ms
+ ✓ __tests__/pos/pos-anular.test.ts (3 tests) 2ms
+ ✓ __tests__/dashboard/sidebar-filters.test.ts (2 tests) 2ms
+ ✓ __tests__/reporting/restore-definition.test.ts (2 tests) 3ms
+ ✓ __tests__/reporting/pivot-engine.test.ts (1 test) 3ms
+ ✓ __tests__/api/pos-venta-route.test.ts (3 tests) 3ms
+ ✓ __tests__/pos/producto-cantidad-variable.test.ts (2 tests) 2ms
+ ✓ __tests__/i18n/locale-resolver.test.ts (4 tests) 3ms
+ ✓ __tests__/pos/pos-tipo-factura.test.ts (3 tests) 2ms
+ ✓ __tests__/pos/pos-feedback.test.ts (2 tests) 2ms
+ ✓ __tests__/comercial/demo-benchmark.test.ts (1 test) 2ms
+ ✓ __tests__/opo/claver-adapter.test.ts (3 tests) 3ms
+ ✓ __tests__/ops/comercial-relevamiento-enganche.test.ts (2 tests) 2ms
+ ✓ __tests__/reporting/template-preview.test.ts (2 tests) 2ms
+ ✓ __tests__/opo/remote-agent.test.ts (1 test) 2ms
+ ✓ __tests__/ops/ceo-focus-service.test.ts (1 test) 2ms
+ ✓ __tests__/comercial/trial-service.test.ts (1 test) 2ms
+ ✓ __tests__/pos/pos-catalogo-grupos.test.ts (1 test) 2ms
+ ✓ __tests__/ops/comercial-pipeline-catalog.test.ts (1 test) 2ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 2 ⎯⎯⎯⎯⎯⎯⎯
+
+
+ FAIL  __tests__/integration/backoffice-funcional.test.ts > Testing Funcional Backoffice (Integración)
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ __tests__/integration/backoffice-funcional.test.ts:26:25
+     24|       },
+     25|     })
+     26|     empresaId = empresa.id
+       |                         ^
+     27|
+     28|     // 2. Crear Depósito
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯
+
+ FAIL  __tests__/ventas/pedidos-route.test.ts [ __tests__/ventas/pedidos-route.test.ts ]
+Error: [vitest] No "withAuthAndTenant" export is defined on the "@/lib/auth/empresa-guard" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock(import("@/lib/auth/empresa-guard"), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ app/api/ventas/pedidos/route.ts:11:20
+      9| } from "@/lib/schemas/ventas"
+     10|
+     11| export const GET = withAuthAndTenant(async (request, auth) => {
+       |                    ^
+     12|   const { searchParams } = new URL(request.url)
+     13|   const clienteId = searchParams.get("clienteId")
+ ❯ __tests__/ventas/pedidos-route.test.ts:7:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  __tests__/auth/home-redirect.test.ts > resolvePostLoginPath > envía analista a Cloud sin next
+AssertionError: expected '/dashboard' to be '/claver-cloud' // Object.is equality
+
+Expected: "/claver-cloud"
+Received: "/dashboard"
+
+ ❯ __tests__/auth/home-redirect.test.ts:42:7
+     40|     expect(
+     41|       resolvePostLoginPath({ rol: "administrador", email: "ceo@claver.…
+     42|     ).toBe(CLAVER_CLOUD_HOME)
+       |       ^
+     43|   })
+     44|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯
+
+ FAIL  __tests__/banco/transferencias-service.test.ts > TransferenciasService > should create paired bank movements
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ lib/banco/transferencias-service.ts:103:79
+    101|       })
+    102|
+    103|       return { debitoId: debito.id, creditoId: credito.id, asientoId: …
+       |                                                                               ^
+    104|     })
+    105|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯
+
+ FAIL  __tests__/billing/marketplace-checkout-policy.test.ts > marketplace-checkout-policy > MARKETPLACE_CHECKOUT_MOCK=true → paid
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ __tests__/billing/marketplace-checkout-policy.test.ts:23:48
+     21|   it("MARKETPLACE_CHECKOUT_MOCK=true → paid", () => {
+     22|     process.env.MARKETPLACE_CHECKOUT_MOCK = "true"
+     23|     expect(allowsInstantMarketplaceCheckout()).toBe(true)
+       |                                                ^
+     24|     expect(initialMarketplaceOrdenEstado()).toBe("paid")
+     25|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯
+
+ FAIL  __tests__/comercial/industry-demo-service.test.ts > provisionIndustryDemo > prestamista activa SKU de nicho y libreta fiado
+TypeError: prisma.empresa.findUniqueOrThrow is not a function
+ ❯ Module.provisionIndustryDemo lib/comercial/industry-demo-service.ts:104:46
+    102|   const goldenPath = template.goldenPath ?? getGoldenPathForRubro(rubr…
+    103|
+    104|   const empresaActual = await prisma.empresa.findUniqueOrThrow({ where…
+       |                                              ^
+    105|   const demoHash = empresaActual.cuit.split("-")[1] ?? "demo"
+    106|   const demoNombre = `Demo ${template.label} — ${demoHash}`
+ ❯ __tests__/comercial/industry-demo-service.test.ts:65:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯
+
+ FAIL  __tests__/comercial/industry-demo-service.test.ts > provisionIndustryDemo > supermercado sin enganche no activa SKUs de marketplace
+TypeError: prisma.empresa.findUniqueOrThrow is not a function
+ ❯ Module.provisionIndustryDemo lib/comercial/industry-demo-service.ts:104:46
+    102|   const goldenPath = template.goldenPath ?? getGoldenPathForRubro(rubr…
+    103|
+    104|   const empresaActual = await prisma.empresa.findUniqueOrThrow({ where…
+       |                                              ^
+    105|   const demoHash = empresaActual.cuit.split("-")[1] ?? "demo"
+    106|   const demoNombre = `Demo ${template.label} — ${demoHash}`
+ ❯ __tests__/comercial/industry-demo-service.test.ts:82:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯
+
+ FAIL  __tests__/compras/page.test.tsx > ComprasPage > renders correctly
+ReferenceError: useTranslations is not defined
+ ❯ ComprasPage app/dashboard/compras/page.tsx:58:13
+     56|
+     57| export default function ComprasPage() {
+     58|   const t = useTranslations("purchases")
+       |             ^
+     59|   const [tab, setTab] = useState("ordenes")
+     60|   const [proveedores, setProveedores] = useState<Proveedor[]>([])
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯
+
+ FAIL  __tests__/marketplace/enganche-catalog.test.ts > enganche-catalog > tiene 29 enganches definidos (incl. Premium 7 y Nicho LATAM)
+AssertionError: expected [ …(40) ] to have a length of 29 but got 40
+
+- Expected
++ Received
+
+- 29
++ 40
+
+ ❯ __tests__/marketplace/enganche-catalog.test.ts:6:23
+      4| describe("enganche-catalog", () => {
+      5|   it("tiene 29 enganches definidos (incl. Premium 7 y Nicho LATAM)", (…
+      6|     expect(ENGANCHES).toHaveLength(29)
+       |                       ^
+      7|   })
+      8|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯
+
+ FAIL  __tests__/marketplace/enganche-catalog.test.ts > enganche-catalog > resumenEnganches cuenta tiers correctamente
+AssertionError: expected 40 to be 29 // Object.is equality
+
+- Expected
++ Received
+
+- 29
++ 40
+
+ ❯ __tests__/marketplace/enganche-catalog.test.ts:11:30
+      9|   it("resumenEnganches cuenta tiers correctamente", () => {
+     10|     const r = resumenEnganches()
+     11|     expect(r.totalEnganches).toBe(29)
+       |                              ^
+     12|     expect(r.porTier.implementado).toBe(14)
+     13|     expect(r.porTier.parcial).toBe(8)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯
+
+ FAIL  __tests__/marketplace/mercado-libre-checkout-flow.test.ts > Mercado Libre — flujo post-pago cliente → analista > provisionSku crea tarea analista y NO activa el SKU
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ Module.provisionSku lib/marketplace/provision-service.ts:62:36
+     60|           metadata: {
+     61|             ...(typeof job.metadata === "object" && job.metadata ? job…
+     62|             tareaAnalistaId: tarea.id,
+       |                                    ^
+     63|             esperando: "analista",
+     64|           },
+ ❯ __tests__/marketplace/mercado-libre-checkout-flow.test.ts:82:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯
+
+ FAIL  __tests__/marketplace/mercado-libre-checkout-flow.test.ts > Mercado Libre — flujo post-pago cliente → analista > provisionOrden (checkout paid) deja provisión pendiente para analista
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ provisionSku lib/marketplace/provision-service.ts:62:36
+     60|           metadata: {
+     61|             ...(typeof job.metadata === "object" && job.metadata ? job…
+     62|             tareaAnalistaId: tarea.id,
+       |                                    ^
+     63|             esperando: "analista",
+     64|           },
+ ❯ Module.provisionOrden lib/marketplace/provision-service.ts:173:15
+ ❯ __tests__/marketplace/mercado-libre-checkout-flow.test.ts:106:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯
+
+ FAIL  __tests__/marketplace/provision-service.test.ts > provisionSku > crea tarea analista para SEMI_AUTO
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ Module.provisionSku lib/marketplace/provision-service.ts:62:36
+     60|           metadata: {
+     61|             ...(typeof job.metadata === "object" && job.metadata ? job…
+     62|             tareaAnalistaId: tarea.id,
+       |                                    ^
+     63|             esperando: "analista",
+     64|           },
+ ❯ __tests__/marketplace/provision-service.test.ts:60:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/14]⎯
+
+ FAIL  __tests__/marketplace/provision-service.test.ts > provisionSku > Mercado Libre SEMI_AUTO: pago cliente → tarea analista sin activar SKU
+TypeError: Cannot read properties of undefined (reading 'id')
+ ❯ Module.provisionSku lib/marketplace/provision-service.ts:62:36
+     60|           metadata: {
+     61|             ...(typeof job.metadata === "object" && job.metadata ? job…
+     62|             tareaAnalistaId: tarea.id,
+       |                                    ^
+     63|             esperando: "analista",
+     64|           },
+ ❯ __tests__/marketplace/provision-service.test.ts:70:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/14]⎯
+
+ Test Files  10 failed | 196 passed (206)
+      Tests  12 failed | 809 passed | 5 skipped (826)
+   Start at  22:43:48
+   Duration  19.44s (transform 6.90s, setup 39.26s, import 16.05s, tests 6.68s, environment 11.43s)
+

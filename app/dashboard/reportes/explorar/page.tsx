@@ -10,7 +10,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
-import { Download, Loader2, Play, Save } from "lucide-react"
+import { Download, Loader2, Play, Save, Table2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,14 +33,21 @@ import { ViewToggle, type ReportVista } from "@/components/reporting/ViewToggle"
 import { ReportPlanoTable } from "@/components/reporting/ReportPlanoTable"
 import { ReportPivotGrid } from "@/components/reporting/ReportPivotGrid"
 import { ReportChartPanel } from "@/components/reporting/ReportChartPanel"
+import { DrillDownModal } from "@/components/reporting/DrillDownModal"
 import { DrillBreadcrumb, type DrillFilter } from "@/components/reporting/DrillBreadcrumb"
+import {
+  buildTransactionalDetailDefinition,
+  pushDrillFilter,
+  type ChartClickPayload,
+} from "@/lib/reporting/engine/drill-down-resolver"
 import { SheetsLockedState, SheetsUpsellDialog } from "@/components/reporting/SheetsUpsellDialog"
 import { useSheetsEntitlement } from "@/hooks/use-sheets-entitlement"
 import { restoreExplorerFromDefinition } from "@/lib/reporting/restore-definition"
 import type { QueryResult, ReportDefinition } from "@/lib/reporting/semantic/types"
 import { useAuthStore } from "@/lib/stores/auth-store"
-
-type ChartTipo = "bar" | "line" | "pie" | "area"
+import { GlobalSlicers } from "@/components/reporting/GlobalSlicers"
+import { useDashboardBiStore } from "@/lib/stores/dashboard-bi-store"
+type ChartTipo = "bar" | "line" | "pie" | "area" | "radar" | "scatter"
 type UpsellReason =
   | "module_not_entitled"
   | "usage_execute_exceeded"
@@ -79,6 +86,9 @@ function ReportesExplorarPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [upsellOpen, setUpsellOpen] = useState(false)
   const [upsellReason, setUpsellReason] = useState<UpsellReason | undefined>()
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailResult, setDetailResult] = useState<QueryResult | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const { entitled, tier, usage, plans, loading: entitlementLoading, refresh } = useSheetsEntitlement()
   const role = useAuthStore((s) => s.user?.rol)
@@ -214,7 +224,7 @@ function ReportesExplorarPageContent() {
     return [...filtros, ...drillFiltros]
   }, [filtros, drillStack])
 
-  const definicion = useMemo((): ReportDefinition => {
+  const baseDefinicion = useMemo((): ReportDefinition => {
     const dimensiones = [...filas, ...columnas]
       .filter((f, i, arr) => arr.findIndex((x) => x.campo === f.campo) === i)
       .map((f) => ({ campo: f.campo }))
@@ -233,7 +243,7 @@ function ReportesExplorarPageContent() {
       vista,
       dimensiones: vista === "plano" ? [] : dimensiones,
       medidas: vista === "plano" ? [] : medidas,
-      filtros: filtrosEfectivos,
+      filtros,
       limit: 5000,
     }
 
@@ -259,7 +269,61 @@ function ReportesExplorarPageContent() {
     }
 
     return def
-  }, [fuente, vista, filas, columnas, valores, filtrosEfectivos, campos, chartTipo])
+  }, [fuente, vista, filas, columnas, valores, filtros, campos, chartTipo])
+
+  const { globalDesde, globalHasta, crossFilters, addCrossFilter } = useDashboardBiStore()
+
+  const definicion = useMemo((): ReportDefinition => {
+    const dimensiones = [...filas, ...columnas]
+      .filter((f, i, arr) => arr.findIndex((x) => x.campo === f.campo) === i)
+      .map((f) => ({ campo: f.campo }))
+
+    const medidas = valores.length
+      ? valores.map((v) => ({
+          campo: v.campo,
+          fn: (v.tipo === "medida" && v.campo === "cantidad" ? "count" : "sum") as "sum" | "count",
+          etiqueta: `${v.tipo === "medida" && v.campo === "cantidad" ? "count" : "sum"}_${v.campo}`,
+        }))
+      : [{ campo: "total", fn: "sum" as const, etiqueta: "sum_total" }]
+
+    const def: ReportDefinition = {
+      connectorId: "claverp",
+      fuente,
+      vista,
+      dimensiones: vista === "plano" ? [] : dimensiones,
+      medidas: vista === "plano" ? [] : medidas,
+      filtros: [
+        ...filtrosEfectivos,
+        ...(globalDesde ? [{ campo: "fecha", op: "gte" as const, valor: globalDesde }] : []),
+        ...(globalHasta ? [{ campo: "fecha", op: "lte" as const, valor: globalHasta }] : []),
+        ...crossFilters.map((f) => ({ campo: f.campo, op: "eq" as const, valor: f.valor })),
+      ],
+      limit: 5000,
+    }
+
+    if (vista === "plano") {
+      def.camposPlano = campos.map((c) => c.campo)
+    }
+
+    if (vista === "pivot" && valores[0]) {
+      def.pivot = {
+        filas: filas.map((f) => f.campo),
+        columnas: columnas.map((f) => f.campo),
+        medida: medidas[0].etiqueta ?? `sum_${valores[0].campo}`,
+        fn: medidas[0].fn,
+      }
+    }
+
+    if (vista === "grafico") {
+      def.chart = {
+        tipo: chartTipo,
+        ejeX: filas[0]?.campo ?? dimensiones[0]?.campo ?? "mes",
+        series: medidas.map((m) => m.etiqueta ?? `${m.fn}_${m.campo}`),
+      }
+    }
+
+    return def
+  }, [fuente, vista, filas, columnas, valores, filtrosEfectivos, campos, chartTipo, globalDesde, globalHasta, crossFilters])
 
   const drillableKeys = useMemo(() => {
     const keys = new Set<string>()
@@ -314,13 +378,44 @@ function ReportesExplorarPageContent() {
     }
   }, [definicion, ejecutar])
 
-  function pushDrill(campo: string, etiqueta: string, valor: string | number) {
-    setDrillStack((prev) => {
-      const idx = prev.findIndex((d) => d.campo === campo)
-      const next = idx >= 0 ? [...prev.slice(0, idx), { campo, etiqueta, valor }] : [...prev, { campo, etiqueta, valor }]
-      return next
+  const ejecutarDefinicion = useCallback(async (def: ReportDefinition) => {
+    const res = await fetch("/api/reporting/execute", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(def),
     })
+    const data = await res.json()
+    if (!res.ok) {
+      if (handleLimitResponse(res, data)) throw new Error(data.error ?? "Límite alcanzado")
+      throw new Error(data.error ?? "Error al ejecutar")
+    }
+    return data as QueryResult
+  }, [])
+
+  const openTransactionalDetail = useCallback(
+    async (stack: DrillFilter[]) => {
+      setDetailOpen(true)
+      setDetailLoading(true)
+      try {
+        const def = buildTransactionalDetailDefinition(baseDefinicion, stack)
+        const data = await ejecutarDefinicion(def)
+        setDetailResult(data)
+      } catch (e) {
+        setDetailResult(null)
+        setError(e instanceof Error ? e.message : "Error al cargar detalle")
+      } finally {
+        setDetailLoading(false)
+      }
+    },
+    [baseDefinicion, ejecutarDefinicion],
+  )
+
+  function pushDrill(campo: string, etiqueta: string, valor: string | number, openDetail = false) {
+    const filter = { campo, etiqueta, valor }
+    const nextStack = pushDrillFilter(drillStack, filter)
+    setDrillStack(nextStack)
     autoRunRef.current = true
+    if (openDetail) void openTransactionalDetail(nextStack)
   }
 
   function handlePivotRowDrill(valor: string) {
@@ -342,6 +437,13 @@ function ReportesExplorarPageContent() {
 
   function handlePlanoDrill(campo: string, etiqueta: string, valor: string | number) {
     pushDrill(campo, etiqueta, valor)
+  }
+
+  function handleChartDrill(payload: ChartClickPayload) {
+    const ejeX = filas[0]?.campo ?? definicion.chart?.ejeX ?? "mes"
+    const label = filas[0]?.etiqueta ?? ejeX
+    // BI Mode: En lugar de pushear al stack de drill local, agregamos un Cross-Filter global.
+    addCrossFilter(ejeX, payload.name, label)
   }
 
   function navigateDrill(index: number) {
@@ -475,6 +577,8 @@ function ReportesExplorarPageContent() {
         }
       />
 
+      <GlobalSlicers />
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
@@ -507,6 +611,8 @@ function ReportesExplorarPageContent() {
                     <SelectItem value="line">Líneas</SelectItem>
                     <SelectItem value="area">Área</SelectItem>
                     <SelectItem value="pie">Torta</SelectItem>
+                    <SelectItem value="radar">Radar</SelectItem>
+                    <SelectItem value="scatter">Dispersión</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -551,7 +657,20 @@ function ReportesExplorarPageContent() {
                 </span>
               )}
             </div>
-            <DrillBreadcrumb stack={drillStack} onNavigate={navigateDrill} onClear={clearDrill} />
+            <div className="flex flex-wrap items-center gap-2">
+              <DrillBreadcrumb stack={drillStack} onNavigate={navigateDrill} onClear={clearDrill} />
+              {drillStack.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => void openTransactionalDetail(drillStack)}
+                >
+                  <Table2 className="h-3.5 w-3.5 mr-1" />
+                  Ver comprobantes
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {!result ? (
@@ -568,7 +687,11 @@ function ReportesExplorarPageContent() {
                 onCellDrill={filas[0] && columnas[0] ? handlePivotCellDrill : undefined}
               />
             ) : vista === "grafico" && result.chart ? (
-              <ReportChartPanel chart={result.chart} />
+              <ReportChartPanel
+                chart={result.chart}
+                drillable
+                onDrill={handleChartDrill}
+              />
             ) : (
               <ReportPlanoTable
                 columns={result.columns}
@@ -580,6 +703,13 @@ function ReportesExplorarPageContent() {
           </CardContent>
         </Card>
       </div>
+
+      <DrillDownModal
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        result={detailResult}
+        loading={detailLoading}
+      />
 
       <SheetsUpsellDialog
         open={upsellOpen}

@@ -6,7 +6,7 @@ import { rlsFacturas } from "@/lib/analytics/rls-guard";
 import { formatAfipDate, padLeft, padRight, formatDecimalFixed } from "@/lib/fiscal/afip-txt-builder";
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request);
+  const auth = await getAuthContext(request);
   if (!auth.ok) return auth.response;
 
   const searchParams = request.nextUrl.searchParams;
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
   const baseWhere = rlsFacturas({
     empresaId: auth.auth.empresaId,
     rol: auth.auth.rol,
-    usuarioId: auth.auth.usuarioId,
-    vendedorId: auth.auth.vendedorId
+    usuarioId: (auth.auth as any).userId,
+    vendedorId: (auth.auth as any).vendedorId
   });
 
   try {
@@ -66,15 +66,15 @@ export async function GET(request: NextRequest) {
       // 8. Apellido y Nombre o Denominación del comprador (30)
       line += padRight(f.cliente.nombre, 30);
       // 9. Importe Total de la Operación (15, 13 int + 2 dec)
-      line += formatDecimalFixed(f.total, 15);
+      line += formatDecimalFixed(Number(f.total), 15);
       // 10. Importe total de conceptos que no integran el precio neto gravado (15)
-      line += formatDecimalFixed(f.netoNoGravado, 15);
+      line += formatDecimalFixed(Number(f.netoNoGravado), 15);
       // 11. Percepción a no categorizados (15)
       line += formatDecimalFixed(0, 15);
       // 12. Importe de operaciones exentas (15)
-      line += formatDecimalFixed(f.netoExento, 15);
+      line += formatDecimalFixed(Number(f.netoExento), 15);
       // 13. Importe de percepciones o pagos a cuenta de impuestos nacionales (15)
-      line += formatDecimalFixed(f.totalPercepciones, 15);
+      line += formatDecimalFixed(Number(f.totalPercepciones), 15);
       // ... followed by IIBB, Municipales, Internos, Moneda, Tipo Cambio, Cantidad Alicuotas, etc.
       // (Truncating the rest to fit the snippet, but padding logic applies)
       
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     // Auditoría estricta
     await logReportAccess({
       empresaId: auth.auth.empresaId,
-      usuarioId: auth.auth.usuarioId,
+      usuarioId: (auth.auth as any).userId,
       rolSnapshot: auth.auth.rol,
       reporteCodigo: "fiscal.libro_iva_ventas",
       reporteNombre: "Libro IVA Ventas (Comprobantes)",
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     await logReportAccess({
       empresaId: auth.auth.empresaId,
-      usuarioId: auth.auth.usuarioId,
+      usuarioId: (auth.auth as any).userId,
       rolSnapshot: auth.auth.rol,
       reporteCodigo: "fiscal.libro_iva_ventas",
       reporteNombre: "Libro IVA Ventas (Comprobantes)",

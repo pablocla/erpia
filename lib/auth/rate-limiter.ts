@@ -68,3 +68,37 @@ export function checkRateLimit(
 
   return null
 }
+
+/**
+ * Rate limit por clave arbitraria (ej. empresaId) dentro de un namespace.
+ */
+export function checkRateLimitByKey(
+  key: string,
+  namespace: string,
+  maxAttempts = 5,
+  windowMs = 15 * 60 * 1000,
+): NextResponse | null {
+  if (!stores.has(namespace)) stores.set(namespace, new Map())
+  const store = stores.get(namespace)!
+  const now = Date.now()
+
+  const entry = store.get(key)
+  if (entry) {
+    if (now < entry.resetAt) {
+      if (entry.count >= maxAttempts) {
+        const retryAfter = Math.ceil((entry.resetAt - now) / 1000)
+        return NextResponse.json(
+          { error: "Demasiados intentos de IA. Intente nuevamente más tarde." },
+          { status: 429, headers: { "Retry-After": String(retryAfter) } },
+        )
+      }
+      entry.count++
+    } else {
+      store.set(key, { count: 1, resetAt: now + windowMs })
+    }
+  } else {
+    store.set(key, { count: 1, resetAt: now + windowMs })
+  }
+
+  return null
+}

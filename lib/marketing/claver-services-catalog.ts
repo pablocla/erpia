@@ -11,6 +11,8 @@ import {
   Sprout,
 } from "lucide-react"
 
+export type ClaverLineTier = "plataforma" | "servicio"
+
 export interface ClaverServiceLine {
   id: string
   name: string
@@ -20,6 +22,7 @@ export interface ClaverServiceLine {
   gradient: string
   href?: string
   status: "disponible" | "proximamente" | "beta"
+  tier: ClaverLineTier
   features: string[]
 }
 
@@ -35,7 +38,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     gradient: "from-violet-600 to-indigo-900",
     href: "/claver-cloud",
     status: "disponible",
-    features: ["Marketplace infinito de módulos", "Provisioning automático", "Torre de analistas", "Billing MRR"],
+    tier: "plataforma",
+    features: ["Marketplace de módulos", "Provisioning automático", "Torre de analistas", "Facturación MRR"],
   },
   {
     id: "claverp",
@@ -47,6 +51,7 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     gradient: "from-blue-600 to-indigo-800",
     href: "/claver/claverp",
     status: "disponible",
+    tier: "plataforma",
     features: ["POS + factura electrónica", "Stock multi-depósito", "Portal B2B y tienda", "Onboarding IA"],
   },
   {
@@ -59,6 +64,7 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     gradient: "from-emerald-600 to-green-900",
     href: "/claver/clavergrow",
     status: "beta",
+    tier: "plataforma",
     features: ["Lotes y NDVI", "Balanza y CPE", "IoT agro", "Cultivo regulado"],
   },
   {
@@ -70,7 +76,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: CreditCard,
     gradient: "from-amber-500 to-orange-700",
     status: "beta",
-    href: "/dashboard/fiado",
+    href: "/login?activar=pos.fiado_barrio",
+    tier: "servicio",
     features: ["Scoring alternativo", "Cobranza automatizada (WApp)", "Garantía solidaria B2B"],
   },
   {
@@ -81,7 +88,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: Network,
     gradient: "from-sky-500 to-blue-700",
     status: "beta",
-    href: "/clavernet",
+    href: "/claver/contacto",
+    tier: "servicio",
     features: [
       "Comisiones recurrentes por venta (MRR)",
       "Marketplace de microservicios abierto",
@@ -98,6 +106,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: CreditCard,
     gradient: "from-violet-600 to-purple-800",
     status: "beta",
+    href: "/claver/apps",
+    tier: "servicio",
     features: ["QR y link de pago", "Conciliación diaria", "Integrado a caja"],
   },
   {
@@ -109,6 +119,7 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: Truck,
     gradient: "from-emerald-600 to-teal-800",
     status: "proximamente",
+    tier: "servicio",
     features: ["Rutas y paradas", "POD con geo", "App vendedor en ruta"],
   },
   {
@@ -119,8 +130,9 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
       "Ontología Open Protocol sobre Protheus, SAP u Odoo. Claver como frontend moderno sin reemplazar el ERP de golpe.",
     icon: Network,
     gradient: "from-slate-600 to-zinc-800",
-    href: "/dashboard/apps/opo",
+    href: "/claver/apps",
     status: "beta",
+    tier: "servicio",
     features: ["Introspección REST/SQL", "Demo Protheus", "Playground OPOQL", "MCP para agentes IA"],
   },
   {
@@ -132,6 +144,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: Bot,
     gradient: "from-fuchsia-600 to-pink-800",
     status: "beta",
+    href: "/claver/apps",
+    tier: "servicio",
     features: ["Asistente en el ERP", "Playbooks automáticos", "Alertas por rol"],
   },
   {
@@ -143,6 +157,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: Wrench,
     gradient: "from-orange-600 to-amber-800",
     status: "disponible",
+    href: "/claver/contacto",
+    tier: "servicio",
     features: ["Homologación AFIP", "Migración CSV", "Capacitación por rubro"],
   },
   {
@@ -154,7 +170,9 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: Wrench,
     gradient: "from-slate-700 to-zinc-900",
     status: "disponible",
-    features: ["Desarrollo de Apps B2B", "Integraciones API a medida", "Venta cruzada en Clavernet"],
+    href: "/claver/contacto",
+    tier: "servicio",
+    features: ["Desarrollo de Apps B2B", "Integraciones API a medida", "Integraciones a medida"],
   },
   {
     id: "clavanalytics",
@@ -165,6 +183,8 @@ export const CLAVER_SERVICE_LINES: ClaverServiceLine[] = [
     icon: BarChart3,
     gradient: "from-blue-600 to-sky-800",
     status: "disponible",
+    href: "/claver/claverp/modulos",
+    tier: "servicio",
     features: ["Dashboards dinámicos", "Exportación PDF/Excel", "Top clientes/productos"],
   },
 ]

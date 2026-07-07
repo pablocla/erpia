@@ -1,0 +1,18 @@
+---
+pid: 27908
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-String -Pattern \"claverp\" | Select-Object -First 25"
+started_at: 2026-07-03T19:42:07.988Z
+running_for_ms: 37339998 
+---
+
+components/marketing/claverp-feature-showcase.tsx(44,42): error TS2322: Type '{ children: Element; key: string; delay: 
+number; }' is not assignable to type 'IntrinsicAttributes & ScrollRevealProps'.
+components/marketing/claverp-feature-showcase.tsx(163,19): error TS2322: Type '{ children: Element; className: string; 
+delay: number; }' is not assignable to type 'IntrinsicAttributes & ScrollRevealProps'.
+components/marketing/claverp-feature-showcase.tsx(199,44): error TS2322: Type '{ children: Element; key: string; 
+delay: number; }' is not assignable to type 'IntrinsicAttributes & ScrollRevealProps'.
+components/marketing/claverp-feature-showcase.tsx(255,25): error TS2322: Type '{ children: Element; delay: number; }' 
+is not assignable to type 'IntrinsicAttributes & ScrollRevealProps'.
+
+

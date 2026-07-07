@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { BrandLogo } from "@/components/marketing/brand-logo"
+import { BrandLogo, ClaverIcon } from "@/components/marketing/brand-logo"
 import { BRAND_ASSETS } from "@/lib/brand"
 import { ScrollReveal } from "@/components/ui/motion"
 
@@ -16,12 +16,16 @@ export function LogoShowcase({ variant = "matrix" }: LogoShowcaseProps) {
 
   return (
     <ScrollReveal className="mt-16">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm sm:p-10">
-        <p className="mb-6 text-center text-xs font-medium uppercase tracking-widest text-slate-400">
-          Identidad de marca
+      <section className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-8 shadow-2xl backdrop-blur-md sm:p-12">
+        <h2 className="mb-2 text-center text-sm font-bold uppercase tracking-widest text-primary">
+          El Ecosistema {isClaverp ? "ClavERP" : isClavergrow ? "ClaverGrow" : "Claver"}
+        </h2>
+        <p className="mb-12 text-center text-xl font-medium text-slate-200 sm:text-2xl">
+          Tecnología de alto rendimiento para escalar tus operaciones
         </p>
-        <div className="flex flex-col items-center justify-center gap-10 sm:flex-row sm:gap-16">
-          <div className="text-center">
+
+        <div className="flex flex-col items-center justify-center gap-12 sm:flex-row sm:gap-20">
+          <div className="flex flex-col items-center text-center">
             <BrandLogo
               size="lg"
               theme="dark"
@@ -30,49 +34,44 @@ export function LogoShowcase({ variant = "matrix" }: LogoShowcaseProps) {
               }
               showByClaver={isClaverp || isClavergrow}
             />
-            <p className="mt-4 text-xs text-slate-500">Componente React (vivo)</p>
+            <h3 className="mt-6 text-sm font-semibold text-slate-200">
+              {isClavergrow ? "Growth Engine" : isClaverp ? "ERP Inteligente" : "Plataforma Core"}
+            </h3>
+            <p className="mt-2 max-w-[200px] text-xs leading-relaxed text-slate-400">
+              {isClavergrow 
+                ? "Acelera tus ventas con herramientas de marketing automatizado." 
+                : isClaverp 
+                  ? "Gestión integral, facturación AFIP y control de stock en tiempo real." 
+                  : "Infraestructura robusta diseñada para alta disponibilidad."}
+            </p>
           </div>
-          <div className="hidden h-24 w-px bg-white/10 sm:block" />
-          <div className="flex flex-col items-center gap-4">
-            <Image
-              src={
-                isClavergrow
-                  ? BRAND_ASSETS.clavergrowIcon
-                  : isClaverp
-                    ? BRAND_ASSETS.claverpIcon
-                    : BRAND_ASSETS.claverIcon
-              }
-              alt=""
-              width={80}
-              height={80}
-              className={`rounded-2xl shadow-lg ${
-                isClavergrow ? "shadow-emerald-900/30" : "shadow-blue-900/30"
-              }`}
-            />
-            {!isClaverp && !isClavergrow && (
-              <Image
-                src={BRAND_ASSETS.claverpIcon}
-                alt=""
-                width={56}
-                height={56}
-                className="rounded-xl opacity-90"
-              />
-            )}
-            <p className="text-xs text-slate-500">SVG en /public/brand/</p>
+
+          <div className="hidden h-32 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent sm:block" />
+
+          <div className="flex flex-col items-center gap-6 text-center">
+            <div className="flex gap-4 items-center justify-center h-[72px]">
+              <ClaverIcon size={56} className="text-primary opacity-80" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-200">
+                Ecosistema Integrado
+              </h3>
+              <p className="mt-2 max-w-[200px] text-xs leading-relaxed text-slate-400">
+                Sincronización perfecta entre todos los módulos de tu negocio.
+              </p>
+            </div>
           </div>
         </div>
+
         {!isClavergrow && (
-          <div className="mt-8 flex justify-center">
-            <Image
-              src={BRAND_ASSETS.claverpLockup}
-              alt="Claver by Claver"
-              width={280}
-              height={56}
-              className="opacity-95"
-            />
+          <div className="mt-14 flex flex-col items-center justify-center space-y-4 border-t border-white/5 pt-10">
+            <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+              Respaldado por
+            </p>
+            <BrandLogo size="md" variant="group-full" theme="dark" className="opacity-80 transition-all hover:opacity-100" />
           </div>
         )}
-      </div>
+      </section>
     </ScrollReveal>
   )
 }

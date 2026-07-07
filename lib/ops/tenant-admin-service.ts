@@ -15,6 +15,16 @@ import { getProyectoPorEmpresa } from "@/lib/ops/implementacion-service"
 import { getTenantPlan, validarLimiteActivacion, type TenantPlanLimits } from "@/lib/ops/tenant-plan-service"
 import { getTenantBilling, type TenantBillingRow } from "@/lib/ops/tenant-billing-service"
 import { getSignupMeta, ORIGEN_LABELS, diasDesde, type SignupMeta } from "@/lib/ops/signup-tracking"
+import {
+  computeTenantLifecycle,
+  getPipelineLeadForTenant,
+  getTenantHealth,
+  getTenantRecentActivity,
+  type TenantActivityItem,
+  type TenantHealth,
+  type TenantLifecycle,
+  type TenantPipelineLeadSummary,
+} from "@/lib/ops/tenant-lifecycle-service"
 
 function db() {
   return prisma as any
@@ -51,7 +61,12 @@ export interface TenantOverview {
     rubro: string
     entornoAfip: string | null
     planHosting: string | null
+    deletedAt: string | null
   }
+  lifecycle: TenantLifecycle
+  health: TenantHealth
+  recentActivity: TenantActivityItem[]
+  pipelineLead: TenantPipelineLeadSummary | null
   readiness: ReadinessReport
   productosActivos: number
   productosCatalogo: number
@@ -76,8 +91,19 @@ export interface TenantOverview {
 }
 
 export async function getTenantOverview(empresaId: number): Promise<TenantOverview> {
-  const [empresa, readiness, horizontales, proyecto, tareasPendientes, suscripciones, plan, billing, signup] =
-    await Promise.all([
+  const [
+    empresa,
+    readiness,
+    horizontales,
+    proyecto,
+    tareasPendientes,
+    suscripciones,
+    plan,
+    billing,
+    signup,
+    pipelineLead,
+    health,
+  ] = await Promise.all([
     db().empresa.findUnique({
       where: { id: empresaId },
       select: {
@@ -89,6 +115,7 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
         entornoAfip: true,
         planHosting: true,
         createdAt: true,
+        deletedAt: true,
       },
     }),
     getEmpresaReadiness(empresaId),
@@ -104,6 +131,8 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
     getTenantPlan(empresaId),
     getTenantBilling(empresaId),
     getSignupMeta(empresaId),
+    getPipelineLeadForTenant(empresaId),
+    getTenantHealth(empresaId),
   ])
 
   if (!empresa) throw new Error("Empresa no encontrada")
@@ -138,8 +167,35 @@ export async function getTenantOverview(empresaId: number): Promise<TenantOvervi
     }
   })
 
+  const recentActivity = await getTenantRecentActivity(empresaId, pipelineLead)
+
+  const lifecycleFinal = computeTenantLifecycle({
+    deletedAt: empresa.deletedAt,
+    signup,
+    productosActivos: productos.filter((p) => p.activo).length,
+    mpSubscriptionStatus: billing.mpSubscriptionStatus,
+    proyecto: proyecto
+      ? { porcentajeAvance: proyecto.porcentajeAvance ?? 0 }
+      : null,
+    readiness,
+    pipelineLead,
+  })
+
   return {
-    empresa,
+    empresa: {
+      id: empresa.id,
+      nombre: empresa.nombre,
+      razonSocial: empresa.razonSocial,
+      cuit: empresa.cuit,
+      rubro: empresa.rubro,
+      entornoAfip: empresa.entornoAfip,
+      planHosting: empresa.planHosting,
+      deletedAt: empresa.deletedAt?.toISOString() ?? null,
+    },
+    lifecycle: lifecycleFinal,
+    health,
+    recentActivity,
+    pipelineLead,
     readiness,
     productosActivos: productos.filter((p) => p.activo).length,
     productosCatalogo: productos.length,

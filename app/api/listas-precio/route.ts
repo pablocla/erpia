@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const listas = await prisma.listaPrecio.findMany({
       where,
       include: {
-        moneda: { select: { id: true, nombre: true, simbolo: true } },
+        moneda: { select: { id: true, codigo: true, descripcion: true, simbolo: true } },
         items: includeItems ? {
           include: { producto: { select: { id: true, codigo: true, nombre: true, precioVenta: true } } },
           orderBy: { producto: { nombre: "asc" } },

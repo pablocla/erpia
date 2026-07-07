@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 import { ensureProyectoImplementacion } from "@/lib/ops/implementacion-service"
+import { syncPipelineFromEvent } from "@/lib/comercial/comercial-funnel-service"
 import { ensureWebSignupTrial, setSignupOrigen } from "@/lib/ops/signup-tracking"
 import { z } from "zod"
 
@@ -12,6 +13,7 @@ const signupSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+  activar: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { empresa: nombreEmpresa, nombre, email, password } = validacion.data
+    const { empresa: nombreEmpresa, nombre, email, password, activar } = validacion.data
 
     // Verificar que el email no esté en uso
     const usuarioExistente = await prisma.$queryRaw<{ id: number }[]>`
@@ -77,6 +79,56 @@ export async function POST(request: NextRequest) {
       planComercial: "Pro",
     }).catch((err) => console.error("Error auto-crear proyecto CCA en signup:", err))
 
+    void syncPipelineFromEvent({
+      nombre,
+      email,
+      negocio: nombreEmpresa,
+      origen: "web_register",
+      etapa: "trial",
+      empresaId,
+      notas: "Alta automática desde registro web trial 14d",
+      proximaAccion: "Seguimiento trial — contactar en 48 h",
+      notify: "trial_signup",
+    }).catch((err) => console.error("Error sync pipeline signup:", err))
+
+    setSignupOrigen(empresaId, "web")
+
+    let onboarding: { landingPath: string; ofertaId?: string } | null = null
+
+    if (activar) {
+      try {
+        const { resolveActivarIntent } = await import("@/lib/comercial/activar-intent")
+        const { applyActivarIntent } = await import("@/lib/comercial/activar-producto-service")
+        const intent = resolveActivarIntent(activar)
+
+        if (intent) {
+          const result = await applyActivarIntent({
+            empresaId,
+            activar,
+            origen: "web_register",
+          })
+          onboarding = { landingPath: result.landingPath }
+
+          const { trackSubSaasSignup } = await import("@/lib/analytics/tracking")
+          trackSubSaasSignup(activar, empresaId)
+
+          const { emailService } = await import("@/lib/email/email-service")
+          const { emailSubSaasWelcome } = await import("@/lib/email/email-sub-saas-welcome")
+
+          if (emailService.isConfigured()) {
+            const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://claver.app"}/login?activar=${activar}`
+            await emailService.enviar({
+              to: email,
+              subject: `Bienvenido a ${intent.marca} - Empezá en 3 pasos`,
+              html: emailSubSaasWelcome(intent.marca, nombre, loginUrl),
+            })
+          }
+        }
+      } catch (err) {
+        console.error("Error en activación post-signup:", err)
+      }
+    }
+
     const authService = new AuthService()
     const token = await authService.generarToken({
       userId: usuario.id,
@@ -88,6 +140,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       token,
+      onboarding,
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,

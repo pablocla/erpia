@@ -51,11 +51,11 @@ export async function GET(request: NextRequest) {
         stock: true,
         stockMinimo: true,
         precioVenta: true,
-        precioCosto: true,
-        unidadMedida: true,
+        precioCompra: true,
+        unidad: true,
         categoria: { select: { id: true, nombre: true } },
         marca: { select: { id: true, nombre: true } },
-        stockDepositos: depositoId
+        stocksDeposito: depositoId
           ? { where: { depositoId: Number(depositoId) } }
           : { include: { deposito: { select: { id: true, nombre: true } } } },
       },

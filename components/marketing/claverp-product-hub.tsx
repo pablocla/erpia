@@ -61,14 +61,19 @@ const IconMap = {
 }
 
 import { ClaverShell } from "@/components/marketing/claver-shell"
-import { BrandLogo } from "@/components/marketing/brand-logo"
 import { HUB_SOLUTIONS } from "@/lib/marketing/solutions-catalog"
 import { CLAVERP_PRODUCT, CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MotionFadeDown, ScrollReveal, MotionList, MotionListItem } from "@/components/ui/motion"
-import { LogoShowcase } from "@/components/marketing/logo-showcase"
+import { ClaverpDashboardMockup } from "@/components/marketing/claverp-dashboard-mockup"
+import {
+  ClaverpAdvisorSection,
+  ClaverpFeatureSections,
+  ClaverpPlatformGrid,
+  ClaverpValuePropsStrip,
+} from "@/components/marketing/claverp-feature-showcase"
 import { IntegrationsNovedades } from "@/components/marketing/integrations-novedades"
 import { ClaverPricingSection } from "@/components/marketing/claver-pricing-section"
 import { MODULO_CATEGORIAS } from "@/lib/marketing/modulos-catalog"
@@ -152,10 +157,10 @@ export function ClavERPProductHub() {
 
   return (
     <ClaverShell context="claverp">
-      {/* Hero */}
+      {/* Hero — layout 2 columnas tipo SaaS */}
       <section
         aria-labelledby="claverp-hero-heading"
-        className="relative overflow-hidden bg-[#0A1628] pt-28 pb-20 text-white sm:pt-32 sm:pb-24"
+        className="relative overflow-hidden bg-[#0A1628] pt-28 pb-16 text-white sm:pt-32 sm:pb-20"
       >
         <div
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-5%,rgba(37,99,235,0.28),transparent)]"
@@ -169,79 +174,100 @@ export function ClavERPProductHub() {
             >
               ← Grupo {CLAVER_GROUP.name}
             </Link>
-            <div className="mb-6">
-              <BrandLogo size="lg" theme="dark" variant="claverp-full" />
-            </div>
-            <Badge className="mb-4 border-blue-400/30 bg-blue-500/15 text-blue-200">
-              ERP & POS · Facturación AFIP · Argentina
-            </Badge>
-            <h1
-              id="claverp-hero-heading"
-              className="max-w-4xl font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-[3.25rem]"
-            >
-              {CLAVERP_PRODUCT.tagline}
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg text-slate-300 leading-relaxed">
-              {CLAVERP_PRODUCT.descriptor}. Activá solo los módulos que necesitás: desde libreta
-              fiado hasta logística, industria y ecommerce.
-            </p>
-
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button
-                size="lg"
-                className="h-12 bg-blue-600 px-8 text-base font-semibold shadow-lg shadow-blue-600/25 hover:bg-blue-500"
-                asChild
-              >
-                <Link href="/login/register?trial=14">
-                  Probar gratis 14 días
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-12 border-white/20 bg-white/5 px-8 text-base text-white hover:bg-white/10"
-                asChild
-              >
-                <Link href="/demo">Demo por rubro</Link>
-              </Button>
-            </div>
-
-            <p className="mt-5 text-sm text-slate-500">
-              <Link
-                href="/claver/claverp/modulos"
-                className="text-blue-400 underline-offset-4 hover:underline"
-              >
-                Ver 40+ módulos
-              </Link>
-              {" · "}
-              <Link
-                href="/claver/claverp/precios"
-                className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
-              >
-                Precios
-              </Link>
-              {" · "}
-              <Link
-                href="/claver/claverp/conexiones"
-                className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
-              >
-                Integraciones
-              </Link>
-            </p>
-
-            <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/10 pt-8">
-              {CLAVERP_TRUST_ITEMS.map((item) => (
-                <li key={item.label} className="flex items-center gap-2 text-sm text-slate-400">
-                  <Check className="h-4 w-4 text-blue-400" aria-hidden />
-                  {item.label}
-                </li>
-              ))}
-            </ul>
           </MotionFadeDown>
-          <LogoShowcase variant="claverp" />
+
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <MotionFadeDown>
+              <Badge className="mb-4 border-blue-400/30 bg-blue-500/15 text-blue-200">
+                El software todo en uno para PyMEs argentinas
+              </Badge>
+              <h1
+                id="claverp-hero-heading"
+                className="max-w-xl font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.25rem]"
+              >
+                Facturación AFIP y mucho más
+              </h1>
+              <p className="mt-6 max-w-lg text-lg text-slate-300 leading-relaxed">
+                {CLAVERP_PRODUCT.descriptor}. POS, stock, caja, fiado y módulos por rubro — todo en
+                una plataforma web sin instalación.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button
+                  size="lg"
+                  className="h-12 bg-blue-600 px-8 text-base font-semibold shadow-lg shadow-blue-600/25 hover:bg-blue-500"
+                  asChild
+                >
+                  <Link href="/login/register?trial=14">
+                    Probar gratis 14 días
+                    <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-white/20 bg-white/5 px-8 text-base text-white hover:bg-white/10"
+                  asChild
+                >
+                  <Link href="/demo">Demo por rubro</Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-white/20 bg-white/5 px-8 text-base text-white hover:bg-white/10"
+                  asChild
+                >
+                  <Link href="/claver/contacto">Agendar demo</Link>
+                </Button>
+              </div>
+
+              <p className="mt-4 text-sm text-slate-500">
+                Sin tarjeta de crédito · Cancelá cuando quieras
+              </p>
+
+              <p className="mt-6 text-sm text-slate-500">
+                <Link
+                  href="#funcionalidades"
+                  className="text-blue-400 underline-offset-4 hover:underline"
+                >
+                  Funcionalidades
+                </Link>
+                {" · "}
+                <Link
+                  href="/claver/claverp/precios"
+                  className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
+                >
+                  Precios
+                </Link>
+                {" · "}
+                <Link
+                  href="/claver/claverp/conexiones"
+                  className="text-slate-400 underline-offset-4 hover:text-white hover:underline"
+                >
+                  Integraciones
+                </Link>
+              </p>
+
+              <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2">
+                {CLAVERP_TRUST_ITEMS.map((item) => (
+                  <li key={item.label} className="flex items-center gap-2 text-sm text-slate-400">
+                    <Check className="h-4 w-4 shrink-0 text-blue-400" aria-hidden />
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            </MotionFadeDown>
+
+            <MotionFadeDown>
+              <ClaverpDashboardMockup className="mx-auto max-w-lg lg:max-w-none" />
+            </MotionFadeDown>
+          </div>
         </div>
       </section>
+
+      <ClaverpPlatformGrid />
+      <ClaverpFeatureSections />
+      <ClaverpValuePropsStrip />
 
       {/* Demos ERP */}
       <section
@@ -274,6 +300,8 @@ export function ClavERPProductHub() {
           </div>
         </div>
       </section>
+
+      <ClaverpAdvisorSection />
 
       <IntegrationsNovedades variant="novedades" showStats={false} />
 

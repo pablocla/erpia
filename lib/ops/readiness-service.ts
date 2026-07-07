@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { getProyectoPorEmpresa } from "@/lib/ops/implementacion-service"
 import { getIntegracionesHealthItems } from "@/lib/ops/integration-health-service"
+import { obtenerOnboardingPropiedad, onboardingPropiedadPendiente } from "@/lib/comercial/propiedad-onboarding"
+import { esTenantPropiedad } from "@/lib/ops/tenant-propiedad-service"
 
 export type ReadinessEstado = "ok" | "warn" | "fail"
 
@@ -128,33 +130,83 @@ export async function getEmpresaReadiness(empresaId: number): Promise<ReadinessR
     detalle: empresa?.entornoAfip ?? "homologacion",
   })
 
-  const rubroChecks: ReadinessItem[] = [
-    {
-      id: "maestro_productos",
-      label: "Catálogo de productos",
-      estado: productos >= 5 ? "ok" : productos >= 1 ? "warn" : "fail",
-      detalle: `${productos} producto(s)`,
-      href: "/dashboard/productos",
-    },
-    {
-      id: "maestro_clientes",
-      label: "Base de clientes",
-      estado: clientes >= 1 ? "ok" : "warn",
-      detalle: `${clientes} cliente(s)`,
-      href: "/dashboard/clientes",
-    },
-  ]
+  const esPropiedad = await esTenantPropiedad(empresaId)
+  let rubroChecks: ReadinessItem[] = []
+
+  if (esPropiedad) {
+    const [consorcios, unidades, propiedades, contratos, onboardingProp, waConectado] = await Promise.all([
+      db.consorcio.count({ where: { empresaId } }),
+      db.unidadFuncional.count({ where: { consorcio: { empresaId } } }),
+      db.propiedad.count({ where: { empresaId } }),
+      db.contratoAlquiler.count({ where: { empresaId, estado: "activo" } }),
+      obtenerOnboardingPropiedad(empresaId),
+      db.conexionIntegracion.findFirst({
+        where: { empresaId, integracionId: "whatsapp", estado: "conectado" },
+      }),
+    ])
+
+    rubroChecks = [
+      {
+        id: "consorcio_configurado",
+        label: "Consorcio con unidades",
+        estado: consorcios >= 1 && unidades >= 1 ? "ok" : consorcios >= 1 ? "warn" : "fail",
+        detalle: `${consorcios} consorcio(s) · ${unidades} UF`,
+        href: "/dashboard/nicho/consorcios",
+      },
+      {
+        id: "cartera_inmobiliaria",
+        label: "Cartera inmobiliaria",
+        estado: propiedades >= 1 ? "ok" : "warn",
+        detalle: `${propiedades} propiedad(es) · ${contratos} contrato(s) activo(s)`,
+        href: "/dashboard/nicho/inmobiliaria",
+      },
+      {
+        id: "onboarding_propiedad",
+        label: "Checklist onboarding Propiedad",
+        estado: onboardingPropiedadPendiente(onboardingProp) ? "warn" : onboardingProp ? "ok" : "warn",
+        detalle: onboardingProp
+          ? `${onboardingProp.completados.length}/${4} pasos`
+          : "Sin iniciar",
+        href: "/dashboard/nicho/consorcios",
+      },
+      {
+        id: "whatsapp_propiedad",
+        label: "WhatsApp para avisos",
+        estado: waConectado ? "ok" : "warn",
+        detalle: waConectado ? "Conectado" : "Pendiente vincular",
+        href: "/dashboard/integraciones/whatsapp",
+      },
+    ]
+  } else {
+    rubroChecks = [
+      {
+        id: "maestro_productos",
+        label: "Catálogo de productos",
+        estado: productos >= 5 ? "ok" : productos >= 1 ? "warn" : "fail",
+        detalle: `${productos} producto(s)`,
+        href: "/dashboard/productos",
+      },
+      {
+        id: "maestro_clientes",
+        label: "Base de clientes",
+        estado: clientes >= 1 ? "ok" : "warn",
+        detalle: `${clientes} cliente(s)`,
+        href: "/dashboard/clientes",
+      },
+    ]
+  }
 
   const integraciones = await getIntegracionesHealthItems(empresaId)
 
   const allItems = [...items, ...rubroChecks, ...integraciones]
   const fails = allItems.filter((i) => i.estado === "fail")
-  const listoGoLive =
-    fails.length === 0 &&
-    afipProd &&
-    Boolean(proyecto?.fases?.["CCA-060"]?.completado) &&
-    productos >= 1 &&
-    usuarios >= 1
+  const listoGoLive = esPropiedad
+    ? fails.length === 0 && usuarios >= 1 && rubroChecks.every((i) => i.estado !== "fail")
+    : fails.length === 0 &&
+      afipProd &&
+      Boolean(proyecto?.fases?.["CCA-060"]?.completado) &&
+      productos >= 1 &&
+      usuarios >= 1
 
   return {
     empresaId,

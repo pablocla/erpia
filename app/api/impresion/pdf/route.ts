@@ -4,7 +4,7 @@ import { pdfService } from "@/lib/printer/pdf-service"
 import { z } from "zod"
 
 const schema = z.object({
-  tipo: z.enum(["factura", "nc", "nd", "remito", "presupuesto", "oc", "remito-transferencia", "remito-entrada", "pedido", "recibo", "orden-pago", "etiqueta-proceso"]),
+  tipo: z.enum(["factura", "nc", "nd", "remito", "presupuesto", "oc", "remito-transferencia", "remito-entrada", "pedido", "recibo", "orden-pago", "certificado-retencion-recibo", "certificado-retencion-op", "etiqueta-proceso"]),
   id: z.number().int().positive(),
 })
 
@@ -58,6 +58,12 @@ export async function GET(request: NextRequest) {
         break
       case "orden-pago":
         result = await pdfService.generarOrdenPagoPDF(parsed.data.id)
+        break
+      case "certificado-retencion-recibo":
+        result = await pdfService.generarCertificadoRetencionReciboPDF(parsed.data.id)
+        break
+      case "certificado-retencion-op":
+        result = await pdfService.generarCertificadoRetencionOPPDF(parsed.data.id)
         break
       case "etiqueta-proceso":
         return NextResponse.json({ error: "Por favor, use POST para etiqueta-proceso enviando los datos requeridos" }, { status: 400 })
@@ -128,6 +134,12 @@ export async function POST(request: NextRequest) {
         break
       case "orden-pago":
         result = await pdfService.generarOrdenPagoPDF(parsed.data.id)
+        break
+      case "certificado-retencion-recibo":
+        result = await pdfService.generarCertificadoRetencionReciboPDF(parsed.data.id)
+        break
+      case "certificado-retencion-op":
+        result = await pdfService.generarCertificadoRetencionOPPDF(parsed.data.id)
         break
       case "etiqueta-proceso":
         const d = body.datos ?? {}

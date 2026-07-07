@@ -4,6 +4,7 @@
 
 import { getIndustryTemplate, type IndustryTemplate } from "@/lib/comercial/industry-templates"
 import { getNicheApp } from "@/lib/niche/niche-apps-catalog"
+import { getSubSaasApp } from "@/lib/comercial/sub-saas-catalog"
 import type { NicheAppDefinition } from "@/lib/niche/types"
 
 export interface AppExperienceGuide {
@@ -99,6 +100,27 @@ const NICHE_STEPS: Partial<Record<string, string[]>> = {
     "Registrá el primer jornal del día",
     "Anotá adelantos por obrero",
     "Liquidá la semana con saldo neto",
+  ],
+  monotributo: [
+    "Creá tu primer presupuesto",
+    "Enviá link al cliente por WhatsApp",
+    "Emití Factura C cuando acepte",
+  ],
+  servicios: [
+    "Revisá la agenda de hoy",
+    "Confirmá turno pendiente",
+    "Cobrá morosos con un toque",
+  ],
+  obra: [
+    "Registrá jornales de la semana",
+    "Certificá hito de avance",
+    "Avisá al cliente el cobro del hito",
+  ],
+  propiedad: [
+    "Revisá tu edificio demo en Consorcios",
+    "Liquidá expensas o descargá el PDF",
+    "Avisá morosos por WhatsApp en 1 clic",
+    "Gestioná propiedades y contratos en Cartera",
   ],
   feria: [
     "Registrá ventas del puesto",
@@ -212,4 +234,22 @@ function buildSecondaryFromMenu(
     .filter(([href]) => href !== primaryHref && href !== "/dashboard")
     .slice(0, 2)
     .map(([href, label]) => ({ label, href }))
+}
+
+export function getSubSaasExperience(slug: string): AppExperienceGuide | null {
+  const app = getSubSaasApp(slug)
+  if (!app) return null
+
+  const steps =
+    NICHE_STEPS[app.slug] ??
+    app.pasosActivacion
+
+  return {
+    emoji: "🚀",
+    title: app.marca,
+    subtitle: app.lema,
+    wowMoment: "Primer resultado rápido",
+    steps,
+    primaryAction: { label: "Ir al dashboard", href: app.dashboardPath || "/dashboard" },
+  }
 }

@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           cantidad: item.cantidad,
           precioUnitario,
           porcentajeIva,
-          productoId: item.productoId ?? originalLinea?.productoId,
+          productoId: item.productoId ?? originalLinea?.productoId ?? undefined,
           lineaFacturaId: item.lineaFacturaId,
         })
       }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
           cantidad: Number(linea.cantidad),
           precioUnitario: Number(linea.precioUnitario),
           porcentajeIva: Number(linea.porcentajeIva),
-          productoId: linea.productoId,
+          productoId: linea.productoId ?? undefined,
           lineaFacturaId: linea.id,
         })
       }
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
           notaCreditoId: nc.id,
           facturaId: factura.id,
           clienteId: factura.clienteId,
-          total: nc.total,
+          total: Number(nc.total),
           motivo,
         },
         timestamp: new Date(),

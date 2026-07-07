@@ -45,6 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockPrismaClient.empresa = {
     update: vi.fn().mockResolvedValue({ id: 1 }),
+    findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 1, cuit: "20-demo1234-0" }),
   }
   mockPrismaClient.parametroFiscal = {
     upsert: vi.fn().mockResolvedValue({}),

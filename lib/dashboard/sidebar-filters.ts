@@ -26,7 +26,17 @@ export function canRenderMenuItem(
   rubro: Rubro,
   isClaverAnalyst: boolean,
   countryFeatures: CountryFeatures,
+  condicionIva?: string,
 ): boolean {
+  if (condicionIva?.toLowerCase() === "monotributista" || condicionIva?.toLowerCase() === "monotributo") {
+    if (item.href?.startsWith("/dashboard/contabilidad")) return false
+    if (item.href === "/dashboard/impuestos/iibb") return false
+    if (item.href === "/dashboard/impuestos/padron") return false
+    if (item.href === "/dashboard/impuestos/tes") return false
+    if (item.label?.toLowerCase().includes("retencion")) return false
+    if (item.label?.toLowerCase().includes("sicore")) return false
+  }
+
   if (item.requiredCountryFeature) {
     if (!countryFeatures[item.requiredCountryFeature as keyof CountryFeatures]) {
       return false

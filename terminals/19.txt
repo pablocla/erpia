@@ -1,0 +1,15 @@
+---
+pid: 32548
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$jobs = 1..3 | ForEach-Object { Start-Job -ScriptBlock { Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body '{\"industryId\":\"club_barrio\"}' } }; $results = $jobs | Wait-Job | Receive-Job; $jobs | Remove-Job; $results | ForEach-Object { [PSCustomObject]@{ email=$_.usuario.email; empresaId=$_.usuario.empresaId; skus=($_.provision.skusActivados -join ','); productos=$_.provision.productosCreados; clientes=$_.provision.clientesCreados } } | Format-Table -AutoSize"
+started_at: 2026-07-03T18:42:11.181Z
+running_for_ms: 264998   
+---
+
+email                       empresaId skus              productos clientes
+-----                       --------- ----              --------- --------
+demo-0a1069d0@claver.com.ar        41 niche.club_barrio         2        1
+demo-df40b81d@claver.com.ar        40 niche.club_barrio         2        1
+demo-a3dba3a9@claver.com.ar        42 niche.club_barrio         2        1
+
+

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -27,7 +27,8 @@ interface PlantillaReporte {
   }
 }
 
-export default function EditarPlantillaPage({ params }: { params: { id: string } }) {
+export default function EditarPlantillaPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
@@ -48,12 +49,12 @@ export default function EditarPlantillaPage({ params }: { params: { id: string }
 
   useEffect(() => {
     fetchPlantilla()
-  }, [params.id])
+  }, [id])
 
   async function fetchPlantilla() {
     setLoading(true)
     try {
-      const res = await fetch(`/api/reportes/plantillas/${params.id}`)
+      const res = await fetch(`/api/reportes/plantillas/${id}`)
       if (!res.ok) throw new Error("No se encontró la plantilla")
       const data = await res.json()
       const plantillaData = data.plantilla as PlantillaReporte

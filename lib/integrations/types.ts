@@ -13,6 +13,7 @@ export type IntegrationCategory =
   | "logistica"
   | "erp"
   | "opensource"
+  | "inmobiliaria"
 
 export type AuthTipo = "oauth2" | "api_key" | "certificado" | "webhook" | "ninguno"
 

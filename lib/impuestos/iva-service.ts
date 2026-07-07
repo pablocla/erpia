@@ -255,8 +255,8 @@ export class IVAService {
     }))
   }
 
-  async exportarLibroIVAVentasCSV(mes: number, anio: number): Promise<string> {
-    const libro = await this.generarLibroIVAVentas(mes, anio)
+  async exportarLibroIVAVentasCSV(mes: number, anio: number, empresaId?: number): Promise<string> {
+    const libro = await this.generarLibroIVAVentas(mes, anio, empresaId)
 
     let csv = "Fecha,Tipo,Punto Venta,N\u00famero,Cliente,CUIT,Condici\u00f3n IVA,Neto,IVA,Percepciones,Total,CAE\n"
 
@@ -268,8 +268,8 @@ export class IVAService {
     return csv
   }
 
-  async exportarLibroIVAComprasCSV(mes: number, anio: number): Promise<string> {
-    const libro = await this.generarLibroIVACompras(mes, anio)
+  async exportarLibroIVAComprasCSV(mes: number, anio: number, empresaId?: number): Promise<string> {
+    const libro = await this.generarLibroIVACompras(mes, anio, empresaId)
 
     let csv = "Fecha,Tipo,Punto Venta,N\u00famero,Proveedor,CUIT,Condici\u00f3n IVA,Neto,IVA,Retenciones,Total\n"
 
@@ -281,10 +281,10 @@ export class IVAService {
     return csv
   }
 
-  async generarArchivoPresentacionAFIP(mes: number, anio: number): Promise<string> {
-    const reporte = await this.calcularIVAPeriodo(mes, anio)
-    const libroVentas = await this.generarLibroIVAVentas(mes, anio)
-    const libroCompras = await this.generarLibroIVACompras(mes, anio)
+  async generarArchivoPresentacionAFIP(mes: number, anio: number, empresaId?: number): Promise<string> {
+    const reporte = await this.calcularIVAPeriodo(mes, anio, empresaId)
+    const libroVentas = await this.generarLibroIVAVentas(mes, anio, empresaId)
+    const libroCompras = await this.generarLibroIVACompras(mes, anio, empresaId)
 
     let archivo = `DECLARACIÓN JURADA IVA - PERÍODO ${reporte.periodo}\n\n`
 

@@ -223,7 +223,7 @@ export function ClavergrowProductHub() {
               className="border-white/20 bg-white/5 hover:bg-white/10"
               asChild
             >
-              <Link href="/claver-cloud">Hablar con implementación</Link>
+              <Link href="/claver/contacto">Hablar con implementación</Link>
             </Button>
           </div>
         </div>
@@ -240,7 +240,7 @@ export function ClavergrowProductHub() {
             sin exponer nomenclatura sensible en materiales públicos. Disponible bajo onboarding dedicado.
           </p>
           <Button className="mt-6" variant="outline" asChild>
-            <Link href="/claver-cloud">Solicitar implementación</Link>
+            <Link href="/claver/contacto">Solicitar implementación</Link>
           </Button>
         </div>
       </section>

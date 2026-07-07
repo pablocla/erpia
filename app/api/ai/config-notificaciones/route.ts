@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { isAdminRole } from "@/lib/auth/admin-roles"
-import { isIAEnabled } from "@/lib/ai"
+import { guardAiRequest } from "@/lib/ai"
 import {
   getIANotificacionConfig,
   saveIANotificacionConfig,
@@ -45,9 +45,8 @@ export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
-  if (!(await isIAEnabled(ctx.auth.empresaId))) {
-    return NextResponse.json({ error: "Módulo IA no habilitado" }, { status: 403 })
-  }
+  const blockedGet = await guardAiRequest(request, ctx.auth, "mutation", { skipEntitlement: true })
+  if (blockedGet) return blockedGet
 
   const [config, usuarios] = await Promise.all([
     getIANotificacionConfig(ctx.auth.empresaId),
@@ -79,9 +78,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Solo administradores pueden configurar notificaciones IA" }, { status: 403 })
   }
 
-  if (!(await isIAEnabled(ctx.auth.empresaId))) {
-    return NextResponse.json({ error: "Módulo IA no habilitado" }, { status: 403 })
-  }
+  const blockedPatch = await guardAiRequest(request, ctx.auth, "mutation")
+  if (blockedPatch) return blockedPatch
 
   const body = await request.json()
   const parsed = PatchSchema.safeParse(body)

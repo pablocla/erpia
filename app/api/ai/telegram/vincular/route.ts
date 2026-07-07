@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { isIAEnabled } from "@/lib/ai"
+import { guardAiRequest } from "@/lib/ai"
 import {
   buildTelegramDeepLink,
   getTelegramChatId,
@@ -16,9 +16,8 @@ export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
-  if (!(await isIAEnabled(ctx.auth.empresaId))) {
-    return NextResponse.json({ error: "Módulo IA no habilitado" }, { status: 403 })
-  }
+  const blocked = await guardAiRequest(request, ctx.auth, "mutation", { skipEntitlement: true })
+  if (blocked) return blocked
 
   const link = buildTelegramDeepLink(ctx.auth.empresaId, ctx.auth.userId)
   const chatId = await getTelegramChatId(ctx.auth.empresaId, ctx.auth.userId)

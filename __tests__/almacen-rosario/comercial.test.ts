@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+﻿import { describe, expect, it } from "vitest"
 import { ALMACEN_ROSARIO_GRUPOS, DOLOR_POR_SKU, modulosPorGrupo } from "@/lib/almacen-rosario/comercial"
 import { skusAlmacenRosario } from "@/lib/almacen-rosario/modulos-catalog"
 
@@ -19,7 +19,7 @@ describe("almacen-rosario/comercial", () => {
   it("grupos cubren todos los skus del catálogo", () => {
     const inGroups = new Set(ALMACEN_ROSARIO_GRUPOS.flatMap((g) => g.skus))
     for (const sku of skusAlmacenRosario()) {
-      expect(inGroups.has(sku)).toBe(true)
+      expect(inGroups.has(sku as any)).toBe(true)
     }
   })
 })

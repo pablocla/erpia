@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const filename = `${titulo.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.xlsx`
     await trackSheetsUsage(ctx.auth.empresaId, "export")
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
+import { guardAiRequest } from "@/lib/ai"
 import { agentRegistry } from "@/lib/ai/agents"
 import type { AgentId, AgentRunContext } from "@/lib/ai/agents"
 
@@ -27,6 +28,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
+
+  const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+  if (blocked) return blocked
 
   const body = await request.json()
   const { agentId } = body as { agentId: AgentId }

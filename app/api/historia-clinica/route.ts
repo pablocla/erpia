@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { updatedAt: "desc" },
       }),
-      prisma.consulta.count(),
+      prisma.consulta.count({
+        where: { paciente: { cliente: { empresaId: usuario.empresaId } } }
+      }),
     ])
 
     const resumen = {

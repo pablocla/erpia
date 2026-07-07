@@ -58,10 +58,14 @@ model Empresa {
   fiadoNotificarWhatsApp Boolean   @default(true)
   mpSubscriptionId       String? // Added for Claver Cloud billing (F2-1)
   mpSubscriptionStatus   String? // "authorized", "paused", "cancelled", etc.
+  planHosting            String    @default("Starter")
+  trialExpiresAt         DateTime?
+  activo                 Boolean   @default(true)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   deletedAt              DateTime?
 
+  liquidaciones               LiquidacionImpuesto[]
   facturas                    Factura[]
   usuarios                    Usuario[]
   cajas                       Caja[]
@@ -160,6 +164,8 @@ model Empresa {
   ordenesTrabajo              OrdenTrabajo[]
   tareasPendientes            TareaPendiente[]
   centrosCosto                CentroCosto[]
+  analyticsSmartViews         AnalyticsSmartView[]
+  analyticsDashboards         AnalyticsDashboard[]
   configuracionesImpresora    ConfiguracionImpresora[]
   afipLogs                    AfipWebserviceLog[]
   transferenciasDeposito      TransferenciaDeposito[]
@@ -189,8 +195,11 @@ model Empresa {
   agroCannabisAnalisisSuelo   AgroCannabisAnalisisSuelo[]
   agroCannabisCosechas        AgroCannabisCosecha[]
   consorcios                  Consorcio[]
+  propiedades                 Propiedad[]
+  contratosAlquiler           ContratoAlquiler[]
   nicheMovimientos            NicheMovimiento[]
   reporteAuditoriaAccesos     ReporteAuditoriaAcceso[]
+  tenantEntornos              TenantEntorno[]
 
   @@map("empresas")
 }
@@ -329,8 +338,11 @@ model Cliente {
   movimientosEnvase MovimientoEnvase[]
   valesDinero       ValeDinero[]
   agroContratos     AgroContrato[]
-  unidadesResidente UnidadFuncional[]      @relation("ClienteResidente")
-  nicheMovimientos  NicheMovimiento[]
+  unidadesResidente      UnidadFuncional[]      @relation("ClienteResidente")
+  propiedadesPropietario Propiedad[]            @relation("PropiedadPropietario")
+  contratosInquilino     ContratoAlquiler[]     @relation("ContratoInquilino")
+  contratosPropietario   ContratoAlquiler[]     @relation("ContratoPropietario")
+  nicheMovimientos       NicheMovimiento[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -650,15 +662,20 @@ model AsientoContable {
 
 model MovimientoContable {
   id     Int     @id @default(autoincrement())
-  cuenta String // "1.1 Caja", "4.1 Ventas", etc.
+  /// Label legible — "4.1 Ventas". Mantener durante transición B1.
+  cuenta String
   debe   Decimal @default(0) @db.Decimal(15, 2)
   haber  Decimal @default(0) @db.Decimal(15, 2)
 
   asientoId     Int
   asiento       AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+  /// FK al plan de cuentas (Sprint B1 — integridad GL)
+  cuentaContableId Int?
+  cuentaContable   CuentaContable? @relation(fields: [cuentaContableId], references: [id])
   centroCostoId Int?
   centroCosto   CentroCosto?    @relation(fields: [centroCostoId], references: [id])
 
+  @@index([cuentaContableId])
   @@map("movimientos_contables")
 }
 
@@ -688,6 +705,8 @@ model Usuario {
   solicitudesIntegracion  SolicitudIntegracion[]
   partnerProfile          PartnerProfile?
   reporteAuditoriaAccesos ReporteAuditoriaAcceso[]
+  analyticsSmartViews     AnalyticsSmartView[]
+  analyticsDashboards     AnalyticsDashboard[]
 
   @@map("usuarios")
 }
@@ -1030,8 +1049,8 @@ model NotaCredito {
   empresaId         Int
   empresa           Empresa   @relation(fields: [empresaId], references: [id])
 
-  facturaId Int
-  factura   Factura @relation(fields: [facturaId], references: [id])
+  facturaId Int?
+  factura   Factura? @relation(fields: [facturaId], references: [id])
   clienteId Int
   cliente   Cliente @relation(fields: [clienteId], references: [id])
 
@@ -3042,8 +3061,8 @@ model CuentaCobrar {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  facturaId Int
-  factura   Factura @relation(fields: [facturaId], references: [id])
+  facturaId Int?
+  factura   Factura? @relation(fields: [facturaId], references: [id])
   clienteId Int
   cliente   Cliente @relation(fields: [clienteId], references: [id])
 
@@ -3073,6 +3092,7 @@ model Recibo {
   /// Neto efectivamente cobrado = montoTotal - totalRetenciones
   netoRecibido       Decimal  @default(0) @db.Decimal(18, 2)
   observaciones      String?
+  anulada            Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -3086,8 +3106,22 @@ model Recibo {
   /// Detalle de retenciones sufridas (con régimen, certificado, base)
   retencionesDetalle RetencionRecibo[]
   cheques            Cheque[]
+  mediosPago         ReciboMedioPago[]
 
   @@map("recibos")
+}
+
+/// Medios de pago de un recibo (Sprint B2 — cobro multi-medio)
+model ReciboMedioPago {
+  id         Int      @id @default(autoincrement())
+  tipo       String
+  monto      Decimal  @db.Decimal(18, 2)
+  referencia String?
+
+  reciboId Int
+  recibo   Recibo @relation(fields: [reciboId], references: [id], onDelete: Cascade)
+
+  @@map("recibos_medios_pago")
 }
 
 model ItemRecibo {
@@ -3146,6 +3180,7 @@ model OrdenPago {
   /// Neto efectivamente pagado = montoTotal - totalRetenciones
   netoPagado         Decimal  @default(0) @db.Decimal(18, 2)
   observaciones      String?
+  anulada            Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -3155,8 +3190,22 @@ model OrdenPago {
   items       ItemOrdenPago[]
   retenciones RetencionSICORE[]
   cheques     Cheque[]
+  mediosPago  OrdenPagoMedioPago[]
 
   @@map("ordenes_pago")
+}
+
+/// Medios de pago de una orden de pago (Sprint B2)
+model OrdenPagoMedioPago {
+  id         Int      @id @default(autoincrement())
+  tipo       String
+  monto      Decimal  @db.Decimal(18, 2)
+  referencia String?
+
+  ordenPagoId Int
+  ordenPago   OrdenPago @relation(fields: [ordenPagoId], references: [id], onDelete: Cascade)
+
+  @@map("ordenes_pago_medios_pago")
 }
 
 model ItemOrdenPago {
@@ -3691,6 +3740,8 @@ model CuentaContable {
 
   empresaId Int
   empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  movimientos MovimientoContable[]
 
   @@unique([empresaId, codigo])
   @@index([empresaId, tipo])
@@ -4719,6 +4770,25 @@ model RetencionRecibo {
   @@map("retenciones_recibo")
 }
 
+model LiquidacionImpuesto {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int
+  /// "iva" | "iibb" | "sicore"
+  tipo            String
+  /// Formato YYYY-MM
+  periodo         String
+  /// JSON con los totales. Ej: { saldoAFavor: 0, aPagar: 15000, debitos: 20000, creditos: 5000 }
+  totales         Json
+  /// Hash para verificar inmutabilidad de la liquidacion
+  hash            String?
+  fechaGeneracion DateTime @default(now())
+  
+  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, periodo, tipo])
+  @@map("liquidaciones_impuesto")
+}
+
 // ─── DECLARACIÓN JURADA ─────────────────────────────────────────────────────
 // Tracking de presentaciones de DDJJ fiscales: IVA mensual, IIBB por jurisdicción,
 // SICORE, CM03/CM05. Estado de cada presentación y número de VEP.
@@ -4750,6 +4820,7 @@ model DeclaracionJurada {
   /// JSON con hash del contenido para auditoría
   hashContenido      String?
   observaciones      String?
+  anulada            Boolean  @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -5313,6 +5384,7 @@ model LineaPresupuestoGasto {
   montoEjecutado     Float            @default(0) // Se actualiza automáticamente
   montoComprometido  Float            @default(0) // OC aprobadas no facturadas
   observaciones      String?
+  anulada            Boolean  @default(false)
 
   @@index([presupuestoId, mes])
   @@index([cuentaContableId])
@@ -6915,6 +6987,67 @@ model ConsorcioMensaje {
 }
 
 // ==========================================
+// MÓDULO INMOBILIARIA (CARTERA + ALQUILERES)
+// ==========================================
+
+model Propiedad {
+  id             Int                @id @default(autoincrement())
+  empresaId      Int
+  empresa        Empresa            @relation(fields: [empresaId], references: [id])
+  titulo         String
+  direccion      String
+  /// "depto" | "casa" | "local" | "ph" | "oficina"
+  tipo           String             @default("depto")
+  /// "disponible" | "reservada" | "alquilada" | "vendida"
+  estado         String             @default("disponible")
+  ambientes      Int?
+  m2             Float?
+  precioAlquiler Decimal?           @db.Decimal(15, 2)
+  fotoUrl        String?
+  descripcion    String?            @db.Text
+  propietarioId  Int?
+  propietario    Cliente?           @relation("PropiedadPropietario", fields: [propietarioId], references: [id])
+  contratos      ContratoAlquiler[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([empresaId, estado])
+  @@map("propiedades")
+}
+
+model ContratoAlquiler {
+  id                     Int       @id @default(autoincrement())
+  empresaId              Int
+  empresa                Empresa   @relation(fields: [empresaId], references: [id])
+  propiedadId            Int
+  propiedad              Propiedad @relation(fields: [propiedadId], references: [id])
+  inquilinoId            Int
+  inquilino              Cliente   @relation("ContratoInquilino", fields: [inquilinoId], references: [id])
+  propietarioId          Int?
+  propietario            Cliente?  @relation("ContratoPropietario", fields: [propietarioId], references: [id])
+  montoMensual           Decimal   @db.Decimal(15, 2)
+  /// Día del mes para vencimiento del alquiler (1–28)
+  diaVencimiento         Int       @default(10)
+  fechaInicio            DateTime  @db.Date
+  fechaFin               DateTime  @db.Date
+  /// "activo" | "finalizado" | "rescindido"
+  estado                 String    @default("activo")
+  deposito               Decimal?  @db.Decimal(15, 2)
+  garantiaTipo           String?
+  observaciones          String?
+  /// YYYY-MM — evita duplicar CxC mensual
+  ultimoPeriodoFacturado String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([empresaId, estado])
+  @@index([propiedadId])
+  @@index([inquilinoId])
+  @@index([fechaFin])
+  @@map("contratos_alquiler")
+}
+
+// ==========================================
 // CLAVER NICHE APPS — ledger compartido
 // ==========================================
 
@@ -6990,4 +7123,231 @@ model ReporteDefinicion {
   retencionDias        Int     @default(2555) // 7 años
 
   @@map("reporte_definicion")
+}
+
+// ==========================================
+// CLAVER CLOUD OPERATIONS & PROVISIONING
+// ==========================================
+
+model OrdenProvision {
+  id                Int      @id @default(autoincrement())
+  contactoEmail     String
+  contactoNombre    String?
+  razonSocial       String
+  cuit              String
+  paisFiscal        String   @default("AR")
+  planHosting       String
+  skus              String[]
+  analistaAsignado  String?
+  estado            String   @default("pendiente")
+  rubro             String?
+  engancheId        String?
+  engancheCandidato String?
+  modoLite          String?
+  empresaId         Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AnalistaAsignacion {
+  id            Int      @id @default(autoincrement())
+  analistaEmail String
+  empresaId     Int
+  activo        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([analistaEmail, empresaId])
+}
+
+model TenantEntorno {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  codigo     String
+  estado     String
+  deployMeta Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+}
+
+model OpsJob {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  pipelineId Int?
+  jobType    String
+  estado     String
+  resultado  Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model OpsPipeline {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  nombre    String
+  estado    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProyectoImplementacion {
+  id            Int      @id @default(autoincrement())
+  empresaId     Int      @unique
+  analistaEmail String
+  planComercial String
+  estado        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ActaImplementacion {
+  id         Int      @id @default(autoincrement())
+  proyectoId Int
+  tipo       String
+  firmada    Boolean  @default(false)
+  fecha      DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model SistemaLog {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  categoria String
+  severidad String
+  mensaje   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+// ─── Claver Analytics — Smart Views & Dashboards (Clav Sheets) ───────────────
+
+model AnalyticsSmartView {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  usuarioId   Int?
+  codigo      String   @db.VarChar(80)
+  nombre      String   @db.VarChar(200)
+  descripcion String?
+  connectorId String   @default("claverp") @db.VarChar(40)
+  /// plano | pivot | grafico
+  tipoVista   String   @db.VarChar(20)
+  /// ReportDefinition JSON (filtros, dimensiones, métricas, chart)
+  definicion  Json
+  esPublica   Boolean  @default(false)
+  esFavorita  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, usuarioId])
+  @@map("analytics_smart_views")
+}
+
+model AnalyticsDashboard {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  usuarioId   Int?
+  nombre      String   @db.VarChar(200)
+  descripcion String?
+  /// Layout grid: [{ i, x, y, w, h, smartViewId? }]
+  layout      Json     @default("[]")
+  /// Widgets: [{ smartViewId, titulo, tipoGrafico?, refreshSec? }]
+  widgets     Json     @default("[]")
+  esDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  empresa Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([empresaId, usuarioId])
+  @@map("analytics_dashboards")
+}
+
+model ReporteCatalogoCampo {
+  id          Int      @id @default(autoincrement())
+  entidad     String
+  campo       String
+  tipo        String
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([entidad, campo])
+}
+
+/// Ledger idempotente para jobs programados (dispatcher gratuito / premium).
+model CronRunLedger {
+  id        Int      @id @default(autoincrement())
+  jobId     String   @db.VarChar(64)
+  periodKey String   @db.VarChar(32)
+  status    String   @default("ok") @db.VarChar(16)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@unique([jobId, periodKey])
+  @@index([createdAt])
+  @@map("cron_run_ledger")
+}
+
+/// Sprint 4 — Fórmulas técnicas (Math.js) por tenant
+model FormulaCalculo {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  codigo    String   @db.VarChar(64)
+  nombre    String   @db.VarChar(200)
+  expresion String   @db.Text
+  variables Json     @default("[]")
+  rubro     String?  @db.VarChar(64)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activo])
+  @@map("formula_calculo")
+}
+
+/// Sprint 4 — Análisis de precios unitarios (materiales + mano de obra)
+model ApuItem {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  codigo      String   @db.VarChar(64)
+  nombre      String   @db.VarChar(200)
+  unidad      String   @default("m2") @db.VarChar(16)
+  precioBase  Decimal  @default(0) @db.Decimal(18, 2)
+  componentes Json     @default("[]")
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, activo])
+  @@map("apu_item")
+}
+
+/// Sprint 4 — Certificación de hitos de obra (% avance → facturación)
+model ObraHitoCertificacion {
+  id               Int      @id @default(autoincrement())
+  empresaId        Int
+  obraNombre       String   @db.VarChar(200)
+  hitoNombre       String   @db.VarChar(200)
+  porcentajeAvance Decimal  @db.Decimal(5, 2)
+  monto            Decimal  @db.Decimal(18, 2)
+  estado           String   @default("borrador") @db.VarChar(32)
+  facturaId        Int?
+  clienteId        Int?
+  observaciones    String?  @db.Text
+  certificadaAt    DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([empresaId, estado])
+  @@map("obra_hito_certificacion")
 }

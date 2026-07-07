@@ -13,6 +13,7 @@ import { sincronizarBacklogDesdeFuentes } from "@/lib/ops/scrum-service"
 import { ejecutarAccionProductoTenant } from "@/lib/ops/tenant-admin-service"
 import { persistSistemaLog } from "@/lib/ops/sistema-log"
 import { validarLimiteActivacion } from "@/lib/ops/tenant-plan-service"
+import { provisionarPoolPropiedad } from "@/lib/comercial/hybrid-provision-bridge"
 
 export type { AnalystPlaybook, PlaybookCategoria, PlaybookRiesgo }
 export { ANALYST_PLAYBOOKS, getPlaybookById }
@@ -87,6 +88,15 @@ export async function ejecutarPlaybookAnalista(
           paso: "Provision pack",
           ok: true,
           detalle: `${(r as { results?: unknown[] }).results?.length ?? pack.skus.length} SKUs`,
+        })
+        break
+      }
+      case "pack_propiedad": {
+        const r = await provisionarPoolPropiedad(empresaId, "slg")
+        steps.push({
+          paso: "Provision pool-propiedad",
+          ok: true,
+          detalle: `${r.skus.length} SKUs · checklist ${r.onboardingIniciado ? "iniciado" : "pendiente"}`,
         })
         break
       }

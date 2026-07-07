@@ -4,7 +4,7 @@ import { BRAND_FULL } from "@/lib/brand"
 
 export const metadata: Metadata = {
   title: `App Vendedor | ${BRAND_FULL}`,
-  description: "App vendedor Claver by Claver — pedidos, cobranzas y visitas en campo",
+  description: "App vendedor Claver — pedidos, cobranzas y visitas en campo",
   manifest: "/manifest.json",
   themeColor: "#0f172a",
 }

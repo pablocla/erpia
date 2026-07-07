@@ -5,7 +5,13 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ClaverShell } from "@/components/marketing/claver-shell"
 import {
-  AUTOPOOL_BRAND,
+  PacksRubroSection,
+  PlataformasSection,
+  ProductosEntradaSection,
+  SubSaasAppsSection,
+} from "@/components/marketing/commercial-catalog-sections"
+import { CATALOGO_RESUMEN } from "@/lib/comercial/commercial-packaging"
+import {
   AUTOPOOL_ENTRIES,
   AUTOPOOL_NICHOS,
   AUTOPOOL_TIPOS,
@@ -15,15 +21,20 @@ import {
 } from "@/lib/marketplace/autopool-manifest"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { INTANGIBLE_PREMIUM_7, PREMIUM_7_BUNDLE_ID } from "@/lib/marketplace/intangible-premium-7"
-import { CLAVER_SERVICE_LINES } from "@/lib/marketing/claver-services-catalog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { MotionFadeDown, MotionList, MotionListItem } from "@/components/ui/motion"
-import { Check, Sparkles, Zap, Clock, Home, Plug, Shield, TrendingUp } from "lucide-react"
+import { ChevronDown, Clock, Home, Plug, Shield, Zap, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AlmacenRosarioVitrine } from "@/components/marketing/almacen-rosario-vitrine"
 import { effectiveSkuStatus, isSkuProvisionable } from "@/lib/marketplace/sku-availability"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const fmtArs = (n: number) =>
   n === 0
@@ -31,9 +42,9 @@ const fmtArs = (n: number) =>
     : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
 
 const CERT_LABEL: Record<AutopoolCertLevel, string> = {
-  GLOBAL_AUTO: "🟢 Auto global",
-  REGION_AUTO: "🔵 Auto regional",
-  SEMI_AUTO: "🟡 Guiado remoto",
+  GLOBAL_AUTO: "Auto global",
+  REGION_AUTO: "Auto regional",
+  SEMI_AUTO: "Guiado remoto",
 }
 
 const TIPOS = Object.values(AUTOPOOL_TIPOS)
@@ -52,11 +63,12 @@ export function ClaverAppsMarketplace() {
   const nichoParam = searchParams.get("nicho") as AutopoolNichoId | null
 
   const [tipoActivo, setTipoActivo] = useState<AutopoolTipoId | "todos">(
-    tipoParam && tipoParam in AUTOPOOL_TIPOS ? tipoParam : "todos"
+    tipoParam && tipoParam in AUTOPOOL_TIPOS ? tipoParam : "todos",
   )
   const [nichoActivo, setNichoActivo] = useState<AutopoolNichoId | "todos">(
-    nichoParam && nichoParam in AUTOPOOL_NICHOS ? nichoParam : "todos"
+    nichoParam && nichoParam in AUTOPOOL_NICHOS ? nichoParam : "todos",
   )
+  const [autoOpen, setAutoOpen] = useState(false)
 
   const entradas = useMemo(() => {
     let list = AUTOPOOL_ENTRIES
@@ -65,35 +77,94 @@ export function ClaverAppsMarketplace() {
     return list
   }, [tipoActivo, nichoActivo])
 
-  const tipoLema =
-    tipoActivo !== "todos" ? AUTOPOOL_TIPOS[tipoActivo].lema : AUTOPOOL_BRAND.lema
-
   const premiumBundle = MARKETPLACE_BUNDLES.find((b) => b.id === PREMIUM_7_BUNDLE_ID)
 
   return (
     <ClaverShell context="matrix">
-      <section className="relative overflow-hidden bg-gradient-to-b from-amber-50/80 via-slate-50 to-white pt-24 pb-16 sm:pt-32">
-        <div className="pointer-events-none absolute -right-24 top-20 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-          <MotionFadeDown className="text-center">
-            <Badge className="mb-6 border-amber-300/50 bg-amber-100 text-amber-900">
-              <Zap className="mr-1.5 h-3.5 w-3.5" />
-              {AUTOPOOL_BRAND.badge} — {AUTOPOOL_ENTRIES.length} servicios · expansión diaria
-            </Badge>
-            <h1 className="mx-auto max-w-4xl font-[var(--font-fraunces)] text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-              {AUTOPOOL_BRAND.fullName}
+      <section className="border-b border-slate-200/80 bg-white pt-24 pb-8 sm:pt-28">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <MotionFadeDown>
+            <h1 className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900 sm:text-4xl">
+              Catálogo de soluciones
             </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-xl font-medium text-amber-800/90 italic">
-              «{tipoLema}»
-            </p>
-            <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-500">
-              Automatizaciones, integraciones (Shopify, Tienda Nube, Odoo), implementación remota,
-              relevamientos y marketing — todo activable desde tu casa.
+            <p className="mt-3 max-w-2xl text-slate-600">
+              {CATALOGO_RESUMEN.automatizaciones} automatizaciones, {CATALOGO_RESUMEN.serviciosIa} servicios con
+              IA, {CATALOGO_RESUMEN.appsNicho} apps de nicho y {CATALOGO_RESUMEN.packs} packs. Activás solo lo
+              que necesitás.
             </p>
           </MotionFadeDown>
+        </div>
+      </section>
 
-          {/* Filtro por tipo de servicio */}
-          <div className="mt-10 flex flex-wrap justify-center gap-2">
+      <div id="entrada">
+        <ProductosEntradaSection className="border-b border-slate-200/80 bg-[#f8fafc] py-12" />
+      </div>
+
+      <div id="subsaas" className="bg-white py-12 border-b border-slate-200/80">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <Tabs defaultValue="combate" className="w-full">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
+              <div>
+                <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl">
+                  Apps para vender hoy
+                </h2>
+                <p className="mt-2 max-w-xl text-slate-600">
+                  Elegí la herramienta que más te urge hoy o explorá el catálogo completo.
+                </p>
+              </div>
+              <TabsList className="bg-slate-100/50 border border-slate-200">
+                <TabsTrigger value="combate">Productos de combate (8)</TabsTrigger>
+                <TabsTrigger value="catalogo">Catálogo ERP (10)</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="combate" className="mt-0">
+              <SubSaasAppsSection combateOnly className="py-4 !border-0 bg-transparent px-0 sm:px-0" />
+            </TabsContent>
+            <TabsContent value="catalogo" className="mt-0">
+              <SubSaasAppsSection className="py-4 !border-0 bg-transparent px-0 sm:px-0" />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      <div id="packs">
+        <PacksRubroSection className="border-b border-slate-200/80 bg-white py-12" />
+      </div>
+
+      <section className="border-b border-slate-200/80 bg-[#f8fafc] py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <AlmacenRosarioVitrine variant="compact" ctaMode="public" />
+          <p className="mt-3 text-center text-xs text-slate-500">
+            <Link href="/claver/almacen-rosario" className="underline hover:text-slate-700">
+              Ver detalle del pack Almacén Rosario
+            </Link>
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-white py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <Collapsible open={autoOpen} onOpenChange={setAutoOpen}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
+                  Automatizaciones
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">Filtrá por tipo de servicio o nicho.</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <p className="text-sm text-slate-500">{entradas.length} resultados</p>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    {autoOpen ? "Ocultar" : "Mostrar"} {autoOpen ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </div>
+            
+            <CollapsibleContent className="mt-8 space-y-8 transition-all">
+
+          <div className="mt-6 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setTipoActivo("todos")}
@@ -101,7 +172,7 @@ export function ClaverAppsMarketplace() {
                 "rounded-full border px-4 py-2 text-sm font-medium transition",
                 tipoActivo === "todos"
                   ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
               )}
             >
               Todos
@@ -114,12 +185,11 @@ export function ClaverAppsMarketplace() {
                   setTipoActivo(t.id)
                   setNichoActivo("todos")
                 }}
-                title={t.lema}
                 className={cn(
                   "rounded-full border px-4 py-2 text-sm font-medium transition",
                   tipoActivo === t.id
-                    ? "border-amber-600 bg-amber-500 text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-amber-200"
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-200",
                 )}
               >
                 {t.emoji} {t.label}
@@ -127,14 +197,13 @@ export function ClaverAppsMarketplace() {
             ))}
           </div>
 
-          {/* Filtro secundario por nicho */}
-          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setNichoActivo("todos")}
               className={cn(
                 "rounded-full px-3 py-1 text-xs font-medium transition",
-                nichoActivo === "todos" ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-100"
+                nichoActivo === "todos" ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-100",
               )}
             >
               Todos los nichos
@@ -144,10 +213,9 @@ export function ClaverAppsMarketplace() {
                 key={n.id}
                 type="button"
                 onClick={() => setNichoActivo(n.id)}
-                title={n.lema}
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium transition",
-                  nichoActivo === n.id ? "bg-amber-100 text-amber-900" : "text-slate-500 hover:bg-slate-100"
+                  nichoActivo === n.id ? "bg-blue-100 text-blue-900" : "text-slate-500 hover:bg-slate-100",
                 )}
               >
                 {n.emoji} {n.label}
@@ -155,99 +223,63 @@ export function ClaverAppsMarketplace() {
             ))}
           </div>
 
-          {/* Premium ERP 7 — vitrina comercial */}
-          <div className="mt-14 rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-6 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <Badge className="mb-3 bg-violet-600 hover:bg-violet-600">
-                  <TrendingUp className="mr-1 h-3 w-3" />
-                  Premium ERP 7
-                </Badge>
-                <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-                  Lo que SAP cobra en dólares, en pesos argentinos
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                  Servicios intangibles automáticos inspirados en NetSuite, Odoo y Salesforce —
-                  conciliación de pagos, fraude POS, retenciones AFIP, reposición JIT y más.
-                </p>
-              </div>
+          <Collapsible className="mt-10 rounded-xl border border-violet-200 bg-violet-50/50">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between px-5 py-4 text-left"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">Pack Premium ERP 7</p>
+                  <p className="text-sm text-slate-600">
+                    Conciliación, fraude POS, fiscal y más — {premiumBundle ? fmtArs(premiumBundle.precioPackArs) : ""}
+                    / mes
+                  </p>
+                </div>
+                <ChevronDown className="h-5 w-5 text-slate-400" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="border-t border-violet-100 px-5 pb-5 pt-4">
               {premiumBundle && (
-                <div className="shrink-0 rounded-xl border border-violet-200 bg-white p-4 text-center">
-                  <p className="text-xs font-medium text-violet-700">Pack completo</p>
-                  <p className="text-2xl font-bold text-slate-900">{fmtArs(premiumBundle.precioPackArs)}</p>
-                  <p className="text-xs text-slate-500">/ mes · −{premiumBundle.ahorroPct}%</p>
-                  <Button className="mt-3 w-full bg-violet-600 hover:bg-violet-500" asChild>
-                    <Link href={`/login?activar=${PREMIUM_7_BUNDLE_ID}`}>Activar pack</Link>
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <Button className="bg-violet-600 hover:bg-violet-500" asChild>
+                    <Link href={`/login?activar=${PREMIUM_7_BUNDLE_ID}`}>Activar pack completo</Link>
                   </Button>
+                  <span className="text-sm text-slate-500">−{premiumBundle.ahorroPct}% vs módulos sueltos</span>
                 </div>
               )}
-            </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {INTANGIBLE_PREMIUM_7.map((svc) => {
+                  const status = effectiveSkuStatus(svc.sku, svc.status)
+                  const provisionable = isSkuProvisionable(svc.sku)
+                  return (
+                    <Card key={svc.sku} className="border-slate-200/80 bg-white">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">{svc.nombre}</CardTitle>
+                        <p className="text-xs text-slate-600">{svc.lema}</p>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-lg font-bold">{fmtArs(svc.precioArs)}<span className="text-xs font-normal text-slate-500"> / mes</span></p>
+                      </CardContent>
+                      <CardFooter className="pt-0">
+                        {provisionable ? (
+                          <Button variant="outline" size="sm" className="w-full text-xs" asChild>
+                            <Link href={`/login?activar=${svc.sku}`}>Activar</Link>
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" className="w-full text-xs" disabled>
+                            Próximamente
+                          </Button>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  )
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {INTANGIBLE_PREMIUM_7.map((svc) => {
-                const status = effectiveSkuStatus(svc.sku, svc.status)
-                const provisionable = isSkuProvisionable(svc.sku)
-                return (
-                <Card key={svc.sku} className="border-slate-200/80 bg-white/90">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <Badge variant="outline" className="text-[10px] shrink-0">
-                        #{svc.rank}
-                      </Badge>
-                      <Badge
-                        className={
-                          status === "disponible"
-                            ? "bg-emerald-100 text-emerald-800 text-[10px]"
-                            : status === "beta"
-                              ? "bg-amber-100 text-amber-800 text-[10px]"
-                              : "bg-slate-100 text-slate-600 text-[10px]"
-                        }
-                      >
-                        {status === "planned" ? "Próximamente" : status}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-base leading-snug">{svc.nombre}</CardTitle>
-                    <p className="text-xs italic text-violet-800/80">«{svc.lema}»</p>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-xs text-slate-600 line-clamp-3">{svc.solucion}</p>
-                    <p className="text-[10px] text-slate-400">Inspirado en {svc.inspiradoEn}</p>
-                    <div className="flex items-baseline gap-1 pt-1">
-                      <span className="text-lg font-bold">{fmtArs(svc.precioArs)}</span>
-                      <span className="text-xs text-slate-500">/ mes</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500">{svc.monetizacionDetalle}</p>
-                  </CardContent>
-                  <CardFooter className="pt-0">
-                    {provisionable ? (
-                      <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-                        <Link href={`/login?activar=${svc.sku}`}>
-                          <Shield className="mr-1 h-3 w-3" />
-                          Activar
-                        </Link>
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" className="w-full text-xs" disabled>
-                        Próximamente
-                      </Button>
-                    )}
-                  </CardFooter>
-                </Card>
-              )})}
-            </div>
-          </div>
-
-          {/* Pack Almacén Rosario — vitrina retail barrio */}
-          <div className="mt-14">
-            <AlmacenRosarioVitrine variant="compact" ctaMode="public" />
-            <p className="mt-3 text-center text-xs text-slate-400">
-              <Link href="/claver/almacen-rosario" className="underline hover:text-slate-600">
-                Ver página completa del pack →
-              </Link>
-            </p>
-          </div>
-
-          <MotionList className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <MotionList className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {entradas.map((entry) => {
               const nicho = AUTOPOOL_NICHOS[entry.nicho]
               const tipo = AUTOPOOL_TIPOS[entry.tipo]
@@ -257,32 +289,32 @@ export function ClaverAppsMarketplace() {
                 <MotionListItem key={entry.sku}>
                   <Card
                     className={cn(
-                      "relative flex h-full flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg",
-                      entry.destacado ? "border-amber-400/60 ring-1 ring-amber-400/30" : "border-slate-200"
+                      "relative flex h-full flex-col transition hover:shadow-md",
+                      entry.destacado ? "border-blue-300 ring-1 ring-blue-200" : "border-slate-200",
                     )}
                   >
                     {entry.destacado && (
-                      <div className="absolute top-0 right-0 rounded-bl-xl bg-amber-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                      <div className="absolute right-0 top-0 rounded-bl-lg bg-blue-600 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
                         Destacado
                       </div>
                     )}
-                    <CardHeader className="pb-3">
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <CardHeader className="pb-2">
+                      <div className="mb-2 flex flex-wrap gap-1.5">
                         <Badge variant="outline" className="text-[10px]">
                           {tipo.emoji} {tipo.label}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-800">
+                        <Badge variant="outline" className="text-[10px]">
                           {nicho.emoji} {nicho.label}
                         </Badge>
                         {entry.remotoDesdeCasa && (
-                          <Badge className="text-[10px] bg-lime-100 text-lime-800">
+                          <Badge className="text-[10px] bg-slate-100 text-slate-700">
                             <Home className="mr-0.5 h-3 w-3" />
-                            Desde casa
+                            Remoto
                           </Badge>
                         )}
                       </div>
-                      <CardTitle className="font-[var(--font-fraunces)] text-xl">{entry.nombre}</CardTitle>
-                      <p className="text-sm font-medium italic text-amber-800/80">«{entry.lema}»</p>
+                      <CardTitle className="text-lg">{entry.nombre}</CardTitle>
+                      <p className="text-sm text-slate-600">{entry.lema}</p>
                     </CardHeader>
                     <CardContent className="flex-1">
                       <p className="text-sm text-slate-600">{entry.descripcionCorta}</p>
@@ -290,48 +322,36 @@ export function ClaverAppsMarketplace() {
                         <Badge variant="secondary" className="text-[10px]">
                           {CERT_LABEL[entry.autoCertLevel]}
                         </Badge>
-                        {entry.maturity === "seed" && (
-                          <Badge className="text-[10px] bg-violet-100 text-violet-700">Nuevo en el pool</Badge>
-                        )}
                         {status === "planned" && (
                           <Badge className="text-[10px] bg-slate-100 text-slate-600">Próximamente</Badge>
                         )}
                       </div>
-                      <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+                      <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
                         <Clock className="h-3.5 w-3.5" />
                         ~{entry.activacionMinutos} min
-                        <span className="text-slate-300">·</span>
-                        v{entry.poolVersion}
                       </div>
-                      <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                        <span className="text-2xl font-bold text-slate-900">{fmtArs(entry.precioDesdeArs)}</span>
+                      <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                        <span className="text-xl font-bold text-slate-900">{fmtArs(entry.precioDesdeArs)}</span>
                         {entry.precioDesdeArs > 0 && (
                           <span className="text-sm text-slate-500">
                             {entry.tipoCobro === "one_shot" ? " pago único" : " / mes"}
                           </span>
                         )}
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {entry.vibeTags.slice(0, 5).map((t) => (
-                          <span key={t} className="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
                     </CardContent>
-                    <CardFooter className="border-t border-slate-100 bg-slate-50/50 pt-4">
+                    <CardFooter className="border-t border-slate-100 bg-slate-50/50">
                       {provisionable ? (
-                        <Button className="w-full bg-amber-600 hover:bg-amber-500 text-white" asChild>
+                        <Button className="w-full" asChild>
                           <Link href={activarHref(entry)}>
                             {entry.tipo === "integracion" ? (
                               <>
                                 <Plug className="mr-2 h-4 w-4" />
-                                Conectar ahora
+                                Conectar
                               </>
                             ) : (
                               <>
                                 <Zap className="mr-2 h-4 w-4" />
-                                Activar ahora
+                                Activar
                               </>
                             )}
                           </Link>
@@ -349,62 +369,15 @@ export function ClaverAppsMarketplace() {
           </MotionList>
 
           {entradas.length === 0 && (
-            <p className="mt-12 text-center text-slate-500">No hay servicios en esta combinación. Probá otro filtro.</p>
+            <p className="mt-10 text-center text-slate-500">No hay resultados con estos filtros.</p>
           )}
-
-          <p className="mt-10 text-center text-xs text-slate-400">
-            Pool vivo — vibe coding diario. Shopify, Tienda Nube y Odoo con sync en el repo.
-          </p>
+          
+          </CollapsibleContent>
+          </Collapsible>
         </div>
       </section>
 
-      <section className="border-t border-slate-200 bg-white py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="text-center">
-            <Badge variant="outline" className="mb-4 border-blue-200 bg-blue-50 text-blue-700">
-              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Líneas Claver
-            </Badge>
-            <h2 className="font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900">
-              Plataformas completas
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {CLAVER_SERVICE_LINES.map((line) => {
-              const Icon = line.icon
-              const ok = line.status === "disponible" || line.status === "beta"
-              return (
-                <Card key={line.id} className="border-slate-200">
-                  <CardHeader>
-                    <div
-                      className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br text-white ${line.gradient}`}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <CardTitle className="text-lg">{line.name}</CardTitle>
-                    <p className="text-sm text-slate-500">{line.tagline}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-1">
-                      {line.features.slice(0, 3).map((f) => (
-                        <li key={f} className="flex gap-2 text-sm text-slate-600">
-                          <Check className="h-4 w-4 shrink-0 text-emerald-500" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full" disabled={!ok} asChild={!!line.href && ok}>
-                      {line.href && ok ? <Link href={line.href}>Explorar</Link> : "Próximamente"}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      </section>
+      <PlataformasSection className="border-t border-slate-200 bg-[#f8fafc] py-12" />
     </ClaverShell>
   )
 }

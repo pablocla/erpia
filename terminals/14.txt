@@ -1,0 +1,33 @@
+---
+pid: 20140
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"industryId\":\"veterinaria\"}'; $resp = Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body $body; $resp | ConvertTo-Json -Depth 10"
+started_at: 2026-07-03T18:33:10.687Z
+running_for_ms: 805001   
+---
+{
+    "success":  true,
+    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjI5LCJlbWFpbCI6ImRlbW8tMzRmZDE3MWNAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjMxLCJleHAiOjE3ODMxOTAwNDMsImlhdCI6MTc4MzEwMzY0M30.42KZvu9aJvhe2jqRHIk5QKS3C6-50BWYMwy62m3GiTw",
+    "goldenPath":  "/dashboard/historia-clinica",
+    "industryId":  "veterinaria",
+    "rubro":  "veterinaria",
+    "provision":  {
+                      "industryId":  "veterinaria",
+                      "rubro":  "veterinaria",
+                      "goldenPath":  "/dashboard/historia-clinica",
+                      "empresaNombre":  "Demo Veterinaria ?? 34fd171c",
+                      "productosCreados":  4,
+                      "clientesCreados":  3,
+                      "skusActivados":  [
+
+                                        ],
+                      "modoLite":  "completo"
+                  },
+    "usuario":  {
+                    "id":  29,
+                    "nombre":  "Administrador Demo",
+                    "email":  "demo-34fd171c@claver.com.ar",
+                    "rol":  "administrador",
+                    "empresaId":  31
+                }
+}

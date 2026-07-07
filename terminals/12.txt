@@ -1,0 +1,33 @@
+---
+pid: 37712
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$body = '{\"industryId\":\"gimnasio\"}'; $resp = Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body $body; $resp | ConvertTo-Json -Depth 10"
+started_at: 2026-07-03T18:28:38.372Z
+running_for_ms: 1075006  
+---
+{
+    "success":  true,
+    "token":  "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjI1LCJlbWFpbCI6ImRlbW8tNzY2YjcyMDdAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjI3LCJleHAiOjE3ODMxODk4MDUsImlhdCI6MTc4MzEwMzQwNX0.4ik2855yIfAdvL8XAfUGqZ0Eb72dTeYVQKqM1i6YEwM",
+    "goldenPath":  "/dashboard/membresias",
+    "industryId":  "gimnasio",
+    "rubro":  "gimnasio",
+    "provision":  {
+                      "industryId":  "gimnasio",
+                      "rubro":  "gimnasio",
+                      "goldenPath":  "/dashboard/membresias",
+                      "empresaNombre":  "Demo Gimnasio / Pilates ?? 766b7207",
+                      "productosCreados":  3,
+                      "clientesCreados":  6,
+                      "skusActivados":  [
+                                            "niche.gimnasio_barrio"
+                                        ],
+                      "modoLite":  "niche"
+                  },
+    "usuario":  {
+                    "id":  25,
+                    "nombre":  "Administrador Demo",
+                    "email":  "demo-766b7207@claver.com.ar",
+                    "rol":  "administrador",
+                    "empresaId":  27
+                }
+}

@@ -5,6 +5,7 @@ import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
 import { provisionIndustryDemo } from "@/lib/comercial/industry-demo-service"
+import { syncPipelineFromEvent } from "@/lib/comercial/comercial-funnel-service"
 import { setSignupOrigen } from "@/lib/ops/signup-tracking"
 
 /**
@@ -18,31 +19,35 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}))
     const industryId = typeof body.industryId === "string" ? body.industryId.trim() : ""
+    const activar = typeof body.activar === "string" ? body.activar.trim() : ""
     if (!industryId) {
       return NextResponse.json({ error: "industryId requerido" }, { status: 400 })
     }
 
-    let empresa = await prisma.empresa.findFirst({
-      where: { cuit: "20-00000000-0" },
+    const demoHash = crypto.randomUUID().split("-")[0] // 8 characters
+    const fakeCuit = `20-${demoHash}-0`
+    const demoEmail = `demo-${demoHash}@claver.com.ar`
+
+    const empresa = await prisma.empresa.create({
+      data: {
+        nombre: `Empresa Demo ${demoHash}`,
+        razonSocial: `Empresa Demostración SRL (${demoHash})`,
+        cuit: fakeCuit,
+        direccion: "Av. Corrientes 1234, CABA",
+        telefono: "011-4567-8900",
+        email: demoEmail,
+        puntoVenta: 1,
+        entorno: "homologacion",
+        rubro: "otro",
+      },
     })
 
-    if (!empresa) {
-      empresa = await prisma.empresa.create({
-        data: {
-          nombre: "Empresa Demo",
-          razonSocial: "Empresa Demostración SRL",
-          cuit: "20-00000000-0",
-          direccion: "Av. Corrientes 1234, CABA",
-          telefono: "011-4567-8900",
-          email: DEMO_ADMIN_EMAIL,
-          puntoVenta: 1,
-          entorno: "homologacion",
-          rubro: "otro",
-        },
-      })
-    }
-
     const provision = await provisionIndustryDemo(empresa.id, industryId)
+
+    if (activar) {
+      const { persistDemoActivarIntent } = await import("@/lib/comercial/ofertas-comerciales")
+      await persistDemoActivarIntent(empresa.id, activar)
+    }
 
     await setSignupOrigen(
       empresa.id,
@@ -52,31 +57,30 @@ export async function POST(request: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(DEMO_ADMIN_PASSWORD, 10)
 
-    let usuario = await prisma.usuario.findUnique({
-      where: { email: DEMO_ADMIN_EMAIL },
+    const usuario = await prisma.usuario.create({
+      data: {
+        nombre: "Administrador Demo",
+        email: demoEmail,
+        password: hashedPassword,
+        rol: "administrador",
+        empresaId: empresa.id,
+        activo: true,
+      },
     })
 
-    if (!usuario) {
-      usuario = await prisma.usuario.create({
-        data: {
-          nombre: "Administrador Demo",
-          email: DEMO_ADMIN_EMAIL,
-          password: hashedPassword,
-          rol: "administrador",
-          empresaId: empresa.id,
-          activo: true,
-        },
-      })
-    } else {
-      usuario = await prisma.usuario.update({
-        where: { id: usuario.id },
-        data: {
-          password: hashedPassword,
-          activo: true,
-          empresaId: empresa.id,
-        },
-      })
-    }
+    void syncPipelineFromEvent({
+      nombre: `Visitante demo ${industryId}`,
+      email: demoEmail,
+      negocio: empresa.nombre,
+      rubro: provision.rubro,
+      origen: "industry_demo",
+      etapa: "trial",
+      empresaId: empresa.id,
+      notas: `Demo rubro: ${industryId} · hash ${demoHash}`,
+      proximaAccion: "Ver si convierte a trial propio — ofrecer registro",
+      creadoPor: "demo@claver.com.ar",
+      notify: "demo_rubro",
+    }).catch((err) => console.error("Error sync pipeline demo:", err))
 
     const authService = new AuthService()
     const token = await authService.generarToken({
@@ -93,6 +97,7 @@ export async function POST(request: NextRequest) {
       industryId: provision.industryId,
       rubro: provision.rubro,
       provision,
+      activar: activar || null,
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,

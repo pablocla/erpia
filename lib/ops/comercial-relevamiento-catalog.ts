@@ -1,6 +1,8 @@
 /** Catálogo client-safe — relevamiento vendedor en calle */
 
 export const RUBROS_RETAIL = [
+  { id: "inmobiliaria", label: "Inmobiliaria / administración" },
+  { id: "consorcios", label: "Administración de consorcios" },
   { id: "almacen", label: "Almacén / despensa" },
   { id: "kiosco", label: "Kiosco" },
   { id: "indumentaria", label: "Indumentaria" },
@@ -93,6 +95,30 @@ export const PREGUNTAS_DIAGNOSTICO = [
 ] as const
 
 export const PREGUNTAS_EXTRAS_POR_RUBRO: Record<string, { id: string; pregunta: string; placeholder: string }[]> = {
+  inmobiliaria: [
+    {
+      id: "respUnidadesConsorcio",
+      pregunta: "¿Cuántos edificios o unidades administrás hoy?",
+      placeholder: "Ej. 2 consorcios, 48 UF, 12 propiedades en alquiler…",
+    },
+    {
+      id: "respLiquidacionExpensas",
+      pregunta: "¿Cómo liquidás expensas y avisás morosos?",
+      placeholder: "Excel, PDF manual, WhatsApp uno por uno…",
+    },
+  ],
+  consorcios: [
+    {
+      id: "respUnidadesConsorcio",
+      pregunta: "¿Cuántas unidades funcionales tiene el edificio?",
+      placeholder: "Cantidad de UF, porcentajes, residentes…",
+    },
+    {
+      id: "respGastosComunes",
+      pregunta: "¿Cómo cargan gastos comunes y prorratean?",
+      placeholder: "Planilla, contador externo, sistema actual…",
+    },
+  ],
   kiosco: [
     {
       id: "respUsaEscaner",

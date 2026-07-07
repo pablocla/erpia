@@ -23,6 +23,7 @@ describe("virtual-worker-runner", () => {
           playbooks: ["stock_bajo_tarea"],
           cron: `* ${hour} * * *`,
           activo: true,
+          lastRunAt: null,
         },
       ],
     } as never)
@@ -53,6 +54,7 @@ describe("virtual-worker-runner", () => {
           playbooks: ["stock_bajo_tarea"],
           cron: "0 23 * * *",
           activo: true,
+          lastRunAt: null,
         },
       ],
     } as never)

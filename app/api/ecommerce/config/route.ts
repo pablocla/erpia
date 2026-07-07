@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+﻿import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import {
@@ -29,7 +29,7 @@ const updateSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

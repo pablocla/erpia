@@ -37,3 +37,4 @@ export {
 export type { AlertasResult, ReporteResult, MensajesWAResult, ProyeccionResult } from "./ai-business"
 // IA module guard (per-empresa toggle)
 export { isIAEnabled } from "./ia-guard"
+export { guardAiRequest, guardAiStatusRequest, AI_ENTITLEMENT_SKU } from "./ai-route-guard"

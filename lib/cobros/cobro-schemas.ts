@@ -10,15 +10,23 @@ export const chequeCobroSchema = z.object({
   observaciones: z.string().optional(),
 })
 
+const medioPagoItemSchema = z.object({
+  tipo: z.enum(["efectivo", "transferencia", "cheque", "tarjeta"]),
+  monto: z.number().positive(),
+  referencia: z.string().optional(),
+})
+
 export const cobroSchema = z.object({
   clienteId: z.number().int().positive(),
   items: z.array(z.object({
     cuentaCobrarId: z.number().int().positive(),
     monto: z.number().positive("El monto debe ser positivo"),
   })).min(1),
-  medioPago: z.enum(["efectivo", "transferencia", "cheque", "tarjeta"]),
+  medioPago: z.enum(["efectivo", "transferencia", "cheque", "tarjeta"]).optional(),
+  medios: z.array(medioPagoItemSchema).min(1).optional(),
   fecha: z.string().optional(),
   observaciones: z.string().optional(),
+  calcularRetencionesAuto: z.boolean().optional(),
   cheque: chequeCobroSchema.optional(),
   retenciones: z.object({
     retencionIVA: z.number().min(0).optional(),
@@ -26,7 +34,12 @@ export const cobroSchema = z.object({
     retencionIIBB: z.number().min(0).optional(),
   }).optional(),
 }).superRefine((data, ctx) => {
-  if (data.medioPago === "cheque" && !data.cheque) {
+  if (!data.medios?.length && !data.medioPago) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Indicá medio de pago", path: ["medioPago"] })
+  }
+  const usaCheque =
+    data.medioPago === "cheque" || data.medios?.some((m) => m.tipo === "cheque")
+  if (usaCheque && !data.cheque) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Datos del cheque requeridos", path: ["cheque"] })
   }
 })

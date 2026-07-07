@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -61,7 +61,7 @@ export function AppStoreBundles({ catalog, highlightBundleId, onInstalled }: App
     try {
       const items = bundle.skus
         .map((sku) => catalog.find((c) => c.sku === sku))
-        .filter((c): c is CatalogItem => Boolean(c) && !c.instalada)
+        .filter((c): c is CatalogItem => Boolean(c) && !(c?.instalada))
         .map((c) => ({ sku: c.sku, cantidad: 1, precio: c.precioArs }))
 
       if (items.length === 0) {

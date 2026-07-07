@@ -3,7 +3,23 @@ import { jwtVerify } from "jose"
 import { AUTH_TOKEN_COOKIE } from "@/lib/auth/token-cookie"
 
 // ─── Public routes that skip auth ─────────────────────────────────────────────
-const RUTAS_PUBLICAS = ["/api/auth/login", "/api/auth/demo", "/api/auth/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh", "/api/ecommerce", "/api/ai/status", "/api/health"]
+const RUTAS_PUBLICAS = [
+  "/api/auth/login",
+  "/api/auth/demo",
+  "/api/auth/signup",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/refresh",
+  "/api/ecommerce",
+  "/api/ai/onboarding",
+  "/api/ai/valor-rubro",
+  "/api/health",
+  "/api/onboarding",
+  "/api/comercial/consultas",
+  "/api/webhooks/",
+  "/api/cron/",
+  "/api/public/",
+]
 
 // ─── Static asset extensions ──────────────────────────────────────────────────
 const STATIC_EXT = /\.(ico|png|jpg|jpeg|svg|webp|avif|woff2?|ttf|css|js|map)$/i

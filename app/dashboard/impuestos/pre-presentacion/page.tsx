@@ -15,6 +15,7 @@ import {
   Save,
   ChevronLeft,
   ClipboardCheck,
+  Download,
 } from "lucide-react"
 import { authFetch } from "@/lib/stores"
 import type { ChecklistItem } from "@/lib/impuestos/pre-presentacion-service"
@@ -33,6 +34,7 @@ export default function PrePresentacionPage() {
   const [listo, setListo] = useState(false)
   const [items, setItems] = useState<ChecklistItem[]>([])
   const [resumen, setResumen] = useState<{ ok: number; total: number; criticos: number } | null>(null)
+  const [descargandoPack, setDescargandoPack] = useState(false)
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -50,6 +52,23 @@ export default function PrePresentacionPage() {
       setLoading(false)
     }
   }, [mes, anio])
+
+  const descargarPackContador = async () => {
+    setDescargandoPack(true)
+    try {
+      const res = await authFetch(`/api/impuestos/pack-contador?mes=${mes}&anio=${anio}`)
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `pack_contador_${anio}-${String(mes).padStart(2, "0")}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setDescargandoPack(false)
+    }
+  }
 
   const persistirLiquidacion = async () => {
     setPersistiendo(true)
@@ -125,6 +144,10 @@ export default function PrePresentacionPage() {
           <Button variant="secondary" onClick={persistirLiquidacion} disabled={persistiendo}>
             {persistiendo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Persistir liquidación IVA
+          </Button>
+          <Button variant="outline" onClick={descargarPackContador} disabled={descargandoPack}>
+            {descargandoPack ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Pack contador (ZIP)
           </Button>
         </CardContent>
       </Card>

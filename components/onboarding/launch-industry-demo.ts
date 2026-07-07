@@ -12,12 +12,15 @@ type DemoUsuario = {
 export async function launchIndustryDemo(
   industryId: string,
   loginConToken: (token: string, usuario: DemoUsuario) => void,
-  options?: { present?: boolean },
+  options?: { present?: boolean; activar?: string | null },
 ): Promise<string> {
   const res = await fetch("/api/onboarding/industry-demo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ industryId }),
+    body: JSON.stringify({
+      industryId,
+      activar: options?.activar?.trim() || undefined,
+    }),
   })
   const data = await res.json()
   if (!res.ok || !data.success) {

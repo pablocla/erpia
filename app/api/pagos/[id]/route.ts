@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
 
     const op = await prisma.ordenPago.findFirst({
-      where: { id: parseInt(id), empresaId: ctx.auth.empresaId },
+      where: { id: parseInt(id), proveedor: { empresaId: ctx.auth.empresaId } },
       include: {
         proveedor: { select: { id: true, nombre: true, cuit: true } },
         items: {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             },
           },
         },
-        retencionesSicore: true,
+
       },
     })
 

@@ -22,15 +22,21 @@ import { getCuentaLabel } from "@/lib/config/parametro-service"
 import { resolveCuentaPago } from "@/lib/contabilidad/medio-pago-cuentas"
 import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
 import { chequeService, type ChequeInput } from "@/lib/cheques/cheque-service"
+import { buildMovimientosConCentro } from "@/lib/contabilidad/movimiento-builder"
+import { calcularRetencionesPago } from "@/lib/impuestos/retencion-calculo-service"
+import { normalizarMediosPago, type MedioPagoLinea } from "@/lib/tesoreria/medios-pago-utils"
 import type { OrdenPagoEmitidaPayload } from "@/lib/events/types"
 
 export interface PagoInput {
   proveedorId: number
   empresaId: number
   items: { cuentaPagarId: number; monto: number }[]
-  medioPago: "transferencia" | "cheque" | "efectivo" | "tarjeta"
+  medioPago?: "transferencia" | "cheque" | "efectivo" | "tarjeta"
+  medios?: MedioPagoLinea[]
   fecha?: Date
   observaciones?: string
+  calcularRetencionesAuto?: boolean
+  jurisdiccionIIBB?: string
   cheque?: ChequeInput
   chequesTercerosIds?: number[]
   retenciones?: {
@@ -95,24 +101,64 @@ export class PagosService {
   }
 
   async registrarPago(input: PagoInput) {
-    const { proveedorId, empresaId, items, medioPago, fecha, observaciones, retenciones, cheque, chequesTercerosIds } = input
+    const {
+      proveedorId,
+      empresaId,
+      items,
+      medioPago,
+      medios: mediosInput,
+      fecha,
+      observaciones,
+      retenciones,
+      cheque,
+      chequesTercerosIds,
+      calcularRetencionesAuto,
+      jurisdiccionIIBB,
+    } = input
     const fechaOp = fecha ?? new Date()
 
     await periodoFiscalService.validarPeriodoAbierto(fechaOp, empresaId)
 
-    if (medioPago === "cheque" && !cheque?.numero) {
-      throw new Error("Datos del cheque propio requeridos (número, fechas, cuenta emisora)")
-    }
-    if (medioPago === "cheque" && !cheque?.cuentaEmisorId) {
-      throw new Error("Cuenta bancaria emisora requerida para cheque propio")
+    const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
+
+    let retencionIVA = retenciones?.retencionIVA ?? 0
+    let retencionGanancias = retenciones?.retencionGanancias ?? 0
+    let retencionIIBB = retenciones?.retencionIIBB ?? 0
+
+    const sinRetencionesManuales =
+      retencionIVA === 0 && retencionGanancias === 0 && retencionIIBB === 0
+
+    if (calcularRetencionesAuto || sinRetencionesManuales) {
+      const calc = await calcularRetencionesPago({
+        empresaId,
+        proveedorId,
+        montoBase: montoTotal,
+        jurisdiccion: jurisdiccionIIBB,
+      })
+      if (calc.aplicadas && (calcularRetencionesAuto || sinRetencionesManuales)) {
+        retencionIVA = calc.retencionIVA
+        retencionGanancias = calc.retencionGanancias
+        retencionIIBB = calc.retencionIIBB
+      }
     }
 
-    const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
-    const retencionIVA = retenciones?.retencionIVA ?? 0
-    const retencionGanancias = retenciones?.retencionGanancias ?? 0
-    const retencionIIBB = retenciones?.retencionIIBB ?? 0
     const totalRetenciones = retencionIVA + retencionGanancias + retencionIIBB
     const netoPagado = montoTotal - totalRetenciones
+
+    const medios = normalizarMediosPago({
+      medioPago,
+      medios: mediosInput,
+      montoNeto: netoPagado,
+    })
+
+    const medioPrincipal = medios[0]?.tipo ?? medioPago ?? "transferencia"
+    const usaCheque = medios.some((m) => m.tipo === "cheque")
+    if (usaCheque && !cheque?.numero) {
+      throw new Error("Datos del cheque propio requeridos (número, fechas, cuenta emisora)")
+    }
+    if (usaCheque && !cheque?.cuentaEmisorId) {
+      throw new Error("Cuenta bancaria emisora requerida para cheque propio")
+    }
 
     if (netoPagado < 0) {
       throw new Error("Las retenciones superan el monto total a pagar")
@@ -147,7 +193,7 @@ export class PagosService {
           numero,
           fecha: fechaPago,
           montoTotal,
-          medioPago,
+          medioPago: medioPrincipal,
           retencionIVA,
           retencionGanancias,
           retencionIIBB,
@@ -159,6 +205,13 @@ export class PagosService {
             create: items.map((i) => ({
               montoPagado: i.monto,
               cuentaPagarId: i.cuentaPagarId,
+            })),
+          },
+          mediosPago: {
+            create: medios.map((m) => ({
+              tipo: m.tipo,
+              monto: m.monto,
+              referencia: m.referencia,
             })),
           },
         },
@@ -226,33 +279,26 @@ export class PagosService {
       const ultimoAsiento = await tx.asientoContable.findFirst({ orderBy: { numero: "desc" } })
       const numeroAsiento = (ultimoAsiento?.numero ?? 0) + 1
 
-      const movimientos: { cuenta: string; debe: number; haber: number }[] = []
-
-      // Resolve account labels from DB config (professional plan de cuentas)
-      const [ctaProveedores, ctaMedioPago, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
+      const [ctaProveedores, ctaRetIVADep, ctaRetGanDep, ctaRetIIBBDep] = await Promise.all([
         getCuentaLabel(empresaId, "pago", "proveedores", "2.1", "Proveedores"),
-        resolveCuentaPago(empresaId, medioPago),
         getCuentaLabel(empresaId, "pago", "ret_iva_depositar", "2.4.1", "Retenciones IVA a Depositar"),
         getCuentaLabel(empresaId, "pago", "ret_gan_depositar", "2.4.2", "Retenciones Ganancias a Depositar"),
         getCuentaLabel(empresaId, "pago", "ret_iibb_depositar", "2.4.3", "Retenciones IIBB a Depositar"),
       ])
 
-      movimientos.push({ cuenta: ctaProveedores, debe: montoTotal, haber: 0 })
+      const movimientoInputs: { cuentaLabel: string; debe: number; haber: number }[] = [
+        { cuentaLabel: ctaProveedores, debe: montoTotal, haber: 0 },
+      ]
 
-      if (netoPagado > 0) {
-        movimientos.push({ cuenta: ctaMedioPago, debe: 0, haber: netoPagado })
+      for (const medio of medios) {
+        if (medio.monto <= 0) continue
+        const cta = await resolveCuentaPago(empresaId, medio.tipo)
+        movimientoInputs.push({ cuentaLabel: cta, debe: 0, haber: medio.monto })
       }
 
-      // HABER: retenciones a depositar (pasivo — debemos ingresarlas a AFIP)
-      if (retencionIVA > 0) {
-        movimientos.push({ cuenta: ctaRetIVADep, debe: 0, haber: retencionIVA })
-      }
-      if (retencionGanancias > 0) {
-        movimientos.push({ cuenta: ctaRetGanDep, debe: 0, haber: retencionGanancias })
-      }
-      if (retencionIIBB > 0) {
-        movimientos.push({ cuenta: ctaRetIIBBDep, debe: 0, haber: retencionIIBB })
-      }
+      if (retencionIVA > 0) movimientoInputs.push({ cuentaLabel: ctaRetIVADep, debe: 0, haber: retencionIVA })
+      if (retencionGanancias > 0) movimientoInputs.push({ cuentaLabel: ctaRetGanDep, debe: 0, haber: retencionGanancias })
+      if (retencionIIBB > 0) movimientoInputs.push({ cuentaLabel: ctaRetIIBBDep, debe: 0, haber: retencionIIBB })
 
       await tx.asientoContable.create({
         data: {
@@ -262,16 +308,17 @@ export class PagosService {
           tipo: "pago",
           tipoAsientoId: (await tx.tipoAsiento.findFirst({ where: { empresaId, codigo: "PAGO", activo: true } }))?.id,
           empresaId,
-          movimientos: { create: movimientos },
+          movimientos: { create: await buildMovimientosConCentro(empresaId, movimientoInputs) },
         },
       })
 
-      if (medioPago === "cheque" && cheque) {
+      if (usaCheque && cheque) {
+        const montoCheque = medios.find((m) => m.tipo === "cheque")?.monto ?? netoPagado
         await chequeService.crearDesdePago(tx, {
           ordenPagoId: op.id,
           proveedorId,
           cheque,
-          montoDefault: netoPagado,
+          montoDefault: montoCheque,
         })
       }
 
@@ -285,7 +332,7 @@ export class PagosService {
         ordenPagoId: result.id,
         proveedorId,
         montoTotal,
-        medioPago,
+        medioPago: medioPrincipal,
         cuentasPagarIds: items.map((i) => i.cuentaPagarId),
       },
       timestamp: new Date(),

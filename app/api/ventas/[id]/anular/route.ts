@@ -10,9 +10,9 @@ import { prisma } from "@/lib/prisma"
 export const POST = withAuthAndTenant(async (
   req: NextRequest,
   auth,
-  { params }: { params: Promise<{ id: string }> }
+  ctx: any
 ) => {
-  const { id } = await params
+  const { id } = await ctx.params!
   const facturaId = parseInt(id)
 
   if (isNaN(facturaId)) {

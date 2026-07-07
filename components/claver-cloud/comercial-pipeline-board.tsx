@@ -37,12 +37,16 @@ type Lead = {
   nombre: string
   negocio: string | null
   telefono: string | null
+  email: string | null
   localidad: string | null
   rubro: string | null
+  origen: string
   etapa: PipelineEtapa
   valorEstimado: number | null
   proximaAccion: string | null
   proximaFecha: string | null
+  empresaId?: number | null
+  createdAt?: string
 }
 
 const KANBAN_ETAPAS: PipelineEtapa[] = ["prospecto", "visita", "trial", "cerrado"]
@@ -83,6 +87,10 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(emptyForm)
+  const [provisioningLead, setProvisioningLead] = useState<{
+    id: number
+    targetEtapa: PipelineEtapa
+  } | null>(null)
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -99,12 +107,39 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
   }, [cargar])
 
   async function moverEtapa(id: number, etapa: PipelineEtapa) {
+    const lead = leads.find((l) => l.id === id)
+    if (lead && !lead.empresaId && (etapa === "trial" || etapa === "cerrado")) {
+      setProvisioningLead({ id, targetEtapa: etapa })
+      return
+    }
+
     const res = await fetch(`/api/claver/comercial/leads/${id}`, {
       method: "PATCH",
       headers: cloudAuthHeaders(true),
       body: JSON.stringify({ etapa }),
     })
     if (res.ok) void cargar()
+  }
+
+  async function confirmarProvisioning() {
+    if (!provisioningLead) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/claver/comercial/leads/${provisioningLead.id}`, {
+        method: "PATCH",
+        headers: cloudAuthHeaders(true),
+        body: JSON.stringify({
+          etapa: provisioningLead.targetEtapa,
+          provision: true,
+        }),
+      })
+      if (res.ok) {
+        setProvisioningLead(null)
+        void cargar()
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function crearLead() {
@@ -136,6 +171,9 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
   }
 
   const activos = leads.filter((l) => !["descartado", "provisionado"].includes(l.etapa))
+  const consultasWeb = leads.filter((l) =>
+    ["web", "web_register", "industry_demo"].includes(l.origen),
+  )
   const valorPipeline = activos.reduce((s, l) => s + (l.valorEstimado ?? 0), 0)
 
   const porEtapa = KANBAN_ETAPAS.reduce(
@@ -153,7 +191,8 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Pipeline comercial</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {activos.length} leads activos · {fmt(valorPipeline)} potencial MRR
+              {activos.length} leads activos · {consultasWeb.length} desde web · {fmt(valorPipeline)}{" "}
+              potencial MRR
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -285,8 +324,20 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
                       key={lead.id}
                       className="rounded-md border p-2.5 text-sm space-y-1.5 bg-background/60"
                     >
-                      <p className="font-medium leading-tight">{lead.nombre}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium leading-tight">{lead.nombre}</p>
+                        {["web", "web_register", "industry_demo"].includes(lead.origen) && (
+                          <Badge variant="outline" className="text-[10px] shrink-0 border-blue-500/30 text-blue-400">
+                            {lead.origen === "web_register"
+                              ? "Trial"
+                              : lead.origen === "industry_demo"
+                                ? "Demo"
+                                : "Web"}
+                          </Badge>
+                        )}
+                      </div>
                       {lead.negocio && <p className="text-xs text-muted-foreground">{lead.negocio}</p>}
+                      {lead.email && <p className="text-xs text-muted-foreground">{lead.email}</p>}
                       {lead.localidad && (
                         <p className="text-xs text-muted-foreground">{lead.localidad}</p>
                       )}
@@ -323,6 +374,26 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
           )
         })}
       </div>
+
+      <Dialog open={!!provisioningLead} onOpenChange={(open) => !open && setProvisioningLead(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Provisionar tenant desde lead</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground py-2">
+            Este prospecto no tiene tenant. Se creará la organización con los datos del lead, pack
+            según rubro y trial 14 días.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProvisioningLead(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void confirmarProvisioning()} disabled={saving}>
+              {saving ? "Provisionando…" : "Crear tenant ahora"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

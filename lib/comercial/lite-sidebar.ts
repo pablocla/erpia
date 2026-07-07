@@ -4,9 +4,11 @@
 
 import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
 
+const LITE_SHARED = ["/dashboard/mi-plan", "/dashboard/apps"]
+
 export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
-  fiado: ["/dashboard", "/dashboard/fiado", "/dashboard/clientes", "/dashboard/configuracion"],
-  cobranza: ["/dashboard", "/dashboard/cuentas-cobrar", "/dashboard/clientes", "/dashboard/configuracion"],
+  fiado: ["/dashboard", "/dashboard/fiado", "/dashboard/clientes", "/dashboard/configuracion", ...LITE_SHARED],
+  cobranza: ["/dashboard", "/dashboard/cuentas-cobrar", "/dashboard/clientes", "/dashboard/configuracion", ...LITE_SHARED],
   pos: [
     "/dashboard",
     "/dashboard/pos",
@@ -14,6 +16,7 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/productos",
     "/dashboard/clientes",
     "/dashboard/configuracion",
+    ...LITE_SHARED,
   ],
   completo: [],
   niche: [
@@ -25,6 +28,18 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/fiado",
     "/dashboard/historia-clinica",
     "/dashboard/configuracion",
+    "/dashboard/mi-plan",
+  ],
+  servicios: [
+    "/dashboard",
+    "/dashboard/ventas/presupuestos",
+    "/dashboard/ventas",
+    "/dashboard/cuentas-cobrar",
+    "/dashboard/agenda",
+    "/dashboard/clientes",
+    "/dashboard/configuracion",
+    "/dashboard/mi-plan",
+    "/dashboard/apps",
   ],
 }
 

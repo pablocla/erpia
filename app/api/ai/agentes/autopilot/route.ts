@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
+import { guardAiRequest } from "@/lib/ai"
 import { agentRegistry } from "@/lib/ai/agents"
 
 export async function POST(request: NextRequest) {
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
   if (typeof enabled !== "boolean") {
     return NextResponse.json({ error: "enabled (boolean) requerido" }, { status: 400 })
   }
+
+  const blocked = await guardAiRequest(request, ctx.auth, "mutation", { skipEntitlement: true })
+  if (blocked) return blocked
 
   const allAgents = agentRegistry.getAll()
   const results: Array<{ agentId: string; modulo: string }> = []

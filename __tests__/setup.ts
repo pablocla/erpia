@@ -102,6 +102,8 @@ const prismaModels = [
   "actaImplementacion",
   "reporteDefinicion",
   "reporteCatalogoCampo",
+  "analyticsSmartView",
+  "analyticsDashboard",
   // Marketplace
   "marketplaceOrden",
   "marketplaceProvisionJob",
@@ -114,6 +116,9 @@ const prismaModels = [
   "consorcioGasto",
   "consorcioExpensa",
   "consorcioMensaje",
+  "propiedad",
+  "contratoAlquiler",
+  "ordenProvision",
 ]
 
 for (const model of prismaModels) {

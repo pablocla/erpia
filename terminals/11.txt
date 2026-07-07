@@ -1,0 +1,15 @@
+---
+pid: 22420
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$jobs = 1..3 | ForEach-Object { Start-Job -ScriptBlock { Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body '{\"industryId\":\"almacen\"}' } }; $results = $jobs | Wait-Job | Receive-Job; $jobs | Remove-Job; $results | ForEach-Object { [PSCustomObject]@{ email=$_.usuario.email; empresaId=$_.usuario.empresaId; skus=($_.provision.skusActivados -join ','); productos=$_.provision.productosCreados } } | Format-Table -AutoSize"
+started_at: 2026-07-03T18:24:52.270Z
+running_for_ms: 1300003  
+---
+
+email                       empresaId skus productos
+-----                       --------- ---- ---------
+demo-834d6647@claver.com.ar        24             10
+demo-41f1de0c@claver.com.ar        25             10
+demo-ed18dc04@claver.com.ar        26             10
+
+

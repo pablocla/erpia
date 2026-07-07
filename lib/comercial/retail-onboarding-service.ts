@@ -15,12 +15,21 @@ import {
   skusParaActivar,
   type ModoLite,
 } from "@/lib/comercial/pack-calle-catalog"
+import {
+  persistOfertaEmpresa,
+  resolveOferta,
+  skusAdicionalesOferta,
+  vigenciaParaSku,
+} from "@/lib/comercial/ofertas-comerciales"
+import { PACK_PROPIEDAD } from "@/lib/comercial/hybrid-provision-bridge"
+import { iniciarOnboardingPropiedad } from "@/lib/comercial/propiedad-onboarding"
 
 export interface ProductoOnboardingInput {
   nombre: string
   precioVenta: number
   codigoBarras?: string
   porcentajeIva?: number
+  unidad?: string
 }
 
 export interface ApplyRetailOnboardingInput {
@@ -31,6 +40,8 @@ export interface ApplyRetailOnboardingInput {
   productos?: ProductoOnboardingInput[]
   trialDias?: number
   origen?: string
+  /** Usuario existente: solo activar SKU + modoLite sin seed de productos */
+  skipSeed?: boolean
 }
 
 export interface ApplyRetailOnboardingResult {
@@ -62,12 +73,12 @@ export function getProductosSeed(rubro: string): ProductoOnboardingInput[] {
       { nombre: "Destornillador Phillips 1/4x4", precioVenta: 3800, codigoBarras: "7791234570028", porcentajeIva: 21 },
     ],
     carniceria: [
-      { nombre: "Asado de Tira x kg", precioVenta: 7500, porcentajeIva: 10.5 },
-      { nombre: "Vacío de Ternera x kg", precioVenta: 8500, porcentajeIva: 10.5 },
+      { nombre: "Asado de Tira x kg", precioVenta: 7500, porcentajeIva: 10.5, unidad: "kg" },
+      { nombre: "Vacío de Ternera x kg", precioVenta: 8500, porcentajeIva: 10.5, unidad: "kg" },
     ],
     panaderia: [
-      { nombre: "Pan Francés x kg", precioVenta: 2000, porcentajeIva: 10.5 },
-      { nombre: "Facturas surtidas (x docena)", precioVenta: 4800, porcentajeIva: 10.5 },
+      { nombre: "Pan Francés x kg", precioVenta: 2000, porcentajeIva: 10.5, unidad: "kg" },
+      { nombre: "Facturas surtidas (x docena)", precioVenta: 4800, porcentajeIva: 10.5, unidad: "docena" },
     ],
   }
   return seeds[rubro] ?? seeds.almacen!
@@ -105,6 +116,7 @@ export async function applyRetailOnboarding(
     productos: userProducts,
     trialDias = 14,
     origen = "retail_onboarding",
+    skipSeed = false,
   } = input
 
   const pack = resolvePackCalle(engancheId)
@@ -130,20 +142,34 @@ export async function applyRetailOnboarding(
     },
   })
 
-  const skusActivados = await activarEnganche(empresaId, engancheId, origen)
+  let skusActivados = await activarEnganche(empresaId, engancheId, origen)
+  const oferta = resolveOferta(engancheId, modoLite)
+
+  for (const sku of skusAdicionalesOferta(oferta, skusActivados)) {
+    try {
+      await activarProducto(empresaId, sku, origen)
+      skusActivados.push(sku)
+    } catch (err) {
+      console.warn(`[retail-onboarding] No se pudo activar monetizado ${sku}:`, err)
+    }
+  }
 
   for (const sku of skusActivados) {
+    const vigenciaHasta = vigenciaParaSku(oferta, sku, trialExpiresAt)
     await prisma.suscripcionModulo.upsert({
       where: { empresaId_sku: { empresaId, sku } },
-      update: { activo: true, vigenciaHasta: trialExpiresAt },
-      create: { empresaId, sku, activo: true, vigenciaHasta: trialExpiresAt },
+      update: { activo: true, vigenciaHasta },
+      create: { empresaId, sku, activo: true, vigenciaHasta },
     })
   }
 
+  await persistOfertaEmpresa(empresaId, oferta.id)
+
+  let creados = 0
+  if (!skipSeed) {
   const seedList = getProductosSeed(rubro)
   const allProducts = [...seedList, ...(userProducts ?? [])]
 
-  let creados = 0
   for (const [index, p] of allProducts.entries()) {
     const generatedCode = p.codigoBarras || `ONB-${rubro.toUpperCase().slice(0, 3)}-${String(index + 1).padStart(3, "0")}`
     const existe = await prisma.producto.findFirst({
@@ -162,12 +188,13 @@ export async function applyRetailOnboarding(
           porcentajeIva: p.porcentajeIva ?? 21,
           codigoBarras: p.codigoBarras || null,
           activo: true,
-          unidad: "unidad",
+          unidad: p.unidad ?? "unidad",
           stock: 100,
         },
       })
       creados++
     }
+  }
   }
 
   const cfExiste = await prisma.cliente.findFirst({
@@ -197,15 +224,30 @@ export async function applyRetailOnboarding(
     },
   })
 
-  await setTrialExpiresAt(empresaId, trialExpiresAt, trialDias)
+  if (oferta.trialScope !== "nada") {
+    await setTrialExpiresAt(empresaId, trialExpiresAt, trialDias)
+  }
+
+  if (engancheId === PACK_PROPIEDAD) {
+    await prisma.empresa.update({
+      where: { id: empresaId },
+      data: { modoLite: "niche", rubro: "inmobiliaria" },
+    })
+    await iniciarOnboardingPropiedad(empresaId, origen)
+  }
+
+  const landingPath =
+    engancheId === PACK_PROPIEDAD
+      ? "/dashboard/nicho/consorcios"
+      : landingPathParaModoLite(modoLite)
 
   return {
-    rubro,
-    modoLite,
+    rubro: engancheId === PACK_PROPIEDAD ? "inmobiliaria" : rubro,
+    modoLite: engancheId === PACK_PROPIEDAD ? "niche" : modoLite,
     engancheId,
     productosCreados: creados,
     skusActivados,
-    landingPath: landingPathParaModoLite(modoLite),
+    landingPath,
     trialExpiresAt: trialExpiresAt.toISOString(),
   }
 }

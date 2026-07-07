@@ -223,7 +223,24 @@ export async function createRelevamiento(
     },
   })
 
-  return { relevamiento: mapRow(row), leadId }
+  const relevamiento = mapRow(row)
+
+  try {
+    const { handoffDesdeRelevamiento } = await import("@/lib/ops/relevamiento-handoff-service")
+    let leadEmpresaId: number | null = null
+    if (leadId) {
+      const lead = await db().comercialPipelineLead.findUnique({
+        where: { id: leadId },
+        select: { empresaId: true },
+      })
+      leadEmpresaId = lead?.empresaId ?? null
+    }
+    await handoffDesdeRelevamiento(relevamiento, leadId, leadEmpresaId)
+  } catch (err) {
+    console.warn("[relevamiento] handoff torre:", err)
+  }
+
+  return { relevamiento, leadId }
 }
 
 export async function countRelevamientosSemana(): Promise<number> {

@@ -3,7 +3,7 @@ import type { FilterDraft } from "@/components/reporting/FilterBar"
 import type { ReportVista } from "@/components/reporting/ViewToggle"
 import type { ReportDefinition } from "@/lib/reporting/semantic/types"
 
-type ChartTipo = "bar" | "line" | "pie" | "area"
+type ChartTipo = "bar" | "line" | "pie" | "area" | "radar" | "scatter"
 
 export interface RestoredExplorerState {
   fuente: string

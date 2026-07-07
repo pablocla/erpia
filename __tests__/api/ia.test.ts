@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests del módulo IA
  *
  * Estrategia:
@@ -58,6 +58,12 @@ vi.mock("@/lib/auth/empresa-guard", () => ({
     auth: { userId: 1, email: "admin@test.com", rol: "administrador", empresaId: 1 },
   }),
   whereEmpresa: vi.fn((id: number, extra = {}) => ({ ...extra, empresaId: id })),
+}))
+
+vi.mock("@/lib/ai/ai-route-guard", () => ({
+  guardAiRequest: vi.fn().mockResolvedValue(null),
+  guardAiStatusRequest: vi.fn().mockResolvedValue(null),
+  AI_ENTITLEMENT_SKU: "core.ia",
 }))
 
 // ── Mock de buildEmpresaContexto (evita 14 queries a Prisma en tests de negocio)
@@ -362,7 +368,7 @@ describe("generarAlertasInteligentes()", () => {
 describe("GET /api/ai/status", () => {
   it("responde 200 con estructura completa sin requerir auth", async () => {
     const { GET } = await import("@/app/api/ai/status/route")
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/ai/status") as any)
     const json = await res.json()
 
     expect(res.status).toBe(200)
@@ -377,7 +383,7 @@ describe("GET /api/ai/status", () => {
 
   it("lista rubros con features de IA (al menos un rubro con top3)", async () => {
     const { GET } = await import("@/app/api/ai/status/route")
-    const res = await GET()
+    const res = await GET(new Request("http://localhost/api/ai/status") as any)
     const json = await res.json()
 
     expect(json.rubrosConIA.length).toBeGreaterThan(0)
@@ -407,8 +413,12 @@ describe("POST /api/ai/chat", () => {
       body: JSON.stringify(body),
     })
 
-  it("retorna 403 cuando módulo IA no está activo", async () => {
-    mockPrismaClient.configuracionModulo.findUnique.mockResolvedValue({ habilitado: false })
+  it("retorna 403 cuando guardAiRequest bloquea el módulo IA", async () => {
+    const { guardAiRequest } = await import("@/lib/ai/ai-route-guard")
+    const { NextResponse } = await import("next/server")
+    vi.mocked(guardAiRequest).mockResolvedValueOnce(
+      NextResponse.json({ error: "Módulo IA no está habilitado para esta empresa", code: "IA_MODULE_DISABLED" }, { status: 403 }),
+    )
     const { POST } = await import("@/app/api/ai/chat/route")
     const res = await POST(makePost({ mensaje: "hola" }) as any)
     expect(res.status).toBe(403)

@@ -1,0 +1,15 @@
+---
+pid: 6596
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$jobs = 1..3 | ForEach-Object { Start-Job -ScriptBlock { Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body '{\"industryId\":\"veterinaria\"}' } }; $results = $jobs | Wait-Job | Receive-Job; $jobs | Remove-Job; $results | ForEach-Object { [PSCustomObject]@{ email=$_.usuario.email; empresaId=$_.usuario.empresaId; skus=($_.provision.skusActivados -join ','); golden=$_.goldenPath; productos=$_.provision.productosCreados; clientes=$_.provision.clientesCreados; modoLite=$_.provision.modoLite } } | Format-Table -AutoSize"
+started_at: 2026-07-03T18:34:34.655Z
+running_for_ms: 719995   
+---
+
+email                       empresaId skus golden                      productos clientes modoLite
+-----                       --------- ---- ------                      --------- -------- --------
+demo-f62ebccd@claver.com.ar        32      /dashboard/historia-clinica         4        3 completo
+demo-c3b361dc@claver.com.ar        33      /dashboard/historia-clinica         4        3 completo
+demo-648f20ae@claver.com.ar        34      /dashboard/historia-clinica         4        3 completo
+
+

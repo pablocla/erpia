@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
@@ -249,7 +249,7 @@ export function OpsConsole({ mode, empresaId, empresaNombre, backHref }: OpsCons
       <KpiStrip
         items={[
           { label: "Entornos Activos", value: data.resumen.entornosActivos.toString() },
-          { label: "Alertas Churn", value: "0", trend: "0%", trendUp: false },
+          { label: "Alertas Churn", value: "0", trend: 0 },
           { label: "Último Login", value: "Hace 2h" },
           { label: "MRR Activo", value: "$145.000" },
           { label: "Jobs Activos", value: data.resumen.jobsActivos.toString() },

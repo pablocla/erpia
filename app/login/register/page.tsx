@@ -1,18 +1,23 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
-import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
+import { mensajeActivarTrial, resolveActivarIntent } from "@/lib/comercial/activar-intent"
+import { activarProductoDesdeIntent } from "@/lib/comercial/activar-intent-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activarParam = searchParams.get("activar")
+  const activarIntent = resolveActivarIntent(activarParam)
   const { loginConToken } = useAuth()
 
   const [form, setForm] = useState({
@@ -52,6 +57,7 @@ export default function RegisterPage() {
           nombre: form.nombre,
           email: form.email,
           password: form.password,
+          activar: activarParam || undefined,
         }),
       })
 
@@ -63,12 +69,27 @@ export default function RegisterPage() {
       }
 
       loginConToken(data.token, data.usuario)
+
+      let dest = data.onboarding?.landingPath ?? "/dashboard"
+
+      if (activarIntent && activarParam && !data.onboarding?.landingPath) {
+        const r = await activarProductoDesdeIntent(data.token, activarParam)
+        if (!r.success) {
+          setError(r.error ?? "Cuenta creada pero no se pudo activar el producto. Iniciá sesión e intentá de nuevo.")
+          return
+        }
+        dest = r.landingPath ?? activarIntent.landingPath
+      }
+
       try {
         localStorage.setItem("claver_fresh_signup", "1")
+        if (activarIntent) {
+          localStorage.setItem("claver_product_marca", activarIntent.marca)
+        }
       } catch {
         /* ignore */
       }
-      const dest = await resolvePostLoginPathAsync(data.token, data.usuario.rol)
+
       router.push(dest)
     } catch {
       setError("Error de conexión")
@@ -77,15 +98,34 @@ export default function RegisterPage() {
     }
   }
 
+  const loginHref = activarParam
+    ? `/login?activar=${encodeURIComponent(activarParam)}`
+    : "/login"
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Crear cuenta</CardTitle>
-          <CardDescription>Registrá tu empresa para empezar a usar el sistema</CardDescription>
+          <CardTitle>
+            {activarIntent ? `Probar ${activarIntent.marca}` : "Crear cuenta"}
+          </CardTitle>
+          <CardDescription>
+            {activarIntent
+              ? `${activarIntent.lema ?? activarIntent.productName} — ${mensajeActivarTrial(activarParam)}`
+              : "Registrá tu empresa para empezar a usar el sistema"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {activarIntent && (
+              <Alert className="border-emerald-500/30 bg-emerald-500/5">
+                <AlertDescription className="text-sm text-muted-foreground">
+                  Al crear la cuenta activamos solo{" "}
+                  <span className="font-medium text-foreground">{activarIntent.productName}</span>.
+                  No vas a ver el ERP completo.
+                </AlertDescription>
+              </Alert>
+            )}
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -156,18 +196,40 @@ export default function RegisterPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={cargando}>
-              {cargando ? "Creando cuenta..." : "Crear cuenta"}
+              {cargando
+                ? "Creando cuenta..."
+                : activarIntent
+                  ? `Empezar con ${activarIntent.marca}`
+                  : "Crear cuenta"}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               ¿Ya tenés cuenta?{" "}
-              <a href="/login" className="text-primary hover:underline">
+              <Link href={loginHref} className="text-primary hover:underline">
                 Iniciá sesión
-              </a>
+              </Link>
             </p>
           </form>
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardDescription>Cargando…</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+    >
+      <RegisterPageContent />
+    </Suspense>
   )
 }

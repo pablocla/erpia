@@ -4,6 +4,7 @@ import { useState } from "react"
 import { QrCode, FileText, UploadCloud, LogOut, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { parseAfipQR, type FacturaAfipQR } from "@/lib/qr-afip/scanner"
@@ -129,7 +130,7 @@ export default function PortalProveedores() {
               <Textarea 
                 placeholder="https://www.afip.gob.ar/fe/qr/?p=..." 
                 value={qrText}
-                onChange={e => setQrText(e.target.value)}
+                onChange={(e: any) => setQrText(e.target.value)}
                 className="font-mono text-xs"
                 rows={4}
               />

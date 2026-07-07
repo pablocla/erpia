@@ -105,7 +105,7 @@ export function useAuth() {
       setToken(data.token)
       setUsuario(data.usuario)
       // Sync to Zustand store
-      useAuthStore.getState().login(data.token, data.usuario)
+      useAuthStore.getState().login(data.token, { ...data.usuario, id: String(data.usuario.id) } as unknown as import("@/lib/stores/auth-store").AuthUser)
       return { success: true, usuario: data.usuario, token: data.token as string }
     }
 
@@ -130,7 +130,7 @@ export function useAuth() {
     setToken(tokenNuevo)
     setUsuario(usuarioData)
     // Sync to Zustand store
-    useAuthStore.getState().login(tokenNuevo, usuarioData)
+    useAuthStore.getState().login(tokenNuevo, { ...usuarioData, id: String(usuarioData.id) } as unknown as import("@/lib/stores/auth-store").AuthUser)
   }
 
   return {

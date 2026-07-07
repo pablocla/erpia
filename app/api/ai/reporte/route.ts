@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { generarReporte, isIAEnabled } from "@/lib/ai"
+import { generarReporte, guardAiRequest } from "@/lib/ai"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
@@ -15,9 +15,8 @@ export async function GET(request: NextRequest) {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    if (!(await isIAEnabled(ctx.auth.empresaId))) {
-      return NextResponse.json({ error: "Módulo IA no está habilitado para esta empresa" }, { status: 403 })
-    }
+    const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+    if (blocked) return blocked
 
     const url = new URL(request.url)
     const periodoRaw = url.searchParams.get("periodo") ?? "dia"

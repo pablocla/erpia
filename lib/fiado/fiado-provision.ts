@@ -20,7 +20,8 @@ export async function activarLibretaFiado(empresaId: number) {
     },
   })
 
-  await any.log({
+  await persistSistemaLog({
+    empresaId,
     severidad: "error",
     categoria: "FIADO_PROVISION",
     mensaje: "Libreta Fiado activada — defaults de configuración aplicados",

@@ -1,4 +1,4 @@
-import { BRAND_EMAIL_FOOTER, BRAND_FULL, CLAVER_GROUP, CLAVERP_PRODUCT } from "@/lib/brand"
+import { BRAND_EMAIL_FOOTER, BRAND_FULL, brandByLine, CLAVERP_PRODUCT } from "@/lib/brand"
 
 const BRAND_PRIMARY = "#1D4ED8"
 const BRAND_ACCENT = "#F59E0B"
@@ -23,7 +23,7 @@ export function emailLayout(content: string, options?: { preheader?: string }): 
               <table width="100%"><tr>
                 <td>
                   <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">${CLAVERP_PRODUCT.name}</p>
-                  <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.85);">by ${CLAVER_GROUP.name}</p>
+                  <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.85);">${brandByLine(CLAVERP_PRODUCT.name) ?? CLAVERP_PRODUCT.tagline}</p>
                 </td>
                 <td align="right" valign="middle">
                   <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${BRAND_ACCENT};"></span>

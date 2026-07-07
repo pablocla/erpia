@@ -1,7 +1,9 @@
 "use client"
 
 /**
- * Mobile Bottom Navigation — navegación por rol en pantallas < 768px.
+ * Mobile Bottom Navigation — pestañas inferiores (< 768px).
+ * Sub-SaaS activo: tabs de getActiveProductShell (Fiado, Cobrá, Turnos…).
+ * ERP completo: navegación por rol (cajero, depósito, default).
  */
 
 import Link from "next/link"
@@ -20,17 +22,25 @@ import {
   Scissors,
   Store,
   ScanLine,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useState, useMemo } from "react"
+import { getActiveProductShell } from "@/lib/comercial/product-shell"
+import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
 
 type NavItem = {
   href: string
   icon: React.ElementType
   label: string
   badge?: boolean
+}
+
+interface MobileBottomNavProps {
+  modoLite?: ModoLite | string
+  productosSku?: Record<string, boolean> | null
 }
 
 const MORE_ITEMS_DEFAULT = [
@@ -84,7 +94,7 @@ function moreItemsForRol(rol: string) {
   return MORE_ITEMS_DEFAULT
 }
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ modoLite = "completo", productosSku = null }: MobileBottomNavProps) {
   const pathname = usePathname()
   const rol = useAuthStore((s) => s.user?.rol ?? "")
   const [showMore, setShowMore] = useState(false)
@@ -93,11 +103,27 @@ export function MobileBottomNav() {
   )
   const pendingCount = aprobData?.data?.length ?? 0
 
-  const items = useMemo(
-    () => NAV_BY_ROL[rol] ?? DEFAULT_ITEMS,
-    [rol]
+  const shell = useMemo(
+    () => getActiveProductShell(modoLite, productosSku),
+    [modoLite, productosSku],
   )
-  const moreItems = useMemo(() => moreItemsForRol(rol), [rol])
+
+  const items = useMemo(() => {
+    if (shell && shell.tabs.length > 0) return shell.tabs
+    return NAV_BY_ROL[rol] ?? DEFAULT_ITEMS
+  }, [rol, shell])
+
+  const moreItems = useMemo(() => {
+    if (shell) {
+      return [
+        { href: "/dashboard/mi-plan", icon: Wallet, label: "Mi plan" },
+        { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
+        { href: "/dashboard/apps", icon: Package, label: "Más apps" },
+        { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      ]
+    }
+    return moreItemsForRol(rol)
+  }, [shell, rol])
 
   return (
     <>
@@ -160,7 +186,7 @@ export function MobileBottomNav() {
               >
                 <div className="relative">
                   <item.icon className={cn("h-5 w-5", isActive && "drop-shadow-sm")} />
-                  {item.badge && pendingCount > 0 && (
+                  {(item as any).badge && pendingCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
                       {pendingCount > 9 ? "9+" : pendingCount}
                     </span>

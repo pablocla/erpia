@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { withAuthAndTenant } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { resolveSku } from "@/lib/marketplace/catalog-resolver"
 import { provisionOrden } from "@/lib/marketplace/provision-service"
-import { initialMarketplaceOrdenEstado } from "@/lib/billing/marketplace-checkout-policy"
+import { initialordenProvisionEstado } from "@/lib/billing/marketplace-checkout-policy"
 
 export const POST = withAuthAndTenant(async (request, auth) => {
   try {
@@ -24,9 +24,9 @@ export const POST = withAuthAndTenant(async (request, auth) => {
     })
 
     const totalArs = normalized.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
-    const estado = initialMarketplaceOrdenEstado()
+    const estado = initialordenProvisionEstado()
 
-    const orden = await prisma.marketplaceOrden.create({
+    const orden = await prisma.ordenProvision.create({
       data: {
         empresaId: auth.empresaId,
         estado,

@@ -146,6 +146,33 @@ export const PAGE_VARIANTS: Variants = {
   },
 }
 
+/** Transición mínima para módulos operativos (POS, stock, facturas…) */
+export const PAGE_VARIANTS_LITE: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.1 } },
+  exit: { opacity: 0, transition: { duration: 0.08 } },
+}
+
+const OPERATIONAL_ROUTE_PREFIXES = [
+  "/dashboard/pos",
+  "/dashboard/caja",
+  "/dashboard/picking",
+  "/dashboard/ventas",
+  "/dashboard/compras",
+  "/dashboard/stock",
+  "/dashboard/facturas",
+  "/dashboard/remitos",
+  "/dashboard/productos",
+  "/dashboard/clientes",
+  "/dashboard/proveedores",
+] as const
+
+export function isOperationalDashboardRoute(pathname: string): boolean {
+  return OPERATIONAL_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+}
+
 // ─── Number counter ─────────────────────────────────────────────────────
 export const NUMBER_SPRING: Transition = {
   type: "spring",

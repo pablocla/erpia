@@ -13,15 +13,27 @@ export async function POST(request: NextRequest) {
 
     let clienteId: number
     let items: { cuentaCobrarId: number; monto: number }[]
-    let medioPago: "efectivo" | "transferencia" | "cheque" | "tarjeta"
+    let medioPago: "efectivo" | "transferencia" | "cheque" | "tarjeta" | undefined
+    let medios: typeof body.medios
     let fecha: string | undefined
     let observaciones: string | undefined
     let cheque: typeof body.cheque
     let retenciones: typeof body.retenciones
+    let calcularRetencionesAuto: boolean | undefined
 
     const full = cobroSchema.safeParse(body)
     if (full.success) {
-      ({ clienteId, items, medioPago, fecha, observaciones, cheque, retenciones } = full.data)
+      ({
+        clienteId,
+        items,
+        medioPago,
+        medios,
+        fecha,
+        observaciones,
+        cheque,
+        retenciones,
+        calcularRetencionesAuto,
+      } = full.data)
     } else {
       const legacy = cobroLegacySchema.safeParse(body)
       if (!legacy.success) {
@@ -50,10 +62,12 @@ export async function POST(request: NextRequest) {
       empresaId: ctx.auth.empresaId,
       items,
       medioPago,
+      medios,
       fecha: fecha ? new Date(fecha) : undefined,
       observaciones,
       cheque,
       retenciones,
+      calcularRetencionesAuto,
     })
 
     return NextResponse.json(result, { status: 201 })

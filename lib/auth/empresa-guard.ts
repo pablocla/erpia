@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Multi-tenant empresaId guard — Sprint 15
  * Centralized helper for enforcing empresaId isolation in all API routes.
  * Every authenticated route MUST call getEmpresaId() or verificarPropietario().
@@ -7,6 +7,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { logError } from "@/lib/monitoring/error-logger"
 import { verificarToken } from "./middleware"
+import { isTrialExpired } from "@/lib/comercial/trial-guard"
+import { reglaSkuParaRuta } from "@/lib/comercial/api-sku-entitlements"
+import { canWriteAnySku } from "@/lib/comercial/comercial-access-service"
 
 export interface AuthContext {
   userId: number
@@ -47,6 +50,52 @@ export async function getAuthContext(
   if (!usuario.empresaId) {
     return { ok: false, response: NextResponse.json({ error: "Token sin empresaId" }, { status: 403 }) }
   }
+
+  // Enforcement Trial
+  const pathname = request.nextUrl.pathname
+  const isExemptRoute =
+    pathname.startsWith("/api/config/trial") ||
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/billing/") ||
+    pathname.startsWith("/api/comercial/activar-intent") ||
+    pathname.startsWith("/api/marketplace/checkout") ||
+    pathname.startsWith("/api/config/empresa")
+
+  if (!isExemptRoute && request.method !== "GET") {
+    const reglaSku = reglaSkuParaRuta(pathname, request.method)
+    if (reglaSku) {
+      const puedeEscribir = await canWriteAnySku(
+        usuario.empresaId,
+        reglaSku.skus,
+        reglaSku.mode ?? "all",
+      )
+      if (!puedeEscribir) {
+        return {
+          ok: false,
+          response: NextResponse.json(
+            {
+              error: reglaSku.mensaje ?? "Módulo no disponible en tu plan actual.",
+              code: "SKU_ENTITLEMENT_DENIED",
+              skus: reglaSku.skus,
+            },
+            { status: 402 },
+          ),
+        }
+      }
+    } else {
+      const expired = await isTrialExpired(usuario.empresaId)
+      if (expired) {
+        return {
+          ok: false,
+          response: NextResponse.json(
+            { error: "Trial expirado. Por favor, regularice su suscripción.", code: "TRIAL_EXPIRED" },
+            { status: 402 },
+          ),
+        }
+      }
+    }
+  }
+
   return {
     ok: true,
     auth: {
@@ -97,7 +146,7 @@ export function withAuthAndTenant<P extends Record<string, string> = Record<stri
   handler: AuthedRouteHandler<P>,
   opts?: WithAuthOptions,
 ) {
-  return async (req: NextRequest, ctx: RouteContext<P> = {}) => {
+  return async (req: NextRequest, ctx: any) => {
     try {
       const guard = await getAuthContext(req)
       if (!guard.ok) return guard.response

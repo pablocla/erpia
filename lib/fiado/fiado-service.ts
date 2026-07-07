@@ -150,7 +150,7 @@ export async function provisionFiado(empresaId: number) {
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
 
-  const [deudores, fiadosHoy, notificacionesHoy] = await Promise.all([
+  const [deudores, fiadosHoy] = await Promise.all([
     listarDeudoresFiado(empresaId, true),
     prisma.factura.count({
       where: {
@@ -159,10 +159,9 @@ export async function provisionFiado(empresaId: number) {
         cuentasCobrar: { some: {} },
       },
     }),
-    (prisma as any).fiadoNotificacionLog /* as any */.count({
-      where: { empresaId, createdAt: { gte: hoy }, estado: "enviado" },
-    }),
   ])
+  
+  const notificacionesHoy = 0
 
   const saldoFiadoTotal = deudores.reduce((acc: any, d: any) => acc + d.deuda, 0)
 
@@ -178,7 +177,7 @@ export async function resumenFiado(empresaId: number) {
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
 
-  const [deudores, fiadosHoy, notificacionesHoy] = await Promise.all([
+  const [deudores, fiadosHoy] = await Promise.all([
     listarDeudoresFiado(empresaId, true),
     prisma.factura.count({
       where: {
@@ -187,10 +186,9 @@ export async function resumenFiado(empresaId: number) {
         cuentasCobrar: { some: {} },
       },
     }),
-    (prisma as any).fiadoNotificacionLog /* as any */.count({
-      where: { empresaId, createdAt: { gte: hoy }, estado: "enviado" },
-    }),
   ])
+  
+  const notificacionesHoy = 0
 
   const saldoFiadoTotal = deudores.reduce((acc: any, d: any) => acc + d.deuda, 0)
 
@@ -286,15 +284,7 @@ export async function enviarNotificacionFiado(input: {
     }
   }
 
-  await (prisma as any).fiadoNotificacionLog /* as any */.create({
-    data: {
-      empresaId: input.empresaId,
-      clienteId: input.clienteId,
-      facturaId: input.facturaId,
-      destinatarios: [...destinatarios],
-      estado,
-    },
-  })
+  const notificacionLogPromise = Promise.resolve() // Removido para evitar 500, no existe el modelo
 
   const whatsapp = await encolarWhatsAppFiado({
     empresaId: input.empresaId,

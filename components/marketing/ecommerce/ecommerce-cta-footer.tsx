@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, MapPin, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -9,43 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollReveal } from "@/components/ui/motion"
-import { useToast } from "@/hooks/use-toast"
+import { useVentasConsulta } from "@/hooks/use-ventas-consulta"
 import { CLAVER_GROUP, CLAVERP_PRODUCT, BRAND_NAME } from "@/lib/brand"
 
 export function EcommerceCtaFooter() {
-  const { toast } = useToast()
-  const [form, setForm] = useState({
-    nombre: "",
-    email: "",
-    telefono: "",
-    rubro: "",
-    mensaje: ""
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.nombre.trim() || !form.email.trim()) {
-      toast({
-        title: "Faltan datos",
-        description: "Por favor completá tu nombre y correo electrónico.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    toast({
-      title: "¡Contacto enviado!",
-      description: "Gracias por tu interés. Un asesor comercial se comunicará con vos en breve."
-    })
-
-    setForm({
-      nombre: "",
-      email: "",
-      telefono: "",
-      rubro: "",
-      mensaje: ""
-    })
-  }
+  const { form, setForm, saving, submit } = useVentasConsulta("demo")
 
   return (
     <section className="bg-slate-950 px-4 py-24 text-white sm:px-6">
@@ -101,7 +68,13 @@ export function EcommerceCtaFooter() {
                 <CardTitle className="text-white text-lg">Hablemos con un asesor</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    void submit({ pagina: "/claver/ecommerce", tipo: "demo" })
+                  }}
+                  className="space-y-4"
+                >
                   <Input
                     placeholder="Nombre y Apellido"
                     value={form.nombre}
@@ -136,8 +109,12 @@ export function EcommerceCtaFooter() {
                     className="border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-amber-500"
                     rows={3}
                   />
-                  <Button type="submit" className="w-full bg-amber-600 text-white hover:bg-amber-500">
-                    Enviar consulta
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full bg-amber-600 text-white hover:bg-amber-500"
+                  >
+                    {saving ? "Enviando…" : "Enviar consulta"}
                   </Button>
                 </form>
               </CardContent>

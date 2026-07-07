@@ -1,0 +1,807 @@
+---
+pid: 38072
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx next build"
+started_at: 2026-07-07T01:58:50.656Z
+running_for_ms: 18395007 
+---
+   ▲ Next.js 15.5.18
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ✓ reactCompiler
+     · serverActions
+     ✓ viewTransition
+
+   Creating an optimized production build ...
+   Skipping validation of types
+   Skipping linting
+ ⚠ Compiled with warnings in 31.7s
+
+./app/dashboard/bancos/cheques/page.tsx
+Attempted import error: 'formatDate' is not exported from '@/lib/utils' (imported as 'formatDate').
+
+Import trace for requested module:
+./app/dashboard/bancos/cheques/page.tsx
+
+./app/dashboard/bancos/cheques/page.tsx
+Attempted import error: 'formatCurrency' is not exported from '@/lib/utils' (imported as 'formatCurrency').
+
+Import trace for requested module:
+./app/dashboard/bancos/cheques/page.tsx
+
+./app/dashboard/compras/facturar-remitos/page.tsx
+Attempted import error: 'formatDate' is not exported from '@/lib/utils' (imported as 'formatDate').
+
+Import trace for requested module:
+./app/dashboard/compras/facturar-remitos/page.tsx
+
+./app/dashboard/bancos/cheques/page.tsx
+Attempted import error: 'formatDate' is not exported from '@/lib/utils' (imported as 'formatDate').
+
+Import trace for requested module:
+./app/dashboard/bancos/cheques/page.tsx
+
+./app/dashboard/bancos/cheques/page.tsx
+Attempted import error: 'formatCurrency' is not exported from '@/lib/utils' (imported as 'formatCurrency').
+
+Import trace for requested module:
+./app/dashboard/bancos/cheques/page.tsx
+
+./app/dashboard/compras/facturar-remitos/page.tsx
+Attempted import error: 'formatDate' is not exported from '@/lib/utils' (imported as 'formatDate').
+
+Import trace for requested module:
+./app/dashboard/compras/facturar-remitos/page.tsx
+
+./app/dashboard/impuestos/layout.tsx
+Attempted import error: 'getAuthContextServer' is not exported from '@/lib/auth/empresa-guard' (imported as 'getAuthContextServer').
+
+Import trace for requested module:
+./app/dashboard/impuestos/layout.tsx
+
+   Collecting page data ...
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+   Generating static pages (0/596) ...
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+[AgentSystem] 10 agentes registrados, 4 eventos conectados
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /vendedor. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /portal. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (149/596) 
+   Generating static pages (298/596) 
+   Generating static pages (447/596) 
+ ✓ Generating static pages (596/596)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                Size  First Load JS
+┌ ƒ /                                                     879 B         253 kB
+├ ƒ /_not-found                                            1 kB         117 kB
+├ ƒ /.well-known/opo.json                               1.47 kB         118 kB
+├ ƒ /agenda-online/[empresaId]                          6.29 kB         162 kB
+├ ƒ /api/afip/caea                                      1.47 kB         118 kB
+├ ƒ /api/afip/emitir-factura                            1.47 kB         118 kB
+├ ƒ /api/afip/padron                                    1.47 kB         118 kB
+├ ƒ /api/afip/reintentar-cae                            1.47 kB         118 kB
+├ ƒ /api/afip/setup-homologacion                        1.47 kB         118 kB
+├ ƒ /api/afip/status                                    1.47 kB         118 kB
+├ ƒ /api/afip/subir-certificados                        1.47 kB         118 kB
+├ ƒ /api/afip/test-conexion                             1.47 kB         118 kB
+├ ƒ /api/afip/tipos-comprobante                         1.47 kB         118 kB
+├ ƒ /api/afip/wscdc                                     1.47 kB         118 kB
+├ ƒ /api/agenda                                         1.47 kB         118 kB
+├ ƒ /api/agenda-publica/[empresaId]                     1.47 kB         118 kB
+├ ƒ /api/agenda/[id]                                    1.47 kB         118 kB
+├ ƒ /api/agro/balanza                                   1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/aplicaciones                     1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/ciclos                           1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/ciclos/[id]/etapa                1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/cosechas                         1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/dashboard                        1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/geneticas                        1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/insumos                          1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/perfil                           1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/salas                            1.47 kB         118 kB
+├ ƒ /api/agro/cannabis/suelo                            1.47 kB         118 kB
+├ ƒ /api/agro/clima                                     1.47 kB         118 kB
+├ ƒ /api/agro/clima/[loteId]                            1.47 kB         118 kB
+├ ƒ /api/agro/contratos                                 1.47 kB         118 kB
+├ ƒ /api/agro/dashboard                                 1.47 kB         118 kB
+├ ƒ /api/agro/granos                                    1.47 kB         118 kB
+├ ƒ /api/agro/ia/recomendar-riego                       1.47 kB         118 kB
+├ ƒ /api/agro/liquidaciones                             1.47 kB         118 kB
+├ ƒ /api/agro/lotes                                     1.47 kB         118 kB
+├ ƒ /api/agro/mapa/[loteId]                             1.47 kB         118 kB
+├ ƒ /api/agro/maquinas                                  1.47 kB         118 kB
+├ ƒ /api/agro/maquinas/sync                             1.47 kB         118 kB
+├ ƒ /api/agro/ndvi                                      1.47 kB         118 kB
+├ ƒ /api/agro/ndvi/[loteId]                             1.47 kB         118 kB
+├ ƒ /api/agro/pizarra                                   1.47 kB         118 kB
+├ ƒ /api/agro/productor/resumen                         1.47 kB         118 kB
+├ ƒ /api/agro/riego/[zonaId]/programa                   1.47 kB         118 kB
+├ ƒ /api/agro/riego/[zonaId]/trigger                    1.47 kB         118 kB
+├ ƒ /api/agro/riego/zonas                               1.47 kB         118 kB
+├ ƒ /api/agro/sensores                                  1.47 kB         118 kB
+├ ƒ /api/agro/sensores/[sensorId]/lecturas              1.47 kB         118 kB
+├ ƒ /api/agro/sensores/ingest                           1.47 kB         118 kB
+├ ƒ /api/agro/silos                                     1.47 kB         118 kB
+├ ƒ /api/ai/agentes                                     1.47 kB         118 kB
+├ ƒ /api/ai/agentes/autopilot                           1.47 kB         118 kB
+├ ƒ /api/ai/agentes/batch                               1.47 kB         118 kB
+├ ƒ /api/ai/agentes/logs                                1.47 kB         118 kB
+├ ƒ /api/ai/alertas                                     1.47 kB         118 kB
+├ ƒ /api/ai/anomalias                                   1.47 kB         118 kB
+├ ƒ /api/ai/chat                                        1.47 kB         118 kB
+├ ƒ /api/ai/clasificar-producto                         1.47 kB         118 kB
+├ ƒ /api/ai/cobranza                                    1.47 kB         118 kB
+├ ƒ /api/ai/config-notificaciones                       1.47 kB         118 kB
+├ ƒ /api/ai/onboarding                                  1.47 kB         118 kB
+├ ƒ /api/ai/prediccion-compras                          1.47 kB         118 kB
+├ ƒ /api/ai/preguntar                                   1.47 kB         118 kB
+├ ƒ /api/ai/presupuesto                                 1.47 kB         118 kB
+├ ƒ /api/ai/proyeccion                                  1.47 kB         118 kB
+├ ƒ /api/ai/reporte                                     1.47 kB         118 kB
+├ ƒ /api/ai/status                                      1.47 kB         118 kB
+├ ƒ /api/ai/telegram/vincular                           1.47 kB         118 kB
+├ ƒ /api/ai/valor-rubro                                 1.47 kB         118 kB
+├ ƒ /api/ai/whatsapp-mensajes                           1.47 kB         118 kB
+├ ƒ /api/alertas                                        1.47 kB         118 kB
+├ ƒ /api/almacen-rosario/config                         1.47 kB         118 kB
+├ ƒ /api/almacen-rosario/importar-lista                 1.47 kB         118 kB
+├ ƒ /api/almacen-rosario/modulos                        1.47 kB         118 kB
+├ ƒ /api/almacen-rosario/resumen                        1.47 kB         118 kB
+├ ƒ /api/analytics/kpis                                 1.47 kB         118 kB
+├ ƒ /api/aprobaciones                                   1.47 kB         118 kB
+├ ƒ /api/auth/cambiar-password                          1.47 kB         118 kB
+├ ƒ /api/auth/demo                                      1.47 kB         118 kB
+├ ƒ /api/auth/forgot-password                           1.47 kB         118 kB
+├ ƒ /api/auth/invite                                    1.47 kB         118 kB
+├ ƒ /api/auth/login                                     1.47 kB         118 kB
+├ ƒ /api/auth/me                                        1.47 kB         118 kB
+├ ƒ /api/auth/refresh                                   1.47 kB         118 kB
+├ ƒ /api/auth/register                                  1.47 kB         118 kB
+├ ƒ /api/auth/reset-password                            1.47 kB         118 kB
+├ ƒ /api/auth/signup                                    1.47 kB         118 kB
+├ ƒ /api/automation/actions/create-task                 1.47 kB         118 kB
+├ ƒ /api/automation/actions/create-user-virtual         1.47 kB         118 kB
+├ ƒ /api/automation/actions/trigger-playbook            1.47 kB         118 kB
+├ ƒ /api/automation/catalog                             1.47 kB         118 kB
+├ ƒ /api/automation/config                              1.47 kB         118 kB
+├ ƒ /api/automation/events                              1.47 kB         118 kB
+├ ƒ /api/automation/executions                          1.47 kB         118 kB
+├ ƒ /api/automation/playbooks/[key]/run                 1.47 kB         118 kB
+├ ƒ /api/automation/poll                                1.47 kB         118 kB
+├ ƒ /api/automation/seed                                1.47 kB         118 kB
+├ ƒ /api/automation/test                                1.47 kB         118 kB
+├ ƒ /api/automation/webhooks/inbound                    1.47 kB         118 kB
+├ ƒ /api/banco                                          1.47 kB         118 kB
+├ ƒ /api/banco/conciliar                                1.47 kB         118 kB
+├ ƒ /api/banco/transferencias                           1.47 kB         118 kB
+├ ƒ /api/banco/transferencias/[id]                      1.47 kB         118 kB
+├ ƒ /api/bancos/cheques                                 1.47 kB         118 kB
+├ ƒ /api/bancos/cheques/bulk-action                     1.47 kB         118 kB
+├ ƒ /api/billing/create-subscription                    1.47 kB         118 kB
+├ ƒ /api/billing/subscribe                              1.47 kB         118 kB
+├ ƒ /api/caja                                           1.47 kB         118 kB
+├ ƒ /api/caja/[id]                                      1.47 kB         118 kB
+├ ƒ /api/caja/[id]/arqueo                               1.47 kB         118 kB
+├ ƒ /api/caja/movimientos                               1.47 kB         118 kB
+├ ƒ /api/calidad                                        1.47 kB         118 kB
+├ ƒ /api/campos-personalizados                          1.47 kB         118 kB
+├ ƒ /api/campos-personalizados/valores                  1.47 kB         118 kB
+├ ƒ /api/cashflow                                       1.47 kB         118 kB
+├ ƒ /api/categorias                                     1.47 kB         118 kB
+├ ƒ /api/categorias/[id]                                1.47 kB         118 kB
+├ ƒ /api/centro-alertas                                 1.47 kB         118 kB
+├ ƒ /api/cheques                                        1.47 kB         118 kB
+├ ƒ /api/cheques/[id]                                   1.47 kB         118 kB
+├ ƒ /api/claver-cliente/overview                        1.47 kB         118 kB
+├ ƒ /api/claver-cliente/scrum                           1.47 kB         118 kB
+├ ƒ /api/claver-cliente/tickets/[id]                    1.47 kB         118 kB
+├ ƒ /api/claver-cliente/tickets/[id]/comentarios        1.47 kB         118 kB
+├ ƒ /api/claver-cloud/protheus-api/catalog              1.47 kB         118 kB
+├ ƒ /api/claver-cloud/protheus-api/introspect           1.47 kB         118 kB
+├ ƒ /api/claver-cloud/provisioning/orders               1.47 kB         118 kB
+├ ƒ /api/claver/analista/status                         1.47 kB         118 kB
+├ ƒ /api/claver/billing                                 1.47 kB         118 kB
+├ ƒ /api/claver/ceo/tareas                              1.47 kB         118 kB
+├ ƒ /api/claver/comercial/hojas-ruta                    1.47 kB         118 kB
+├ ƒ /api/claver/comercial/hojas-ruta/[id]               1.47 kB         118 kB
+├ ƒ /api/claver/comercial/hojas-ruta/paradas/[id]       1.47 kB         118 kB
+├ ƒ /api/claver/comercial/leads                         1.47 kB         118 kB
+├ ƒ /api/claver/comercial/leads/[id]                    1.47 kB         118 kB
+├ ƒ /api/claver/comercial/mapa                          1.47 kB         118 kB
+├ ƒ /api/claver/comercial/relevamientos                 1.47 kB         118 kB
+├ ƒ /api/claver/comercial/relevamientos/[id]            1.47 kB         118 kB
+├ ƒ /api/claver/comercial/relevamientos/[id]/provision  1.47 kB         118 kB
+├ ƒ /api/claver/command-center                          1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones                        1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones/[id]                   1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones/[id]/actas             1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones/[id]/export            1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones/[id]/scrum             1.47 kB         118 kB
+├ ƒ /api/claver/implementaciones/[id]/stakeholders      1.47 kB         118 kB
+├ ƒ /api/claver/marketplace/catalog                     1.47 kB         118 kB
+├ ƒ /api/claver/marketplace/tareas                      1.47 kB         118 kB
+├ ƒ /api/claver/marketplace/tareas/[id]                 1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]                         1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]/entornos/[id]           1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]/jobs                    1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]/logs                    1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]/pipelines               1.47 kB         118 kB
+├ ƒ /api/claver/ops/[empresaId]/sync                    1.47 kB         118 kB
+├ ƒ /api/claver/ops/asignaciones                        1.47 kB         118 kB
+├ ƒ /api/claver/ops/asignaciones/[id]                   1.47 kB         118 kB
+├ ƒ /api/claver/ops/clientes                            1.47 kB         118 kB
+├ ƒ /api/claver/ops/metricas                            1.47 kB         118 kB
+├ ƒ /api/claver/ops/readiness/[empresaId]               1.47 kB         118 kB
+├ ƒ /api/claver/ops/registros-web                       1.47 kB         118 kB
+├ ƒ /api/claver/reportes                                1.47 kB         118 kB
+├ ƒ /api/claver/reportes/[id]                           1.47 kB         118 kB
+├ ƒ /api/claver/reportes/[id]/comentarios               1.47 kB         118 kB
+├ ƒ /api/claver/reportes/empresas                       1.47 kB         118 kB
+├ ƒ /api/claver/reportes/metricas                       1.47 kB         118 kB
+├ ƒ /api/claver/superadmin/dashboard                    1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]                     1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/afip-produccion     1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/billing             1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/config              1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/impersonate         1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/legacy-bridge       1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/legacy-bridge/test  1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/ops                 1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/playbooks           1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/playbooks/custom    1.47 kB         118 kB
+├ ƒ /api/claver/tenants/[empresaId]/productos           1.47 kB         118 kB
+├ ƒ /api/claver/uat/[empresaId]                         1.47 kB         118 kB
+├ ƒ /api/clientes                                       1.47 kB         118 kB
+├ ƒ /api/clientes/[id]                                  1.47 kB         118 kB
+├ ƒ /api/clientes/lista-precio                          1.47 kB         118 kB
+├ ƒ /api/cobradores                                     1.47 kB         118 kB
+├ ƒ /api/cobradores/[id]                                1.47 kB         118 kB
+├ ƒ /api/cocina                                         1.47 kB         118 kB
+├ ƒ /api/comercial/activar-intent                       1.47 kB         118 kB
+├ ƒ /api/comercial/consultas                            1.47 kB         118 kB
+├ ƒ /api/comisiones                                     1.47 kB         118 kB
+├ ƒ /api/compras                                        1.47 kB         118 kB
+├ ƒ /api/compras/[id]                                   1.47 kB         118 kB
+├ ƒ /api/compras/ordenes                                1.47 kB         118 kB
+├ ƒ /api/compras/ordenes/[id]                           1.47 kB         118 kB
+├ ƒ /api/compras/recepciones                            1.47 kB         118 kB
+├ ƒ /api/compras/recepciones/[id]                       1.47 kB         118 kB
+├ ƒ /api/compras/remito-a-factura                       1.47 kB         118 kB
+├ ƒ /api/config/afip-cert                               1.47 kB         118 kB
+├ ƒ /api/config/asientos                                1.47 kB         118 kB
+├ ƒ /api/config/auditoria                               1.47 kB         118 kB
+├ ƒ /api/config/backoffice-madurez                      1.47 kB         118 kB
+├ ƒ /api/config/caea                                    1.47 kB         118 kB
+├ ƒ /api/config/campos-personalizados                   1.47 kB         118 kB
+├ ƒ /api/config/cotizaciones                            1.47 kB         118 kB
+├ ƒ /api/config/country-context                         1.47 kB         118 kB
+├ ƒ /api/config/empresa                                 1.47 kB         118 kB
+├ ƒ /api/config/features                                1.47 kB         118 kB
+├ ƒ /api/config/fiscal-emision                          1.47 kB         118 kB
+├ ƒ /api/config/fiscal-mipyme                           1.47 kB         118 kB
+├ ƒ /api/config/maestros                                1.47 kB         118 kB
+├ ƒ /api/config/modulos                                 1.47 kB         118 kB
+├ ƒ /api/config/numeradores                             1.47 kB         118 kB
+├ ƒ /api/config/onboarding-retail                       1.47 kB         118 kB
+├ ƒ /api/config/onboarding/apply                        1.47 kB         118 kB
+├ ƒ /api/config/parametrizacion                         1.47 kB         118 kB
+├ ƒ /api/config/parametros-fiscales                     1.47 kB         118 kB
+├ ƒ /api/config/plan-cuentas                            1.47 kB         118 kB
+├ ƒ /api/config/plantillas-asiento                      1.47 kB         118 kB
+├ ƒ /api/config/rubros                                  1.47 kB         118 kB
+├ ƒ /api/config/tablas-auxiliares                       1.47 kB         118 kB
+├ ƒ /api/config/tema                                    1.47 kB         118 kB
+├ ƒ /api/config/test                                    1.47 kB         118 kB
+├ ƒ /api/config/trial                                   1.47 kB         118 kB
+├ ƒ /api/config/usuarios                                1.47 kB         118 kB
+├ ƒ /api/config/workflows                               1.47 kB         118 kB
+├ ƒ /api/consorcios                                     1.47 kB         118 kB
+├ ƒ /api/consorcios/[id]                                1.47 kB         118 kB
+├ ƒ /api/contabilidad/activos-fijos                     1.47 kB         118 kB
+├ ƒ /api/contabilidad/asientos                          1.47 kB         118 kB
+├ ƒ /api/contabilidad/balance-general                   1.47 kB         118 kB
+├ ƒ /api/contabilidad/balance-sumas                     1.47 kB         118 kB
+├ ƒ /api/contabilidad/centros-costo                     1.47 kB         118 kB
+├ ƒ /api/contabilidad/cierre-ejercicio                  1.47 kB         118 kB
+├ ƒ /api/contabilidad/cierre-mensual/[action]           1.47 kB         118 kB
+├ ƒ /api/contabilidad/estado-resultados                 1.47 kB         118 kB
+├ ƒ /api/contabilidad/exportar-csv                      1.47 kB         118 kB
+├ ƒ /api/contabilidad/inflacion                         1.47 kB         118 kB
+├ ƒ /api/contabilidad/libro-mayor                       1.47 kB         118 kB
+├ ƒ /api/contabilidad/liquidacion-iva                   1.47 kB         118 kB
+├ ƒ /api/contabilidad/periodos-fiscales                 1.47 kB         118 kB
+├ ƒ /api/contabilidad/plan-cuentas                      1.47 kB         118 kB
+├ ƒ /api/cotizaciones                                   1.47 kB         118 kB
+├ ƒ /api/crm                                            1.47 kB         118 kB
+├ ƒ /api/cron/agentes                                   1.47 kB         118 kB
+├ ƒ /api/cron/almacen-rosario                           1.47 kB         118 kB
+├ ƒ /api/cron/automation-virtual-workers                1.47 kB         118 kB
+├ ƒ /api/cron/cobranzas-ia                              1.47 kB         118 kB
+├ ƒ /api/cron/dispatch                                  1.47 kB         118 kB
+├ ƒ /api/cron/enviar-whatsapp                           1.47 kB         118 kB
+├ ƒ /api/cron/generative                                1.47 kB         118 kB
+├ ƒ /api/cron/ia-diaria                                 1.47 kB         118 kB
+├ ƒ /api/cron/ops-alertas                               1.47 kB         118 kB
+├ ƒ /api/cron/premium-intangibles                       1.47 kB         118 kB
+├ ƒ /api/cron/recordatorios                             1.47 kB         118 kB
+├ ƒ /api/cron/sync-afip                                 1.47 kB         118 kB
+├ ƒ /api/cuentas-cobrar                                 1.47 kB         118 kB
+├ ƒ /api/cuentas-cobrar/[id]                            1.47 kB         118 kB
+├ ƒ /api/cuentas-cobrar/cobros                          1.47 kB         118 kB
+├ ƒ /api/cuentas-pagar                                  1.47 kB         118 kB
+├ ƒ /api/cuentas-pagar/[id]                             1.47 kB         118 kB
+├ ƒ /api/cuentas-pagar/pagos                            1.47 kB         118 kB
+├ ƒ /api/distribucion/choferes                          1.47 kB         118 kB
+├ ƒ /api/distribucion/choferes/[id]                     1.47 kB         118 kB
+├ ƒ /api/distribucion/hojas-ruta                        1.47 kB         118 kB
+├ ƒ /api/distribucion/hojas-ruta/[id]                   1.47 kB         118 kB
+├ ƒ /api/distribucion/paradas/[id]                      1.47 kB         118 kB
+├ ƒ /api/distribucion/vehiculos                         1.47 kB         118 kB
+├ ƒ /api/distribucion/vehiculos/[id]                    1.47 kB         118 kB
+├ ƒ /api/docs/content                                   1.47 kB         118 kB
+├ ƒ /api/docs/index                                     1.47 kB         118 kB
+├ ƒ /api/documentos                                     1.47 kB         118 kB
+├ ƒ /api/ecommerce/catalogo                             1.47 kB         118 kB
+├ ƒ /api/ecommerce/checkout                             1.47 kB         118 kB
+├ ƒ /api/ecommerce/config                               1.47 kB         118 kB
+├ ƒ /api/ecommerce/tienda                               1.47 kB         118 kB
+├ ƒ /api/ecommerce/tienda/[slug]                        1.47 kB         118 kB
+├ ƒ /api/empleados                                      1.47 kB         118 kB
+├ ƒ /api/envases                                        1.47 kB         118 kB
+├ ƒ /api/envases/movimientos                            1.47 kB         118 kB
+├ ƒ /api/envases/saldo                                  1.47 kB         118 kB
+├ ƒ /api/estadisticas/dashboard                         1.47 kB         118 kB
+├ ƒ /api/estadisticas/export                            1.47 kB         118 kB
+├ ƒ /api/export                                         1.47 kB         118 kB
+├ ƒ /api/facturacion-recurrente                         1.47 kB         118 kB
+├ ƒ /api/facturas                                       1.47 kB         118 kB
+├ ƒ /api/facturas/[id]                                  1.47 kB         118 kB
+├ ƒ /api/fiado/clientes-rapido                          1.47 kB         118 kB
+├ ƒ /api/fiado/config                                   1.47 kB         118 kB
+├ ƒ /api/fiado/deudores                                 1.47 kB         118 kB
+├ ƒ /api/fiado/resumen                                  1.47 kB         118 kB
+├ ƒ /api/fiscal/ticket-legal                            1.47 kB         118 kB
+├ ƒ /api/health                                         1.47 kB         118 kB
+├ ƒ /api/historia-clinica                               1.47 kB         118 kB
+├ ƒ /api/historia-clinica/[id]                          1.47 kB         118 kB
+├ ƒ /api/hospitalidad                                   1.47 kB         118 kB
+├ ƒ /api/hospitalidad/facturar                          1.47 kB         118 kB
+├ ƒ /api/hospitalidad/kds                               1.47 kB         118 kB
+├ ƒ /api/hospitalidad/mesas                             1.47 kB         118 kB
+├ ƒ /api/hospitalidad/platos                            1.47 kB         118 kB
+├ ƒ /api/impresion/configurar-impresora                 1.47 kB         118 kB
+├ ƒ /api/impresion/detectar-impresoras                  1.47 kB         118 kB
+├ ƒ /api/impresion/email                                1.47 kB         118 kB
+├ ƒ /api/impresion/imprimir-ticket                      1.47 kB         118 kB
+├ ƒ /api/impresion/pdf                                  1.47 kB         118 kB
+├ ƒ /api/impuestos/citi                                 1.47 kB         118 kB
+├ ƒ /api/impuestos/iibb                                 1.47 kB         118 kB
+├ ƒ /api/impuestos/iva                                  1.47 kB         118 kB
+├ ƒ /api/impuestos/libro-iva-compras                    1.47 kB         118 kB
+├ ƒ /api/impuestos/libro-iva-digital                    1.47 kB         118 kB
+├ ƒ /api/impuestos/libro-iva-ventas                     1.47 kB         118 kB
+├ ƒ /api/impuestos/liquidaciones                        1.47 kB         118 kB
+├ ƒ /api/impuestos/pack-contador                        1.47 kB         118 kB
+├ ƒ /api/impuestos/padron                               1.47 kB         118 kB
+├ ƒ /api/impuestos/percepciones                         1.47 kB         118 kB
+├ ƒ /api/impuestos/pre-presentacion                     1.47 kB         118 kB
+├ ƒ /api/impuestos/presentacion-afip                    1.47 kB         118 kB
+├ ƒ /api/impuestos/retenciones/calcular                 1.47 kB         118 kB
+├ ƒ /api/impuestos/sicore                               1.47 kB         118 kB
+├ ƒ /api/industria                                      1.47 kB         118 kB
+├ ƒ /api/industria/[id]                                 1.47 kB         118 kB
+├ ƒ /api/industria/bom                                  1.47 kB         118 kB
+├ ƒ /api/integrations                                   1.47 kB         118 kB
+├ ƒ /api/integrations/[slug]                            1.47 kB         118 kB
+├ ƒ /api/integrations/oauth/[provider]                  1.47 kB         118 kB
+├ ƒ /api/integrations/oauth/[provider]/callback         1.47 kB         118 kB
+├ ƒ /api/integrations/paquete-multicanal                1.47 kB         118 kB
+├ ƒ /api/integrations/solicitudes                       1.47 kB         118 kB
+├ ƒ /api/iot/alertas                                    1.47 kB         118 kB
+├ ƒ /api/iot/dispositivos                               1.47 kB         118 kB
+├ ƒ /api/iot/lecturas                                   1.47 kB         118 kB
+├ ƒ /api/kpis                                           1.47 kB         118 kB
+├ ƒ /api/legacy-bridge/benchmark                        1.47 kB         118 kB
+├ ƒ /api/legacy-bridge/contracts                        1.47 kB         118 kB
+├ ƒ /api/listas-precio                                  1.47 kB         118 kB
+├ ƒ /api/logistica                                      1.47 kB         118 kB
+├ ƒ /api/logistica/[id]                                 1.47 kB         118 kB
+├ ƒ /api/logistica/carrier                              1.47 kB         118 kB
+├ ƒ /api/logistica/cotizar                              1.47 kB         118 kB
+├ ƒ /api/logistica/transportistas                       1.47 kB         118 kB
+├ ƒ /api/maestros/[tabla]                               1.47 kB         118 kB
+├ ƒ /api/mantenimiento                                  1.47 kB         118 kB
+├ ƒ /api/marketplace/catalog                            1.47 kB         118 kB
+├ ƒ /api/marketplace/checkout                           1.47 kB         118 kB
+├ ƒ /api/marketplace/intangibles/cobranzas/resumen      1.47 kB         118 kB
+├ ƒ /api/marketplace/intangibles/ocr-compras            1.47 kB         118 kB
+├ ƒ /api/marketplace/intangibles/premium/resumen        1.47 kB         118 kB
+├ ƒ /api/marketplace/intangibles/reponedor/pedido-auto  1.47 kB         118 kB
+├ ƒ /api/marketplace/jobs/[id]                          1.47 kB         118 kB
+├ ƒ /api/marketplace/provision                          1.47 kB         118 kB
+├ ƒ /api/membresias                                     1.47 kB         118 kB
+├ ƒ /api/membresias/[id]                                1.47 kB         118 kB
+├ ƒ /api/menu-publico/[empresaId]                       1.47 kB         118 kB
+├ ƒ /api/mercadolibre                                   1.47 kB         118 kB
+├ ƒ /api/mercadopago                                    1.47 kB         118 kB
+├ ƒ /api/mercadopago/webhook                            1.47 kB         118 kB
+├ ƒ /api/mis-tareas                                     1.47 kB         118 kB
+├ ƒ /api/mrp                                            1.47 kB         118 kB
+├ ƒ /api/niche/[appId]                                  1.47 kB         118 kB
+├ ƒ /api/niche/[appId]/morosos                          1.47 kB         118 kB
+├ ƒ /api/niche/clientes-rapido                          1.47 kB         118 kB
+├ ƒ /api/notas-credito                                  1.47 kB         118 kB
+├ ƒ /api/notas-credito/[id]                             1.47 kB         118 kB
+├ ƒ /api/notas-debito                                   1.47 kB         118 kB
+├ ƒ /api/notas-debito/[id]                              1.47 kB         118 kB
+├ ƒ /api/onboarding/industry-demo                       1.47 kB         118 kB
+├ ƒ /api/opo/agent/ping                                 1.47 kB         118 kB
+├ ƒ /api/opo/config                                     1.47 kB         118 kB
+├ ƒ /api/opo/discovery                                  1.47 kB         118 kB
+├ ƒ /api/opo/entities/[entity]                          1.47 kB         118 kB
+├ ƒ /api/opo/query                                      1.47 kB         118 kB
+├ ƒ /api/opo/test-protheus-discovery                    1.47 kB         118 kB
+├ ƒ /api/ops/entornos/[id]                              1.47 kB         118 kB
+├ ƒ /api/ops/jobs                                       1.47 kB         118 kB
+├ ƒ /api/ops/logs                                       1.47 kB         118 kB
+├ ƒ /api/ops/overview                                   1.47 kB         118 kB
+├ ƒ /api/ops/pipelines                                  1.47 kB         118 kB
+├ ƒ /api/ops/tecnico                                    1.47 kB         118 kB
+├ ƒ /api/ops/worker/execute                             1.47 kB         118 kB
+├ ƒ /api/ordenes-pago                                   1.47 kB         118 kB
+├ ƒ /api/ordenes-pago/[id]                              1.47 kB         118 kB
+├ ƒ /api/pagos                                          1.47 kB         118 kB
+├ ƒ /api/pagos/[id]                                     1.47 kB         118 kB
+├ ƒ /api/pendientes                                     1.47 kB         118 kB
+├ ƒ /api/picking                                        1.47 kB         118 kB
+├ ƒ /api/picking/[id]                                   1.47 kB         118 kB
+├ ƒ /api/platform/productos                             1.47 kB         118 kB
+├ ƒ /api/platform/suscripciones                         1.47 kB         118 kB
+├ ƒ /api/portal/catalogo                                1.47 kB         118 kB
+├ ƒ /api/portal/pedidos                                 1.47 kB         118 kB
+├ ƒ /api/portal/verify-cuit                             1.47 kB         118 kB
+├ ƒ /api/pos/almacen/evaluar-producto                   1.47 kB         118 kB
+├ ƒ /api/pos/almacen/panico                             1.47 kB         118 kB
+├ ƒ /api/pos/almacen/promos-hoy                         1.47 kB         118 kB
+├ ƒ /api/pos/almacen/retail                             1.47 kB         118 kB
+├ ƒ /api/pos/anular-venta                               1.47 kB         118 kB
+├ ƒ /api/pos/auth/pin                                   1.47 kB         118 kB
+├ ƒ /api/pos/catalogo-grupos                            1.47 kB         118 kB
+├ ƒ /api/pos/cierre-x                                   1.47 kB         118 kB
+├ ƒ /api/pos/cierre-z                                   1.47 kB         118 kB
+├ ƒ /api/pos/devolucion                                 1.47 kB         118 kB
+├ ƒ /api/pos/envases/movimiento                         1.47 kB         118 kB
+├ ƒ /api/pos/envases/saldo                              1.47 kB         118 kB
+├ ƒ /api/pos/mercadopago-qr                             1.47 kB         118 kB
+├ ƒ /api/pos/plu                                        1.47 kB         118 kB
+├ ƒ /api/pos/sync                                       1.47 kB         118 kB
+├ ƒ /api/pos/venta                                      1.47 kB         118 kB
+├ ƒ /api/pos/ventas-hoy                                 1.47 kB         118 kB
+├ ƒ /api/precios                                        1.47 kB         118 kB
+├ ƒ /api/precios/calcular                               1.47 kB         118 kB
+├ ƒ /api/precios/escalones                              1.47 kB         118 kB
+├ ƒ /api/precios/items                                  1.47 kB         118 kB
+├ ƒ /api/precios/resolver                               1.47 kB         118 kB
+├ ƒ /api/presupuesto                                    1.47 kB         118 kB
+├ ƒ /api/productos                                      1.47 kB         118 kB
+├ ƒ /api/productos/[id]                                 1.47 kB         118 kB
+├ ƒ /api/productos/importar                             1.47 kB         118 kB
+├ ƒ /api/productos/movimientos                          1.47 kB         118 kB
+├ ƒ /api/proveedores                                    1.47 kB         118 kB
+├ ƒ /api/proveedores/[id]                               1.47 kB         118 kB
+├ ƒ /api/proveedores/facturas                           1.47 kB         118 kB
+├ ƒ /api/public/reporting/dashboards                    1.47 kB         118 kB
+├ ƒ /api/public/reporting/definitions/[id]              1.47 kB         118 kB
+├ ƒ /api/public/reporting/execute                       1.47 kB         118 kB
+├ ƒ /api/puntos-venta                                   1.47 kB         118 kB
+├ ƒ /api/puntos-venta/[id]                              1.47 kB         118 kB
+├ ƒ /api/recibos                                        1.47 kB         118 kB
+├ ƒ /api/recibos/[id]                                   1.47 kB         118 kB
+├ ƒ /api/remitos                                        1.47 kB         118 kB
+├ ƒ /api/remitos/[id]                                   1.47 kB         118 kB
+├ ƒ /api/reportes/fiscal/libro-iva-ventas               1.47 kB         118 kB
+├ ƒ /api/reportes/plantillas                            1.47 kB         118 kB
+├ ƒ /api/reportes/plantillas/[id]                       1.47 kB         118 kB
+├ ƒ /api/reportes/render                                1.47 kB         118 kB
+├ ƒ /api/reporting/catalog                              1.47 kB         118 kB
+├ ƒ /api/reporting/dashboards                           1.47 kB         118 kB
+├ ƒ /api/reporting/dashboards/[id]                      1.47 kB         118 kB
+├ ƒ /api/reporting/dashboards/[id]/share                1.47 kB         118 kB
+├ ƒ /api/reporting/definitions                          1.47 kB         118 kB
+├ ƒ /api/reporting/definitions/[id]                     1.47 kB         118 kB
+├ ƒ /api/reporting/entitlement                          1.47 kB         118 kB
+├ ƒ /api/reporting/execute                              1.47 kB         118 kB
+├ ƒ /api/reporting/export                               1.47 kB         118 kB
+├ ƒ /api/reporting/templates                            1.47 kB         118 kB
+├ ƒ /api/reporting/templates/[id]                       1.47 kB         118 kB
+├ ƒ /api/reporting/templates/[id]/preview               1.47 kB         118 kB
+├ ƒ /api/rrhh/liquidacion                               1.47 kB         118 kB
+├ ƒ /api/series                                         1.47 kB         118 kB
+├ ƒ /api/series/[id]                                    1.47 kB         118 kB
+├ ƒ /api/stock                                          1.47 kB         118 kB
+├ ƒ /api/stock/[id]                                     1.47 kB         118 kB
+├ ƒ /api/stock/depositos                                1.47 kB         118 kB
+├ ƒ /api/stock/movimientos                              1.47 kB         118 kB
+├ ƒ /api/stock/toma-inventario                          1.47 kB         118 kB
+├ ƒ /api/stock/transferencia-deposito                   1.47 kB         118 kB
+├ ƒ /api/sucursales                                     1.47 kB         118 kB
+├ ƒ /api/tes                                            1.47 kB         118 kB
+├ ƒ /api/tickets                                        1.47 kB         118 kB
+├ ƒ /api/tickets/[id]                                   1.47 kB         118 kB
+├ ƒ /api/tickets/[id]/comentarios                       1.47 kB         118 kB
+├ ƒ /api/tickets/metricas                               1.47 kB         118 kB
+├ ƒ /api/usuarios                                       1.47 kB         118 kB
+├ ƒ /api/usuarios/[id]                                  1.47 kB         118 kB
+├ ƒ /api/vales                                          1.47 kB         118 kB
+├ ƒ /api/vales/[numero]                                 1.47 kB         118 kB
+├ ƒ /api/vales/validar                                  1.47 kB         118 kB
+├ ƒ /api/vendedores                                     1.47 kB         118 kB
+├ ƒ /api/vendedores/[id]                                1.47 kB         118 kB
+├ ƒ /api/ventas                                         1.47 kB         118 kB
+├ ƒ /api/ventas/[id]/anular                             1.47 kB         118 kB
+├ ƒ /api/ventas/pedidos                                 1.47 kB         118 kB
+├ ƒ /api/ventas/pedidos/[id]                            1.47 kB         118 kB
+├ ƒ /api/ventas/presupuestos                            1.47 kB         118 kB
+├ ƒ /api/ventas/presupuestos/[id]                       1.47 kB         118 kB
+├ ƒ /api/veterinaria/consultas                          1.47 kB         118 kB
+├ ƒ /api/veterinaria/pacientes                          1.47 kB         118 kB
+├ ƒ /api/webhooks/crm/provision                         1.47 kB         118 kB
+├ ƒ /api/webhooks/mercadolibre/[empresaId]              1.47 kB         118 kB
+├ ƒ /api/webhooks/mercadopago                           1.47 kB         118 kB
+├ ƒ /api/webhooks/ops/vercel                            1.47 kB         118 kB
+├ ƒ /api/webhooks/shopify/[empresaId]                   1.47 kB         118 kB
+├ ƒ /api/webhooks/telegram                              1.47 kB         118 kB
+├ ƒ /api/webhooks/tiendanube/[empresaId]                1.47 kB         118 kB
+├ ƒ /api/webhooks/whatsapp                              1.47 kB         118 kB
+├ ƒ /api/workflows/aprobaciones                         1.47 kB         118 kB
+├ ƒ /claver                                             1.47 kB         118 kB
+├ ƒ /claver-cliente                                     6.59 kB         131 kB
+├ ƒ /claver-cliente/facturas                            4.34 kB         128 kB
+├ ƒ /claver-cliente/login                               4.29 kB         128 kB
+├ ƒ /claver-cliente/scrum                               3.75 kB         128 kB
+├ ƒ /claver-cliente/tickets                             3.23 kB         131 kB
+├ ƒ /claver-cliente/tickets/[id]                        4.25 kB         132 kB
+├ ƒ /claver-cloud                                       16.2 kB         285 kB
+├ ƒ /claver-cloud/billing                               5.37 kB         133 kB
+├ ƒ /claver-cloud/comercial                             3.96 kB         171 kB
+├ ƒ /claver-cloud/comercial/campo                        288 kB         446 kB
+├ ƒ /claver-cloud/comercial/relevamientos               11.6 kB         177 kB
+├ ƒ /claver-cloud/implementation                        4.84 kB         172 kB
+├ ƒ /claver-cloud/implementation/[id]                   7.03 kB         135 kB
+├ ƒ /claver-cloud/marketplace                           8.54 kB         150 kB
+├ ƒ /claver-cloud/operations                            5.41 kB         133 kB
+├ ƒ /claver-cloud/operations/[empresaId]                  807 B         176 kB
+├ ƒ /claver-cloud/operations/reports                    11.1 kB         170 kB
+├ ƒ /claver-cloud/opo-console                           13.2 kB         146 kB
+├ ƒ /claver-cloud/organizations                         8.09 kB         136 kB
+├ ƒ /claver-cloud/protheus-api                          7.76 kB         167 kB
+├ ƒ /claver-cloud/protheus-setup                         7.1 kB         135 kB
+├ ƒ /claver-cloud/provisioning                          7.35 kB         141 kB
+├ ƒ /claver-cloud/provisioning/new                      12.2 kB         146 kB
+├ ƒ /claver-cloud/registros                             7.28 kB         135 kB
+├ ƒ /claver-cloud/settings                              5.28 kB         133 kB
+├ ƒ /claver-cloud/settings/assignments                  10.9 kB         176 kB
+├ ƒ /claver-cloud/superadmin                            5.88 kB         133 kB
+├ ƒ /claver-cloud/tenants/[empresaId]                   24.7 kB         197 kB
+├ ƒ /claver/almacen-rosario                             6.52 kB         199 kB
+├ ƒ /claver/apps                                        12.3 kB         249 kB
+├ ● /claver/apps/[slug]                                  5.6 kB         258 kB
+├   ├ /claver/apps/cobra
+├   ├ /claver/apps/fiado
+├   ├ /claver/apps/turnos
+├   └ [+7 more paths]
+├ ƒ /claver/clavergrow                                  9.21 kB         191 kB
+├ ○ /claver/clavergrow/opengraph-image                  1.47 kB         118 kB
+├ ƒ /claver/claverp                                     25.5 kB         238 kB
+├ ● /claver/claverp/[slug]                                169 B         120 kB
+├   ├ /claver/claverp/pos-afip
+├   ├ /claver/claverp/ecommerce
+├   ├ /claver/claverp/distribuidoras
+├   └ [+6 more paths]
+├ ƒ /claver/claverp/conexiones                          5.26 kB         192 kB
+├ ƒ /claver/claverp/ecommerce                           1.47 kB         118 kB
+├ ƒ /claver/claverp/modulos                             11.8 kB         204 kB
+├ ○ /claver/claverp/opengraph-image                     1.47 kB         118 kB
+├ ƒ /claver/claverp/precios                             3.47 kB         194 kB
+├ ƒ /claver/contacto                                    4.22 kB         192 kB
+├ ƒ /claver/ecommerce                                   25.1 kB         212 kB
+├ ƒ /claver/legales                                     1.47 kB         118 kB
+├ ƒ /claver/marca                                         15 kB         208 kB
+├ ○ /claver/opengraph-image                             1.47 kB         118 kB
+├ ƒ /clavernet                                          1.47 kB         118 kB
+├ ƒ /clavernet/dashboard                                6.29 kB         136 kB
+├ ƒ /clavernet/docs                                     1.47 kB         118 kB
+├ ƒ /clavernet/marketplace                              8.01 kB         137 kB
+├ ƒ /dashboard                                          27.7 kB         371 kB
+├ ƒ /dashboard/agenda                                   14.8 kB         191 kB
+├ ƒ /dashboard/agentes                                   4.6 kB         135 kB
+├ ƒ /dashboard/agro                                     8.51 kB         145 kB
+├ ƒ /dashboard/agro/balanza                             7.81 kB         141 kB
+├ ƒ /dashboard/agro/balanza/nuevo                       9.81 kB         181 kB
+├ ƒ /dashboard/agro/cannabis                            10.2 kB         168 kB
+├ ƒ /dashboard/agro/cannabis/aplicaciones               9.49 kB         184 kB
+├ ƒ /dashboard/agro/cannabis/ciclos                     3.34 kB         217 kB
+├ ƒ /dashboard/agro/cannabis/insumos                    3.18 kB         217 kB
+├ ƒ /dashboard/agro/cannabis/suelo                      9.88 kB         185 kB
+├ ƒ /dashboard/agro/carta-porte                         7.66 kB         163 kB
+├ ƒ /dashboard/agro/contratos                           7.46 kB         172 kB
+├ ƒ /dashboard/agro/contratos/nuevo                      8.7 kB         180 kB
+├ ƒ /dashboard/agro/iot                                 6.19 kB         180 kB
+├ ƒ /dashboard/agro/iot/maquinaria                      6.43 kB         143 kB
+├ ƒ /dashboard/agro/iot/riego                           1.79 kB         144 kB
+├ ƒ /dashboard/agro/iot/sensores                        4.32 kB         134 kB
+├ ƒ /dashboard/agro/liquidaciones                       7.07 kB         141 kB
+├ ƒ /dashboard/agro/liquidaciones/nuevo                 9.46 kB         181 kB
+├ ƒ /dashboard/agro/lotes                               11.9 kB         187 kB
+├ ƒ /dashboard/agro/pizarra                             7.76 kB         182 kB
+├ ƒ /dashboard/agro/productor                           6.92 kB         168 kB
+├ ƒ /dashboard/alertas                                  1.47 kB         118 kB
+├ ƒ /dashboard/almacen                                    20 kB         152 kB
+├ ƒ /dashboard/almacen/guia                             11.9 kB         144 kB
+├ ƒ /dashboard/apps                                     19.2 kB         232 kB
+├ ƒ /dashboard/apps/opo                                 13.5 kB         172 kB
+├ ƒ /dashboard/apps/premium                             9.89 kB         140 kB
+├ ƒ /dashboard/aprobaciones                             6.07 kB         130 kB
+├ ƒ /dashboard/aprobaciones-mobile                      5.86 kB         142 kB
+├ ƒ /dashboard/automatizacion                           19.7 kB         184 kB
+├ ƒ /dashboard/banco                                    7.61 kB         198 kB
+├ ƒ /dashboard/bancos/cheques                           10.5 kB         150 kB
+├ ƒ /dashboard/caja                                     8.69 kB         194 kB
+├ ƒ /dashboard/calidad                                  5.74 kB         130 kB
+├ ƒ /dashboard/campos-personalizados                    7.87 kB         144 kB
+├ ƒ /dashboard/capacitacion                             8.79 kB         136 kB
+├ ƒ /dashboard/capacitacion/diagnostico                   18 kB         146 kB
+├ ƒ /dashboard/capacitacion/manual-usuario              15.7 kB         143 kB
+├ ƒ /dashboard/capacitacion/parametrizacion             13.1 kB         141 kB
+├ ƒ /dashboard/cashflow                                 8.15 kB         179 kB
+├ ƒ /dashboard/centro-alertas                           8.64 kB         179 kB
+├ ƒ /dashboard/cheques                                  10.5 kB         204 kB
+├ ƒ /dashboard/claver/asignaciones                      1.47 kB         118 kB
+├ ƒ /dashboard/claver/implementaciones                  1.47 kB         118 kB
+├ ƒ /dashboard/claver/implementaciones/[id]             6.93 kB         174 kB
+├ ƒ /dashboard/claver/operaciones                       1.47 kB         118 kB
+├ ƒ /dashboard/claver/operaciones/[empresaId]           1.47 kB         118 kB
+├ ƒ /dashboard/claver/reportes                          1.47 kB         118 kB
+├ ƒ /dashboard/clientes                                 19.4 kB         226 kB
+├ ƒ /dashboard/clientes/retencion                       10.5 kB         135 kB
+├ ƒ /dashboard/compras                                  10.3 kB         204 kB
+├ ƒ /dashboard/compras/facturar-remitos                 9.28 kB         140 kB
+├ ƒ /dashboard/concesionaria                            2.31 kB         272 kB
+├ ƒ /dashboard/conexiones                               6.52 kB         139 kB
+├ ƒ /dashboard/conexiones/[slug]                        13.8 kB         173 kB
+├ ƒ /dashboard/conexiones/solicitar                     8.31 kB         139 kB
+├ ƒ /dashboard/configuracion                            31.8 kB         206 kB
+├ ƒ /dashboard/configuracion/apariencia                 4.86 kB         157 kB
+├ ƒ /dashboard/configuracion/auditoria                  10.6 kB         215 kB
+├ ƒ /dashboard/configuracion/cotizaciones               9.88 kB         186 kB
+├ ƒ /dashboard/configuracion/reportes                   5.71 kB         133 kB
+├ ƒ /dashboard/configuracion/reportes/[id]              6.49 kB         165 kB
+├ ƒ /dashboard/configuracion/reportes/nuevo             5.95 kB         165 kB
+├ ƒ /dashboard/configuracion/tablas                     10.2 kB         153 kB
+├ ƒ /dashboard/contabilidad                             13.3 kB         175 kB
+├ ƒ /dashboard/contabilidad/activos-fijos               17.3 kB         225 kB
+├ ƒ /dashboard/contabilidad/balance                     7.28 kB         181 kB
+├ ƒ /dashboard/contabilidad/centros-costo               10.2 kB         190 kB
+├ ƒ /dashboard/contabilidad/cierre-mensual              9.73 kB         140 kB
+├ ƒ /dashboard/contabilidad/inflacion                   6.96 kB         131 kB
+├ ƒ /dashboard/contabilidad/periodos                    9.91 kB         172 kB
+├ ƒ /dashboard/contabilidad/plan-cuentas                10.4 kB         173 kB
+├ ƒ /dashboard/cotizaciones                             5.88 kB         130 kB
+├ ƒ /dashboard/crm                                      8.93 kB         151 kB
+├ ƒ /dashboard/cuenta-partida                           6.03 kB         276 kB
+├ ƒ /dashboard/cuentas-cobrar                           10.5 kB         190 kB
+├ ƒ /dashboard/cuentas-pagar                            9.97 kB         189 kB
+├ ƒ /dashboard/distribucion                             12.3 kB         191 kB
+├ ƒ /dashboard/distribucion/pod                         5.57 kB         165 kB
+├ ƒ /dashboard/documentacion/[[...slug]]                4.61 kB         132 kB
+├ ƒ /dashboard/empleados                                8.16 kB         187 kB
+├ ƒ /dashboard/facturacion-recurrente                   5.34 kB         190 kB
+├ ƒ /dashboard/facturas                                 8.66 kB         218 kB
+├ ƒ /dashboard/facturas/[id]                            8.33 kB         157 kB
+├ ƒ /dashboard/fiado                                    8.32 kB         208 kB
+├ ƒ /dashboard/fiado/onboarding                         4.84 kB         129 kB
+├ ƒ /dashboard/historia-clinica                         8.26 kB         236 kB
+├ ƒ /dashboard/hospitalidad                             11.7 kB         174 kB
+├ ƒ /dashboard/hospitalidad/cartelera                   5.26 kB         275 kB
+├ ƒ /dashboard/hospitalidad/delivery                    8.33 kB         278 kB
+├ ƒ /dashboard/hospitalidad/kds                         3.55 kB         131 kB
+├ ƒ /dashboard/hospitalidad/platos                      8.31 kB         190 kB
+├ ƒ /dashboard/ia                                       11.1 kB         186 kB
+├ ƒ /dashboard/importacion                              2.61 kB         273 kB
+├ ƒ /dashboard/impuestos                                9.96 kB         175 kB
+├ ƒ /dashboard/impuestos/citi                           6.22 kB         162 kB
+├ ƒ /dashboard/impuestos/iibb                           9.03 kB         185 kB
+├ ƒ /dashboard/impuestos/padron                         13.4 kB         199 kB
+├ ƒ /dashboard/impuestos/pre-presentacion               9.39 kB         175 kB
+├ ƒ /dashboard/impuestos/presentacion                   9.95 kB         140 kB
+├ ƒ /dashboard/impuestos/sicore                         10.1 kB         189 kB
+├ ƒ /dashboard/impuestos/tes                            8.89 kB         198 kB
+├ ƒ /dashboard/industria                                11.7 kB         194 kB
+├ ƒ /dashboard/iot                                      15.9 kB         196 kB
+├ ƒ /dashboard/kpis                                     13.2 kB         278 kB
+├ ƒ /dashboard/listas-precio                            11.4 kB         167 kB
+├ ƒ /dashboard/logistica                                12.2 kB         197 kB
+├ ƒ /dashboard/mantenimiento                            12.6 kB         175 kB
+├ ƒ /dashboard/membresias                               7.81 kB         187 kB
+├ ƒ /dashboard/mercadopago                              11.4 kB         144 kB
+├ ƒ /dashboard/mis-tareas                               16.2 kB         178 kB
+├ ƒ /dashboard/mrp                                      6.89 kB         180 kB
+├ ƒ /dashboard/nicho                                    11.6 kB         176 kB
+├ ƒ /dashboard/nicho/[appId]                            16.4 kB         236 kB
+├ ƒ /dashboard/notas-credito                            10.3 kB         211 kB
+├ ƒ /dashboard/notas-debito                              7.7 kB         196 kB
+├ ƒ /dashboard/onboarding                               8.34 kB         156 kB
+├ ƒ /dashboard/onboarding-retail                        9.45 kB         134 kB
+├ ƒ /dashboard/operaciones                              1.13 kB         177 kB
+├ ƒ /dashboard/peluqueria                               8.62 kB         171 kB
+├ ƒ /dashboard/picking                                  12.3 kB         198 kB
+├ ƒ /dashboard/picking/tablet                            5.8 kB         130 kB
+├ ƒ /dashboard/pos                                      36.1 kB         261 kB
+├ ƒ /dashboard/pos/cierre                               10.4 kB         149 kB
+├ ƒ /dashboard/pos/config                               10.5 kB         139 kB
+├ ƒ /dashboard/prestamos                                10.7 kB         281 kB
+├ ƒ /dashboard/prestamos/cobranza                       8.06 kB         132 kB
+├ ƒ /dashboard/prestamos/pagares                        6.67 kB         131 kB
+├ ƒ /dashboard/presupuesto                              6.35 kB         179 kB
+├ ƒ /dashboard/productos                                9.24 kB         205 kB
+├ ƒ /dashboard/productos/ajustes                        4.94 kB         181 kB
+├ ƒ /dashboard/productos/inventario                     6.22 kB         182 kB
+├ ƒ /dashboard/productos/movimientos                    11.6 kB         213 kB
+├ ƒ /dashboard/productos/transferencias                 5.11 kB         181 kB
+├ ƒ /dashboard/proveedores                              10.7 kB         200 kB
+├ ƒ /dashboard/puntos-venta                             12.4 kB         198 kB
+├ ƒ /dashboard/remitos                                  8.67 kB         188 kB
+├ ƒ /dashboard/reportes                                 7.47 kB         160 kB
+├ ƒ /dashboard/reportes/dashboards/[id]                 8.85 kB         333 kB
+├ ƒ /dashboard/reportes/explorar                          26 kB         331 kB
+├ ƒ /dashboard/reportes/plantillas                      7.14 kB         286 kB
+├ ƒ /dashboard/reventas                                 2.27 kB         272 kB
+├ ƒ /dashboard/rrhh/sueldos                             5.98 kB         179 kB
+├ ƒ /dashboard/series                                   9.18 kB         192 kB
+├ ƒ /dashboard/soporte                                  8.32 kB         167 kB
+├ ƒ /dashboard/toma-pedidos                             4.27 kB         132 kB
+├ ƒ /dashboard/trial-vencido                             8.8 kB         143 kB
+├ ƒ /dashboard/usuarios                                 9.09 kB         192 kB
+├ ƒ /dashboard/ventas                                   13.5 kB         200 kB
+├ ƒ /dashboard/ventas/pedidos                           9.88 kB         198 kB
+├ ƒ /dashboard/ventas/presupuestos                      14.2 kB         193 kB
+├ ƒ /dashboard/veterinaria                              7.28 kB         170 kB
+├ ƒ /demo                                               3.74 kB         237 kB
+├ ƒ /demo/[industryId]                                  1.63 kB         188 kB
+├ ƒ /display                                            3.49 kB         161 kB
+├ ƒ /ecommerce                                          1.47 kB         118 kB
+├ ƒ /login                                              8.36 kB         227 kB
+├ ƒ /login/forgot-password                              4.61 kB         132 kB
+├ ƒ /login/register                                     7.72 kB         161 kB
+├ ƒ /marketing                                          1.47 kB         118 kB
+├ ƒ /marketing/[slug]                                   1.47 kB         118 kB
+├ ƒ /menu/[empresaId]                                    3.7 kB         128 kB
+├ ƒ /modulos                                            1.47 kB         118 kB
+├ ƒ /offline                                              740 B         117 kB
+├ ƒ /portal                                             15.2 kB         149 kB
+├ ƒ /portal-proveedores                                 9.05 kB         133 kB
+├ ƒ /public/dashboards/[token]                           4.1 kB         307 kB
+├ ○ /robots.txt                                         1.47 kB         118 kB
+├ ○ /sitemap.xml                                        1.47 kB         118 kB
+├ ƒ /tienda                                               801 B         157 kB
+├ ƒ /tienda/[slug]                                      1.11 kB         158 kB
+└ ƒ /vendedor                                           8.09 kB         167 kB
++ First Load JS shared by all                            116 kB
+  ├ chunks/42970-e79f0245e5b4cf5c.js                    46.3 kB
+  ├ chunks/f5e865f6-34f09774dfaeb2f3.js                 66.2 kB
+  └ other shared chunks (total)                         3.62 kB
+
+
+ƒ Middleware                                            40.7 kB
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

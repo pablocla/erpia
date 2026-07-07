@@ -160,6 +160,7 @@ export function CommandPalette() {
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
   const [docItems, setDocItems] = useState<any[]>([])
+  const [modoLite, setModoLite] = useState<string>("completo")
 
   useEffect(() => {
     if (!commandPaletteOpen) return
@@ -201,7 +202,21 @@ export function CommandPalette() {
     [router, setCommandPaletteOpen],
   )
 
-  const sections = ROUTES.reduce<Record<string, RouteItem[]>>((acc, route) => {
+  const isFiado = modoLite === "fiado"
+  const isCobra = modoLite === "cobranza"
+  const isTurnos = modoLite === "turnos"
+  
+  const filteredRoutes = ROUTES.filter(route => {
+    if (modoLite === "completo") return true
+    if (route.href === "/dashboard") return true
+    if (isFiado && route.section === "Ventas") return true
+    if (isCobra && route.section === "Financiero") return true
+    if (isTurnos && route.section === "Servicios") return true
+    if (route.section === "Configuración") return true
+    return false
+  })
+
+  const sections = filteredRoutes.reduce<Record<string, RouteItem[]>>((acc, route) => {
     if (!acc[route.section]) acc[route.section] = []
     acc[route.section].push(route)
     return acc
@@ -219,6 +234,27 @@ export function CommandPalette() {
         <CommandEmpty>{t("empty")}</CommandEmpty>
 
         <CommandGroup heading={t("groups.quickActions")}>
+          {modoLite === "cobranza" && (
+            <CommandItem value="enviar link de cobro" onSelect={() => navigate("/dashboard/cuentas-cobrar")}>
+              <Wallet className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Enviar link de cobro</span>
+              <CommandShortcut>EC</CommandShortcut>
+            </CommandItem>
+          )}
+          {modoLite === "fiado" && (
+            <CommandItem value="nuevo cliente fiado" onSelect={() => navigate("/dashboard/clientes")}>
+              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Nuevo cliente (Fiado)</span>
+              <CommandShortcut>NF</CommandShortcut>
+            </CommandItem>
+          )}
+          {modoLite === "turnos" && (
+            <CommandItem value="nuevo turno rapido" onSelect={() => navigate("/dashboard/agenda")}>
+              <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>Agendar Turno</span>
+              <CommandShortcut>AT</CommandShortcut>
+            </CommandItem>
+          )}
           <CommandItem value="nuevo pedido de venta accion rapida" onSelect={() => navigate("/dashboard/ventas/pedidos")}>
             <ShoppingCart className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>{t("actions.newSalesOrder")}</span>

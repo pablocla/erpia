@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 
 const NAV_LINKS = [
-  { href: "/claver", label: "Grupo Claver" },
   { href: "#funcionalidades", label: "Funcionalidades" },
   { href: "#precios", label: "Precios" },
   { href: "#integraciones", label: "Integraciones" },

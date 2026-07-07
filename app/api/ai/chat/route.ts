@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { chatConNegocio, isIAEnabled } from "@/lib/ai"
+import { chatConNegocio, guardAiRequest } from "@/lib/ai"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
@@ -21,9 +21,8 @@ export async function POST(request: NextRequest) {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    if (!(await isIAEnabled(ctx.auth.empresaId))) {
-      return NextResponse.json({ error: "Módulo IA no está habilitado para esta empresa" }, { status: 403 })
-    }
+    const blocked = await guardAiRequest(request, ctx.auth, "chat")
+    if (blocked) return blocked
 
     const body = await request.json()
     const parsed = ChatSchema.safeParse(body)

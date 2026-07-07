@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { procesarOnboardingConversacional } from "@/lib/ai"
+import { guardAiRequest, procesarOnboardingConversacional } from "@/lib/ai"
 import { z } from "zod"
 
 const mensajeSchema = z.object({
@@ -12,6 +12,12 @@ const mensajeSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    const blocked = await guardAiRequest(request, null, "public", {
+      skipEntitlement: true,
+      skipModuleCheck: true,
+    })
+    if (blocked) return blocked
+
     const body = await request.json()
     const parsed = mensajeSchema.safeParse(body)
     if (!parsed.success) {

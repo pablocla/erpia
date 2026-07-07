@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -38,7 +38,7 @@ export default function CashflowPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-  const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
+  const headers = (token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" }) as unknown as HeadersInit
 
   const fetchData = useCallback(async () => {
     setLoading(true)

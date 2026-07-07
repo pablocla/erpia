@@ -59,6 +59,10 @@ export const LANDING_FAQ = [
 export const LANDING_FEATURED_DEMOS = [
   { id: "almacen", label: "Fiado de barrio", hint: "Libreta + deudores", emoji: "🏪" },
   { id: "prestamista", label: "Préstamos", hint: "Cuotas y morosos", emoji: "💵" },
+  { id: "freelance_mt", label: "Monotributo", hint: "Presupuesto y factura C", emoji: "💼" },
+  { id: "servicios_pro", label: "Servicios Pro", hint: "Agenda y cobros", emoji: "🔧" },
+  { id: "contratista_obra", label: "Obra", hint: "Jornales y liquidación", emoji: "🔨" },
+  { id: "inmobiliaria", label: "Inmobiliaria", hint: "Expensas y portales", emoji: "🏠" },
   { id: "consorcios_admin", label: "Consorcios", hint: "Expensas y avisos", emoji: "🏢" },
   { id: "salon_belleza", label: "Salón / turnos", hint: "Agenda online", emoji: "💇" },
   { id: "gimnasio", label: "Gimnasio", hint: "Membresías", emoji: "🏋️" },

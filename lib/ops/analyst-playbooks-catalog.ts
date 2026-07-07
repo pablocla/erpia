@@ -58,6 +58,15 @@ export const ANALYST_PLAYBOOKS: AnalystPlaybook[] = [
     servicioSku: "ops.claver_superadmin",
   },
   {
+    id: "pack_propiedad",
+    nombre: "Activar pack Propiedad",
+    descripcion: "Provisiona consorcios + garantías + cobranzas WA (pool-propiedad) e inicia checklist.",
+    categoria: "activacion",
+    riesgo: "medio",
+    duracionEstimada: "1–3 min",
+    servicioSku: "ops.claver_superadmin",
+  },
+  {
     id: "enganche_fiado",
     nombre: "Enganche Libreta Fiado",
     descripcion: "Provisiona pos.fiado_barrio para trial o demo comercial.",

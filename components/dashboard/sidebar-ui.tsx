@@ -4,7 +4,7 @@ import { Search, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ClavergrowIcon } from "@/components/marketing/brand-logo"
+import { ClaverIcon } from "@/components/marketing/brand-logo"
 import { Store } from "lucide-react"
 import type { DashboardBranding } from "@/lib/brand"
 
@@ -49,12 +49,12 @@ export function SidebarBrand({
         {logoUrl ? (
           <img
             src={logoUrl}
-            alt=""
+            alt={branding.title}
             className="h-9 w-9 rounded-[10px] object-cover shrink-0 shadow-sm ring-1 ring-black/5"
           />
         ) : isGrow ? (
           <div className="h-9 w-9 rounded-[10px] bg-emerald-500/10 flex items-center justify-center shrink-0 ring-1 ring-emerald-500/15">
-            <ClavergrowIcon size={24} theme="light" />
+            <ClaverIcon size={24} theme="light" />
           </div>
         ) : (
           <div className="h-9 w-9 rounded-[10px] bg-primary/10 flex items-center justify-center shrink-0 ring-1 ring-primary/15">
@@ -70,12 +70,12 @@ export function SidebarBrand({
       {logoUrl ? (
         <img
           src={logoUrl}
-          alt=""
+          alt={branding.title}
           className="h-10 w-10 rounded-[11px] object-cover shrink-0 shadow-sm ring-1 ring-black/5"
         />
       ) : isGrow ? (
         <div className="h-10 w-10 rounded-[11px] bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 flex items-center justify-center shrink-0 ring-1 ring-emerald-500/15 shadow-sm">
-          <ClavergrowIcon size={26} theme="light" />
+          <ClaverIcon size={26} theme="light" />
         </div>
       ) : (
         <div className="h-10 w-10 rounded-[11px] bg-gradient-to-br from-primary/12 to-primary/5 flex items-center justify-center shrink-0 ring-1 ring-primary/10 shadow-sm">

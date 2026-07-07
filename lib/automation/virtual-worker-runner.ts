@@ -1,36 +1,17 @@
 import { prisma } from "@/lib/prisma"
+import { shouldRunInWindow } from "@/lib/ai/agents/cron-matcher"
+import { getSchedulerWindowMinutes } from "@/lib/scheduling/scheduler-config"
 import { runPlaybook } from "./playbook-runner"
 import { requireAutomationEntitlement } from "@/lib/platform/entitlements"
 
-/** Evalúa cron estándar 5 campos: min hour dom month dow */
-function cronMatchesNow(cron: string | null | undefined): boolean {
+function workerRanRecently(lastRunAt: Date | null | undefined, windowMinutes: number, now = new Date()) {
+  if (!lastRunAt) return false
+  return now.getTime() - lastRunAt.getTime() < windowMinutes * 60_000
+}
+
+function cronMatchesNow(cron: string | null | undefined, now = new Date()): boolean {
   if (!cron) return false
-  const parts = cron.trim().split(/\s+/)
-  if (parts.length < 5) return false
-
-  const now = new Date()
-  const minute = now.getMinutes()
-  const hour = now.getHours()
-  const dayOfWeek = now.getDay()
-
-  const [cronMin, cronHour, , , cronDow] = parts
-
-  if (cronMin !== "*" && parseInt(cronMin, 10) !== minute) return false
-  if (cronHour !== "*" && parseInt(cronHour, 10) !== hour) return false
-
-  if (cronDow !== "*") {
-    if (cronDow.includes("-")) {
-      const [from, to] = cronDow.split("-").map((v) => parseInt(v, 10))
-      if (dayOfWeek < from || dayOfWeek > to) return false
-    } else if (cronDow.includes(",")) {
-      const days = cronDow.split(",").map((v) => parseInt(v, 10))
-      if (!days.includes(dayOfWeek)) return false
-    } else if (parseInt(cronDow, 10) !== dayOfWeek) {
-      return false
-    }
-  }
-
-  return true
+  return shouldRunInWindow(cron, getSchedulerWindowMinutes(), now)
 }
 
 export async function runVirtualWorkersForEmpresa(empresaId: number) {
@@ -43,9 +24,12 @@ export async function runVirtualWorkersForEmpresa(empresaId: number) {
   })
   if (!config) return { ran: 0 }
 
+  const now = new Date()
+  const windowMinutes = getSchedulerWindowMinutes()
   let ran = 0
   for (const worker of config.virtualWorkers) {
-    if (!cronMatchesNow(worker.cron)) continue
+    if (!cronMatchesNow(worker.cron, now)) continue
+    if (workerRanRecently(worker.lastRunAt, windowMinutes, now)) continue
     for (const playbookKey of worker.playbooks) {
       await runPlaybook(empresaId, playbookKey, {
         rolAsignar: worker.rol,

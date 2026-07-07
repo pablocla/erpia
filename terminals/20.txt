@@ -1,0 +1,79 @@
+---
+pid: 30732
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "Set-Location \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsx scripts/audit-carniceria-temp.ts"
+started_at: 2026-07-03T18:44:41.357Z
+running_for_ms: 115000   
+---
+
+📦 Parametrizando empresa 43 (rubro: comercio)...
+  ✓ 18 módulos habilitados
+  ✓ 41 cuentas contables
+  ✓ 24 mapeos de asientos
+  ✓ 9 numeradores
+  ✓ 9 parámetros fiscales
+  ✓ 5 clasificaciones fiscales
+  ✓ 14 tipos de comprobante AFIP
+  ✓ Config fiscal empresa
+  ✓ Sucursal principal creada
+  ✓ Depósito principal
+✅ Parametrización completada para empresa 43 (comercio)
+
+{
+  "empresaId": 43,
+  "email": "demo-72ab36e3@claver.com.ar",
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjQxLCJlbWFpbCI6ImRlbW8tNzJhYjM2ZTNAY2xhdmVyLmNvbS5hciIsInJvbCI6ImFkbWluaXN0cmFkb3IiLCJlbXByZXNhSWQiOjQzLCJleHAiOjE3ODMxOTA3NDMsImlhdCI6MTc4MzEwNDM0M30.9AKj7tIcuHMSJVkHGLW8pfB2WthHKDJp6YB4_Xu9cYQ",
+  "provision": {
+    "industryId": "carniceria",
+    "rubro": "kiosco",
+    "goldenPath": "/dashboard/pos",
+    "empresaNombre": "Demo Carnicería — 72ab36e3",
+    "productosCreados": 4,
+    "clientesCreados": 3,
+    "skusActivados": [],
+    "modoLite": "pos"
+  },
+  "empresa": {
+    "nombre": "Demo Carnicería — 72ab36e3",
+    "rubro": "carniceria",
+    "modoLite": "pos"
+  },
+  "productos": [
+    {
+      "nombre": "Asado de Tira x kg",
+      "codigo": "DEMO-KIOS-1",
+      "unidad": "unidad"
+    },
+    {
+      "nombre": "Vacío de Ternera x kg",
+      "codigo": "DEMO-KIOS-2",
+      "unidad": "unidad"
+    },
+    {
+      "nombre": "Asado de Tira x kg",
+      "codigo": "ONB-CAR-001",
+      "unidad": "unidad"
+    },
+    {
+      "nombre": "Vacío de Ternera x kg",
+      "codigo": "ONB-CAR-002",
+      "unidad": "unidad"
+    }
+  ],
+  "clientes": [
+    {
+      "nombre": "Consumidor Final"
+    },
+    {
+      "nombre": "Don Carlos (almacén)"
+    },
+    {
+      "nombre": "Juan Pérez — Fiado barrio"
+    },
+    {
+      "nombre": "María del Valle"
+    }
+  ],
+  "subs": [],
+  "features": []
+}

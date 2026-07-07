@@ -20,6 +20,7 @@ export type ComercialLeadInput = {
   proximaAccion?: string
   proximaFecha?: string
   notas?: string
+  empresaId?: number
 }
 
 export type ComercialLeadRow = {
@@ -68,6 +69,15 @@ function mapLead(row: Record<string, unknown>): ComercialLeadRow {
   }
 }
 
+export async function getComercialLeadById(id: number): Promise<ComercialLeadRow | null> {
+  try {
+    const row = await db().comercialPipelineLead.findUnique({ where: { id } })
+    return row ? mapLead(row) : null
+  } catch {
+    return null
+  }
+}
+
 export async function listComercialLeads(): Promise<ComercialLeadRow[]> {
   const rows = await db().comercialPipelineLead.findMany({
     orderBy: [{ etapa: "asc" }, { updatedAt: "desc" }],
@@ -94,6 +104,7 @@ export async function createComercialLead(
       proximaAccion: input.proximaAccion?.trim() || null,
       proximaFecha: input.proximaFecha ? new Date(input.proximaFecha) : null,
       notas: input.notas?.trim() || null,
+      empresaId: input.empresaId ?? null,
       creadoPor: creadoPor.trim().toLowerCase(),
     },
   })

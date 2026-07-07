@@ -2,11 +2,10 @@ import { prisma } from "@/lib/prisma"
 import { AFIPSoapClient } from "./soap-client"
 import QRCode from "qrcode"
 import type { FacturaPayload, AFIPResponse } from "@/lib/types"
-import { onFacturaEmitida } from "@/lib/contabilidad/factura-hooks"
+import { emitFacturaEmitida } from "@/lib/events/emit-domain-event"
 import { calcularImpuestos } from "@/lib/tes/tax-engine"
 import type { TaxBreakdown } from "@/lib/tes/types"
-import { eventBus } from "@/lib/events/event-bus"
-import type { FacturaEmitidaPayload } from "@/lib/events/types"
+
 import { getParametro } from "@/lib/config/parametro-service"
 import { padronService } from "@/lib/impuestos/padron-service"
 import {
@@ -507,20 +506,13 @@ export class FacturaService {
 
       await this.sincronizarNumeradorSerie(empresa.id, finalPuntoVenta, finalTipoCbte, nuevoNumero)
 
-      await onFacturaEmitida(facturaCreada.id)
-
-      // Emit domain event → stock decrement, CC generation, etc.
-      await eventBus.emit<FacturaEmitidaPayload>({
-        type: "FACTURA_EMITIDA",
-        payload: {
-          facturaId: facturaCreada.id,
-          empresaId: empresa.id,
-          clienteId: cliente.id,
-          total,
-          condicionPagoId: null,
-          depositoId: null,
-        },
-        timestamp: new Date(),
+      await emitFacturaEmitida({
+        facturaId: facturaCreada.id,
+        empresaId: empresa.id,
+        clienteId: cliente.id,
+        total,
+        condicionPagoId: null,
+        depositoId: null,
       })
 
       if (modoOffline) {

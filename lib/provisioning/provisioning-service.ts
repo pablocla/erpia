@@ -10,6 +10,25 @@ import {
   resolvePackCalle,
 } from "@/lib/comercial/pack-calle-catalog"
 import { setSignupOrigen } from "@/lib/ops/signup-tracking"
+import { PACK_PROPIEDAD } from "@/lib/comercial/hybrid-provision-bridge"
+
+function generarCuitDemo(razonSocial: string, ordenId: number): string {
+  const slug = razonSocial.replace(/\W/g, "").slice(0, 6).toUpperCase() || "COM"
+  return `DEMO-${slug}-${ordenId}-${Date.now().toString().slice(-6)}`
+}
+
+function resolverCuitOrden(orden: {
+  cuit?: string | null
+  rfc?: string | null
+  razonSocial: string
+  id: number
+}): string {
+  const raw = (orden.cuit || orden.rfc || "").trim()
+  if (!raw || raw === "00000000000") {
+    return generarCuitDemo(orden.razonSocial, orden.id)
+  }
+  return raw
+}
 
 export async function procesarOrdenProvision(ordenId: number) {
   const db = prisma as any
@@ -31,12 +50,23 @@ export async function procesarOrdenProvision(ordenId: number) {
     const engancheId = orden.engancheId || orden.engancheCandidato || "pos.fiado_barrio"
     const modoLite = orden.modoLite || inferModoLiteFromEnganche(engancheId)
     const pack = resolvePackCalle(engancheId)
+    const cuit = resolverCuitOrden(orden)
+
+    const cuitExistente = await db.empresa.findUnique({
+      where: { cuit },
+      select: { id: true, nombre: true },
+    })
+    if (cuitExistente) {
+      throw new Error(
+        `Ya existe una empresa con CUIT ${cuit} (${cuitExistente.nombre} #${cuitExistente.id}). Usá otro CUIT o abrí el tenant existente.`,
+      )
+    }
 
     const empresa = await db.empresa.create({
       data: {
         nombre: orden.razonSocial,
         razonSocial: orden.razonSocial,
-        cuit: orden.cuit || orden.rfc || "00000000000",
+        cuit,
         email: orden.contactoEmail,
         planHosting: orden.planHosting,
         entornoAfip: "homologacion",
@@ -105,10 +135,15 @@ export async function procesarOrdenProvision(ordenId: number) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://erp.claver.cloud"
     const destinoUrl = `${appUrl}${onboarding.landingPath}`
     const packNombre = pack?.nombre ?? "Libreta Fiado"
+    const esPropiedad = engancheId === PACK_PROPIEDAD
+    const cuerpoPropiedad = esPropiedad
+      ? `<p>Ya podés liquidar expensas, avisar morosos por WhatsApp y gestionar contratos de alquiler.</p>
+         <p><strong>Primer paso:</strong> entrá a Consorcios y seguí el checklist de bienvenida.</p>`
+      : `<p>En minutos podés anotar el primer fiado o la primera venta — sin cuaderno.</p>`
     const html = emailLayout(`
       <h2>Tu comercio ya está listo en Claver</h2>
       <p>Hola ${orden.contactoNombre}, configuramos <strong>${orden.razonSocial}</strong> con <strong>${packNombre}</strong>.</p>
-      <p>En minutos podés anotar el primer fiado o la primera venta — sin cuaderno.</p>
+      ${cuerpoPropiedad}
       <ul>
         <li><strong>Entrar:</strong> <a href="${appUrl}/login">${appUrl}/login</a></li>
         <li><strong>Ir directo a:</strong> <a href="${destinoUrl}">${packNombre}</a></li>

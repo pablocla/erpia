@@ -1,0 +1,32 @@
+name: NOP Cron Dispatcher (Free Tier)
+
+on:
+  schedule:
+    # Cada 5 minutos — máxima frecuencia gratuita de GitHub Actions
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: nop-cron-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Ejecutar dispatcher NOP
+        env:
+          NOP_BASE_URL: ${{ secrets.NOP_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$NOP_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Configurá secrets NOP_BASE_URL y CRON_SECRET en el repo"
+            exit 1
+          fi
+          curl -sfS -X POST "${NOP_BASE_URL}/api/cron/dispatch" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 110 \
+            -o dispatch-result.json
+          cat dispatch-result.json

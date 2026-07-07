@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server"
+﻿import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 /**
- * GET /api/ordenes-pago/[id] — Get payment order detail
- * DELETE /api/ordenes-pago/[id] — Anular orden de pago
+ * GET /api/ordenes-pago/[id] â€” Get payment order detail
+ * DELETE /api/ordenes-pago/[id] â€” Anular orden de pago
  */
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,11 +22,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         proveedor: { select: { id: true, nombre: true, cuit: true } },
         items: {
           include: {
-            cuentaPagar: { select: { id: true, concepto: true, montoOriginal: true } },
+            cuentaPagar: { select: { id: true, observaciones: true, montoOriginal: true } },
           },
         },
-        retencionesSICORE: true,
-      },
+              },
     })
 
     if (!op) return NextResponse.json({ error: "Orden de pago no encontrada" }, { status: 404 })
@@ -83,12 +82,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       // Anular SICORE retentions linked to this OP
       await tx.retencionSICORE.updateMany({
         where: { ordenPagoId: op.id },
-        data: { anulada: true },
+        data: { estado: "anulada" },
       })
 
       await tx.ordenPago.update({
         where: { id: op.id },
-        data: { anulada: true },
+        data: { estado: "anulada" },
       })
     })
 
@@ -98,3 +97,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }
+

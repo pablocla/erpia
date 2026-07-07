@@ -24,6 +24,19 @@ import { cloudAuthHeaders } from "@/lib/claver-cloud/auth-headers"
 import type { TenantPlanId } from "@/lib/ops/tenant-plan-limits"
 import { TENANT_PLAN_LIMITS } from "@/lib/ops/tenant-plan-limits"
 import { cn } from "@/lib/utils"
+import { PACKS_CALLE, skusParaActivar, inferModoLiteFromEnganche } from "@/lib/comercial/pack-calle-catalog"
+
+const PACKS_WIZARD = PACKS_CALLE.filter((p) => p.vendibleHoy).sort((a, b) => {
+  if (a.id === "pool-propiedad") return -1
+  if (b.id === "pool-propiedad") return 1
+  return a.nombre.localeCompare(b.nombre, "es")
+})
+
+function rubroParaEnganche(engancheId: string): string {
+  if (engancheId === "pool-propiedad") return "inmobiliaria"
+  if (engancheId === "pool-claver-nicho" || engancheId === "niche.consorcios") return "consorcios"
+  return "almacen"
+}
 
 const STEPS = [
   { n: 1, label: "Cliente", icon: Building2 },
@@ -38,6 +51,7 @@ export default function NewProvisioningPage() {
   const [loading, setLoading] = useState(false)
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [catalog, setCatalog] = useState<SkuCatalogItem[]>([])
+  const [modoServicios, setModoServicios] = useState<"pack" | "skus">("pack")
   const [formData, setFormData] = useState({
     contactoNombre: "",
     contactoEmail: "",
@@ -45,8 +59,22 @@ export default function NewProvisioningPage() {
     cuit: "",
     planHosting: "Pro" as TenantPlanId,
     analistaAsignado: "",
-    skus: [] as string[],
+    engancheId: "pool-propiedad",
+    rubro: "inmobiliaria",
+    modoLite: "niche",
+    skus: skusParaActivar("pool-propiedad"),
   })
+
+  const seleccionarPack = (engancheId: string) => {
+    const skus = skusParaActivar(engancheId)
+    setFormData({
+      ...formData,
+      engancheId,
+      rubro: rubroParaEnganche(engancheId),
+      modoLite: inferModoLiteFromEnganche(engancheId),
+      skus: skus.slice(0, TENANT_PLAN_LIMITS[formData.planHosting].maxSkusActivos),
+    })
+  }
 
   useEffect(() => {
     fetch("/api/claver/marketplace/catalog", { headers: cloudAuthHeaders() })
@@ -183,9 +211,51 @@ export default function NewProvisioningPage() {
             <div>
               <h3 className="text-lg font-semibold">Plan comercial y servicios</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Elegí el plan y los módulos del marketplace. Podés sumar más después desde el panel del tenant.
+                Empezá por un pack (recomendado) o elegí SKUs sueltos. Podés sumar más después desde el tenant.
               </p>
             </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={modoServicios === "pack" ? "default" : "outline"}
+                onClick={() => setModoServicios("pack")}
+              >
+                Pack comercial
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={modoServicios === "skus" ? "default" : "outline"}
+                onClick={() => setModoServicios("skus")}
+              >
+                SKUs sueltos
+              </Button>
+            </div>
+            {modoServicios === "pack" && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {PACKS_WIZARD.map((pack) => (
+                  <button
+                    key={pack.id}
+                    type="button"
+                    onClick={() => seleccionarPack(pack.id)}
+                    className={cn(
+                      "text-left border rounded-lg p-3 transition-colors hover:bg-muted/50",
+                      formData.engancheId === pack.id && "border-primary bg-primary/5 ring-1 ring-primary/30",
+                    )}
+                  >
+                    <p className="font-medium text-sm">{pack.nombre}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{pack.lema}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <Badge variant="outline" className="text-[10px]">{pack.id}</Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {pack.precioArs.toLocaleString("es-AR")} ARS/mes
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="grid gap-2">
               <Label>Plan de hosting</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -211,18 +281,29 @@ export default function NewProvisioningPage() {
                 ))}
               </div>
             </div>
-            {catalogLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Cargando catálogo…
+            {modoServicios === "skus" && (
+              catalogLoading ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Cargando catálogo…
+                </div>
+              ) : (
+                <SkuPicker
+                  catalog={catalog}
+                  selected={formData.skus}
+                  onChange={(skus) => setFormData({ ...formData, skus })}
+                  plan={formData.planHosting}
+                />
+              )
+            )}
+            {modoServicios === "pack" && formData.skus.length > 0 && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground text-sm">
+                  {PACKS_WIZARD.find((p) => p.id === formData.engancheId)?.nombre ?? formData.engancheId}
+                </p>
+                <p>Rubro: <strong className="text-foreground">{formData.rubro}</strong></p>
+                <p>SKUs incluidos: {formData.skus.join(", ")}</p>
               </div>
-            ) : (
-              <SkuPicker
-                catalog={catalog}
-                selected={formData.skus}
-                onChange={(skus) => setFormData({ ...formData, skus })}
-                plan={formData.planHosting}
-              />
             )}
           </div>
         )}
@@ -263,6 +344,14 @@ export default function NewProvisioningPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Plan</span>
                 <Badge variant="outline">{formData.planHosting}</Badge>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Enganche / pack</span>
+                <span className="font-mono text-xs">{formData.engancheId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Rubro</span>
+                <span>{formData.rubro}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Servicios activos</span>

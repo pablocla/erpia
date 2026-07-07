@@ -18,7 +18,7 @@ function formatMes(d: Date): string {
 function applyFiltersDate(
   where: Record<string, unknown>,
   filtros: ReportFilter[],
-  dateField: "createdAt" | "fecha",
+  dateField: "createdAt" | "fecha" | "fechaEmision",
 ) {
   for (const f of filtros) {
     if (f.campo === "fecha" || f.campo === "desde" || f.campo === "hasta" || f.campo === "mes" || f.campo === "anio") {
@@ -159,6 +159,57 @@ async function fetchStockMovimientos(empresaId: number, def: ReportDefinition) {
   }))
 }
 
+async function fetchPedidosVenta(empresaId: number, def: ReportDefinition) {
+  const where: Record<string, unknown> = { empresaId }
+  applyFiltersDate(where, def.filtros, "fechaEmision")
+  const pedidos = await prisma.pedidoVenta.findMany({
+    where: where as never,
+    include: { cliente: { select: { nombre: true } }, vendedor: { select: { nombre: true } } },
+    orderBy: { fechaEmision: "desc" },
+    take: def.limit ?? MAX_ROWS,
+  })
+  return pedidos.map((p) => {
+    const d = new Date(p.fechaEmision)
+    return {
+      fecha: d.toISOString().split("T")[0],
+      mes: formatMes(d),
+      numero: p.numero,
+      cliente: p.cliente?.nombre ?? "—",
+      vendedor: p.vendedor?.nombre ?? "—",
+      estado: p.estado,
+      total: toNumber(p.total),
+      cantidad: 1,
+    }
+  })
+}
+
+async function fetchContabilidadMayor(empresaId: number, def: ReportDefinition) {
+  const whereAsiento: Record<string, unknown> = { empresaId, deletedAt: null }
+  applyFiltersDate(whereAsiento, def.filtros, "fecha")
+  
+  const movs = await prisma.movimientoContable.findMany({
+    where: {
+      asiento: whereAsiento as never
+    },
+    include: { asiento: true },
+    orderBy: { asiento: { fecha: "desc" } },
+    take: def.limit ?? MAX_ROWS,
+  })
+  return movs.map((m) => {
+    const d = new Date(m.asiento.fecha)
+    return {
+      fecha: d.toISOString().split("T")[0],
+      mes: formatMes(d),
+      asiento_nro: String(m.asiento.numero),
+      descripcion: m.asiento.descripcion,
+      cuenta: m.cuenta,
+      debe: toNumber(m.debe),
+      haber: toNumber(m.haber),
+      cantidad: 1,
+    }
+  })
+}
+
 export async function fetchClaverpSource(
   empresaId: number,
   def: ReportDefinition,
@@ -174,6 +225,10 @@ export async function fetchClaverpSource(
       return fetchCompras(empresaId, def)
     case "stock_movimientos":
       return fetchStockMovimientos(empresaId, def)
+    case "pedidos_venta":
+      return fetchPedidosVenta(empresaId, def)
+    case "contabilidad_mayor":
+      return fetchContabilidadMayor(empresaId, def)
     default:
       throw new Error(`Fuente no soportada: ${def.fuente}`)
   }

@@ -19,6 +19,7 @@ import {
   resolvePackCalle,
 } from "@/lib/comercial/pack-calle-catalog"
 import { setSignupOrigen } from "@/lib/ops/signup-tracking"
+import { PACK_PROPIEDAD } from "@/lib/comercial/hybrid-provision-bridge"
 
 export interface ProvisionDesdeRelevamientoInput {
   relevamientoId: number
@@ -146,25 +147,33 @@ export async function provisionarDesdeRelevamiento(
   const loginUrl = `${appUrl}/login`
   const destinoUrl = `${appUrl}${onboarding.landingPath}`
 
+  const esPropiedad = engancheId === PACK_PROPIEDAD || rubro === "inmobiliaria" || rubro === "consorcios"
   const html = emailLayout(
     `
-      <h2>Tu comercio ya está listo en Claver</h2>
-      <p>Hola <strong>${contactoNombre}</strong>, configuramos <strong>${rel.negocio}</strong> con <strong>${pack?.nombre ?? "Libreta Fiado"}</strong>.</p>
-      <p>En menos de 10 minutos podés anotar el primer fiado o la primera venta.</p>
+      <h2>${esPropiedad ? "Tu administración ya está en Claver" : "Tu comercio ya está listo en Claver"}</h2>
+      <p>Hola <strong>${contactoNombre}</strong>, configuramos <strong>${rel.negocio}</strong> con <strong>${pack?.nombre ?? (esPropiedad ? "Claver Propiedad" : "Libreta Fiado")}</strong>.</p>
+      ${
+        esPropiedad
+          ? `<p>Ya podés liquidar expensas, avisar morosos por WhatsApp y gestionar contratos de alquiler.</p>
+             <p><strong>Primer paso:</strong> entrá a Consorcios y seguí el checklist de bienvenida.</p>`
+          : `<p>En menos de 10 minutos podés anotar el primer fiado o la primera venta.</p>`
+      }
       <ul>
         <li><strong>Entrar:</strong> <a href="${loginUrl}">${loginUrl}</a></li>
         <li><strong>Email:</strong> ${contactoEmail}</li>
         <li><strong>Contraseña temporal:</strong> ${tempPassword}</li>
-        <li><strong>Ir directo a:</strong> <a href="${destinoUrl}">${pack?.nombre ?? "tu libreta"}</a></li>
+        <li><strong>Ir directo a:</strong> <a href="${destinoUrl}">${pack?.nombre ?? (esPropiedad ? "Consorcios" : "tu libreta")}</a></li>
       </ul>
       <p>Trial 14 días. Cualquier duda, respondé este mail o WhatsApp.</p>
     `,
-    { preheader: `${rel.negocio} — ya podés operar sin cuaderno` },
+    { preheader: esPropiedad ? `${rel.negocio} — expensas bajo control` : `${rel.negocio} — ya podés operar sin cuaderno` },
   )
 
   await emailService.enviar({
     to: contactoEmail,
-    subject: `${rel.negocio} — tu libreta digital ya está lista`,
+    subject: esPropiedad
+      ? `${rel.negocio} — Claver Propiedad ya está listo`
+      : `${rel.negocio} — tu libreta digital ya está lista`,
     html,
     text: `Claver listo. URL: ${loginUrl} · Email: ${contactoEmail} · Pass: ${tempPassword} · Ir a: ${destinoUrl}`,
   }).catch((err) => console.warn("[provision-relevamiento] Email no enviado:", err))

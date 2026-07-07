@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -68,6 +69,15 @@ type Recibo = {
   cliente?: { id: number; nombre: string; cuit: string | null }
 }
 
+type RetencionesPreview = {
+  retencionIVA: number
+  retencionGanancias: number
+  retencionIIBB: number
+  total: number
+  detalle: { tipo: string; codigoRegimen: string; base: number; alicuota: number; monto: number }[]
+  aplicadas: boolean
+}
+
 const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   pendiente: { label: "Pendiente", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
   parcial: { label: "Cobro parcial", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
@@ -107,6 +117,12 @@ export default function CuentasCobrarPage() {
   const [chequeVencimiento, setChequeVencimiento] = useState("")
   const [cobrando, setCobrando] = useState(false)
   const [errorCobro, setErrorCobro] = useState("")
+  const [calcularRetencionesAuto, setCalcularRetencionesAuto] = useState(true)
+  const [previewRetenciones, setPreviewRetenciones] = useState<RetencionesPreview | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [dividirPago, setDividirPago] = useState(false)
+  const [segundoMedio, setSegundoMedio] = useState("efectivo")
+  const [montoSegundoMedio, setMontoSegundoMedio] = useState("")
 
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
@@ -168,6 +184,12 @@ export default function CuentasCobrarPage() {
     return matchBusqueda
   })
 
+  const netoEstimado = useMemo(() => {
+    const monto = parseFloat(montoCobro) || 0
+    const ret = previewRetenciones?.total ?? 0
+    return Math.max(0, monto - ret)
+  }, [montoCobro, previewRetenciones])
+
   const abrirCobro = (ccs: CC[]) => {
     setModalCobro(ccs)
     const totalSaldo = ccs.reduce((acc, cc) => acc + cc.saldo, 0)
@@ -180,7 +202,41 @@ export default function CuentasCobrarPage() {
     setChequeEmision(new Date().toISOString().split("T")[0])
     setChequeVencimiento("")
     setErrorCobro("")
+    setCalcularRetencionesAuto(true)
+    setPreviewRetenciones(null)
+    setDividirPago(false)
+    setSegundoMedio("efectivo")
+    setMontoSegundoMedio("")
   }
+
+  useEffect(() => {
+    if (modalCobro.length === 0) return
+    const monto = parseFloat(montoCobro)
+    const clienteId = modalCobro[0].cliente?.id
+    if (!monto || monto <= 0 || !clienteId) {
+      setPreviewRetenciones(null)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingPreview(true)
+      try {
+        const res = await fetch("/api/impuestos/retenciones/calcular", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ tipo: "cobro", clienteId, montoBase: monto }),
+        })
+        if (res.ok) setPreviewRetenciones(await res.json())
+        else setPreviewRetenciones(null)
+      } catch {
+        setPreviewRetenciones(null)
+      } finally {
+        setLoadingPreview(false)
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [montoCobro, modalCobro, authHeaders])
 
   const copiarLinkPago = (cc: CC) => {
     const texto = `Hola ${cc.cliente?.nombre}, te compartimos el link de pago por el saldo pendiente de ${formatCurrency(cc.saldo)} correspondiente a la ${cc.factura ? `Factura ${cc.factura.tipo} ${formatPV(cc.factura.puntoVenta, cc.factura.numero)}` : `CC #${cc.id}`}. \n\nPuedes abonarlo aquí: https://link.mercadopago.com.ar/tuempresa`
@@ -204,20 +260,53 @@ export default function CuentasCobrarPage() {
         monto: modalCobro.length === 1 ? monto : cc.saldo, 
       }))
 
+      const retTotal = calcularRetencionesAuto ? (previewRetenciones?.total ?? 0) : 0
+      const neto = Math.max(0, monto - retTotal)
+
       const payload: Record<string, unknown> = {
         clienteId: modalCobro[0].cliente?.id,
         items,
-        medioPago,
+        calcularRetencionesAuto,
         observaciones: obsCobro.trim() || undefined,
       }
-      if (medioPago === "cheque") {
-        payload.cheque = {
-          numero: chequeNumero.trim(),
-          bancoNombre: chequeBanco.trim() || undefined,
-          cuitBancoLibrador: chequeCuit.trim() || undefined,
-          fechaEmision: chequeEmision,
-          fechaVencimiento: chequeVencimiento,
-          monto,
+
+      if (dividirPago) {
+        const monto2 = parseFloat(montoSegundoMedio) || 0
+        const monto1 = neto - monto2
+        if (monto2 <= 0 || monto1 <= 0) {
+          setErrorCobro("Los montos del split deben ser positivos y sumar el neto")
+          return
+        }
+        if (Math.abs(monto1 + monto2 - neto) > 0.02) {
+          setErrorCobro(`La suma de medios (${formatCurrency(monto1 + monto2)}) debe igualar el neto (${formatCurrency(neto)})`)
+          return
+        }
+        payload.medios = [
+          { tipo: medioPago, monto: monto1 },
+          { tipo: segundoMedio, monto: monto2 },
+        ]
+        const usaCheque = medioPago === "cheque" || segundoMedio === "cheque"
+        if (usaCheque && medioPago === "cheque") {
+          payload.cheque = {
+            numero: chequeNumero.trim(),
+            bancoNombre: chequeBanco.trim() || undefined,
+            cuitBancoLibrador: chequeCuit.trim() || undefined,
+            fechaEmision: chequeEmision,
+            fechaVencimiento: chequeVencimiento,
+            monto: monto1,
+          }
+        }
+      } else {
+        payload.medioPago = medioPago
+        if (medioPago === "cheque") {
+          payload.cheque = {
+            numero: chequeNumero.trim(),
+            bancoNombre: chequeBanco.trim() || undefined,
+            cuitBancoLibrador: chequeCuit.trim() || undefined,
+            fechaEmision: chequeEmision,
+            fechaVencimiento: chequeVencimiento,
+            monto: neto,
+          }
         }
       }
 
@@ -399,9 +488,16 @@ export default function CuentasCobrarPage() {
               { key: "netoRecibido", header: "Neto", align: "right", cell: (r) => <span className="font-bold text-primary">{formatCurrency(r.netoRecibido)}</span> },
               { key: "medioPago", header: "Medio", cell: (r) => <span className="text-xs text-muted-foreground">{r.medioPago}</span> },
               { key: "acciones" as any, header: "", cell: (r) => (
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=recibo&id=${r.id}`, "_blank") }}>
-                  PDF
-                </Button>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=recibo&id=${r.id}`, "_blank") }}>
+                    PDF
+                  </Button>
+                  {r.totalRetenciones > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-700" onClick={(e) => { e.stopPropagation(); window.open(`/api/impresion/pdf?tipo=certificado-retencion-recibo&id=${r.id}`, "_blank") }}>
+                      Cert.
+                    </Button>
+                  )}
+                </div>
               ) },
             ] as DataTableColumn<Recibo>[]}
             rowKey="id"
@@ -418,7 +514,7 @@ export default function CuentasCobrarPage() {
 
       {/* Modal cobro */}
       <Dialog open={modalCobro.length > 0} onOpenChange={() => setModalCobro([])}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{modalCobro.length > 1 ? "Cobro Masivo" : "Registrar Cobro"}</DialogTitle></DialogHeader>
           {modalCobro.length > 0 && (
             <div className="space-y-3 py-2">
@@ -439,8 +535,49 @@ export default function CuentasCobrarPage() {
                 <Input type="number" step="0.01" value={montoCobro} onChange={(e) => setMontoCobro(e.target.value)} disabled={modalCobro.length > 1} />
                 {modalCobro.length > 1 && <p className="text-xs text-muted-foreground">En cobros masivos se cancela el total de los saldos.</p>}
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ret-auto"
+                  checked={calcularRetencionesAuto}
+                  onCheckedChange={(v) => setCalcularRetencionesAuto(v === true)}
+                />
+                <Label htmlFor="ret-auto" className="text-sm font-normal cursor-pointer">
+                  Calcular retenciones automáticas
+                </Label>
+              </div>
+              {(loadingPreview || previewRetenciones?.aplicadas) && (
+                <div className="p-3 border border-amber-200 bg-amber-50/50 rounded-lg text-sm space-y-1">
+                  <p className="font-semibold text-amber-800">Retenciones estimadas</p>
+                  {loadingPreview ? (
+                    <p className="text-xs text-muted-foreground">Calculando...</p>
+                  ) : previewRetenciones?.aplicadas ? (
+                    <>
+                      {previewRetenciones.detalle.map((d, i) => (
+                        <p key={i} className="text-xs text-amber-900">
+                          {d.tipo} ({d.codigoRegimen}): {formatCurrency(d.monto)} — base {formatCurrency(d.base)} @ {d.alicuota}%
+                        </p>
+                      ))}
+                      <p className="font-bold text-amber-800 pt-1">
+                        Total retenido: {formatCurrency(previewRetenciones.total)} — Neto: {formatCurrency(netoEstimado)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sin retenciones aplicables</p>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="split-pago"
+                  checked={dividirPago}
+                  onCheckedChange={(v) => setDividirPago(v === true)}
+                />
+                <Label htmlFor="split-pago" className="text-sm font-normal cursor-pointer">
+                  Dividir en dos medios de pago
+                </Label>
+              </div>
               <div className="space-y-1.5">
-                <Label>Forma de pago</Label>
+                <Label>{dividirPago ? "Primer medio" : "Forma de pago"}</Label>
                 <Select value={medioPago} onValueChange={setMedioPago}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -451,6 +588,32 @@ export default function CuentasCobrarPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {dividirPago && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label>Segundo medio</Label>
+                    <Select value={segundoMedio} onValueChange={setSegundoMedio}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="efectivo">Efectivo</SelectItem>
+                        <SelectItem value="transferencia">Transferencia</SelectItem>
+                        <SelectItem value="cheque">Cheque</SelectItem>
+                        <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Monto 2º medio</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder={`Resto: ${formatCurrency(netoEstimado - (parseFloat(montoSegundoMedio) || 0))}`}
+                      value={montoSegundoMedio}
+                      onChange={(e) => setMontoSegundoMedio(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
               {medioPago === "cheque" && (
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/40">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Datos del cheque</p>

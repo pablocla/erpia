@@ -482,30 +482,25 @@ export class VentasService {
     let caeResult: { ok: boolean; cae?: string; qrBase64?: string; vencimientoCAE?: string; error?: string } | null =
       null
 
-    const emitirEventoFactura = () =>
-      eventBus.emit({
-        type: "FACTURA_EMITIDA",
-        payload: {
-          facturaId: factura.id,
-          empresaId: datosFactura.empresaId,
-          clienteId: pedido.clienteId,
-          condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId ?? null,
-          depositoId: datosFactura.depositoId ?? null,
-        },
-        timestamp: new Date(),
+    const emitirEventoFactura = async () => {
+      const { emitFacturaEmitida } = await import("@/lib/events/emit-domain-event")
+      await emitFacturaEmitida({
+        facturaId: factura.id,
+        empresaId: datosFactura.empresaId,
+        clienteId: pedido.clienteId,
+        total: Number(factura.total),
+        condicionPagoId: datosFactura.condicionPagoId ?? pedido.condicionPagoId ?? null,
+        depositoId: datosFactura.depositoId ?? null,
       })
+    }
 
     if (!datosFactura.cae) {
       const { solicitarCaeFactura } = await import("@/lib/afip/solicitar-cae-factura")
       caeResult = await solicitarCaeFactura(factura.id)
       if (caeResult.ok) {
-        const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
-        await onFacturaEmitida(factura.id)
         await emitirEventoFactura()
       }
     } else {
-      const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
-      await onFacturaEmitida(factura.id)
       await emitirEventoFactura()
     }
 

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Loader2, Lock } from "lucide-react"
@@ -15,8 +15,7 @@ export function PinOverlay({ isOpen, onSuccess }: PinOverlayProps) {
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  const setToken = useAuthStore(s => s.setToken)
-  const setUsuario = useAuthStore(s => s.setUsuario)
+  const login = useAuthStore(s => s.login)
 
   const handleNumber = (num: string) => {
     if (pin.length < 6) {
@@ -41,8 +40,7 @@ export function PinOverlay({ isOpen, onSuccess }: PinOverlayProps) {
       const data = await res.json()
       
       if (res.ok && data.success) {
-        setToken(data.token)
-        setUsuario(data.usuario)
+        login(data.token, data.usuario)
         setPin("")
         onSuccess()
       } else {

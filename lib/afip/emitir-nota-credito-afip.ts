@@ -1,5 +1,5 @@
-/**
- * Emisión AFIP de Notas de Crédito (WSFE + CbteAsoc).
+﻿/**
+ * EmisiÃ³n AFIP de Notas de CrÃ©dito (WSFE + CbteAsoc).
  */
 import QRCode from "qrcode"
 import { prisma } from "@/lib/prisma"
@@ -82,7 +82,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
     },
   })
 
-  if (!nc) return { ok: false, error: "Nota de crédito no encontrada" }
+  if (!nc) return { ok: false, error: "Nota de crÃ©dito no encontrada" }
   if (nc.cae && nc.estado === "emitida") {
     return {
       ok: true,
@@ -95,8 +95,8 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
   if (!empresa.certificadoCRT || !empresa.certificadoKEY) {
     return { ok: false, error: "Certificados AFIP no configurados" }
   }
-  if (!factura.cae) {
-    return { ok: false, error: "La factura original no tiene CAE — no se puede emitir NC fiscal" }
+  if (!factura?.cae) {
+    return { ok: false, error: "La factura original no tiene CAE â€” no se puede emitir NC fiscal" }
   }
 
   const ivaMap = new Map<number, { base: number; importe: number }>()
@@ -135,11 +135,11 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
   }
 
   const asociado = {
-    Tipo: factura.tipoCbte,
-    PtoVta: factura.puntoVenta,
-    Nro: factura.numero,
+    Tipo: factura?.tipoCbte,
+    PtoVta: factura?.puntoVenta,
+    Nro: factura?.numero,
     Cuit: empresa.cuit.replace(/\D/g, ""),
-    CbteFch: formatFechaAfip(factura.createdAt),
+    CbteFch: formatFechaAfip(factura?.createdAt),
   }
 
   if (isFceTipoCbte(nc.tipoCbte) && isFceNotaCreditoDebito(nc.tipoCbte)) {
@@ -152,7 +152,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
     if (!cbuFce || !validateCbu(cbuFce)) {
       return {
         ok: false,
-        error: "FCE MiPyME requiere CBU emisor configurado en Parámetros Fiscales",
+        error: "FCE MiPyME requiere CBU emisor configurado en ParÃ¡metros Fiscales",
       }
     }
     Object.assign(comprobante, buildFceOpcionales(cbuFce, tipoTransferenciaFce))
@@ -182,7 +182,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
 
     if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
       const obs = resultado.FeDetResp?.FECAEDetResponse?.Observaciones
-      return { ok: false, error: `AFIP rechazó la NC: ${JSON.stringify(obs)}` }
+      return { ok: false, error: `AFIP rechazÃ³ la NC: ${JSON.stringify(obs)}` }
     }
 
     const cae = resultado.FeDetResp.FECAEDetResponse.CAE as string
@@ -234,7 +234,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
         where: { id: nc.id },
         data: { estado: "pendiente_cae" },
       })
-      return { ok: false, error: "AFIP no disponible — NC quedó pendiente de CAE" }
+      return { ok: false, error: "AFIP no disponible â€” NC quedÃ³ pendiente de CAE" }
     }
 
     return { ok: false, error: msg }

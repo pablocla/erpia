@@ -23,10 +23,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         cliente: { select: { id: true, nombre: true, cuit: true } },
         items: {
           include: {
-            cuentaCobrar: { select: { id: true, concepto: true, montoOriginal: true } },
+            cuentaCobrar: { select: { id: true, observaciones: true, montoOriginal: true } },
           },
         },
-        retenciones: true,
       },
     })
 
@@ -62,7 +61,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     })
 
     if (!recibo) return NextResponse.json({ error: "Recibo no encontrado" }, { status: 404 })
-    if (recibo.anulado) return NextResponse.json({ error: "Recibo ya anulado" }, { status: 400 })
+    if (recibo.anulada) return NextResponse.json({ error: "Recibo ya anulado" }, { status: 400 })
 
     // Reverse CC impacts in a transaction
     await prisma.$transaction(async (tx) => {
@@ -85,7 +84,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       // Mark recibo as anulado
       await tx.recibo.update({
         where: { id: recibo.id },
-        data: { anulado: true },
+        data: { anulada: true },
       })
     })
 

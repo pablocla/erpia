@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { Scale, X } from "lucide-react"
@@ -66,7 +66,7 @@ export function BalanzaNumpad({ producto, open, onOpenChange, onConfirm }: Balan
   }
 
   function confirmar() {
-    if (!preview) return
+    if (!preview || !producto) return
     onConfirm({
       producto,
       cantidad: preview.pesoKg,

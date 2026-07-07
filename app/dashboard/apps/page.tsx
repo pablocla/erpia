@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Metadata } from "next"
 import { Suspense } from "react"
 import { Network, Sparkles, Store } from "lucide-react"
+import { MpCheckoutReturn } from "@/components/billing/mp-checkout-return"
 import { AppStoreGrid } from "@/components/marketplace/app-store-grid"
 import { ProductControlPanel } from "@/components/platform/product-control-panel"
 import { Button } from "@/components/ui/button"
@@ -73,6 +74,7 @@ export default async function AppsPage() {
       </div>
       <ProductControlPanel />
       <Suspense>
+        <MpCheckoutReturn />
         <AppStoreGrid />
       </Suspense>
     </div>

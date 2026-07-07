@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { provisionSku } from "@/lib/marketplace/provision-service"
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       success: true,
       ...result,
       message: result.auto
-        ? `Provisión automática iniciada para ${result.nombre}`
+        ? `ProvisiÃ³n automÃ¡tica iniciada para ${result.nombre}`
         : `Tarea de analista creada para ${result.nombre}`,
     })
   } catch (error: unknown) {

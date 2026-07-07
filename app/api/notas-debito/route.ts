@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           cliente: { select: { id: true, nombre: true, cuit: true } },
-          proveedor: { select: { id: true, razonSocial: true, cuit: true } },
+          proveedor: { select: { id: true, nombre: true, cuit: true } },
           factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true } },
           lineas: true,
         },

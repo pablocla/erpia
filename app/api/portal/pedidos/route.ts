@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const pedidos = await prisma.pedidoVenta.findMany({
-      where: { clienteId, empresaId, deletedAt: null },
+      where: { clienteId, empresaId,  },
       include: {
         lineas: {
           select: {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Validate cliente belongs to empresa
     const cliente = await prisma.cliente.findFirst({
-      where: { id: clienteId, empresaId, activo: true, deletedAt: null },
+      where: { id: clienteId, empresaId, activo: true,  },
       select: { id: true, nombre: true },
     })
     if (!cliente) {
@@ -120,9 +120,10 @@ export async function POST(request: NextRequest) {
         empresaId,
         clienteId,
         numero,
-        estado: "pendiente",
-        canal: "B2B_PORTAL",
-        observaciones,
+        fechaEmision: new Date(),
+        subtotal: total,
+        estado: "borrador",
+        observaciones: body.observaciones ?? `Pedido B2B - ${body.canal ?? "Portal"}`,
         total,
         lineas: {
           create: lineas.map((l, i) => ({
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
             descripcion: nombrePorId.get(l.productoId) ?? `Producto ${l.productoId}`,
             cantidad: l.cantidad,
             precioUnitario: lineasConPrecio[i].precioUnitario,
+            subtotal: l.cantidad * lineasConPrecio[i].precioUnitario,
             total: l.cantidad * lineasConPrecio[i].precioUnitario,
           })),
         },

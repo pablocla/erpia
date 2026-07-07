@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { predecirCompras } from "@/lib/ai"
+import { guardAiRequest, predecirCompras } from "@/lib/ai"
 
 /**
  * POST /api/ai/prediccion-compras — Predict what to restock this week based on sales history
@@ -9,6 +9,9 @@ export async function POST(request: NextRequest) {
   try {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
+
+    const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+    if (blocked) return blocked
 
     const resultado = await predecirCompras(ctx.auth.empresaId)
 

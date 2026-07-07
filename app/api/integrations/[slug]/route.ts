@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server"
+﻿import { type NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { isAdminRole } from "@/lib/auth/admin-roles"
@@ -20,7 +20,7 @@ export async function GET(
     const detalle = await obtenerDetalleConexion(ctx.auth.empresaId, slug)
     return NextResponse.json({ success: true, ...detalle })
   } catch {
-    return NextResponse.json({ error: "Integración no encontrada" }, { status: 404 })
+    return NextResponse.json({ error: "IntegraciÃ³n no encontrada" }, { status: 404 })
   }
 }
 
@@ -50,7 +50,7 @@ export async function PATCH(
   const body = await request.json()
   const parsed = PatchSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
+    return NextResponse.json({ error: "Datos invÃ¡lidos" }, { status: 400 })
   }
 
   if (parsed.data.accion === "probar") {

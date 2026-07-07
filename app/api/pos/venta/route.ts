@@ -14,7 +14,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { onFacturaEmitida } from "@/lib/contabilidad/factura-hooks"
+import { emitFacturaEmitidaLegacy } from "@/lib/events/emit-domain-event"
 import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 import { solicitarCaeFactura } from "@/lib/afip/solicitar-cae-factura"
 import { obtenerEstadoAfipPos } from "@/lib/pos/pos-afip-status"
@@ -468,7 +468,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 6. Asiento contable (fuera de la tx atómica para no bloquearla) ───
-    void onFacturaEmitida(result.id, empresaId)
+    void emitFacturaEmitidaLegacy(result.id, empresaId, { total: Number(result.total) })
 
     let cae: string | undefined
     let qrBase64: string | undefined
@@ -590,7 +590,7 @@ export async function GET(request: NextRequest) {
     const envasesAcceso = await canUseSku(empresaId, "pos.envases_gaseosas")
     const valesAcceso = await canUseSku(empresaId, "pos.vale_dinero")
 
-    const retailAccesos = []
+    const retailAccesos: any[] = []
     for (const sku of RETAIL_EXTENSION_SKUS) {
       retailAccesos.push(await canUseSku(empresaId, sku))
     }

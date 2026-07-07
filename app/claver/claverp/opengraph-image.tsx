@@ -1,9 +1,10 @@
 import { ImageResponse } from "next/og"
-import { CLAVERP_PRODUCT, CLAVER_GROUP } from "@/lib/marketing/brand-system"
+import { brandLockup } from "@/lib/brand"
+import { CLAVERP_PRODUCT } from "@/lib/marketing/brand-system"
 
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
-export const alt = `${CLAVERP_PRODUCT.name} by ${CLAVER_GROUP.name}`
+export const alt = brandLockup(CLAVERP_PRODUCT.name)
 
 export default function ClavERPOgImage() {
   return new ImageResponse(
@@ -21,7 +22,6 @@ export default function ClavERPOgImage() {
           fontFamily: "Georgia, serif",
         }}
       >
-        <div style={{ fontSize: 22, color: "#fbbf24", marginBottom: 12 }}>{`by ${CLAVER_GROUP.name}`}</div>
         <div style={{ fontSize: 80, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 16 }}>
           {CLAVERP_PRODUCT.name}
         </div>

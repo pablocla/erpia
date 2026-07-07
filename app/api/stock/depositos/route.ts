@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   const depositos = await prisma.deposito.findMany({
     where: whereEmpresa(ctx.auth.empresaId),
     include: {
-      _count: { select: { stockDepositos: true } },
-      stockDepositos: {
+      _count: { select: { stocks: true } },
+      stocks: {
         select: { cantidad: true },
       },
     },
@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     id: d.id,
     nombre: d.nombre,
     direccion: d.direccion,
-    esPrincipal: d.esPrincipal,
+    esPrincipal: d.tipo === "principal",
     activo: d.activo,
-    totalProductos: d._count.stockDepositos,
-    stockTotal: d.stockDepositos.reduce((sum: number, s: { cantidad: number }) => sum + s.cantidad, 0),
+    totalProductos: d._count.stocks,
+    stockTotal: d.stocks.reduce((sum: number, s: { cantidad: number }) => sum + s.cantidad, 0),
   }))
 
   return NextResponse.json({ success: true, depositos: result })
@@ -91,11 +91,18 @@ export async function POST(request: NextRequest) {
     // Record transfer
     const transfer = await tx.transferenciaDeposito.create({
       data: {
-        productoId: data.productoId,
-        depositoOrigenId: data.depositoOrigenId,
-        depositoDestinoId: data.depositoDestinoId,
-        cantidad: data.cantidad,
+        numero: `TRF-${Date.now()}`,
+        empresaId: ctx.auth.empresaId,
+        origenId: data.depositoOrigenId,
+        destinoId: data.depositoDestinoId,
         observaciones: data.observaciones,
+        estado: "aprobada",
+        lineas: {
+          create: [{
+            productoId: data.productoId,
+            cantidad: data.cantidad
+          }]
+        }
       },
     })
 

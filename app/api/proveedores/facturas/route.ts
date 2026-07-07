@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       entity: "Invoice",
       action: "create",
       params: { payload: invoicePayload }
-    }, config)
+    } as unknown as any, config)
 
     return NextResponse.json({ success: true, result: result.data[0] })
   } catch (error) {

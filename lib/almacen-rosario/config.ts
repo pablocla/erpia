@@ -100,7 +100,7 @@ export async function saveAlmacenRosarioConfig(
     promociones: partial.promociones ?? current.promociones,
     promosCantidad: partial.promosCantidad ?? current.promosCantidad,
   }
-  await setFeature(empresaId, FEATURE_ALMACEN_ROSARIO, { activado: true, parametros: merged })
+  await setFeature(empresaId, FEATURE_ALMACEN_ROSARIO, { activado: true, parametros: merged as unknown as Record<string, unknown> })
   return merged
 }
 

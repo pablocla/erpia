@@ -18,6 +18,9 @@ import {
   assertProductoEmpresa,
 } from "@/lib/auth/tenant-validate"
 import type { OcAprobadaPayload, CompraRegistradaPayload } from "@/lib/events/types"
+import { getCuentaLabel } from "@/lib/config/parametro-service"
+import { resolverCuentaContableId } from "@/lib/contabilidad/movimiento-builder"
+import { registrarCompromiso } from "@/lib/presupuesto/presupuesto-service"
 
 export interface ThreeWayMatchResult {
   ok: boolean
@@ -99,6 +102,23 @@ export class ComprasService {
       },
       timestamp: new Date(),
     })
+
+    try {
+      const ctaMercaderia = await getCuentaLabel(empresaId, "compra", "mercaderia", "1.4", "Mercaderías")
+      const cuentaContableId = await resolverCuentaContableId(empresaId, ctaMercaderia)
+      if (cuentaContableId) {
+        const fecha = new Date(oc.fechaEmision)
+        await registrarCompromiso({
+          empresaId,
+          cuentaContableId,
+          mes: fecha.getMonth() + 1,
+          ejercicio: fecha.getFullYear(),
+          monto: Number(oc.total),
+        })
+      }
+    } catch {
+      // Presupuesto opcional
+    }
 
     return oc
   }

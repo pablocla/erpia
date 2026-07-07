@@ -74,6 +74,40 @@ vi.mock("@/lib/marketplace/provision-service", () => ({
   provisionSku: vi.fn().mockResolvedValue({ jobId: "j1", auto: true, sku: "sec.backup" }),
 }))
 
+vi.mock("@/lib/ops/signup-tracking", () => ({
+  getSignupMeta: vi.fn().mockResolvedValue({
+    origen: "web_register",
+    origenDetalle: null,
+    demoIndustryId: null,
+    trial: { activo: true, diasRestantes: 10, expirado: false },
+  }),
+  ORIGEN_LABELS: { web_register: "Registro web" },
+  diasDesde: vi.fn().mockReturnValue(5),
+}))
+
+vi.mock("@/lib/ops/tenant-lifecycle-service", () => ({
+  computeTenantLifecycle: vi.fn().mockReturnValue({
+    estado: "trial",
+    label: "Trial",
+    descripcion: "Período de prueba",
+    pasoActual: 1,
+    pasos: [],
+    suspendidoAt: null,
+    accionesDisponibles: ["suspend"],
+  }),
+  getPipelineLeadForTenant: vi.fn().mockResolvedValue(null),
+  getTenantHealth: vi.fn().mockResolvedValue({
+    nivel: "ok",
+    label: "Saludable",
+    entornosError: 0,
+    logsError: 0,
+    ticketsAbiertos: 0,
+    jobsActivos: 0,
+    detalles: [],
+  }),
+  getTenantRecentActivity: vi.fn().mockResolvedValue([]),
+}))
+
 describe("tenant-admin-service", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -85,6 +119,8 @@ describe("tenant-admin-service", () => {
       rubro: "almacen",
       entornoAfip: "homologacion",
       planHosting: "shared",
+      createdAt: new Date("2026-01-01"),
+      deletedAt: null,
     })
     mockPrismaClient.marketplaceTareaAnalista.count.mockResolvedValue(2)
     mockPrismaClient.suscripcionModulo.findMany.mockResolvedValue([
@@ -99,6 +135,8 @@ describe("tenant-admin-service", () => {
     expect(overview.productosActivos).toBeGreaterThanOrEqual(1)
     expect(overview.productos.some((p) => p.sku === "sec.backup" && p.activo)).toBe(true)
     expect(overview.readiness.score).toBe(65)
+    expect(overview.lifecycle.estado).toBe("trial")
+    expect(overview.health.nivel).toBe("ok")
   })
 
   it("ejecutarAccionProductoTenant provisiona SKU", async () => {

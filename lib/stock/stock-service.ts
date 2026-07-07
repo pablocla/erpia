@@ -8,6 +8,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { eventBus } from "@/lib/events/event-bus"
+import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
 import type {
   FacturaEmitidaPayload,
   CompraRegistradaPayload,
@@ -217,6 +218,8 @@ export class StockService {
       select: { id: true, stock: true, stockMinimo: true, nombre: true, empresaId: true },
     })
     if (!producto) return
+
+    await periodoFiscalService.validarPeriodoAbierto(new Date(), producto.empresaId)
 
     const cantidadAnterior = producto.stock
     const cantidadNueva = cantidadAnterior + cantidad

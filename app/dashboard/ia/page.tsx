@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
@@ -69,7 +69,7 @@ interface Proyeccion {
 function useAuthHeaders(): () => Record<string, string> {
   return useCallback(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
-    return token ? { Authorization: `Bearer ${token}` } : {}
+    return (token ? { Authorization: `Bearer ${token}` } : {}) as any
   }, [])
 }
 

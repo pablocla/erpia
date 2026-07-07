@@ -1,6 +1,6 @@
 import type { OpoEntityBridgeMapping, ProtheusRestService } from "./types"
 
-const TIMEOUT_MS = 30_000
+const TIMEOUT_MS = 90_000
 const DISCOVERY_PATH = "/tlpp/rest/list/service"
 
 export interface ProtheusRestCredentials {

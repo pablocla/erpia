@@ -30,11 +30,8 @@ export async function POST(request: NextRequest) {
     // Fetch via Legacy Bridge (OPO)
     const result = await adapter.query(empresaId, {
       entity: "Customer",
-      action: "read",
-      params: { 
-        cuit: cleanCuit,
-        limit: 1
-      }
+      search: cleanCuit,
+      limit: 1
     }, config)
 
     if (result.count === 0 || !result.data[0]) {

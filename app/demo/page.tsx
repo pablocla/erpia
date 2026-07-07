@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { IndustrySelector } from "@/components/onboarding/industry-selector"
@@ -11,11 +11,14 @@ import { CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import { useAuth } from "@/lib/auth/hooks"
 import { launchIndustryDemo } from "@/components/onboarding/launch-industry-demo"
 import { Button } from "@/components/ui/button"
+import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MotionFadeDown } from "@/components/ui/motion"
 
-export default function DemoSensorPage() {
+function DemoSensorPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activarParam = searchParams.get("activar")
   const { loginConToken } = useAuth()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [error, setError] = useState("")
@@ -24,7 +27,7 @@ export default function DemoSensorPage() {
     setError("")
     setLoadingId(industryId)
     try {
-      const dest = await launchIndustryDemo(industryId, loginConToken)
+      const dest = await launchIndustryDemo(industryId, loginConToken, { activar: activarParam })
       router.push(dest)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de conexión")
@@ -58,6 +61,17 @@ export default function DemoSensorPage() {
             <span className="font-medium text-white">¿Cuál es tu mundo hoy?</span>
             <span className="text-slate-400"> — Elegí para armar tu demo en 10 segundos</span>
           </div>
+
+          {activarParam && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm">
+              <span className="text-emerald-100">
+                ¿Te gustó la demo? Guardá tu cuenta con el mismo producto — 14 días gratis.
+              </span>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500" asChild>
+                <Link href={activarRegisterHref(activarParam)}>Crear mi cuenta</Link>
+              </Button>
+            </div>
+          )}
         </MotionFadeDown>
 
         {error && (
@@ -90,5 +104,13 @@ export default function DemoSensorPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DemoSensorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950" />}>
+      <DemoSensorPageContent />
+    </Suspense>
   )
 }

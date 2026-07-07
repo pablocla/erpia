@@ -21,15 +21,20 @@ import { getCuentaLabel } from "@/lib/config/parametro-service"
 import { resolveCuentaCobro } from "@/lib/contabilidad/medio-pago-cuentas"
 import { periodoFiscalService } from "@/lib/contabilidad/periodo-fiscal-service"
 import { chequeService, type ChequeInput } from "@/lib/cheques/cheque-service"
+import { buildMovimientosConCentro } from "@/lib/contabilidad/movimiento-builder"
+import { calcularRetencionesCobroSufridas } from "@/lib/impuestos/retencion-calculo-service"
+import { normalizarMediosPago, type MedioPagoLinea } from "@/lib/tesoreria/medios-pago-utils"
 import type { ReciboEmitidoPayload } from "@/lib/events/types"
 
 export interface CobroInput {
   clienteId: number
   empresaId: number
   items: { cuentaCobrarId: number; monto: number }[]
-  medioPago: "efectivo" | "transferencia" | "cheque" | "tarjeta"
+  medioPago?: "efectivo" | "transferencia" | "cheque" | "tarjeta"
+  medios?: MedioPagoLinea[]
   fecha?: Date
   observaciones?: string
+  calcularRetencionesAuto?: boolean
   cheque?: ChequeInput
   retenciones?: {
     retencionIVA?: number
@@ -93,21 +98,65 @@ export class CobrosService {
   }
 
   async registrarCobro(input: CobroInput) {
-    const { clienteId, empresaId, items, medioPago, fecha, observaciones, retenciones, cheque } = input
+    const {
+      clienteId,
+      empresaId,
+      items,
+      medioPago,
+      medios: mediosInput,
+      fecha,
+      observaciones,
+      retenciones,
+      cheque,
+      calcularRetencionesAuto,
+    } = input
     const fechaOp = fecha ?? new Date()
 
     await periodoFiscalService.validarPeriodoAbierto(fechaOp, empresaId)
 
-    if (medioPago === "cheque" && !cheque?.numero) {
-      throw new Error("Datos del cheque requeridos (número, fechas)")
+    const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
+
+    let retencionIVA = retenciones?.retencionIVA ?? 0
+    let retencionGanancias = retenciones?.retencionGanancias ?? 0
+    let retencionIIBB = retenciones?.retencionIIBB ?? 0
+    let detalleRetenciones: Awaited<ReturnType<typeof calcularRetencionesCobroSufridas>>["detalle"] = []
+
+    const sinRetencionesManuales =
+      retencionIVA === 0 && retencionGanancias === 0 && retencionIIBB === 0
+
+    if (calcularRetencionesAuto || sinRetencionesManuales) {
+      const calc = await calcularRetencionesCobroSufridas({
+        empresaId,
+        clienteId,
+        montoBase: montoTotal,
+      })
+      if (calc.aplicadas && sinRetencionesManuales) {
+        retencionIVA = calc.retencionIVA
+        retencionGanancias = calc.retencionGanancias
+        retencionIIBB = calc.retencionIIBB
+        detalleRetenciones = calc.detalle
+      } else if (calcularRetencionesAuto) {
+        retencionIVA = calc.retencionIVA
+        retencionGanancias = calc.retencionGanancias
+        retencionIIBB = calc.retencionIIBB
+        detalleRetenciones = calc.detalle
+      }
     }
 
-    const montoTotal = items.reduce((acc, i) => acc + i.monto, 0)
-    const retencionIVA = retenciones?.retencionIVA ?? 0
-    const retencionGanancias = retenciones?.retencionGanancias ?? 0
-    const retencionIIBB = retenciones?.retencionIIBB ?? 0
     const totalRetenciones = retencionIVA + retencionGanancias + retencionIIBB
     const netoRecibido = montoTotal - totalRetenciones
+
+    const medios = normalizarMediosPago({
+      medioPago,
+      medios: mediosInput,
+      montoNeto: netoRecibido,
+    })
+
+    const medioPrincipal = medios[0]?.tipo ?? medioPago ?? "efectivo"
+    const usaCheque = medios.some((m) => m.tipo === "cheque")
+    if (usaCheque && !cheque?.numero) {
+      throw new Error("Datos del cheque requeridos (número, fechas)")
+    }
 
     if (netoRecibido < 0) {
       throw new Error("Las retenciones superan el monto total a cobrar")
@@ -133,7 +182,7 @@ export class CobrosService {
           numero,
           fecha: fechaOp,
           montoTotal,
-          medioPago,
+          medioPago: medioPrincipal,
           retencionIVA,
           retencionGanancias,
           retencionIIBB,
@@ -147,6 +196,28 @@ export class CobrosService {
               cuentaCobrarId: i.cuentaCobrarId,
             })),
           },
+          mediosPago: {
+            create: medios.map((m) => ({
+              tipo: m.tipo,
+              monto: m.monto,
+              referencia: m.referencia,
+            })),
+          },
+          ...(detalleRetenciones.length > 0
+            ? {
+                retencionesDetalle: {
+                  create: detalleRetenciones.map((d) => ({
+                    tipo: d.tipo,
+                    codigoRegimen: d.codigoRegimen,
+                    base: d.base,
+                    alicuota: d.alicuota,
+                    monto: d.monto,
+                    jurisdiccion: d.jurisdiccion,
+                    empresaId,
+                  })),
+                },
+              }
+            : {}),
         },
       })
 
@@ -170,33 +241,25 @@ export class CobrosService {
       const ultimoAsiento = await tx.asientoContable.findFirst({ orderBy: { numero: "desc" } })
       const numeroAsiento = (ultimoAsiento?.numero ?? 0) + 1
 
-      const movimientos: { cuenta: string; debe: number; haber: number }[] = []
-
-      const [ctaMedioPago, ctaRetIVA, ctaRetGan, ctaRetIIBB, ctaDeudores] = await Promise.all([
-        resolveCuentaCobro(empresaId, medioPago),
+      const [ctaRetIVA, ctaRetGan, ctaRetIIBB, ctaDeudores] = await Promise.all([
         getCuentaLabel(empresaId, "cobro", "ret_iva_sufrida", "1.7.1", "Ret. IVA sufridas"),
         getCuentaLabel(empresaId, "cobro", "ret_gan_sufrida", "1.7.2", "Ret. Ganancias sufridas"),
         getCuentaLabel(empresaId, "cobro", "ret_iibb_sufrida", "1.7.3", "Ret. IIBB sufridas"),
         getCuentaLabel(empresaId, "cobro", "deudores", "1.3", "Deudores por Ventas"),
       ])
 
-      if (netoRecibido > 0) {
-        movimientos.push({ cuenta: ctaMedioPago, debe: netoRecibido, haber: 0 })
+      const movimientoInputs: { cuentaLabel: string; debe: number; haber: number }[] = []
+
+      for (const medio of medios) {
+        if (medio.monto <= 0) continue
+        const cta = await resolveCuentaCobro(empresaId, medio.tipo)
+        movimientoInputs.push({ cuentaLabel: cta, debe: medio.monto, haber: 0 })
       }
 
-      // DEBE: retenciones sufridas (activos — crédito fiscal a nuestro favor)
-      if (retencionIVA > 0) {
-        movimientos.push({ cuenta: ctaRetIVA, debe: retencionIVA, haber: 0 })
-      }
-      if (retencionGanancias > 0) {
-        movimientos.push({ cuenta: ctaRetGan, debe: retencionGanancias, haber: 0 })
-      }
-      if (retencionIIBB > 0) {
-        movimientos.push({ cuenta: ctaRetIIBB, debe: retencionIIBB, haber: 0 })
-      }
-
-      // HABER: accounts receivable extinguished
-      movimientos.push({ cuenta: ctaDeudores, debe: 0, haber: montoTotal })
+      if (retencionIVA > 0) movimientoInputs.push({ cuentaLabel: ctaRetIVA, debe: retencionIVA, haber: 0 })
+      if (retencionGanancias > 0) movimientoInputs.push({ cuentaLabel: ctaRetGan, debe: retencionGanancias, haber: 0 })
+      if (retencionIIBB > 0) movimientoInputs.push({ cuentaLabel: ctaRetIIBB, debe: retencionIIBB, haber: 0 })
+      movimientoInputs.push({ cuentaLabel: ctaDeudores, debe: 0, haber: montoTotal })
 
       const cliente = await tx.cliente.findUnique({ where: { id: clienteId }, select: { nombre: true } })
 
@@ -208,16 +271,17 @@ export class CobrosService {
           tipo: "cobro",
           tipoAsientoId: (await tx.tipoAsiento.findFirst({ where: { empresaId, codigo: "COBRO", activo: true } }))?.id,
           empresaId,
-          movimientos: { create: movimientos },
+          movimientos: { create: await buildMovimientosConCentro(empresaId, movimientoInputs) },
         },
       })
 
-      if (medioPago === "cheque" && cheque) {
+      if (usaCheque && cheque) {
+        const montoCheque = medios.find((m) => m.tipo === "cheque")?.monto ?? netoRecibido
         await chequeService.crearDesdeCobro(tx, {
           reciboId: recibo.id,
           clienteId,
           cheque,
-          montoDefault: netoRecibido,
+          montoDefault: montoCheque,
         })
       }
 
@@ -231,7 +295,7 @@ export class CobrosService {
         reciboId: result.id,
         clienteId,
         montoTotal,
-        medioPago,
+        medioPago: medioPrincipal,
         cuentasCobrarIds: items.map((i) => i.cuentaCobrarId),
       },
       timestamp: new Date(),

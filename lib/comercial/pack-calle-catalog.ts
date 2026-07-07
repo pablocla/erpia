@@ -8,7 +8,7 @@ import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios"
 
 export interface PackCalle {
   id: string
@@ -29,6 +29,7 @@ const LANDING: Record<ModoLite, string> = {
   pos: "/dashboard/pos",
   completo: "/dashboard",
   niche: "/dashboard/nicho",
+  servicios: "/dashboard/ventas/presupuestos",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {
@@ -69,7 +70,10 @@ export const PACKS_CALLE: PackCalle[] = [
   packFromSku("intang.cobranzas_wa", "cobranza")!,
   packFromBundle("pool-almacen-barrio", "completo")!,
   packFromBundle("pool-claver-nicho", "niche")!,
-  packFromBundle("pool-propiedad", "niche")!,
+  packFromBundle("pool-propiedad", "niche", true)!, // INMO-P0: liquidación + PDF + morosos + crons
+  packFromBundle("pool-monotributo", "servicios")!,
+  { ...packFromBundle("pool-servicios-pro", "servicios")!, landingPath: "/dashboard/agenda" },
+  { ...packFromBundle("pool-obra", "niche")!, landingPath: "/dashboard/nicho/obras" },
   packFromBundle("pool-calle-nicho", "niche")!,
   packFromBundle("pool-servicios-barrio", "niche")!,
   packFromBundle("pool-escuela-barrio", "niche")!,
@@ -99,6 +103,9 @@ const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   "pool-cobra-recupera": "cobranza",
   "pool-claver-nicho": "niche",
   "pool-propiedad": "niche",
+  "pool-monotributo": "servicios",
+  "pool-servicios-pro": "servicios",
+  "pool-obra": "niche",
   "pool-calle-nicho": "niche",
   "pool-servicios-barrio": "niche",
   "pool-escuela-barrio": "niche",
@@ -158,7 +165,10 @@ export function engancheParaRubro(rubro: string): string {
 
 export function skusParaActivar(engancheId: string): string[] {
   const pack = resolvePackCalle(engancheId)
-  if (pack) return pack.skus
+  if (pack) {
+    if (engancheId === "pos.balanza_peso") return ["core.claver", ...pack.skus]
+    return pack.skus
+  }
   return ["pos.fiado_barrio"]
 }
 

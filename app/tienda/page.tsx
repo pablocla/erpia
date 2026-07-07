@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
@@ -16,9 +16,9 @@ function TiendaPageContent() {
   return (
     <TiendaStorefront
       empresaId={empresaId}
-      canalVentaCodigo={canal}
-      pagoReturn={pagoReturn}
-      pedidoReturn={pedidoReturn}
+      canalVentaCodigo={canal ?? undefined}
+      pagoReturn={pagoReturn ?? undefined}
+      pedidoReturn={pedidoReturn ?? undefined}
     />
   )
 }

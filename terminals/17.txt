@@ -1,0 +1,15 @@
+---
+pid: 3208
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "$jobs = 1..3 | ForEach-Object { Start-Job -ScriptBlock { Invoke-RestMethod -Uri \"http://localhost:3000/api/onboarding/industry-demo\" -Method POST -ContentType \"application/json\" -Body '{\"industryId\":\"taller_mecanico\"}' } }; $results = $jobs | Wait-Job | Receive-Job; $jobs | Remove-Job; $results | ForEach-Object { [PSCustomObject]@{ email=$_.usuario.email; empresaId=$_.usuario.empresaId; skus=($_.provision.skusActivados -join ','); productos=$_.provision.productosCreados; clientes=$_.provision.clientesCreados } } | Format-Table -AutoSize"
+started_at: 2026-07-03T18:38:18.579Z
+running_for_ms: 495003   
+---
+
+email                       empresaId skus                  productos clientes
+-----                       --------- ----                  --------- --------
+demo-c0f26187@claver.com.ar        36 niche.taller_mecanico         2        1
+demo-96623621@claver.com.ar        37 niche.taller_mecanico         2        1
+demo-d34f3d9e@claver.com.ar        38 niche.taller_mecanico         2        1
+
+

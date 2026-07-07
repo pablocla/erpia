@@ -1,13 +1,13 @@
-/**
+﻿/**
  * GET /api/impuestos/percepciones
  *
  * Aggregates IVA/IIBB perceptions emitted (from sales) and received (from purchases)
  * for a given period.
  *
  * Query params:
- *   mes   (required) — 1–12
- *   anio  (required) — YYYY
- *   tipo  (optional) — "emitidas" | "recibidas" | omit for both
+ *   mes   (required) â€” 1â€“12
+ *   anio  (required) â€” YYYY
+ *   tipo  (optional) â€” "emitidas" | "recibidas" | omit for both
  */
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
     const anioNum = Number.parseInt(anio, 10)
 
     if (Number.isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
-      return NextResponse.json({ error: "mes inválido" }, { status: 400 })
+      return NextResponse.json({ error: "mes invÃ¡lido" }, { status: 400 })
     }
     if (Number.isNaN(anioNum) || anioNum < 2000) {
-      return NextResponse.json({ error: "anio inválido" }, { status: 400 })
+      return NextResponse.json({ error: "anio invÃ¡lido" }, { status: 400 })
     }
 
     // Date range for the period
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     let percepciones_emitidas = null
     let percepciones_recibidas = null
 
-    // Percepciones EMITIDAS — totalPercepciones on Facturas (ventas)
+    // Percepciones EMITIDAS â€” totalPercepciones on Facturas (ventas)
     if (!tipo || tipo === "emitidas") {
       const facturas = await prisma.factura.findMany({
         where: {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "asc" },
       })
 
-      const totalEmitido = facturas.reduce((sum, f) => sum + f.totalPercepciones, 0)
+      const totalEmitido = facturas.reduce((sum, f) => sum + Number(f.totalPercepciones), 0)
 
       percepciones_emitidas = {
         total: Number(totalEmitido.toFixed(2)),
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Percepciones RECIBIDAS — totalPercepciones on Compras (purchases)
+    // Percepciones RECIBIDAS â€” totalPercepciones on Compras (purchases)
     if (!tipo || tipo === "recibidas") {
       const compras = await prisma.compra.findMany({
         where: {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         orderBy: { fecha: "asc" },
       })
 
-      const totalRecibido = compras.reduce((sum, c) => sum + c.totalPercepciones, 0)
+      const totalRecibido = compras.reduce((sum, c) => sum + Number(c.totalPercepciones), 0)
 
       percepciones_recibidas = {
         total: Number(totalRecibido.toFixed(2)),
@@ -115,3 +115,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Error al obtener percepciones" }, { status: 500 })
   }
 }
+

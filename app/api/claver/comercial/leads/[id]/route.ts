@@ -2,10 +2,11 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getClaverAnalystContext } from "@/lib/auth/claver-analyst"
 import {
   PIPELINE_ETAPAS,
+  getComercialLeadById,
   updateComercialLead,
   type PipelineEtapa,
 } from "@/lib/ops/comercial-pipeline-service"
-import { crearEmpresaYTenant } from "@/lib/auth/empresa-guard"
+import { provisionarDesdeLead } from "@/lib/provisioning/provision-from-lead"
 
 export async function PATCH(
   request: NextRequest,
@@ -27,16 +28,45 @@ export async function PATCH(
     }
 
     if (body.provision) {
-      // Mocked Provisioning for demo purposes
-      // In a real scenario, it would extract data from the Lead and create a tenant
-      const newTenant = await crearEmpresaYTenant({
-        email: ctx.auth.email,
-        nombreFantasia: body.nombre || "Nuevo Tenant",
-        password: "TempPassword123!",
+      const lead = await getComercialLeadById(leadId)
+      if (!lead) {
+        return NextResponse.json({ error: "Lead no encontrado" }, { status: 404 })
+      }
+      if (lead.empresaId) {
+        return NextResponse.json(
+          { error: `El lead ya tiene tenant #${lead.empresaId}` },
+          { status: 409 },
+        )
+      }
+
+      const contactoEmail =
+        body.contactoEmail?.trim()?.toLowerCase() || lead.email?.trim()?.toLowerCase()
+      if (!contactoEmail) {
+        return NextResponse.json(
+          { error: "El lead necesita un email para provisionar" },
+          { status: 400 },
+        )
+      }
+
+      const result = await provisionarDesdeLead({
+        leadId,
+        contactoEmail,
+        contactoNombre: body.contactoNombre || lead.nombre,
+        analistaEmail: ctx.auth.email,
+        engancheId: body.engancheId,
+        planHosting: body.planHosting,
       })
-      // Link the lead to the new tenant
-      body.empresaId = newTenant.empresa.id
-      delete body.provision
+
+      const updated = await getComercialLeadById(leadId)
+
+      return NextResponse.json({
+        ...updated,
+        provision: {
+          empresaId: result.empresaId,
+          tempPassword: result.tempPassword,
+          landingPath: result.landingPath,
+        },
+      })
     }
 
     const lead = await updateComercialLead(leadId, body)
@@ -47,6 +77,7 @@ export async function PATCH(
     return NextResponse.json(lead)
   } catch (error) {
     console.error("Error actualizando lead comercial:", error)
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+    const msg = error instanceof Error ? error.message : "Error interno"
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

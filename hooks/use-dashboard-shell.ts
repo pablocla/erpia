@@ -8,11 +8,13 @@ import { shouldRedirectAnalystToCloud } from "@/lib/auth/home-redirect"
 import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
 import { getCountryFeatures, type CountryFeatures } from "@/lib/country/country-features"
 import { normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
-import { isMenuItemAllowedInModoLite, type ModoLite } from "@/lib/comercial/lite-sidebar"
+import { isMenuItemAllowedInModoLite } from "@/lib/comercial/lite-sidebar"
+import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useThemeConfig } from "@/lib/theme-config"
 import { useCompactShell } from "@/hooks/use-mobile"
 import { resolveDashboardBranding } from "@/lib/brand"
+import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import {
   getIndustryTemplate,
   getMenuLabelForRubro,
@@ -38,6 +40,7 @@ export function useDashboardShell() {
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const [modoLite, setModoLite] = useState<string>("completo")
+  const [condicionIva, setCondicionIva] = useState<string>("Responsable Inscripto")
   const [sidebarSearch, setSidebarSearch] = useState("")
   const [countryFeatures, setCountryFeatures] = useState<CountryFeatures>(getCountryFeatures("AR"))
   const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
@@ -65,14 +68,21 @@ export function useDashboardShell() {
   const sidebarBranding = useMemo(() => {
     const effectiveRubro = industryTemplate?.rubro ?? rubro
     const base = resolveDashboardBranding(empresaDisplayName, effectiveRubro)
+    
+    // Override con la marca del producto si es un sub-saas (modoLite !== completo)
+    const shell = getActiveProductShell(modoLite, productosSku)
+    if (shell && shell.marca) {
+      base.title = shell.marca
+    }
+
     if (!industryTemplate) return base
     return {
       ...base,
-      title: industryTemplate.label,
+      title: shell?.marca ?? industryTemplate.label,
       subtitle: `Demo · ${industryTemplate.tagline}`,
       liveLabel: industryTemplate.wowMoment,
     }
-  }, [empresaDisplayName, rubro, industryTemplate])
+  }, [empresaDisplayName, rubro, industryTemplate, modoLite, productosSku])
 
   useEffect(() => setMounted(true), [])
 
@@ -134,7 +144,7 @@ export function useDashboardShell() {
     performLogoutAndRedirect("/login")
   }, [])
 
-  const authHeaders = useCallback(() => getAuthHeaders(token || ""), [token])
+  const authHeaders = useCallback(() => getAuthHeaders(), [])
 
   const cargarModulos = useCallback(async () => {
     try {
@@ -153,6 +163,7 @@ export function useDashboardShell() {
       setRubro(normalizeRubroValue(data?.rubro))
       setDemoIndustryId(typeof data?.demoIndustryId === "string" ? data.demoIndustryId : null)
       setModoLite(data?.modoLite ?? "completo")
+      setCondicionIva(data?.condicionIva ?? "Responsable Inscripto")
     } catch {
       setRubro("otro")
       setDemoIndustryId(null)
@@ -254,14 +265,15 @@ export function useDashboardShell() {
               rubro,
               isClaverAnalyst,
               countryFeatures,
+              condicionIva,
             )
           ) {
             return false
           }
-          if (modoLite !== "completo" && !isMenuItemAllowedInModoLite(item.href, modoLite as ModoLite)) {
+          if (modoLite !== "completo" && (!item.href || !isMenuItemAllowedInModoLite(item.href, modoLite as ModoLite))) {
             return false
           }
-          if (!isMenuHrefVisibleInAllowlist(item.href, sidebarAllowlist)) {
+          if (!item.href || !isMenuHrefVisibleInAllowlist(item.href, sidebarAllowlist)) {
             return false
           }
           return true
@@ -289,6 +301,7 @@ export function useDashboardShell() {
       sidebarAllowlist,
       effectiveRubro,
       isAdmin,
+      condicionIva,
     ],
   )
 
@@ -356,5 +369,7 @@ export function useDashboardShell() {
     isPosShell,
     isKioskMode,
     handleLogout,
+    modoLite,
+    productosSku,
   }
 }

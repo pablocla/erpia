@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,7 +55,7 @@ interface OrdenCompra {
 }
 
 export default function ComprasPage() {
-  const t = useTranslations("purchases")
+  
   const [tab, setTab] = useState("ordenes")
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [filters, setFilters] = useState<FilterValues>({})

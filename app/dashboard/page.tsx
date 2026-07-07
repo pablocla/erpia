@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,12 +14,15 @@ import {
 import {
   DollarSign, TrendingUp, TrendingDown, FileText, ShoppingCart,
   Wallet, AlertTriangle, RefreshCw, ArrowUpRight, ArrowDownRight, Sparkles, Rocket,
-  BarChart3, Bot, CheckSquare, Package, Users, Scissors, Truck, CalendarDays,
+  BarChart3, Bot, CheckSquare, Package, Users, Scissors, Truck, CalendarDays, ChevronDown,
   ClipboardList, UtensilsCrossed, Shield, Clock, BookOpen, AlertCircle, PlayCircle,
   Lock, CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
+import { ProductDashboardHome } from "@/components/dashboard/product-dashboard-home"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
 
@@ -80,9 +83,12 @@ function KPICard({
           <div className="flex items-center gap-2 mt-1">
             {subtitulo && <p className="text-xs text-muted-foreground">{subtitulo}</p>}
             {variacion !== undefined && (
-              <span className={`text-xs flex items-center gap-0.5 ${variacion >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {variacion >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {Math.abs(variacion)}% vs mes ant.
+              <span
+                className={`text-xs flex items-center gap-0.5 ${variacion >= 0 ? "text-green-600" : "text-red-600"}`}
+                aria-label={variacion >= 0 ? `Subió ${Math.abs(variacion)} por ciento` : `Bajó ${Math.abs(variacion)} por ciento`}
+              >
+                {variacion >= 0 ? <ArrowUpRight className="h-3 w-3" aria-hidden /> : <ArrowDownRight className="h-3 w-3" aria-hidden />}
+                <span>{variacion >= 0 ? "Subió" : "Bajó"} {Math.abs(variacion)}%</span>
               </span>
             )}
           </div>
@@ -195,8 +201,8 @@ function DashboardCajero({ user, authHeaders }: { user: any; authHeaders: () => 
     <div className="space-y-6">
       <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-sm">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">{t("salesPanel")}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t("cashier")}: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Panel de Ventas</h1>
+          <p className="text-muted-foreground text-sm mt-1">Cajero: <span className="font-semibold text-foreground">{user?.nombre}</span></p>
         </div>
         <Link href="/dashboard/pos">
           <Button size="lg" className="gap-2 font-bold shadow-md shadow-primary/10">
@@ -732,13 +738,15 @@ function DashboardMozo({ user, authHeaders }: { user: any; authHeaders: () => He
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const rol = user?.rol
-
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [periodo, setPeriodo] = useState("mes")
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [usingDemo, setUsingDemo] = useState(false)
+  const [modoLite, setModoLite] = useState<string>("completo")
+  const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
+  const [analyticsOpen, setAnalyticsOpen] = useState(false)
 
   const authHeaders = useCallback((): HeadersInit => {
     const token = localStorage.getItem("token")
@@ -847,6 +855,13 @@ export default function DashboardPage() {
       if (!res.ok) return
       const data = await res.json()
       setRubro(normalizeRubroValue(data?.rubro))
+      if (data?.modoLite) setModoLite(data.modoLite)
+      
+      const prodRes = await fetch("/api/platform/productos", { headers: authHeaders() })
+      if (prodRes.ok) {
+        const prodData = await prodRes.json()
+        setProductosSku(prodData?.mapa || {})
+      }
     } catch {
       setRubro("otro")
     }
@@ -891,6 +906,19 @@ export default function DashboardPage() {
     )
   }
 
+  if (modoLite !== "completo") {
+    const shell = getActiveProductShell(modoLite, productosSku)
+    if (shell) {
+      return (
+        <ProductDashboardHome
+          shell={shell}
+          authHeaders={authHeaders}
+          empresaId={user?.empresaId}
+        />
+      )
+    }
+  }
+
   const s = stats!
   const rubroConfig = getRubroUx(rubro)
   const saludOperativa = Math.max(
@@ -901,6 +929,8 @@ export default function DashboardPage() {
       - (s.resumenMes.ivaPagar > 0 ? 15 : 0)
       - (s.resumenMes.totalVentas === 0 ? 15 : 0),
   )
+  const saludLabel =
+    saludOperativa >= 85 ? "Excelente" : saludOperativa >= 65 ? "Aceptable" : "Requiere atención"
   const saludColorClass =
     saludOperativa >= 85 ? "text-green-700" : saludOperativa >= 65 ? "text-amber-700" : "text-red-700"
 
@@ -1044,12 +1074,13 @@ export default function DashboardPage() {
                     style={{ transition: "stroke-dasharray 1s cubic-bezier(0.16, 1, 0.3, 1)" }}
                   />
                 </svg>
-                <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold ${saludColorClass}`}>
-                  {saludOperativa}%
+                <span className={`absolute inset-0 flex flex-col items-center justify-center text-sm font-bold ${saludColorClass}`}>
+                  <span>{saludOperativa}%</span>
                 </span>
               </div>
               <div className="flex-1">
-                <p className="text-xs text-muted-foreground">
+                <p className={`text-xs font-medium ${saludColorClass}`}>{saludLabel}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Score basado en caja, stock, actividad de ventas e IVA.
                 </p>
               </div>
@@ -1088,9 +1119,6 @@ export default function DashboardPage() {
         </MotionList>
       )}
 
-      {/* AI Insights Widget */}
-      <AIInsightsWidget />
-
       <MotionList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
           titulo="Total Ventas"
@@ -1128,6 +1156,19 @@ export default function DashboardPage() {
           colorClass={s.resumenMes.totalVentas >= s.resumenMes.totalCompras ? "text-green-700" : "text-red-700"}
         />
       </MotionList>
+
+      <Collapsible open={analyticsOpen} onOpenChange={setAnalyticsOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between h-10 text-sm">
+            <span className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Análisis detallado y gráficos
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${analyticsOpen ? "rotate-180" : ""}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-6 pt-4">
+      <AIInsightsWidget />
 
       <ScrollReveal>
         <div className="grid gap-6 lg:grid-cols-3">
@@ -1196,7 +1237,8 @@ export default function DashboardPage() {
               <div className="mt-2 p-3 bg-muted rounded-lg text-center">
                 <p className="text-xs text-muted-foreground">Saldo a pagar</p>
                 <p className={`text-xl font-bold ${s.resumenMes.ivaPagar > 0 ? "text-red-700" : "text-green-700"}`}>
-                  {formatCurrency(s.resumenMes.ivaPagar)}
+                  {s.resumenMes.ivaPagar > 0 ? "A pagar " : "A favor "}
+                  {formatCurrency(Math.abs(s.resumenMes.ivaPagar))}
                 </p>
               </div>
             </CardContent>
@@ -1242,6 +1284,8 @@ export default function DashboardPage() {
           </Card>
         </ScrollReveal>
       )}
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }

@@ -1,0 +1,18 @@
+---
+pid: 36772
+cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
+command: "npm run dev"
+started_at: 2026-07-03T18:19:41.428Z
+running_for_ms: 1629990  
+---
+En l�nea: 1 Car�cter: 64
++ ... d "C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina" ; npm r ...
++                                                                  ~
+Falta el parntesis de cierre ')' en la expresi�n.
+En l�nea: 1 Car�cter: 78
++ ... Users\\Pablo Clavero\\Downloads\\pos-system-argentina" ; npm run dev)
++                                                                         ~
+Token ')' inesperado en la expresi�n o la instrucci�n.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingEndParenthesisInExpression
+ 

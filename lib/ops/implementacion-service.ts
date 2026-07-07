@@ -97,6 +97,30 @@ function enrichProyecto<T extends { fases: unknown; empresaId: number }>(
   return { ...row, fases, porcentajeAvance, faseActual }
 }
 
+const EMPRESA_PROYECTO_SELECT = {
+  id: true,
+  nombre: true,
+  razonSocial: true,
+  rubro: true,
+  cuit: true,
+  entornoAfip: true,
+  planHosting: true,
+  email: true,
+} as const
+
+async function fetchEmpresaProyecto(empresaId: number) {
+  const db = prisma as any
+  return db.empresa.findUnique({
+    where: { id: empresaId },
+    select: EMPRESA_PROYECTO_SELECT,
+  })
+}
+
+async function withEmpresa<T extends { empresaId: number }>(row: T) {
+  const empresa = await fetchEmpresaProyecto(row.empresaId)
+  return { ...row, empresa }
+}
+
 export async function listProyectosImplementacion(opts: {
   empresaIds?: number[]
   estado?: string
@@ -110,70 +134,29 @@ export async function listProyectosImplementacion(opts: {
 
   const rows = await db.proyectoImplementacion.findMany({
     where,
-    include: {
-      empresa: {
-        select: {
-          id: true,
-          nombre: true,
-          razonSocial: true,
-          rubro: true,
-          entornoAfip: true,
-          planHosting: true,
-        },
-      },
-    },
     orderBy: [{ fechaObjetivoGoLive: "asc" }, { updatedAt: "desc" }],
   })
 
   return Promise.all(
     rows.map(async (row: { empresaId: number; fases: unknown; [key: string]: any }) => {
       const senales = await detectarSenalesAutomaticas(row.empresaId)
-      return enrichProyecto(row, senales)
+      return enrichProyecto(await withEmpresa(row), senales)
     }),
   )
 }
 
 export async function getProyectoImplementacion(id: number) {
   const db = prisma as any
-  const row = await db.proyectoImplementacion.findUnique({
-    where: { id },
-    include: {
-      empresa: {
-        select: {
-          id: true,
-          nombre: true,
-          razonSocial: true,
-          rubro: true,
-          cuit: true,
-          entornoAfip: true,
-          planHosting: true,
-        },
-      },
-    },
-  })
+  const row = await db.proyectoImplementacion.findUnique({ where: { id } })
   if (!row) return null
   const senales = await detectarSenalesAutomaticas(row.empresaId)
-  return enrichProyecto(row, senales)
+  return enrichProyecto(await withEmpresa(row), senales)
 }
 
+/** Sin include empresa — ProyectoImplementacion no define relación en Prisma. */
 export async function getProyectoPorEmpresa(empresaId: number) {
   const db = prisma as any
-  const row = await db.proyectoImplementacion.findUnique({
-    where: { empresaId },
-    include: {
-      empresa: {
-        select: {
-          id: true,
-          nombre: true,
-          razonSocial: true,
-          rubro: true,
-          cuit: true,
-          entornoAfip: true,
-          planHosting: true,
-        },
-      },
-    },
-  })
+  const row = await db.proyectoImplementacion.findUnique({ where: { empresaId } })
   if (!row) return null
   const senales = await detectarSenalesAutomaticas(empresaId)
   return enrichProyecto(row, senales)
@@ -213,26 +196,25 @@ export async function crearProyectoImplementacion(input: {
     notas: "Proyecto creado desde Claver Cloud",
   }
 
-  const proyecto = await db.proyectoImplementacion.create({
-    data: {
-      codigo: generarCodigoProyecto(input.empresaId),
-      empresaId: input.empresaId,
-      analistaEmail: input.analistaEmail.toLowerCase(),
-      planComercial: input.planComercial,
-      fechaVenta: input.fechaVenta ?? new Date(),
-      fechaKickoff: input.fechaKickoff,
-      fechaObjetivoGoLive: input.fechaObjetivoGoLive,
-      urlAcceso,
-      notas: input.notas,
-      faseActual: "CCA-020",
-      porcentajeAvance: calcularPorcentajeAvance(fases),
-      fases,
-      packOnboardEntregado: false,
-    },
-    include: {
-      empresa: { select: { id: true, nombre: true, razonSocial: true, rubro: true } },
-    },
-  })
+  const proyecto = await withEmpresa(
+    await db.proyectoImplementacion.create({
+      data: {
+        codigo: generarCodigoProyecto(input.empresaId),
+        empresaId: input.empresaId,
+        analistaEmail: input.analistaEmail.toLowerCase(),
+        planComercial: input.planComercial,
+        fechaVenta: input.fechaVenta ?? new Date(),
+        fechaKickoff: input.fechaKickoff,
+        fechaObjetivoGoLive: input.fechaObjetivoGoLive,
+        urlAcceso,
+        notas: input.notas,
+        faseActual: "CCA-020",
+        porcentajeAvance: calcularPorcentajeAvance(fases),
+        fases,
+        packOnboardEntregado: false,
+      },
+    }),
+  )
 
   await persistSistemaLog({
     empresaId: input.empresaId,
@@ -308,13 +290,12 @@ export async function marcarFaseImplementacion(
     update.estado = "completado"
   }
 
-  const updated = await db.proyectoImplementacion.update({
-    where: { id },
-    data: update,
-    include: {
-      empresa: { select: { id: true, nombre: true, razonSocial: true, rubro: true } },
-    },
-  })
+  const updated = await withEmpresa(
+    await db.proyectoImplementacion.update({
+      where: { id },
+      data: update,
+    }),
+  )
 
   await persistSistemaLog({
     empresaId: proyecto.empresaId,
@@ -397,19 +378,20 @@ export async function ensureProyectoImplementacion(input: {
 
 async function enviarEmailPackOnboard(empresaId: number, proyectoId: number) {
   const db = prisma as any
-  const [proyecto, admin] = await Promise.all([
-    db.proyectoImplementacion.findUnique({
-      where: { id: proyectoId },
-      include: { empresa: { select: { nombre: true, email: true } } },
-    }),
+  const [proyectoRow, admin] = await Promise.all([
+    db.proyectoImplementacion.findUnique({ where: { id: proyectoId } }),
     db.usuario.findFirst({
       where: { empresaId, rol: { in: ["administrador", "admin", "dueno"] }, activo: true },
       select: { email: true, nombre: true },
       orderBy: { id: "asc" },
     }),
   ])
-  if (!proyecto || !admin?.email) return
+  if (!proyectoRow || !admin?.email) return
 
+  const empresa = await fetchEmpresaProyecto(proyectoRow.empresaId)
+  if (!empresa) return
+
+  const proyecto = { ...proyectoRow, empresa }
   const base = proyecto.urlAcceso ?? process.env.NEXT_PUBLIC_APP_URL ?? ""
   const html = emailLayout(`
     <h2 style="margin:0 0 12px;font-size:18px;">Tu entorno ${proyecto.empresa.nombre} está listo</h2>

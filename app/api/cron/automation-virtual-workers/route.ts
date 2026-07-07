@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server"
+import { verifyCronAuth } from "@/lib/scheduling/cron-auth"
 import { runAllVirtualWorkers } from "@/lib/automation/virtual-worker-runner"
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     const result = await runAllVirtualWorkers()

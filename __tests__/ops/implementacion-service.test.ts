@@ -74,7 +74,19 @@ describe("implementacion-service", () => {
     )
     mockPrismaClient.tenantEntorno.count.mockResolvedValue(3)
     mockPrismaClient.parametroFiscal.findFirst.mockResolvedValue(null)
-    mockPrismaClient.empresa.findUnique.mockResolvedValue({ entornoAfip: "homologacion" })
+    mockPrismaClient.empresa.findUnique.mockImplementation(
+      ({ where }: { where: { id?: number } }) =>
+        Promise.resolve({
+          id: where.id ?? 5,
+          nombre: "Test",
+          razonSocial: "Test SA",
+          rubro: "comercio",
+          cuit: "30-12345678-9",
+          entornoAfip: "homologacion",
+          planHosting: "shared",
+          email: "test@empresa.com",
+        }),
+    )
   })
 
   it("creates project with CCA-010 done and url from prd entorno", async () => {

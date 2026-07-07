@@ -1409,6 +1409,151 @@ ${op.observaciones ? `<p class="dato" style="margin-top:16px"><strong>Obs:</stro
       metadata: { tipo: "Orden de Pago", numero: op.numero, fecha, total: Number(op.netoPagado), cae: "" },
     }
   }
+
+  /**
+   * Certificado de retención sufrida en cobro (cliente retiene a la empresa).
+   * RG 2854 (IVA) / RG 830 (Ganancias).
+   */
+  async generarCertificadoRetencionReciboPDF(reciboId: number): Promise<PDFComprobante> {
+    const recibo = await prisma.recibo.findUnique({
+      where: { id: reciboId },
+      include: {
+        cliente: { include: { empresa: true } },
+        retencionesDetalle: true,
+      },
+    })
+    if (!recibo) throw new Error("Recibo no encontrado")
+    if (!recibo.retencionesDetalle?.length) {
+      throw new Error("El recibo no tiene retenciones registradas")
+    }
+
+    const empresa = recibo.cliente.empresa
+    const fecha = new Date(recibo.fecha).toLocaleDateString("es-AR")
+    const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+
+    const lineas = recibo.retencionesDetalle.map((r) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.tipo}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.codigoRegimen ?? "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(Number(r.base))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${Number(r.alicuota).toFixed(2)}%</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">${fmt(Number(r.monto))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.jurisdiccion ?? "—"}</td>
+      </tr>
+    `).join("")
+
+    const totalRet = recibo.retencionesDetalle.reduce((s, r) => s + Number(r.monto), 0)
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Certificado Retención ${recibo.numero}</title>
+<style>@media print{.no-print{display:none!important}}body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;font-size:12px;color:#333}
+.header{border:2px solid #b45309;padding:16px;margin-bottom:16px}
+.titulo{font-size:18px;font-weight:bold;color:#b45309;text-align:center;margin-bottom:8px}
+.subtitulo{font-size:11px;color:#666;text-align:center;margin-bottom:16px}
+.dato{font-size:11px;color:#555;line-height:1.7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.box{border:1px solid #e5e7eb;border-radius:6px;padding:10px}
+.box h4{margin:0 0 6px;font-size:11px;color:#b45309;text-transform:uppercase}
+table{width:100%;border-collapse:collapse}th{background:#fffbeb;text-align:left;padding:8px;font-size:10px;color:#b45309;border-bottom:2px solid #fcd34d}
+.total{text-align:right;font-size:14px;font-weight:bold;margin-top:12px;color:#b45309}
+.legal{font-size:9px;color:#888;margin-top:20px;border-top:1px solid #eee;padding-top:10px}
+.btn-print{position:fixed;top:10px;right:10px;background:#b45309;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer}</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+<div class="header">
+<div class="titulo">CERTIFICADO DE RETENCIÓN SUFRIDA</div>
+<div class="subtitulo">Comprobante asociado al Recibo Nº ${recibo.numero} — Fecha ${fecha}</div>
+<div class="grid">
+<div class="box"><h4>Agente de retención</h4>
+<p class="dato"><strong>${recibo.cliente.nombre}</strong><br>CUIT: ${recibo.cliente.cuit ?? "—"}</p></div>
+<div class="box"><h4>Sujeto retenido</h4>
+<p class="dato"><strong>${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</strong><br>CUIT: ${empresa?.cuit ?? "—"}</p></div>
+</div>
+</div>
+<table><thead><tr>
+<th>Impuesto</th><th>Régimen</th><th style="text-align:right">Base</th><th style="text-align:right">Alícuota</th><th style="text-align:right">Retenido</th><th>Jurisd.</th>
+</tr></thead><tbody>${lineas}</tbody></table>
+<div class="total">Total retenido: ${fmt(totalRet)}</div>
+<p class="dato" style="margin-top:12px"><strong>Operación:</strong> Cobro por ${fmt(Number(recibo.montoTotal))} — Neto recibido ${fmt(Number(recibo.netoRecibido))}</p>
+<p class="legal">Documento generado por el sistema de gestión. Las retenciones sufridas deben ser acreditadas en las declaraciones juradas correspondientes (SICORE / SIRE). RG 2854 (IVA) y RG 830 (Ganancias) según corresponda.</p>
+</body></html>`
+
+    return {
+      html,
+      filename: `cert_retencion_recibo_${recibo.numero}.html`,
+      metadata: { tipo: "Cert. Retención Recibo", numero: recibo.numero, fecha, total: totalRet, cae: "" },
+    }
+  }
+
+  /**
+   * Certificado de retención aplicada en orden de pago (empresa retiene al proveedor).
+   */
+  async generarCertificadoRetencionOPPDF(ordenPagoId: number): Promise<PDFComprobante> {
+    const op = await prisma.ordenPago.findUnique({
+      where: { id: ordenPagoId },
+      include: {
+        proveedor: { include: { empresa: true } },
+        retenciones: true,
+      },
+    })
+    if (!op) throw new Error("Orden de pago no encontrada")
+    if (!op.retenciones?.length) {
+      throw new Error("La orden de pago no tiene retenciones registradas")
+    }
+
+    const empresa = op.proveedor.empresa
+    const fecha = new Date(op.fecha).toLocaleDateString("es-AR")
+    const fmt = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+
+    const lineas = op.retenciones.map((r) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.tipo.toUpperCase()}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.codigoSicore}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${fmt(Number(r.base))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;">${Number(r.alicuota).toFixed(2)}%</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">${fmt(Number(r.monto))}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;">${r.constanciaNum ?? "—"}</td>
+      </tr>
+    `).join("")
+
+    const totalRet = op.retenciones.reduce((s, r) => s + Number(r.monto), 0)
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Certificado Retención OP ${op.numero}</title>
+<style>@media print{.no-print{display:none!important}}body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;font-size:12px;color:#333}
+.header{border:2px solid #7c3aed;padding:16px;margin-bottom:16px}
+.titulo{font-size:18px;font-weight:bold;color:#7c3aed;text-align:center;margin-bottom:8px}
+.subtitulo{font-size:11px;color:#666;text-align:center;margin-bottom:16px}
+.dato{font-size:11px;color:#555;line-height:1.7}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.box{border:1px solid #e5e7eb;border-radius:6px;padding:10px}
+.box h4{margin:0 0 6px;font-size:11px;color:#7c3aed;text-transform:uppercase}
+table{width:100%;border-collapse:collapse}th{background:#f5f3ff;text-align:left;padding:8px;font-size:10px;color:#7c3aed;border-bottom:2px solid #c4b5fd}
+.total{text-align:right;font-size:14px;font-weight:bold;margin-top:12px;color:#7c3aed}
+.legal{font-size:9px;color:#888;margin-top:20px;border-top:1px solid #eee;padding-top:10px}
+.btn-print{position:fixed;top:10px;right:10px;background:#7c3aed;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer}</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir</button>
+<div class="header">
+<div class="titulo">CERTIFICADO DE RETENCIÓN PRACTICADA</div>
+<div class="subtitulo">Orden de Pago Nº ${op.numero} — Fecha ${fecha}</div>
+<div class="grid">
+<div class="box"><h4>Agente de retención</h4>
+<p class="dato"><strong>${empresa?.razonSocial ?? empresa?.nombre ?? "Empresa"}</strong><br>CUIT: ${empresa?.cuit ?? "—"}</p></div>
+<div class="box"><h4>Sujeto retenido</h4>
+<p class="dato"><strong>${op.proveedor.nombre}</strong><br>CUIT: ${op.proveedor.cuit ?? "—"}</p></div>
+</div>
+</div>
+<table><thead><tr>
+<th>Impuesto</th><th>Cód. SICORE</th><th style="text-align:right">Base</th><th style="text-align:right">Alícuota</th><th style="text-align:right">Retenido</th><th>Constancia</th>
+</tr></thead><tbody>${lineas}</tbody></table>
+<div class="total">Total retenido: ${fmt(totalRet)}</div>
+<p class="dato" style="margin-top:12px"><strong>Operación:</strong> Pago por ${fmt(Number(op.montoTotal))} — Neto pagado ${fmt(Number(op.netoPagado))}</p>
+<p class="legal">Constancia emitida conforme RG 2854 (retención IVA) y RG 830 (retención Ganancias). Debe registrarse en SICORE y entregarse al proveedor para su acreditación fiscal.</p>
+</body></html>`
+
+    return {
+      html,
+      filename: `cert_retencion_op_${op.numero}.html`,
+      metadata: { tipo: "Cert. Retención OP", numero: op.numero, fecha, total: totalRet, cae: "" },
+    }
+  }
 }
 
 export const pdfService = new PDFService()

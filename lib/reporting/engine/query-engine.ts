@@ -1,9 +1,21 @@
+import {
+  queryTimeSeries,
+  resolveOlapQuery,
+  shouldUseOlapTimeSeries,
+  timeSeriesToChartRows,
+} from "@/lib/analytics/olap-engine"
 import { assertFieldAllowed, listCatalogFields } from "@/lib/reporting/semantic/catalog"
 import type { QueryColumn, QueryResult, ReportDefinition } from "@/lib/reporting/semantic/types"
 import { reportDefinitionSchema } from "@/lib/reporting/semantic/types"
 import { fetchClaverpSource } from "@/lib/reporting/connectors/claverp-adapter"
 import { groupRows } from "@/lib/reporting/engine/aggregators"
 import { buildPivot } from "@/lib/reporting/engine/pivot-engine"
+
+function isPureTimeSeriesChart(def: ReportDefinition): boolean {
+  if (!def.chart) return false
+  const eje = def.chart.ejeX
+  return def.dimensiones.length === 0 || def.dimensiones.every((d) => d.campo === eje)
+}
 
 function buildColumns(
   connectorId: string,
@@ -69,7 +81,7 @@ export async function executeReport(
     throw new Error(`Conector no implementado: ${connectorId}`)
   }
 
-  const truncado = rawRows.length >= (def.limit ?? 10000)
+  let truncado = rawRows.length >= (def.limit ?? 10000)
 
   if (def.vista === "plano") {
     const campos = def.camposPlano?.length
@@ -133,21 +145,34 @@ export async function executeReport(
   }
 
   if (def.vista === "grafico" && def.chart) {
+    let chartRows = aggregated
+
+    if (shouldUseOlapTimeSeries(def) && isPureTimeSeriesChart(def)) {
+      const olapQuery = resolveOlapQuery(def, empresaId)
+      if (olapQuery) {
+        const points = await queryTimeSeries(olapQuery)
+        const seriesKey = def.chart.series[0] ?? measures[0]?.etiqueta ?? "sum_total"
+        chartRows = timeSeriesToChartRows(points, def.chart.ejeX, seriesKey)
+        truncado = false
+      }
+    }
+
     const chart = buildChartData(
-      aggregated,
+      chartRows,
       def.chart.ejeX,
       def.chart.series,
       def.chart.tipo,
     )
     return {
       columns: buildColumns(connectorId, def.fuente, colKeys),
-      rows: aggregated,
-      totalFilas: aggregated.length,
+      rows: chartRows,
+      totalFilas: chartRows.length,
       truncado,
       meta: {
         fuente: def.fuente,
         vista: "grafico",
         ejecutadoEn: new Date().toISOString(),
+        olap: shouldUseOlapTimeSeries(def) && isPureTimeSeriesChart(def),
       },
       chart,
     }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
@@ -6,12 +6,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { id } = await params
 
-  const job = await prisma.marketplaceProvisionJob.findFirst({
+  const job = await prisma.ordenProvision.findFirst({
     where: { id, ...whereEmpresa(auth.auth.empresaId) },
   })
 

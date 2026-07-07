@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
-import { generarProyeccion, isIAEnabled } from "@/lib/ai"
+import { generarProyeccion, guardAiRequest } from "@/lib/ai"
 
 /**
  * GET /api/ai/proyeccion — Proyección de ventas y recomendaciones de stock
@@ -10,9 +10,8 @@ export async function GET(request: NextRequest) {
     const ctx = await getAuthContext(request)
     if (!ctx.ok) return ctx.response
 
-    if (!(await isIAEnabled(ctx.auth.empresaId))) {
-      return NextResponse.json({ error: "Módulo IA no está habilitado para esta empresa" }, { status: 403 })
-    }
+    const blocked = await guardAiRequest(request, ctx.auth, "mutation")
+    if (blocked) return blocked
 
     const proyeccion = await generarProyeccion(ctx.auth.empresaId)
 

@@ -1,3 +1,4 @@
+import { BRAND_FULL } from "@/lib/brand"
 import { emailLayout } from "@/lib/email/email-templates"
 
 export function emailFiadoNotificacion(opts: {
@@ -50,7 +51,7 @@ export function emailFiadoNotificacion(opts: {
         ? `<p style="margin:16px 0 0;"><a href="${opts.linkPago}" style="display:inline-block;background:#1D4ED8;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Pagar con MercadoPago</a></p>`
         : ""
     }
-    <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Claver by Claver — Libreta Fiado</p>
+    <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">${BRAND_FULL} — Libreta Fiado</p>
   `,
     { preheader: `${opts.clienteNombre} fiado ${opts.fmt(opts.totalVenta)}` },
   )

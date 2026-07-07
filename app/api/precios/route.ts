@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 
 const crearListaSchema = z.object({
   nombre: z.string().min(1).max(100),
-  moneda: z.string().default("ARS"),
-  esBase: z.boolean().default(false),
-  margenPct: z.number().min(-100).max(1000).optional(),
-  activa: z.boolean().default(true),
+  descripcion: z.string().optional(),
+  factorMarkup: z.number().optional(),
+  esAutomatica: z.boolean().default(false),
+  activo: z.boolean().default(true),
 })
 
 export async function POST(request: NextRequest) {
@@ -46,7 +46,11 @@ export async function POST(request: NextRequest) {
 
     const lista = await prisma.listaPrecio.create({
       data: {
-        ...data,
+        nombre: data.nombre,
+        descripcion: data.descripcion,
+        factorMarkup: data.factorMarkup,
+        esAutomatica: data.esAutomatica,
+        activo: data.activo,
         empresaId: ctx.auth.empresaId,
       },
     })

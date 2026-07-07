@@ -79,7 +79,7 @@ export function MarketingAppShell({
   return (
     <div className={cn("w-full relative", heightClass, className)}>
       <MarketingBrowserChrome url={url} glow={glow} className="h-full">
-        <div className="flex h-full overflow-hidden bg-slate-50">
+        <div className="flex h-full overflow-hidden bg-slate-50 text-slate-900">
           {/* Mini sidebar */}
           <aside className="hidden sm:flex w-11 md:w-32 flex-col border-r border-slate-200 bg-white shrink-0">
             <div className="flex h-10 items-center justify-center md:justify-start md:px-3 border-b border-slate-100">

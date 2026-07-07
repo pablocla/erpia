@@ -3,7 +3,7 @@ pid: 20112
 cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
 command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npm test"
 started_at: 2026-07-07T01:43:47.416Z
-running_for_ms: 19300005 
+running_for_ms: 19320007 
 ---
 
 > pos-argentina@1.0.0 test

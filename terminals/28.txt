@@ -3,7 +3,7 @@ pid: 38072
 cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
 command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx next build"
 started_at: 2026-07-07T01:58:50.656Z
-running_for_ms: 18395007 
+running_for_ms: 18420008 
 ---
    ▲ Next.js 15.5.18
    - Environments: .env.local, .env

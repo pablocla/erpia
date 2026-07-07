@@ -3,7 +3,7 @@ pid: 22556
 cwd: "C:\Users\Pablo Clavero\Downloads\pos-system-argentina"
 command: "cd \"C:\\Users\\Pablo Clavero\\Downloads\\pos-system-argentina\"; npx tsc --noEmit 2>&1 | Select-Object -First 40"
 started_at: 2026-07-07T05:01:33.314Z
-running_for_ms: 7435012  
+running_for_ms: 7455004  
 ---
 .next/types/app/agenda-online/[empresaId]/page.ts(34,29): error TS2344: Type 'PageProps' does not satisfy the constraint 'import("C:/Users/Pablo Clavero/Downloads/pos-system-argentina/.next/types/app/agenda-online/[empresaId]/page").PageProps'.
   Types of property 'params' are incompatible.

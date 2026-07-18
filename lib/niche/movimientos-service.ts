@@ -35,18 +35,24 @@ export async function crearMovimientoNiche(
     metadata?: Record<string, unknown>
   },
 ) {
+  const numero = `TK-${Date.now().toString(36).toUpperCase().slice(-6)}`
+  const metadata = {
+    ...(data.metadata ?? {}),
+    numero,
+  }
+
   return prisma.nicheMovimiento.create({
     data: {
       empresaId,
       appSku: data.appSku,
       categoria: data.categoria,
-      titulo: data.titulo,
+      titulo: data.titulo.includes("TK-") ? data.titulo : `${data.titulo} · ${numero}`,
       clienteId: data.clienteId,
       monto: data.monto ?? 0,
       estado: data.estado ?? "pendiente",
       periodo: data.periodo,
       venceEn: data.venceEn,
-      metadata: data.metadata as any,
+      metadata: metadata as object,
     },
     include: {
       cliente: { select: { id: true, nombre: true, telefono: true } },

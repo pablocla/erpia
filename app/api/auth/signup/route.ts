@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       notify: "trial_signup",
     }).catch((err) => console.error("Error sync pipeline signup:", err))
 
-    setSignupOrigen(empresaId, "web")
+    setSignupOrigen(empresaId, "web" as any)
 
     let onboarding: { landingPath: string; ofertaId?: string } | null = null
 

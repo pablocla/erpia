@@ -10,6 +10,10 @@ const PRESENT_EXTRA = [
   "/dashboard/apps",
   "/dashboard/fiado",
   "/dashboard/clientes",
+  "/dashboard/pos",
+  "/dashboard/caja",
+  "/dashboard/productos",
+  "/dashboard/mi-plan",
 ]
 
 export function getDemoPresentationPaths(industryId: string): string[] {

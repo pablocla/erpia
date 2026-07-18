@@ -3,16 +3,22 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { AuthService } from "@/lib/auth/auth-service"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
-import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
-import { provisionIndustryDemo } from "@/lib/comercial/industry-demo-service"
+import { DEMO_ADMIN_PASSWORD } from "@/lib/brand"
+import { provisionIndustryDemo, resolveIndustryId } from "@/lib/comercial/industry-demo-service"
 import { syncPipelineFromEvent } from "@/lib/comercial/comercial-funnel-service"
 import { setSignupOrigen } from "@/lib/ops/signup-tracking"
+
+/** Vercel / serverless: el provision puede tardar; sin esto se corta a 10s y el browser se tilda. */
+export const maxDuration = 60
+export const dynamic = "force-dynamic"
 
 /**
  * POST /api/onboarding/industry-demo
  * Sensor comercial público — provisiona demo segmentada por industria y devuelve JWT.
  */
 export async function POST(request: NextRequest) {
+  let empresaIdCreada: number | null = null
+
   try {
     const blocked = checkRateLimit(request, "industry-demo", 15, 15 * 60 * 1000)
     if (blocked) return blocked
@@ -24,7 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "industryId requerido" }, { status: 400 })
     }
 
-    const demoHash = crypto.randomUUID().split("-")[0] // 8 characters
+    if (!resolveIndustryId(industryId)) {
+      return NextResponse.json({ error: `Industria no soportada: ${industryId}` }, { status: 400 })
+    }
+
+    const t0 = Date.now()
+    const demoHash = crypto.randomUUID().split("-")[0]
     const fakeCuit = `20-${demoHash}-0`
     const demoEmail = `demo-${demoHash}@claver.com.ar`
 
@@ -41,6 +52,7 @@ export async function POST(request: NextRequest) {
         rubro: "otro",
       },
     })
+    empresaIdCreada = empresa.id
 
     const provision = await provisionIndustryDemo(empresa.id, industryId)
 
@@ -55,7 +67,8 @@ export async function POST(request: NextRequest) {
       `${industryId}@${new Date().toISOString()}`,
     )
 
-    const hashedPassword = await bcrypt.hash(DEMO_ADMIN_PASSWORD, 10)
+    // 8 rounds es suficiente para demos efímeras (10 bloquea CPU en serverless)
+    const hashedPassword = await bcrypt.hash(DEMO_ADMIN_PASSWORD, 8)
 
     const usuario = await prisma.usuario.create({
       data: {
@@ -90,6 +103,10 @@ export async function POST(request: NextRequest) {
       empresaId: usuario.empresaId,
     })
 
+    console.log(
+      `[industry-demo] OK empresa=${empresa.id} industry=${industryId} en ${Date.now() - t0}ms`,
+    )
+
     return NextResponse.json({
       success: true,
       token,
@@ -98,6 +115,7 @@ export async function POST(request: NextRequest) {
       rubro: provision.rubro,
       provision,
       activar: activar || null,
+      durationMs: Date.now() - t0,
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
@@ -108,8 +126,32 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error industry-demo:", error)
+
+    // Evitar empresas huérfanas sin usuario si falló el provision
+    if (empresaIdCreada != null) {
+      try {
+        await prisma.usuario.deleteMany({ where: { empresaId: empresaIdCreada } }).catch(() => {})
+        // No borrar en cascada todo el grafo (puede fallar por FKs); marcar como demo fallida
+        await prisma.empresa.update({
+          where: { id: empresaIdCreada },
+          data: {
+            nombre: `[DEMO FALLIDA] ${empresaIdCreada}`,
+            email: `failed-demo-${empresaIdCreada}@claver.com.ar`,
+          },
+        }).catch(() => {})
+      } catch {
+        /* ignore cleanup */
+      }
+    }
+
+    const message = error instanceof Error ? error.message : "Error al provisionar demo"
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error al provisionar demo" },
+      {
+        error:
+          message.includes("Unique constraint") || message.includes("unique")
+            ? "No se pudo armar la demo por un conflicto de datos. Reintentá en unos segundos."
+            : message,
+      },
       { status: 500 },
     )
   }

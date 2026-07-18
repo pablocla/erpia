@@ -9,6 +9,8 @@ import { Loader2, Save } from "lucide-react"
 import { authFetch } from "@/lib/stores"
 import { useToast } from "@/hooks/use-toast"
 import type { FiscalEmissionConfig, SalidaComprobante } from "@/lib/fiscal/emission-config"
+import type { ModoComprobantePos, TipoDefaultAfip } from "@/lib/fiscal/pos-comprobante-policy"
+import { MODO_COMPROBANTE_LABELS } from "@/lib/fiscal/pos-comprobante-policy"
 
 function Toggle({
   value,
@@ -52,7 +54,15 @@ export function FiscalEmisionConfigPanel({ puedeEditar = true }: FiscalEmisionCo
   useEffect(() => {
     authFetch("/api/config/fiscal-emision")
       .then((r) => r.json())
-      .then((data) => setConfig(data))
+      .then((data) =>
+        setConfig({
+          modoComprobante: "afip",
+          tipoDefaultAfip: "auto",
+          permitirTicketSinAfip: true,
+          etiquetaAnchoMm: 50,
+          ...data,
+        }),
+      )
       .catch(() => setConfig(null))
       .finally(() => setLoading(false))
   }, [])
@@ -90,8 +100,66 @@ export function FiscalEmisionConfigPanel({ puedeEditar = true }: FiscalEmisionCo
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Modo de comprobante (POS)</CardTitle>
+          <CardDescription>
+            Camino principal: factura electrónica AFIP (CAE). Alternativa: el cajero elige ticket sin CAE.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Quién decide el tipo</Label>
+            <Select
+              value={config.modoComprobante}
+              onValueChange={(v) =>
+                setConfig({ ...config, modoComprobante: v as ModoComprobantePos })
+              }
+              disabled={!puedeEditar}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(MODO_COMPROBANTE_LABELS) as ModoComprobantePos[]).map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {MODO_COMPROBANTE_LABELS[k]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tipo default AFIP</Label>
+            <Select
+              value={config.tipoDefaultAfip}
+              onValueChange={(v) =>
+                setConfig({ ...config, tipoDefaultAfip: v as TipoDefaultAfip })
+              }
+              disabled={!puedeEditar || config.modoComprobante === "ticket_solo"}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto (según IVA del cliente)</SelectItem>
+                <SelectItem value="B">Factura B</SelectItem>
+                <SelectItem value="A">Factura A</SelectItem>
+                <SelectItem value="C">Factura C</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 sm:col-span-1">
+            <span className="text-sm">Permitir ticket sin CAE (offline / fallback)</span>
+            <Toggle
+              value={config.permitirTicketSinAfip}
+              onChange={(v) => setConfig({ ...config, permitirTicketSinAfip: v })}
+              disabled={!puedeEditar || config.modoComprobante === "ticket_solo"}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
           <CardTitle className="text-sm">Salida del comprobante</CardTitle>
-          <CardDescription>PDF, impresora Hasar/Epson o ambos — por empresa</CardDescription>
+          <CardDescription>
+            Impresión térmica Hasar / Epson (ESC/POS) y/o PDF — el CAE viene de AFIP, no del controlador fiscal legacy
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -125,8 +193,24 @@ export function FiscalEmisionConfigPanel({ puedeEditar = true }: FiscalEmisionCo
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="ninguna">Sin impresora</SelectItem>
-                <SelectItem value="hasar">Hasar</SelectItem>
-                <SelectItem value="epson">Epson TM</SelectItem>
+                <SelectItem value="hasar">Hasar (térmica ESC/POS)</SelectItem>
+                <SelectItem value="epson">Epson TM (ESC/POS)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Ancho etiqueta góndola</Label>
+            <Select
+              value={String(config.etiquetaAnchoMm ?? 50)}
+              onValueChange={(v) =>
+                setConfig({ ...config, etiquetaAnchoMm: Number(v) as 40 | 50 })
+              }
+              disabled={!puedeEditar}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="40">40 mm</SelectItem>
+                <SelectItem value="50">50 mm</SelectItem>
               </SelectContent>
             </Select>
           </div>

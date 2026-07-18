@@ -87,15 +87,20 @@ export async function setIndustryModules(empresaId: number, rubro: Rubro): Promi
     }
   }
 
-  await prisma.$transaction(
-    MODULOS_VALIDOS.map((modulo) =>
-      prisma.configuracionModulo.upsert({
-        where: { empresaId_modulo: { empresaId, modulo } },
-        update: { habilitado: enabled.has(modulo) },
-        create: { empresaId, modulo, habilitado: enabled.has(modulo) },
-      }),
-    ),
-  )
+  // Lotes chicos: una sola $transaction con N upserts satura el pool en demos concurrentes
+  const mods = [...MODULOS_VALIDOS]
+  for (let i = 0; i < mods.length; i += 6) {
+    const slice = mods.slice(i, i + 6)
+    await Promise.all(
+      slice.map((modulo) =>
+        prisma.configuracionModulo.upsert({
+          where: { empresaId_modulo: { empresaId, modulo } },
+          update: { habilitado: enabled.has(modulo) },
+          create: { empresaId, modulo, habilitado: enabled.has(modulo) },
+        }),
+      ),
+    )
+  }
 
   return [...enabled]
 }

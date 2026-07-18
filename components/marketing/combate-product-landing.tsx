@@ -5,6 +5,7 @@ import { ClaverShell } from "@/components/marketing/claver-shell"
 import { ClaverVentasContacto } from "@/components/marketing/claver-ventas-contacto"
 import { ClaverLandingFaq } from "@/components/marketing/claver-landing-faq"
 import {
+  CommercialTrustBar,
   EcosistemaExpansionSection,
   ProductAppPreviewSection,
   ProductFinalCtaSection,
@@ -30,6 +31,8 @@ export function CombateProductLanding({ app, entry }: CombateProductLandingProps
   return (
     <ClaverShell context="matrix">
       <ProductHeroSection entry={entry} showBreadcrumb />
+
+      <CommercialTrustBar />
 
       <ProductAppPreviewSection entry={entry} />
 

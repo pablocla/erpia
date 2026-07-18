@@ -44,18 +44,39 @@ const DEFAULT_MORE_TAB: ProductShellTab = { href: "#more", icon: MoreHorizontal,
 const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
   fiado: "fiado",
   cobranza: "cobra",
-  pos: "tienda",
+  pos: "pos",
   niche: "turnos",
   servicios: "monotributo",
 }
 
 export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
+  pos: {
+    slug: "pos",
+    marca: "Claver POS",
+    icono: ShoppingBag,
+    tabs: [
+      { href: "/dashboard/pos", icon: ShoppingBag, label: "Mostrador" },
+      { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
+      { href: "/dashboard/productos", icon: Package, label: "Productos" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      { href: "/dashboard/fiado", icon: BookOpen, label: "Fiado" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "ventas_hoy", label: "Ventas hoy", icon: Wallet, format: "currency", href: "/dashboard/pos" },
+      { id: "tickets", label: "Tickets", icon: ShoppingBag, format: "number" },
+      { id: "stock_bajo", label: "Stock bajo", icon: Package, format: "number", href: "/dashboard/productos" },
+      { id: "caja", label: "Caja", icon: Wallet, format: "text", href: "/dashboard/caja" },
+    ],
+    primaryAction: { label: "Abrir POS", href: "/dashboard/pos" },
+  },
   fiado: {
     slug: "fiado",
     marca: "Claver Fiado",
     icono: BookOpen,
     tabs: [
       { href: "/dashboard/fiado", icon: BookOpen, label: "Libreta" },
+      { href: "/dashboard/pos", icon: ShoppingBag, label: "Mostrador" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
       DEFAULT_MORE_TAB,

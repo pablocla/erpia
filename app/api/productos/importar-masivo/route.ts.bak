@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from "next/server"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { prisma } from "@/lib/prisma"
+
+// POST /api/productos/importar-masivo
+export async function POST(req: NextRequest) {
+  const auth = getAuthContext(req)
+  if (!auth.ok) return auth.response
+
+  try {
+    const { productos } = await req.json()
+    // productos = [{ codigoBarras, nombre, precioVenta, stockActual, proveedorId }]
+
+    if (!Array.isArray(productos) || productos.length === 0) {
+      return NextResponse.json({ ok: false, error: "Array de productos inválido" }, { status: 400 })
+    }
+
+    let actualizados = 0
+    let creados = 0
+
+    // Importación masiva ágil usando transacción
+    await prisma.$transaction(
+      async (tx) => {
+        for (const p of productos) {
+          const existe = await tx.producto.findFirst({
+            where: { empresaId: auth.auth.empresaId, codigoBarras: p.codigoBarras }
+          })
+
+          if (existe) {
+            await tx.producto.update({
+              where: { id: existe.id },
+              data: { precioVenta: p.precioVenta, stockActual: p.stockActual }
+            })
+            actualizados++
+          } else {
+            await tx.producto.create({
+              data: {
+                empresaId: auth.auth.empresaId,
+                codigoBarras: p.codigoBarras,
+                nombre: p.nombre,
+                precioVenta: p.precioVenta,
+                stockActual: p.stockActual || 0,
+                proveedorId: p.proveedorId || null
+              }
+            })
+            creados++
+          }
+        }
+      },
+      {
+        maxWait: 15000, 
+        timeout: 30000 // Soporta actualización de cientos de SKUs
+      }
+    )
+
+    return NextResponse.json({ ok: true, actualizados, creados })
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
+  }
+}

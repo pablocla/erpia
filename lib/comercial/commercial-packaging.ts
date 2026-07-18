@@ -73,6 +73,14 @@ const PACKS_HOME_IDS = [
   "pool-kiosco-barrio",
 ] as const
 
+/** 4 packs visibles en home (fuera del colapsable). El resto en catálogo. */
+const PACKS_HOME_STRIP_IDS = [
+  "pool-almacen-rosario",
+  "pool-propiedad",
+  "pool-kiosco-barrio",
+  "pool-servicios-pro",
+] as const
+
 const PLATAFORMA_IDS = ["claverp", "clavergrow", "clavercloud"] as const
 
 export function activarSkuHref(sku: string): string {
@@ -139,7 +147,7 @@ export const PRODUCTOS_ENTRADA: ProductoEntrada[] = ENTRADA_SKUS.map((sku) => {
   }
 })
 
-export const PACKS_DESTACADOS: PackComercial[] = PACKS_HOME_IDS.map((id) => {
+function packFromBundleId(id: string): PackComercial | null {
   const b = MARKETPLACE_BUNDLES.find((x) => x.id === id)
   if (!b) return null
   return {
@@ -152,7 +160,16 @@ export const PACKS_DESTACADOS: PackComercial[] = PACKS_HOME_IDS.map((id) => {
     tipoCobro: b.tipoCobro,
     ahorroPct: b.ahorroPct,
   }
-}).filter(Boolean) as PackComercial[]
+}
+
+export const PACKS_DESTACADOS: PackComercial[] = PACKS_HOME_IDS.map(packFromBundleId).filter(
+  Boolean,
+) as PackComercial[]
+
+/** Strip corto en home — progressive disclosure (S2). */
+export const PACKS_HOME_STRIP: PackComercial[] = PACKS_HOME_STRIP_IDS.map(packFromBundleId).filter(
+  Boolean,
+) as PackComercial[]
 
 export const PLATAFORMAS_PRINCIPALES: ClaverServiceLine[] = PLATAFORMA_IDS.map(
   (id) => CLAVER_SERVICE_LINES.find((l) => l.id === id)!,

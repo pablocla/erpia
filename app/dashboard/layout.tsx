@@ -28,6 +28,7 @@ import { OnboardingTour } from "@/components/onboarding-tour"
 import { ProductTour } from "@/components/onboarding/product-tour"
 import { useDashboardShell } from "@/hooks/use-dashboard-shell"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
+import { isPathInAnclaFiadoAllowlist } from "@/lib/comercial/lite-sidebar"
 import { AppChecklistWidget } from "@/components/marketing/app-checklist-widget"
 import { ProductUpsellPanel } from "@/components/comercial/product-upsell-panel"
 import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
@@ -74,16 +75,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (fresh) localStorage.removeItem("claver_fresh_signup")
   }, [mounted])
 
-  // Trial enforcement redirect
+  // Trial enforcement: no hard-bloquear ancla gratis en rutas lite (fiado/cobranza)
   const { toast } = useToast()
   useEffect(() => {
     if (!mounted || !user) return
     if (pathname === "/dashboard/trial-vencido") return
-    
+
+    const enAllowlist = isPathInAnclaFiadoAllowlist(pathname)
+
     fetch("/api/config/trial", { headers: getAuthHeaders() })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.access?.bloqueoTotal || (data?.trial?.expirado && !data?.access?.tieneAnclaGratis)) {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const tieneAncla = Boolean(data?.access?.tieneAnclaGratis)
+        const trialExpirado = Boolean(data?.trial?.expirado)
+        const bloqueoTotal = Boolean(data?.access?.bloqueoTotal)
+
+        // Ancla gratis: puede seguir en rutas lite aunque el trial de pago haya vencido
+        if (tieneAncla && enAllowlist) return
+
+        if (bloqueoTotal || (trialExpirado && !enAllowlist)) {
           router.replace("/dashboard/trial-vencido")
         }
       })

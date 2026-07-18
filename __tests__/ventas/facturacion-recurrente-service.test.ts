@@ -4,6 +4,25 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { mockPrismaClient } from "../setup"
+
+const solicitarCaeFactura = vi.fn()
+const emitFacturaEmitida = vi.fn()
+const generarCCPorFactura = vi.fn()
+
+vi.mock("@/lib/afip/solicitar-cae-factura", () => ({
+  solicitarCaeFactura: (...args: unknown[]) => solicitarCaeFactura(...args),
+}))
+
+vi.mock("@/lib/events/emit-domain-event", () => ({
+  emitFacturaEmitida: (...args: unknown[]) => emitFacturaEmitida(...args),
+}))
+
+vi.mock("@/lib/cc-cp/cuentas-service", () => ({
+  cuentasService: {
+    generarCCPorFactura: (...args: unknown[]) => generarCCPorFactura(...args),
+  },
+}))
+
 import {
   crearFacturaRecurrente,
   listarFacturasRecurrentes,
@@ -13,6 +32,9 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  solicitarCaeFactura.mockResolvedValue({ ok: true, cae: "12345678901234" })
+  emitFacturaEmitida.mockResolvedValue(undefined)
+  generarCCPorFactura.mockResolvedValue([88])
 })
 
 describe("Facturación Recurrente Service", () => {
@@ -58,7 +80,7 @@ describe("Facturación Recurrente Service", () => {
   })
 
   describe("procesarFacturasRecurrentes", () => {
-    it("should process active invoices due today", async () => {
+    it("should process, emit domain event and force CuentaCobrar", async () => {
       const ahora = new Date()
       mockPrismaClient.facturaRecurrente.findMany.mockResolvedValue([
         {
@@ -71,6 +93,7 @@ describe("Facturación Recurrente Service", () => {
           clienteId: 5,
           proximaEmision: ahora,
           fechaFin: null,
+          ultimaEmision: null,
           facturasEmitidas: 2,
         },
       ])
@@ -80,16 +103,25 @@ describe("Facturación Recurrente Service", () => {
       mockPrismaClient.factura.create.mockResolvedValue({ id: 99, numero: 11 })
       mockPrismaClient.facturaRecurrente.update.mockResolvedValue({ id: 1 })
 
-      vi.doMock("@/lib/afip/solicitar-cae-factura", () => ({
-        solicitarCaeFactura: vi.fn().mockResolvedValue({ ok: true, cae: "12345678901234" }),
-      }))
-
       const result = await procesarFacturasRecurrentes(empresaId)
 
       expect(result.procesadas).toBe(1)
-      expect(result.facturas[0].monto).toBe(12100) // 10000 + 21%
+      expect(result.facturas[0].monto).toBe(12100)
       expect(result.facturas[0].afipOk).toBe(true)
       expect(result.facturas[0].cae).toBe("12345678901234")
+      expect(result.facturas[0].cuentaCobrarIds).toEqual([88])
+      expect(emitFacturaEmitida).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facturaId: 99,
+          empresaId,
+          clienteId: 5,
+          total: 12100,
+        }),
+      )
+      expect(generarCCPorFactura).toHaveBeenCalledWith(99, {
+        forzarCuenta: true,
+        diasVencimiento: 0,
+      })
       expect(mockPrismaClient.facturaRecurrente.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 1 },
@@ -98,6 +130,29 @@ describe("Facturación Recurrente Service", () => {
           }),
         }),
       )
+    })
+
+    it("skips same-day re-emit (idempotencia)", async () => {
+      const ahora = new Date()
+      mockPrismaClient.facturaRecurrente.findMany.mockResolvedValue([
+        {
+          id: 3,
+          concepto: "Ya emitida hoy",
+          montoNeto: 5000,
+          alicuotaIva: 21,
+          frecuencia: "mensual",
+          tipoCbte: 6,
+          clienteId: 5,
+          proximaEmision: ahora,
+          fechaFin: null,
+          ultimaEmision: ahora,
+          facturasEmitidas: 1,
+        },
+      ])
+
+      const result = await procesarFacturasRecurrentes(empresaId)
+      expect(result.procesadas).toBe(0)
+      expect(mockPrismaClient.factura.create).not.toHaveBeenCalled()
     })
 
     it("should deactivate past-due items", async () => {
@@ -114,6 +169,7 @@ describe("Facturación Recurrente Service", () => {
           frecuencia: "mensual",
           clienteId: 1,
           concepto: "Expired",
+          ultimaEmision: null,
         },
       ])
       mockPrismaClient.facturaRecurrente.update.mockResolvedValue({ id: 2 })
@@ -125,6 +181,7 @@ describe("Facturación Recurrente Service", () => {
         where: { id: 2 },
         data: { activo: false },
       })
+      expect(emitFacturaEmitida).not.toHaveBeenCalled()
     })
   })
 

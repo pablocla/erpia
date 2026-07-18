@@ -4,6 +4,9 @@
  * Genera facturas automáticamente para suscripciones, alquileres, membresías.
  * Diseñado para ejecutarse vía cron diario. Mirror de GastoRecurrente (egresos)
  * pero para ingresos de venta.
+ *
+ * Cadena alineada (auditoría comercial):
+ *   Factura → emitFacturaEmitida (asiento) → CuentaCobrar forzada → cobrable por WA/recibo
  */
 
 import { prisma } from "@/lib/prisma"
@@ -78,6 +81,7 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
     afipOk?: boolean
     cae?: string
     afipError?: string
+    cuentaCobrarIds?: number[]
   }[] = []
 
   for (const fr of pendientes) {
@@ -88,6 +92,45 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
         data: { activo: false },
       })
       continue
+    }
+
+    // Prevención de doble facturación en el mismo mes calendario
+    const startOfMonth = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    const existing = await prisma.factura.findFirst({
+      where: {
+        empresaId,
+        clienteId: fr.clienteId,
+        createdAt: { gte: startOfMonth },
+        lineas: { some: { descripcion: fr.concepto } },
+      },
+    })
+
+    if (existing) {
+      console.warn(`[FacturaRecurrente] Previniendo emisión doble: fr.id=${fr.id} ya emitido en FAC #${existing.numero}`)
+      // Actualizar próxima emisión y saltear
+      const proxima = new Date(fr.proximaEmision)
+      switch (fr.frecuencia) {
+        case "mensual": proxima.setMonth(proxima.getMonth() + 1); break
+        case "bimestral": proxima.setMonth(proxima.getMonth() + 2); break
+        case "trimestral": proxima.setMonth(proxima.getMonth() + 3); break
+        case "semestral": proxima.setMonth(proxima.getMonth() + 6); break
+        case "anual": proxima.setFullYear(proxima.getFullYear() + 1); break
+      }
+      await prisma.facturaRecurrente.update({
+        where: { id: fr.id },
+        data: { proximaEmision: proxima },
+      })
+      continue
+    }
+
+    // Idempotencia: no re-emitir el mismo día (doble cron / reintento)
+    if (fr.ultimaEmision) {
+      const u = new Date(fr.ultimaEmision)
+      const sameDay =
+        u.getFullYear() === hoy.getFullYear() &&
+        u.getMonth() === hoy.getMonth() &&
+        u.getDate() === hoy.getDate()
+      if (sameDay) continue
     }
 
     const montoNeto = Number(fr.montoNeto)
@@ -136,11 +179,43 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
       },
     })
 
-    const { solicitarCaeFactura } = await import("@/lib/afip/solicitar-cae-factura")
-    const afip = await solicitarCaeFactura(factura.id)
-    if (afip.ok) {
-      const { onFacturaEmitida } = await import("@/lib/contabilidad/factura-hooks")
-      await onFacturaEmitida(factura.id)
+    // AFIP puede fallar: la factura y la CC deben quedar igual (cobrables / reintento CAE)
+    let afip: { ok: boolean; cae?: string; error?: string } = { ok: false }
+    try {
+      const { solicitarCaeFactura } = await import("@/lib/afip/solicitar-cae-factura")
+      afip = await solicitarCaeFactura(factura.id)
+    } catch (err) {
+      afip = {
+        ok: false,
+        error: err instanceof Error ? err.message : "Error AFIP al emitir",
+      }
+    }
+
+    // Evento de dominio unificado (asiento + handlers)
+    try {
+      const { emitFacturaEmitida } = await import("@/lib/events/emit-domain-event")
+      await emitFacturaEmitida({
+        facturaId: factura.id,
+        empresaId,
+        clienteId: fr.clienteId,
+        total,
+        condicionPagoId: null,
+        depositoId: null,
+      })
+    } catch (err) {
+      console.warn("[FacturaRecurrente] emitFacturaEmitida:", err)
+    }
+
+    // Contado no genera CC por defecto: forzar una CC cobrable (servicio recurrente)
+    let cuentaCobrarIds: number[] = []
+    try {
+      const { cuentasService } = await import("@/lib/cc-cp/cuentas-service")
+      cuentaCobrarIds = await cuentasService.generarCCPorFactura(factura.id, {
+        forzarCuenta: true,
+        diasVencimiento: 0,
+      })
+    } catch (err) {
+      console.warn("[FacturaRecurrente] generarCCPorFactura:", err)
     }
 
     resultados.push({
@@ -153,6 +228,7 @@ export async function procesarFacturasRecurrentes(empresaId: number) {
       afipOk: afip.ok,
       cae: afip.cae,
       afipError: afip.error,
+      cuentaCobrarIds,
     })
 
     // Calcular próxima emisión

@@ -85,9 +85,9 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
     slug: "cobra",
     marca: "Claver Cobrá",
     nombre: "Cobranzas por WhatsApp",
-    lema: "El link cobra. Vos seguís vendiendo.",
+    lema: "El mensaje cobra. Vos seguís vendiendo.",
     descripcion:
-      "Recordatorios automáticos a morosos con tono amable, panel de deuda recuperable y link de pago. Mismo motor que cuentas por cobrar y alertas.",
+      "Recordatorios automáticos por WhatsApp, panel de deuda recuperable y link de pago. Menos llamadas, más recupero.",
     sku: "intang.cobranzas_wa",
     precioArs: 20000,
     trialDias: 14,
@@ -128,11 +128,11 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
     slug: "fiado",
     marca: "Claver Fiado",
     nombre: "Libreta Fiado Digital",
-    lema: "Fiá con límite. Que el otro se entere.",
+    lema: "Gratis para siempre. Fiá con límite desde el celular.",
     descripcion:
-      "Libreta de fiado con límite por cliente, notificación por WhatsApp o email y link de pago. Pensada para mostrador y celular en calle.",
+      "Libreta de fiado gratis. Límite por cliente, anotar y cobrar sin POS, avisos. Después podés sumar Cobrá por WhatsApp o POS en la misma cuenta.",
     sku: "pos.fiado_barrio",
-    precioArs: 4990,
+    precioArs: 0,
     trialDias: 14,
     modoLite: "fiado",
     dashboardPath: "/dashboard/fiado",
@@ -164,12 +164,12 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
     slug: "turnos",
     marca: "Claver Turnos",
     nombre: "Turnero online",
-    lema: "Dejá de pelear por WhatsApp para coordinar un turno.",
+    lema: "Un link. El cliente reserva solo.",
     descripcion:
-      "Agenda para salón, barbería, consultorio o servicios. Link público para que el cliente reserve solo. Recordatorios por WhatsApp.",
+      "Agenda online para salón, barbería, consultorio o servicios. Link 24/7, menos no-shows y recordatorios por WhatsApp.",
     sku: "niche.peluqueria_barrio",
     skusAdicionales: ["com.whatsapp"],
-    precioArs: 3990,
+    precioArs: 10000,
     trialDias: 14,
     modoLite: "niche",
     dashboardPath: "/dashboard/agenda",
@@ -634,7 +634,7 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
     descripcion:
       "Cuotas, membresías y puntos para cafeterías, gimnasios y clubes. Celular o tablet en mostrador.",
     sku: "niche.gimnasio_barrio",
-    precioArs: 4990,
+    precioArs: 10000,
     trialDias: 14,
     modoLite: "niche",
     dashboardPath: "/dashboard/membresias",
@@ -668,18 +668,70 @@ export const SUB_SAAS_SLUGS = SUB_SAAS_APPS.map((a) => a.slug) as readonly strin
 
 export type SubSaasSlug = (typeof SUB_SAAS_SLUGS)[number]
 
+/**
+ * Orden comercial marketplace /claver/apps:
+ * home combate → resto combate → resto disponibles → beta.
+ */
+export const SUB_SAAS_MARKETPLACE_ORDER = [
+  "fiado",
+  "cobra",
+  "turnos",
+  "pos",
+  "monotributo",
+  "servicios",
+  "propiedad",
+  "obra",
+  "tienda",
+  "presupuestos",
+  "menu-qr",
+  "stock",
+  "bot-wa",
+  "contenido-ia",
+  "puntos",
+] as const satisfies readonly SubSaasSlug[]
+
 /** Slugs destacados en home y marketplace (orden comercial). */
 export const SUB_SAAS_DESTACADOS = [
   "fiado",
   "cobra",
+  "turnos",
+  "pos",
   "monotributo",
   "servicios",
   "propiedad",
-  "turnos",
+  "obra",
   "tienda",
-  "menu-qr",
-  "presupuestos",
 ] as const satisfies readonly SubSaasSlug[]
+
+/** Apps con motor usable hoy (no beta / no próximamente). */
+export function isSubSaasFuncionalActiva(app: SubSaasApp): boolean {
+  return app.estado === "disponible" && app.listoPct >= 65
+}
+
+export function sortSubSaasForMarketplace(apps: SubSaasApp[]): SubSaasApp[] {
+  const order = new Map(SUB_SAAS_MARKETPLACE_ORDER.map((s, i) => [s, i]))
+  return [...apps].sort((a, b) => {
+    const ia = order.has(a.slug as any) ? order.get(a.slug as any)! : 1000
+    const ib = order.has(b.slug as any) ? order.get(b.slug as any)! : 1000
+    if (ia !== ib) return ia - ib
+    const fa = isSubSaasFuncionalActiva(a) ? 0 : a.estado === "beta" ? 1 : 2
+    const fb = isSubSaasFuncionalActiva(b) ? 0 : b.estado === "beta" ? 1 : 2
+    return fa - fb || a.nombre.localeCompare(b.nombre, "es")
+  })
+}
+
+export function subSaasMarketplaceGroups(): {
+  activas: SubSaasApp[]
+  beta: SubSaasApp[]
+  proximamente: SubSaasApp[]
+} {
+  const ordered = sortSubSaasForMarketplace(SUB_SAAS_APPS)
+  return {
+    activas: ordered.filter(isSubSaasFuncionalActiva),
+    beta: ordered.filter((a) => a.estado === "beta"),
+    proximamente: ordered.filter((a) => a.estado === "proximamente"),
+  }
+}
 
 export function getSubSaasApp(slug: string): SubSaasApp | null {
   return SUB_SAAS_APPS.find((a) => a.slug === slug) ?? null

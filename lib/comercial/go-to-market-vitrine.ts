@@ -22,6 +22,56 @@ export const COMBATE_APPS: SubSaasApp[] = COMBATE_APPS_SLUGS.map((slug) => {
 /** Puerta de entrada principal de la home (validar con tráfico antes de rotar). */
 export const ENTRY_DOOR_SLUG = "fiado" as const
 
+/**
+ * Tres productos de combate above-the-fold en home.
+ * Fiado / Cobranza / Turnos — el resto vive en catálogo y mega menú.
+ */
+export const HOME_COMBATE_SLUGS = ["fiado", "cobra", "turnos"] as const
+
+export type HomeDolorSlug = (typeof HOME_COMBATE_SLUGS)[number]
+
+export const HOME_DOLOR_CHIPS: readonly { slug: HomeDolorSlug; label: string; hint: string }[] = [
+  { slug: "fiado", label: "Fiado", hint: "Libreta gratis" },
+  { slug: "cobra", label: "Cobrá", hint: "WhatsApp + panel" },
+  { slug: "turnos", label: "Turnos", hint: "Link de reserva" },
+] as const
+
+export const HOME_DOLOR_STORAGE_KEY = "claver_home_dolor"
+/** CustomEvent name para alinear CTAs del shell con el dolor de la home. */
+export const HOME_DOLOR_EVENT = "claver:home-dolor"
+
+export function isHomeDolorSlug(value: string | null | undefined): value is HomeDolorSlug {
+  return !!value && (HOME_COMBATE_SLUGS as readonly string[]).includes(value)
+}
+
+/** Resuelve ?dolor= de la home. Default: fiado. */
+export function resolveHomeDolor(raw: string | null | undefined): HomeDolorSlug {
+  if (isHomeDolorSlug(raw)) return raw
+  return ENTRY_DOOR_SLUG
+}
+
+/** Apps de combate que se muestran en la home (3). */
+export function homeCombateApps(): SubSaasApp[] {
+  return HOME_COMBATE_SLUGS.map((slug) => {
+    const app = COMBATE_APPS.find((a) => a.slug === slug)
+    if (!app) throw new Error(`Home combate app no encontrada: ${slug}`)
+    return app
+  })
+}
+
+/** Mensaje de WhatsApp prellenado según el dolor activo en home. */
+export function ventasWhatsappMessage(dolor: HomeDolorSlug): string {
+  const app = COMBATE_APPS.find((a) => a.slug === dolor)
+  const marca = app?.marca ?? "Claver"
+  if (dolor === "fiado") {
+    return `Hola Claver, quiero probar ${marca} (libreta de fiado) en mi comercio.`
+  }
+  if (dolor === "cobra") {
+    return `Hola Claver, quiero probar ${marca} (cobranzas por WhatsApp) en mi negocio.`
+  }
+  return `Hola Claver, quiero probar ${marca} (turnero online) en mi negocio.`
+}
+
 export interface ProductEntryStep {
   step: number
   title: string
@@ -50,34 +100,34 @@ export interface ProductEntryConfig {
 
 export const FIADO_ENTRY: ProductEntryConfig = {
   slug: "fiado",
-  badge: "Claver Fiado · Comercios de barrio",
+  badge: "Claver Fiado · Gratis para siempre",
   h1: "¿Todavía anotás el fiado en un cuaderno?",
   subtitle:
-    "Digitalizá el fiado de tu negocio en minutos, desde el celular y sin cambiar toda tu forma de trabajar.",
-  ctaPrimary: "Probar gratis",
+    "Libreta digital en el celular: quién debe, cuánto y el límite de cada cliente. Anotás y cobrás en segundos, sin Excel ni papel.",
+  ctaPrimary: "Usar Fiado gratis",
   ctaSecondary: "Ver demo",
   ctaPrimaryActivar: "fiado",
   demoHref: "/demo/almacen",
   trustBullets: [
-    "Libreta digital en el celular",
-    "Sabé quién debe y cuánto",
-    "Trial 14 días sin tarjeta",
+    "Gratis para siempre",
+    "Quién debe y cuánto, en vivo",
+    "Funciona en el celular",
   ],
   steps: [
     {
       step: 1,
       title: "Creá tu cuenta",
-      description: "Registrate en dos minutos. Sin instalación ni llamadas.",
+      description: "Dos minutos. Sin instalación ni tarjeta.",
     },
     {
       step: 2,
       title: "Cargá tus clientes",
-      description: "Importá o cargá los fiadores de tu barrio con límite de crédito.",
+      description: "Nombre, teléfono y límite de crédito por persona.",
     },
     {
       step: 3,
       title: "Anotá el primer fiado",
-      description: "Desde el mostrador o el celular. La libreta se actualiza sola.",
+      description: "Desde el mostrador o el celu. La libreta se actualiza sola.",
     },
   ],
   testimonial: {
@@ -94,17 +144,17 @@ export const FIADO_ENTRY: ProductEntryConfig = {
   preview: {
     title: "Así se ve tu libreta digital",
     description:
-      "Quién te debe, cuánto y si pasó el límite — en una pantalla clara, desde el celular o la PC del mostrador.",
+      "Deuda por cliente, límites y cobros — una pantalla clara en el celular o en la PC del mostrador.",
   },
-  stepsIntro: "Sin migrar todo tu negocio. Empezás con el fiado y seguís vendiendo.",
+  stepsIntro: "En tres pasos tenés la libreta lista y seguís vendiendo.",
   finalCta: {
-    title: "Dejá el cuaderno esta semana",
-    subtitle: "14 días gratis. Digitalizá el fiado y sumá stock, caja o reportes cuando quieras.",
+    title: "Pasá la libreta al celular esta semana",
+    subtitle: "Claver Fiado es gratis para siempre. Probá Cobrá, turnos o POS 14 días cuando quieras.",
   },
   ecosistemaSubtitle:
-    "Empezá con fiado hoy. Cuando el negocio crezca, activás stock, caja, reportes y más — sin cambiar de plataforma.",
+    "La libreta es gratis. Después podés activar Cobrá por WhatsApp, stock, caja y reportes en la misma cuenta.",
   seo: {
-    title: "Claver Fiado · Libreta digital para comercios de barrio",
+    title: "Claver Fiado · Libreta digital gratis para comercios",
     keywords: [
       "Claver Fiado",
       "fiado digital",
@@ -119,34 +169,34 @@ export const FIADO_ENTRY: ProductEntryConfig = {
 
 export const COBRA_ENTRY: ProductEntryConfig = {
   slug: "cobra",
-  badge: "Claver Cobrá · Recuperá deuda sin llamar",
+  badge: "Claver Cobrá · WhatsApp + panel de deuda",
   h1: "¿Seguís llamando morosos uno por uno?",
   subtitle:
-    "Mandá recordatorios por WhatsApp con tono amable, recuperá deuda sin quedar mal vos y seguí vendiendo en el mostrador.",
-  ctaPrimary: "Probar gratis",
+    "Recordatorios por WhatsApp con tono amable, panel de lo recuperable y link de pago. Vos atendés el negocio; el seguimiento corre solo.",
+  ctaPrimary: "Probar Cobrá 14 días",
   ctaSecondary: "Ver demo",
   ctaPrimaryActivar: "cobra",
   demoHref: "/demo/almacen",
   trustBullets: [
-    "Recordatorios automáticos por WhatsApp",
-    "Panel de deuda recuperable",
-    "Trial 14 días sin tarjeta",
+    "Avisos por WhatsApp",
+    "Panel de deuda en vivo",
+    "14 días sin tarjeta",
   ],
   steps: [
     {
       step: 1,
       title: "Creá tu cuenta",
-      description: "Registrate en minutos. Sin instalación ni configuración técnica.",
+      description: "Minutos. Sin instalación ni armado técnico.",
     },
     {
       step: 2,
       title: "Cargá clientes con saldo",
-      description: "Importá deudores o conectá con tu libreta de fiado existente.",
+      description: "Importá deudores o usá la libreta de fiado si ya la tenés.",
     },
     {
       step: 3,
       title: "Activá los avisos",
-      description: "El sistema les manda el recordatorio. Vos seguís atendiendo el negocio.",
+      description: "Se envían los recordatorios. Vos seguís en el mostrador.",
     },
   ],
   testimonial: {
@@ -163,15 +213,15 @@ export const COBRA_ENTRY: ProductEntryConfig = {
   preview: {
     title: "Así se ve tu panel de cobranza",
     description:
-      "Morosos, montos vencidos y mensajes enviados — todo en un panel claro, desde el celular o la PC.",
+      "Vencidos, montos y mensajes enviados — en una pantalla clara, celular o PC.",
   },
-  stepsIntro: "Sin cambiar tu forma de vender. Activás cobranza y el sistema hace el seguimiento.",
+  stepsIntro: "Activás cobranza y el seguimiento corre mientras vendés.",
   finalCta: {
-    title: "Dejá de perseguir deuda a mano",
-    subtitle: "14 días gratis. Recuperá morosos con WhatsApp y sumá fiado, caja o reportes cuando quieras.",
+    title: "Recuperá deuda sin perseguir a nadie",
+    subtitle: "14 días gratis. WhatsApp + panel. Sumá Fiado o POS cuando te sirva.",
   },
   ecosistemaSubtitle:
-    "Empezá con cobranza hoy. Cuando crezcas, activás fiado, factura AFIP, stock y más — en la misma plataforma.",
+    "Cobrá se integra con Fiado, caja y facturación cuando los actives — en la misma cuenta.",
   seo: {
     title: "Claver Cobrá · Cobranzas por WhatsApp para tu negocio",
     keywords: [
@@ -379,7 +429,7 @@ export const OBRA_ENTRY: ProductEntryConfig = {
     title: "Liquidá obra sin pelea",
     subtitle: "14 días gratis. Jornales, adelantos y cobranza en un pack.",
   },
-  ecosistemaSubtitle: "Después sumá compras, OCR de remitos o ERP completo si crecés.",
+  ecosistemaSubtitle: "Después podés sumar compras, OCR de remitos u otras apps en la misma cuenta.",
   seo: {
     title: "Claver Obra · Software para contratistas y jornales",
     keywords: ["contratista", "jornales", "obra", "liquidación obreros", "Argentina", "Claver"],
@@ -388,34 +438,34 @@ export const OBRA_ENTRY: ProductEntryConfig = {
 
 export const TURNOS_ENTRY: ProductEntryConfig = {
   slug: "turnos",
-  badge: "Claver Turnos · Salones y consultorios",
+  badge: "Claver Turnos · Salones, barberías y consultorios",
   h1: "¿Coordinás turnos por WhatsApp todo el día?",
   subtitle:
-    "Compartí un link de reserva. Tus clientes eligen horario solos y reciben recordatorio automático — sin idas y vueltas.",
-  ctaPrimary: "Probar gratis",
+    "Un link de reserva 24/7: el cliente elige horario y recibe recordatorio. Menos audios, menos no-shows, más tiempo para atender.",
+  ctaPrimary: "Probar Turnos 14 días",
   ctaSecondary: "Ver demo",
   ctaPrimaryActivar: "turnos",
   demoHref: "/demo/salon_belleza",
   trustBullets: [
     "Link de reserva 24/7",
-    "Menos mensajes para coordinar",
-    "Trial 14 días sin tarjeta",
+    "Menos idas y vueltas por chat",
+    "14 días sin tarjeta",
   ],
   steps: [
     {
       step: 1,
       title: "Creá tu cuenta",
-      description: "Registrate en minutos. Sin app para instalar en el celular del cliente.",
+      description: "Minutos. El cliente no instala nada.",
     },
     {
       step: 2,
       title: "Cargá servicios y horarios",
-      description: "Profesionales, duración de cada servicio y franjas disponibles.",
+      description: "Profesionales, duración y franjas disponibles.",
     },
     {
       step: 3,
       title: "Compartí tu link",
-      description: "Pegalo en Instagram, WhatsApp o QR en el local. El cliente reserva solo.",
+      description: "Instagram, WhatsApp o QR en el local. Reservan solos.",
     },
   ],
   testimonial: {
@@ -432,15 +482,15 @@ export const TURNOS_ENTRY: ProductEntryConfig = {
   preview: {
     title: "Así se ve tu agenda online",
     description:
-      "Turnos del día, huecos libres y reservas del link público — en una pantalla clara, celular o PC.",
+      "Turnos del día, huecos y reservas del link público — celular o PC.",
   },
-  stepsIntro: "Sin pelear por WhatsApp. Empezás con turnos y seguís atendiendo.",
+  stepsIntro: "En tres pasos tenés agenda pública y seguís atendiendo.",
   finalCta: {
     title: "Dejá de coordinar turnos a mano",
-    subtitle: "14 días gratis. Agenda online y sumá cobranza, tienda o reportes cuando quieras.",
+    subtitle: "14 días gratis. Link de reserva + recordatorios. Sumá Cobrá u otras apps cuando quieras.",
   },
   ecosistemaSubtitle:
-    "Empezá con turnos hoy. Cuando el negocio crezca, activás cobranza, factura, ecommerce y más — sin cambiar de plataforma.",
+    "Turnos convive con Cobrá, facturación y más en la misma cuenta cuando los actives.",
   seo: {
     title: "Claver Turnos · Agenda online y recordatorios automáticos",
     keywords: [
@@ -542,14 +592,39 @@ export const ECOSISTEMA_CAPACIDADES = [
   { label: "Dashboards", href: "/claver/claverp", hint: "KPIs por rol" },
 ] as const
 
+/**
+ * Copy de la vitrine home — comercial y funcional.
+ * Sin marco “dolor → sistema/ERP” y sin renombrar productos.
+ */
 export const GTM_VITRINE_COPY = {
   heroTagline: FIADO_ENTRY.h1,
   heroDescription: FIADO_ENTRY.subtitle,
-  combateTitle: "Productos de Combate",
-  combateSubtitle: "Soluciones simples, rápidas y efectivas para tu día a día.",
-  verCatalogoLabel: "Ver catálogo completo (ERP)",
-  ecosistemaTitle: "Claver también puede ayudarte con",
+  combateTitle: "Elegí cómo empezar",
+  combateSubtitle:
+    "Precios en pesos, trial 14 días sin tarjeta. Activás en minutos desde el celular o la PC.",
+  combateHeadingId: "combate-heading",
+  packsHomeTitle: "Packs por rubro, precio cerrado",
+  packsHomeSubtitle:
+    "Listos para almacén, kiosco, servicios y más. Un pack, varias funciones, una sola factura.",
+  verCatalogoLabel: "Ver todos los packs y apps",
+  ecosistemaTitle: "También podés sumar",
   ecosistemaSubtitle: FIADO_ENTRY.ecosistemaSubtitle,
+  collapsibleTitle: "Demos y más opciones",
+  collapsibleSubtitle: "Probá con datos de ejemplo o explorá el catálogo completo.",
+  trustBarTitle: "Hecho para comercios en Argentina",
+  trustItems: [
+    { label: "14 días de prueba", hint: "Sin tarjeta" },
+    { label: "Factura AFIP", hint: "Cuando la actives" },
+    { label: "Celular y PC", hint: "Sin instalar" },
+    { label: "Precios en ARS", hint: "Cancelás cuando quieras" },
+  ],
+  heroMicrocopy: "Sin tarjeta · Cancelás cuando quieras · Soporte en español",
+  ctaProbar: "Probar gratis",
+  ctaVerProductos: "Ver productos",
+  ctaVerPack: "Ver pack",
+  badgeGratis: "Gratis",
+  badgeElegido: "En pantalla",
+  badgeTrial: "14 días gratis",
 }
 
 export function combateLandingMetadata(slug: CombateAppSlug) {

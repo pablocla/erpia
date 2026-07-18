@@ -104,7 +104,7 @@ export default function AgendaPage() {
   const [savingCustomFields, setSavingCustomFields] = useState(false)
   const [actualizandoTurno, setActualizandoTurno] = useState(false)
   const [cancelandoTurno, setCancelandoTurno] = useState(false)
-  const [form, setForm] = useState({ horaInicio: "09:00", motivo: "", notas: "", profesionalId: "", duracion: "30", servicioId: "" })
+  const [form, setForm] = useState({ horaInicio: "09:00", motivo: "", notas: "", profesionalId: "", duracion: "30", servicioId: "", sena: "" })
   const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -189,7 +189,7 @@ export default function AgendaPage() {
           servicioId: servicioSeleccionado?.id,
           profesionalId: Number(form.profesionalId),
           motivo: form.motivo,
-          notas: form.notas || undefined,
+          notas: form.sena ? (form.notas ? form.notas + "\n[Seña Abonada: $" + form.sena + "]" : "[Seña Abonada: $" + form.sena + "]") : (form.notas || undefined),
         }),
       })
       if (res.ok) { setDialogOpen(false); cargarDatos() }
@@ -584,6 +584,16 @@ export default function AgendaPage() {
                 <div className="flex flex-wrap gap-2 mt-4">
                   <Button variant="outline" onClick={() => actualizarTurno({ estado: "completado" })} disabled={actualizandoTurno || turnoSeleccionado.estado === "completado"}>
                     {actualizandoTurno ? "Actualizando..." : "Marcar completado"}
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      const cid = turnoSeleccionado.cliente?.id
+                      const q = cid ? `?clienteId=${cid}` : ""
+                      window.location.href = `/dashboard/pos${q}`
+                    }}
+                  >
+                    Cobrar en POS
                   </Button>
                   <Button variant="destructive" onClick={cancelarTurno} disabled={cancelandoTurno || turnoSeleccionado.estado === "cancelado"}>
                     {cancelandoTurno ? "Cancelando..." : "Cancelar turno"}

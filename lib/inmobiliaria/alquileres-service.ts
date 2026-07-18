@@ -26,11 +26,20 @@ export type FacturacionAlquilerResult = {
   errores: string[]
 }
 
+export async function facturarAlquileresEmpresa(
+  empresaId: number,
+  periodo = periodoAlquilerActual(),
+): Promise<FacturacionAlquilerResult> {
+  return facturarAlquileresMensuales(periodo, empresaId)
+}
+
 export async function facturarAlquileresMensuales(
   periodo = periodoAlquilerActual(),
+  empresaId?: number,
 ): Promise<FacturacionAlquilerResult> {
   const contratos = await prisma.contratoAlquiler.findMany({
     where: {
+      ...(empresaId ? { empresaId } : {}),
       estado: "activo",
       OR: [{ ultimoPeriodoFacturado: null }, { ultimoPeriodoFacturado: { not: periodo } }],
       fechaInicio: { lte: new Date() },
@@ -106,9 +115,10 @@ export async function facturarAlquileresMensuales(
           },
         })
 
+        // Convención ERP: saldo < 0 = deuda
         await tx.cliente.update({
           where: { id: c.inquilinoId },
-          data: { saldoCuentaCorriente: { increment: monto } },
+          data: { saldoCuentaCorriente: { decrement: monto } },
         })
 
         await tx.contratoAlquiler.update({
@@ -231,11 +241,27 @@ export async function alertarAlquileresImpagos(): Promise<{ avisados: number }> 
     })
     if (ya) continue
 
-    const monto = Number(cx.saldo).toLocaleString("es-AR", {
+    const montoNum = Number(cx.saldo)
+    const monto = montoNum.toLocaleString("es-AR", {
       style: "currency",
       currency: "ARS",
       maximumFractionDigits: 0,
     })
+
+    const { resolverLinkPagoDeudor } = await import("@/lib/mercadopago/deudor-pago-link")
+    const linkPago = await resolverLinkPagoDeudor({
+      empresaId: cx.cliente.empresaId,
+      clienteId: cx.cliente.id,
+      clienteNombre: cx.cliente.nombre,
+      monto: montoNum,
+      titulo: cx.observaciones ?? "Alquiler pendiente",
+      facturaId: cx.facturaId,
+      cuentaCobrarId: cx.id,
+    })
+
+    const linkLinea = linkPago
+      ? ` Pagá online: ${linkPago}`
+      : " Ante cualquier duda, respondanos por este medio."
 
     const ok = await encolarWhatsAppNiche({
       empresaId: cx.cliente.empresaId,
@@ -243,8 +269,8 @@ export async function alertarAlquileresImpagos(): Promise<{ avisados: number }> 
       clienteNombre: cx.cliente.nombre,
       telefono: cx.cliente.telefono,
       concepto: cx.observaciones ?? "Alquiler impago",
-      monto: Number(cx.saldo),
-      mensajeCustom: `Hola ${cx.cliente.nombre}, le recordamos que tiene un alquiler pendiente por ${monto}. Ante cualquier duda, respondanos por este medio.`,
+      monto: montoNum,
+      mensajeCustom: `Hola ${cx.cliente.nombre}, le recordamos que tiene un alquiler pendiente por ${monto}.${linkLinea}`,
     })
 
     if (ok) {

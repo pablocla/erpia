@@ -4,17 +4,54 @@
 
 import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
 
-const LITE_SHARED = ["/dashboard/mi-plan", "/dashboard/apps"]
+const LITE_SHARED = ["/dashboard/mi-plan", "/dashboard/apps", "/dashboard/trial-vencido"]
+
+/** Rutas permitidas con ancla fiado gratis aunque el trial de pago haya vencido */
+export const ANCLA_FIADO_ALLOWLIST = [
+  "/dashboard",
+  "/dashboard/fiado",
+  "/dashboard/clientes",
+  "/dashboard/cuentas-cobrar",
+  "/dashboard/configuracion",
+  "/dashboard/mi-plan",
+  "/dashboard/apps",
+  "/dashboard/trial-vencido",
+] as const
+
+export function isPathInAnclaFiadoAllowlist(pathname: string): boolean {
+  return ANCLA_FIADO_ALLOWLIST.some(
+    (p) => pathname === p || (p !== "/dashboard" && pathname.startsWith(`${p}/`)) || pathname === "/dashboard",
+  )
+}
 
 export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
-  fiado: ["/dashboard", "/dashboard/fiado", "/dashboard/clientes", "/dashboard/configuracion", ...LITE_SHARED],
-  cobranza: ["/dashboard", "/dashboard/cuentas-cobrar", "/dashboard/clientes", "/dashboard/configuracion", ...LITE_SHARED],
+  fiado: [
+    "/dashboard",
+    "/dashboard/fiado",
+    "/dashboard/pos",
+    "/dashboard/caja",
+    "/dashboard/productos",
+    "/dashboard/clientes",
+    "/dashboard/cuentas-cobrar",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
+  cobranza: [
+    "/dashboard",
+    "/dashboard/cuentas-cobrar",
+    "/dashboard/clientes",
+    "/dashboard/fiado",
+    "/dashboard/facturacion-recurrente",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
   pos: [
     "/dashboard",
     "/dashboard/pos",
     "/dashboard/caja",
     "/dashboard/productos",
     "/dashboard/clientes",
+    "/dashboard/fiado",
     "/dashboard/configuracion",
     ...LITE_SHARED,
   ],

@@ -78,6 +78,7 @@ import { PosEnvasesDialog } from "@/components/pos/pos-envases-dialog"
 import { PosSkuGateButton } from "@/components/pos/pos-sku-gate-button"
 import type { TicketLegalData } from "@/lib/fiscal/ticket-legal"
 import type { SalidaComprobante } from "@/lib/fiscal/emission-config"
+import { resolvePosComprobante } from "@/lib/fiscal/pos-comprobante-policy"
 import type { VarianteGrupo } from "@/lib/pos/pos-catalogo-grupos"
 import { beepEscaneoError, beepEscaneoOk } from "@/lib/pos/barcode-feedback"
 import { productoRequiereCantidadVariable } from "@/lib/pos/producto-cantidad-variable"
@@ -239,6 +240,14 @@ export default function POSPage() {
   const [ticketLegal, setTicketLegal] = useState<TicketLegalData | null>(null)
   const [salidaComprobante, setSalidaComprobante] = useState<SalidaComprobante>("preguntar")
   const [imprimirAuto, setImprimirAuto] = useState(false)
+  const [modoComprobante, setModoComprobante] = useState<"afip" | "cajero" | "ticket_solo">("afip")
+  const [tipoDefaultAfip, setTipoDefaultAfip] = useState<"auto" | "A" | "B" | "C">("auto")
+  const [permitirTicketSinAfip, setPermitirTicketSinAfip] = useState(true)
+  const [tiposComprobantePermitidos, setTiposComprobantePermitidos] = useState<TipoFactura[]>([
+    "A", "B", "C", "ticket",
+  ])
+  const [selectorTipoBloqueado, setSelectorTipoBloqueado] = useState(false)
+  const [etiquetaModoFiscal, setEtiquetaModoFiscal] = useState("AFIP electrónico")
   const [propina, setPropina] = useState(0)
   const [catalogoGrupos, setCatalogoGrupos] = useState<{
     variantes: VarianteGrupo[]
@@ -285,6 +294,20 @@ export default function POSPage() {
         const cfg = await res.json()
         setSalidaComprobante(cfg.salida ?? "preguntar")
         setImprimirAuto(!!cfg.imprimirAuto)
+        const modo = (cfg.modoComprobante ?? "afip") as "afip" | "cajero" | "ticket_solo"
+        setModoComprobante(modo)
+        setTipoDefaultAfip(cfg.tipoDefaultAfip ?? "auto")
+        setPermitirTicketSinAfip(cfg.permitirTicketSinAfip !== false)
+        if (modo === "ticket_solo") {
+          setTipoFactura("ticket")
+          setTipoManual(false)
+        } else if (modo === "afip") {
+          const def = cfg.tipoDefaultAfip === "A" || cfg.tipoDefaultAfip === "C"
+            ? cfg.tipoDefaultAfip
+            : "B"
+          setTipoFactura(def)
+          setTipoManual(false)
+        }
       }
     } catch { /* silent */ }
   }, [authH])
@@ -1271,10 +1294,7 @@ export default function POSPage() {
     }
   }
 
-  const afipBloqueaFiscal =
-    tipoFactura !== "ticket" &&
-    afipStatus?.semaforo === "error"
-
+  const afipDisponible = afipStatus?.semaforo !== "error"
   const clienteActivo = clientes.find((c) => c.id === clienteId)
   const deudaClientePos = clienteActivo
     ? Math.max(0, -(Number(clienteActivo.saldoCuentaCorriente ?? 0)))
@@ -1286,6 +1306,50 @@ export default function POSPage() {
   const tipoSugerido = clienteActivo
     ? tipoFacturaSugerido(clienteActivo.condicionIva)
     : "B"
+
+  const policyComprobante = useMemo(
+    () =>
+      resolvePosComprobante({
+        modoComprobante,
+        tipoDefaultAfip,
+        tipoSugeridoCliente: tipoSugerido,
+        permitirTicketSinAfip,
+        afipDisponible: afipDisponible !== false,
+        offline: typeof navigator !== "undefined" ? !navigator.onLine : false,
+        tipoElegido: tipoFactura,
+        tipoManual,
+      }),
+    [
+      modoComprobante,
+      tipoDefaultAfip,
+      tipoSugerido,
+      permitirTicketSinAfip,
+      afipDisponible,
+      tipoFactura,
+      tipoManual,
+    ],
+  )
+
+  useEffect(() => {
+    setTiposComprobantePermitidos(policyComprobante.tiposPermitidos as TipoFactura[])
+    setSelectorTipoBloqueado(policyComprobante.selectorBloqueado)
+    setEtiquetaModoFiscal(policyComprobante.etiquetaModo)
+    if (!tipoManual && policyComprobante.tipoEfectivo !== tipoFactura) {
+      setTipoFactura(policyComprobante.tipoEfectivo as TipoFactura)
+    } else if (
+      tipoManual &&
+      !policyComprobante.tiposPermitidos.includes(tipoFactura)
+    ) {
+      setTipoFactura(policyComprobante.tipoEfectivo as TipoFactura)
+      setTipoManual(false)
+    }
+  }, [policyComprobante, tipoManual, tipoFactura])
+
+  const afipBloqueaFiscal =
+    policyComprobante.requiereAfip &&
+    afipStatus?.semaforo === "error" &&
+    !permitirTicketSinAfip
+
   const tipoMismatch =
     tipoFactura !== "ticket" && clienteActivo && tipoFactura !== tipoSugerido
   const requiereFce =
@@ -1414,24 +1478,53 @@ export default function POSPage() {
           ))}
         </div>
 
-        {/* Tipo factura */}
-        <Select
-          value={tipoFactura}
-          onValueChange={(v) => {
-            setTipoManual(true)
-            setTipoFactura(v as TipoFactura)
-          }}
-        >
-          <SelectTrigger className="w-[7.5rem] sm:w-32 h-9 sm:h-8 text-xs shrink-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ticket">Ticket (sin CAE)</SelectItem>
-            <SelectItem value="B">Factura B</SelectItem>
-            <SelectItem value="A">Factura A</SelectItem>
-            <SelectItem value="C">Factura C</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Tipo factura — AFIP default / cajero elige / solo ticket */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Badge
+            variant={
+              etiquetaModoFiscal.toLowerCase().includes("ticket")
+                ? "secondary"
+                : "default"
+            }
+            className="text-[10px] sm:text-xs max-w-[9rem] truncate font-medium"
+            title={
+              selectorTipoBloqueado
+                ? `${etiquetaModoFiscal} — el tipo está fijado por configuración`
+                : etiquetaModoFiscal
+            }
+          >
+            {etiquetaModoFiscal}
+          </Badge>
+          <Select
+            value={tipoFactura}
+            onValueChange={(v) => {
+              setTipoManual(true)
+              setTipoFactura(v as TipoFactura)
+            }}
+            disabled={selectorTipoBloqueado}
+          >
+            <SelectTrigger
+              className="w-[7.5rem] sm:w-36 h-9 sm:h-9 text-xs shrink-0"
+              title={selectorTipoBloqueado ? "Bloqueado por modo de comprobante" : "Tipo de comprobante"}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {tiposComprobantePermitidos.includes("ticket") && (
+                <SelectItem value="ticket">Ticket (sin CAE)</SelectItem>
+              )}
+              {tiposComprobantePermitidos.includes("B") && (
+                <SelectItem value="B">Factura B · AFIP</SelectItem>
+              )}
+              {tiposComprobantePermitidos.includes("A") && (
+                <SelectItem value="A">Factura A · AFIP</SelectItem>
+              )}
+              {tiposComprobantePermitidos.includes("C") && (
+                <SelectItem value="C">Factura C · AFIP</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Semáforos + pendientes + accesos */}
         <div className="flex items-center gap-1.5 ml-auto flex-wrap justify-end">

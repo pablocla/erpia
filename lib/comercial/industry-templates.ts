@@ -137,9 +137,12 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     goldenPath: "/dashboard/ventas",
     featured: true,
     menuLabels: {
-      "/dashboard/ventas": "Mostrador",
+      "/dashboard/pos": "Mostrador POS",
+      "/dashboard/ventas": "Facturación",
       "/dashboard/compras": "Reposición",
       "/dashboard/productos": "Catálogo",
+      "/dashboard/caja": "Caja",
+      "/dashboard/clientes": "Clientes",
     },
   }),
   tpl({
@@ -170,9 +173,11 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     engancheId: "niche.vet_barrio",
     featured: true,
     menuLabels: {
+      "/dashboard/veterinaria": "Pacientes",
       "/dashboard/historia-clinica": "Historias clínicas",
       "/dashboard/agenda": "Turnos",
-      "/dashboard/ventas": "Mostrador",
+      "/dashboard/pos": "Mostrador",
+      "/dashboard/ventas": "Facturación",
       "/dashboard/clientes": "Tutores",
     },
     sectionLabels: { servicios: "Atención", ventas: "Mostrador" },
@@ -227,6 +232,8 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     featured: true,
     menuLabels: {
       "/dashboard/agenda": "Turnos",
+      "/dashboard/peluqueria": "Agenda mobile",
+      "/dashboard/pos": "Cobro",
       "/dashboard/ventas": "Cobro servicios",
       "/dashboard/clientes": "Clientas",
     },

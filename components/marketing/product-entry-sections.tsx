@@ -23,7 +23,7 @@ import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 import type { CombateAppSlug, ProductEntryConfig } from "@/lib/comercial/go-to-market-vitrine"
 import {
   ECOSISTEMA_CAPACIDADES,
-  FIADO_ENTRY, POS_ENTRY,
+  FIADO_ENTRY,
   GTM_VITRINE_COPY,
 } from "@/lib/comercial/go-to-market-vitrine"
 import { fmtPrecioArs } from "@/lib/comercial/sub-saas-catalog"
@@ -40,6 +40,7 @@ import {
   PacksRubroSection,
   PlataformasSection,
 } from "@/components/marketing/commercial-catalog-sections"
+import type { ReactNode } from "react"
 import { LANDING_FEATURED_DEMOS } from "@/lib/marketing/landing-seo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -78,12 +79,19 @@ export function ProductHeroSection({
   entry,
   showBreadcrumb = false,
   className,
+  chips,
+  secondaryCtaHref,
 }: {
   entry: ProductEntryConfig
   showBreadcrumb?: boolean
   className?: string
+  /** Chips de producto (home) debajo del subtítulo. */
+  chips?: ReactNode
+  /** Override del CTA secundario (ej. ancla a #combate-heading). */
+  secondaryCtaHref?: string
 }) {
   const registerHref = activarRegisterHref(entry.ctaPrimaryActivar)
+  const secondaryHref = secondaryCtaHref ?? entry.demoHref
 
   return (
     <section
@@ -119,6 +127,8 @@ export function ProductHeroSection({
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-slate-300 leading-relaxed">{entry.subtitle}</p>
 
+          {chips}
+
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button
               size="lg"
@@ -136,12 +146,22 @@ export function ProductHeroSection({
               className="h-12 border-white/20 bg-white/5 px-8 text-white hover:bg-white/10"
               asChild
             >
-              <Link href={entry.demoHref}>
-                <PlayCircle className="mr-2 h-4 w-4" aria-hidden />
-                {entry.ctaSecondary}
+              <Link href={secondaryHref}>
+                {secondaryCtaHref ? (
+                  <>
+                    {GTM_VITRINE_COPY.ctaVerProductos}
+                    <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="mr-2 h-4 w-4" aria-hidden />
+                    {entry.ctaSecondary}
+                  </>
+                )}
               </Link>
             </Button>
           </div>
+          <p className="mt-3 text-xs text-slate-500 sm:text-sm">{GTM_VITRINE_COPY.heroMicrocopy}</p>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
             {entry.trustBullets.map((label, i) => {
@@ -155,6 +175,33 @@ export function ProductHeroSection({
             })}
           </ul>
         </MotionFadeDown>
+      </div>
+    </section>
+  )
+}
+
+/** Franja de confianza comercial (home y landings). */
+export function CommercialTrustBar({ className }: { className?: string }) {
+  return (
+    <section
+      aria-label={GTM_VITRINE_COPY.trustBarTitle}
+      className={cn("border-b border-slate-200/80 bg-white px-4 py-8 sm:px-6", className)}
+    >
+      <div className="mx-auto max-w-7xl">
+        <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {GTM_VITRINE_COPY.trustBarTitle}
+        </p>
+        <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {GTM_VITRINE_COPY.trustItems.map((item) => (
+            <li
+              key={item.label}
+              className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3 text-center"
+            >
+              <p className="text-sm font-semibold text-slate-900">{item.label}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{item.hint}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )
@@ -350,16 +397,25 @@ export function ProductPricingStrip({
   trialDias: number
   className?: string
 }) {
+  const isFree = precioArs === 0
   return (
     <section className={cn("border-y border-slate-200/80 bg-white py-10", className)}>
       <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
-        <p className="text-sm font-medium uppercase tracking-wide text-emerald-700">Precio claro</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-emerald-700">Precio claro en ARS</p>
         <p className="mt-2 font-[var(--font-fraunces)] text-3xl font-semibold text-slate-900 sm:text-4xl">
-          {fmtPrecioArs(precioArs)}
-          <span className="text-lg font-normal text-slate-500"> / mes</span>
+          {isFree ? (
+            "Gratis"
+          ) : (
+            <>
+              {fmtPrecioArs(precioArs)}
+              <span className="text-lg font-normal text-slate-500"> / mes</span>
+            </>
+          )}
         </p>
         <p className="mt-2 text-slate-600">
-          {trialDias} días gratis para probar. Sin tarjeta. Cancelás cuando quieras.
+          {isFree
+            ? "Sin abono mensual. Sin tarjeta. Para siempre."
+            : `${trialDias} días gratis para probar. Sin tarjeta. Cancelás cuando quieras.`}
         </p>
       </div>
     </section>
@@ -463,23 +519,30 @@ export function EcosistemaExpansionSection({
   )
 }
 
+/** Demos secundarios en home (S6) — no compiten con combate. */
+const HOME_COLLAPSIBLE_DEMO_IDS = ["almacen", "salon_belleza", "consorcios_admin"] as const
+
 export function EcosistemaCollapsibleSection({ className }: { className?: string }) {
-  const demos = LANDING_FEATURED_DEMOS.slice(0, 3)
+  const demos = LANDING_FEATURED_DEMOS.filter((d) =>
+    (HOME_COLLAPSIBLE_DEMO_IDS as readonly string[]).includes(d.id),
+  )
 
   return (
-    <section className={cn("bg-white px-4 py-12 sm:px-6", className)}>
+    <section className={cn("bg-[#f8fafc] px-4 py-12 sm:px-6", className)}>
       <div className="mx-auto max-w-7xl">
         <Collapsible>
           <CollapsibleTrigger asChild>
             <Button
               variant="outline"
-              className="h-auto w-full justify-between py-4 text-left"
+              className="h-auto w-full justify-between border-slate-200 bg-white py-4 text-left shadow-sm"
               aria-expanded={undefined}
             >
               <span>
-                <span className="block font-semibold text-slate-900">Ver más del ecosistema Claver</span>
+                <span className="block font-semibold text-slate-900">
+                  {GTM_VITRINE_COPY.collapsibleTitle}
+                </span>
                 <span className="mt-0.5 block text-sm font-normal text-slate-500">
-                  Demos por rubro, packs, plataformas y catálogo completo
+                  {GTM_VITRINE_COPY.collapsibleSubtitle}
                 </span>
               </span>
               <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
@@ -487,31 +550,40 @@ export function EcosistemaCollapsibleSection({ className }: { className?: string
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-8 space-y-16">
             <div>
-              <h3 className="font-[var(--font-fraunces)] text-xl font-semibold text-slate-900">
-                Probar por rubro
+              <h3 className="font-[var(--font-fraunces)] text-lg font-semibold text-slate-900">
+                ¿Querés ver cómo se siente?
               </h3>
-              <p className="mt-1 text-sm text-slate-600">Demo con datos de ejemplo, sin instalación.</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Demo con datos de ejemplo — sin instalación. Secundario al producto que elegiste.
+              </p>
               <ul className="mt-6 grid gap-3 sm:grid-cols-3">
                 {demos.map((pack) => (
                   <li key={pack.id}>
                     <Link
                       href={`/demo/${pack.id}`}
-                      className="group flex items-center gap-3 rounded-xl border border-slate-200/80 bg-[#f8fafc] p-4 transition hover:border-emerald-300"
+                      className="group flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white/80 p-3 transition hover:border-emerald-300"
                     >
-                      <span className="text-xl" role="img" aria-hidden>
+                      <span className="text-lg" role="img" aria-hidden>
                         {pack.emoji}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-900 group-hover:text-emerald-800">{pack.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-slate-800 group-hover:text-emerald-800">
+                            {pack.label}
+                          </p>
+                          <Badge variant="secondary" className="text-[10px]">
+                            Demo
+                          </Badge>
+                        </div>
                         <p className="text-xs text-slate-500">{pack.hint}</p>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-emerald-600" />
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-emerald-600" />
                     </Link>
                   </li>
                 ))}
               </ul>
-              <div className="mt-4 text-center">
-                <Button variant="link" asChild>
+              <div className="mt-3 text-center">
+                <Button variant="link" size="sm" asChild>
                   <Link href="/demo">Todos los rubros</Link>
                 </Button>
               </div>

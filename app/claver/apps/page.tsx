@@ -2,9 +2,9 @@ import { Suspense } from "react"
 import { ClaverAppsMarketplace } from "@/components/marketing/claver-apps-marketplace"
 
 export const metadata = {
-  title: "Catálogo de apps y automatizaciones | Claver",
+  title: "Catálogo de apps y packs | Claver",
   description:
-    "Diez apps para vender hoy — fiado, cobranzas WA, turnos, tienda, menú QR y más. Automatizaciones, packs y módulos activables en minutos.",
+    "Apps activas para vender hoy: Fiado gratis, Cobrá, Turnos, POS y packs por rubro. Mismas herramientas del producto, ordenadas y listas para activar.",
 }
 
 export default function AppsPage() {

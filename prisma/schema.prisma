@@ -200,6 +200,7 @@ model Empresa {
   nicheMovimientos            NicheMovimiento[]
   reporteAuditoriaAccesos     ReporteAuditoriaAcceso[]
   tenantEntornos              TenantEntorno[]
+  despachosImportacion        DespachoImportacion[]
 
   @@map("empresas")
 }
@@ -320,24 +321,24 @@ model Cliente {
   profesionId       Int?
   profesion         Profesion?       @relation(fields: [profesionId], references: [id])
 
-  facturas          Factura[]
-  notasCredito      NotaCredito[]
-  notasDebito       NotaDebito[]
-  remitos           Remito[]
-  cuentasBancarias  CuentaBancaria[]
-  cheques           Cheque[]
-  presupuestos      Presupuesto[]
-  cuentasCobrar     CuentaCobrar[]
-  recibos           Recibo[]
-  padronRegimenes   PadronRegimenCliente[]
-  turnos            Turno[]
-  pacientes         Paciente[]
-  membresias        Membresia[]
-  pedidosVenta      PedidoVenta[]
-  paradasRuta       ParadaRuta[]
-  movimientosEnvase MovimientoEnvase[]
-  valesDinero       ValeDinero[]
-  agroContratos     AgroContrato[]
+  facturas               Factura[]
+  notasCredito           NotaCredito[]
+  notasDebito            NotaDebito[]
+  remitos                Remito[]
+  cuentasBancarias       CuentaBancaria[]
+  cheques                Cheque[]
+  presupuestos           Presupuesto[]
+  cuentasCobrar          CuentaCobrar[]
+  recibos                Recibo[]
+  padronRegimenes        PadronRegimenCliente[]
+  turnos                 Turno[]
+  pacientes              Paciente[]
+  membresias             Membresia[]
+  pedidosVenta           PedidoVenta[]
+  paradasRuta            ParadaRuta[]
+  movimientosEnvase      MovimientoEnvase[]
+  valesDinero            ValeDinero[]
+  agroContratos          AgroContrato[]
   unidadesResidente      UnidadFuncional[]      @relation("ClienteResidente")
   propiedadesPropietario Propiedad[]            @relation("PropiedadPropietario")
   contratosInquilino     ContratoAlquiler[]     @relation("ContratoInquilino")
@@ -618,12 +619,14 @@ model LineaCompra {
   total          Decimal @db.Decimal(15, 2)
   descuento      Float   @default(0)
 
-  compraId   Int
-  compra     Compra    @relation(fields: [compraId], references: [id], onDelete: Cascade)
-  productoId Int?
-  producto   Producto? @relation(fields: [productoId], references: [id])
-  loteId     Int?
-  lote       Lote?     @relation(fields: [loteId], references: [id])
+  compraId              Int
+  compra                Compra               @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  productoId            Int?
+  producto              Producto?            @relation(fields: [productoId], references: [id])
+  loteId                Int?
+  lote                  Lote?                @relation(fields: [loteId], references: [id])
+  despachoImportacion   DespachoImportacion? @relation(fields: [despachoImportacionId], references: [id])
+  despachoImportacionId Int?
 
   /// FIX A-002: índice en FK para evitar seq scan en include
   @@index([compraId])
@@ -667,13 +670,13 @@ model MovimientoContable {
   debe   Decimal @default(0) @db.Decimal(15, 2)
   haber  Decimal @default(0) @db.Decimal(15, 2)
 
-  asientoId     Int
-  asiento       AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+  asientoId        Int
+  asiento          AsientoContable @relation(fields: [asientoId], references: [id], onDelete: Cascade)
   /// FK al plan de cuentas (Sprint B1 — integridad GL)
   cuentaContableId Int?
   cuentaContable   CuentaContable? @relation(fields: [cuentaContableId], references: [id])
-  centroCostoId Int?
-  centroCosto   CentroCosto?    @relation(fields: [centroCostoId], references: [id])
+  centroCostoId    Int?
+  centroCosto      CentroCosto?    @relation(fields: [centroCostoId], references: [id])
 
   @@index([cuentaContableId])
   @@map("movimientos_contables")
@@ -772,31 +775,39 @@ model Marca {
 }
 
 model Producto {
-  id                Int       @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   /// FIX C-004: unicidad por empresa, no global (@@unique abajo)
-  codigo            String
-  nombre            String
-  descripcion       String?
-  precioVenta       Decimal   @db.Decimal(15, 2)
-  precioCompra      Decimal   @default(0) @db.Decimal(15, 2)
-  porcentajeIva     Float     @default(21) // 0, 10.5, 21, 27
-  stock             Float     @default(0)
-  stockMinimo       Float     @default(0)
-  unidad            String    @default("unidad") // "unidad", "kg", "litro", etc.
+  codigo        String
+  nombre        String
+  descripcion   String?
+  precioVenta   Decimal @db.Decimal(15, 2)
+  precioCompra  Decimal @default(0) @db.Decimal(15, 2)
+  porcentajeIva Float   @default(21) // 0, 10.5, 21, 27
+  stock         Float   @default(0)
+  stockMinimo   Float   @default(0)
+  unidad        String  @default("unidad") // "unidad", "kg", "litro", etc.
   /// Código EAN-13 / UPC para lectura de scanner POS
-  codigoBarras      String?
+  codigoBarras  String?
   /// Peso bruto en kg (0 = no aplica)
-  peso              Float     @default(0)
+  peso          Float   @default(0)
   /// Unidad de peso: "kg", "g", "tn"
-  pesoUnidad        String    @default("kg")
+  pesoUnidad    String  @default("kg")
   /// Volumen en m³ (0 = no aplica) — para logística
-  volumen           Float     @default(0)
+  volumen       Float   @default(0)
   /// Dimensiones: largo en cm
-  largo             Float     @default(0)
+  largo         Float   @default(0)
   /// Dimensiones: ancho en cm
-  ancho             Float     @default(0)
+  ancho         Float   @default(0)
   /// Dimensiones: alto en cm
-  alto              Float     @default(0)
+  alto          Float   @default(0)
+
+  /// Costo en origen FOB en USD
+  costoFobUsd    Decimal? @db.Decimal(15, 2)
+  /// Costo final con gastos prorrateados en USD (Landed Cost)
+  costoLandedUsd Decimal? @db.Decimal(15, 2)
+  /// "ARS" | "USD" | "EUR"
+  monedaCosto    String   @default("ARS")
+
   /// "bien" | "servicio" | "bien_de_uso" — determina AFIP concepto (1/2/3)
   tipoProducto      String    @default("bien")
   /// Stock máximo permitido (0 = sin límite) — alerta sobre-stock
@@ -1052,7 +1063,7 @@ model NotaCredito {
   facturaId Int?
   factura   Factura? @relation(fields: [facturaId], references: [id])
   clienteId Int
-  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  cliente   Cliente  @relation(fields: [clienteId], references: [id])
 
   lineas LineaNotaCredito[]
 
@@ -2356,8 +2367,10 @@ model Lote {
   depositoId Int?
   deposito   Deposito? @relation(fields: [depositoId], references: [id])
 
-  lineasFactura LineaFactura[]
-  lineasCompra  LineaCompra[]
+  lineasFactura         LineaFactura[]
+  lineasCompra          LineaCompra[]
+  despachoImportacion   DespachoImportacion? @relation(fields: [despachoImportacionId], references: [id])
+  despachoImportacionId Int?
 
   @@unique([productoId, numeroLote])
   @@map("lotes")
@@ -3064,7 +3077,7 @@ model CuentaCobrar {
   facturaId Int?
   factura   Factura? @relation(fields: [facturaId], references: [id])
   clienteId Int
-  cliente   Cliente @relation(fields: [clienteId], references: [id])
+  cliente   Cliente  @relation(fields: [clienteId], references: [id])
 
   itemsRecibo ItemRecibo[]
 
@@ -3113,9 +3126,9 @@ model Recibo {
 
 /// Medios de pago de un recibo (Sprint B2 — cobro multi-medio)
 model ReciboMedioPago {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   tipo       String
-  monto      Decimal  @db.Decimal(18, 2)
+  monto      Decimal @db.Decimal(18, 2)
   referencia String?
 
   reciboId Int
@@ -3197,9 +3210,9 @@ model OrdenPago {
 
 /// Medios de pago de una orden de pago (Sprint B2)
 model OrdenPagoMedioPago {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   tipo       String
-  monto      Decimal  @db.Decimal(18, 2)
+  monto      Decimal @db.Decimal(18, 2)
   referencia String?
 
   ordenPagoId Int
@@ -4782,8 +4795,8 @@ model LiquidacionImpuesto {
   /// Hash para verificar inmutabilidad de la liquidacion
   hash            String?
   fechaGeneracion DateTime @default(now())
-  
-  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
 
   @@index([empresaId, periodo, tipo])
   @@map("liquidaciones_impuesto")
@@ -4820,7 +4833,7 @@ model DeclaracionJurada {
   /// JSON con hash del contenido para auditoría
   hashContenido      String?
   observaciones      String?
-  anulada            Boolean  @default(false)
+  anulada            Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -5384,7 +5397,7 @@ model LineaPresupuestoGasto {
   montoEjecutado     Float            @default(0) // Se actualiza automáticamente
   montoComprometido  Float            @default(0) // OC aprobadas no facturadas
   observaciones      String?
-  anulada            Boolean  @default(false)
+  anulada            Boolean          @default(false)
 
   @@index([presupuestoId, mes])
   @@index([cuentaContableId])
@@ -7334,20 +7347,43 @@ model ApuItem {
 
 /// Sprint 4 — Certificación de hitos de obra (% avance → facturación)
 model ObraHitoCertificacion {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   empresaId        Int
-  obraNombre       String   @db.VarChar(200)
-  hitoNombre       String   @db.VarChar(200)
-  porcentajeAvance Decimal  @db.Decimal(5, 2)
-  monto            Decimal  @db.Decimal(18, 2)
-  estado           String   @default("borrador") @db.VarChar(32)
+  obraNombre       String    @db.VarChar(200)
+  hitoNombre       String    @db.VarChar(200)
+  porcentajeAvance Decimal   @db.Decimal(5, 2)
+  monto            Decimal   @db.Decimal(18, 2)
+  estado           String    @default("borrador") @db.VarChar(32)
   facturaId        Int?
   clienteId        Int?
-  observaciones    String?  @db.Text
+  observaciones    String?   @db.Text
   certificadaAt    DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([empresaId, estado])
   @@map("obra_hito_certificacion")
+}
+
+model DespachoImportacion {
+  id             Int       @id @default(autoincrement())
+  empresaId      Int
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  numeroDespacho String
+  fechaArribo    DateTime?
+  estado         String    @default("en_transito")
+  incoterm       String    @default("FOB")
+  valorFobTotal  Decimal   @default(0) @db.Decimal(15, 2)
+  fleteUsd       Decimal   @default(0) @db.Decimal(15, 2)
+  seguroUsd      Decimal   @default(0) @db.Decimal(15, 2)
+  arancelesArs   Decimal   @default(0) @db.Decimal(15, 2)
+  gastosExtraArs Decimal   @default(0) @db.Decimal(15, 2)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lineasCompra LineaCompra[]
+  lotes        Lote[]
+
+  @@index([empresaId, numeroDespacho])
+  @@map("despachos_importacion")
 }

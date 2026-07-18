@@ -1,0 +1,51 @@
+import { prisma } from "@/lib/prisma"
+import { sendWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service"
+
+export async function liquidarSemanaObrero(empresaId: number, obreroId: string) {
+  // 1. Buscar jornales no liquidados
+  const jornales = await prisma.movimiento.findMany({
+    where: {
+      empresaId,
+      clienteId: obreroId,
+      categoria: "jornal",
+      estado: "pendiente"
+    }
+  })
+
+  // 2. Buscar adelantos ("vales")
+  const adelantos = await prisma.movimiento.findMany({
+    where: {
+      empresaId,
+      clienteId: obreroId,
+      categoria: "adelanto",
+      estado: "pendiente"
+    }
+  })
+
+  const totalJornales = jornales.reduce((acc, j) => acc + Number(j.monto), 0)
+  const totalAdelantos = adelantos.reduce((acc, a) => acc + Number(a.monto), 0)
+  const neto = totalJornales - totalAdelantos
+
+  if (neto <= 0) return { ok: false, message: "No hay saldo a liquidar" }
+
+  // 3. Marcar como liquidados
+  await prisma.movimiento.updateMany({
+    where: {
+      id: { in: [...jornales, ...adelantos].map(m => m.id) }
+    },
+    data: { estado: "liquidado" }
+  })
+
+  // 4. Buscar teléfono del obrero
+  const obrero = await prisma.cliente.findUnique({
+    where: { id: obreroId }
+  })
+
+  // 5. Enviar comprobante por WA automatizado
+  if (obrero?.telefono) {
+    const mensaje = `Hola ${obrero.nombre}, tu liquidación semanal está lista.\nJornales: $${totalJornales}\nAdelantos descontados: $${totalAdelantos}\n*Total Neto a Pagar: $${neto}*`
+    await sendWhatsAppMessage(empresaId, obrero.telefono, mensaje)
+  }
+
+  return { ok: true, neto, totalJornales, totalAdelantos }
+}

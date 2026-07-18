@@ -2,6 +2,7 @@ import { MARKETPLACE_CATALOG } from "./marketplace-catalog"
 import { AUTOPOOL_ENTRIES } from "./autopool-manifest"
 import type { AutoCertLevel } from "./marketplace-catalog"
 import { effectiveSkuStatus, isSkuProvisionable } from "./sku-availability"
+import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
 
 export interface ResolvedSku {
   sku: string
@@ -24,7 +25,7 @@ export function resolveSku(sku: string): ResolvedSku | null {
       nombre: catalog.nombre,
       autoCertLevel: catalog.autoCertLevel,
       playbookId: catalog.playbookId,
-      precioArs: catalog.precioArs,
+      precioArs: precioCobrableSku(catalog.sku, catalog.precioArs),
       tipoCobro: catalog.tipoCobro,
       status,
       provisionable: isSkuProvisionable(catalog.sku),
@@ -39,7 +40,7 @@ export function resolveSku(sku: string): ResolvedSku | null {
       nombre: pool.nombre,
       autoCertLevel: pool.autoCertLevel as AutoCertLevel,
       playbookId: pool.playbookId,
-      precioArs: pool.precioDesdeArs,
+      precioArs: precioCobrableSku(pool.sku, pool.precioDesdeArs),
       tipoCobro: pool.tipoCobro,
       integracionId: pool.integracionId,
       status,

@@ -25,7 +25,7 @@ export const SHEETS_PLANS = [
     sku: SHEETS_LITE_SKU,
     nombre: "Clav Sheets Lite",
     descripcion: "Pivot, gráficos y export Excel — ideal para PyMEs",
-    precioArs: 6900,
+    precioArs: 10000,
     tier: "lite" as const,
   },
   {

@@ -27,7 +27,8 @@ export async function crearQrPos(
   }
 
   const externalReference = `pos-${empresaId}-${Date.now()}`
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
+  const { getPublicAppUrl } = await import("@/lib/config/public-app-url")
+  const baseUrl = getPublicAppUrl()
 
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",

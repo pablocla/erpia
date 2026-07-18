@@ -1,0 +1,16 @@
+id,nombre,sku,capa_a,capa_b,capa_c,prioridad,gap,notas_validacion
+pos,Claver POS,pos.caja,PASS,PARCIAL,PASS,P1,Falta upsell claro tras trial,sku pos.caja vs core.claver a unificar
+cobra,Claver Cobrá,intang.cobranzas_wa,PASS,PASS,PARCIAL,P0,WA sin recibo auto + cron,Grok: C no es PASS
+fiado,Claver Fiado,pos.fiado_barrio,PASS,PASS,PARCIAL,P0,Link MP deudor no cierra; cobro manual OK,ancla $0 OK
+turnos,Claver Turnos,niche.peluqueria_barrio,PASS,PARCIAL,PARCIAL,P1,Faltan recordatorios WA reales,
+propiedad,Propiedad,pool-propiedad,PASS,PARCIAL,PARCIAL,P2,Integración portales stub,
+monotributo,Monotributo,pool-monotributo,PASS,PASS,PARCIAL,P0,Factura C automática,
+servicios,Servicios Pro,pool-servicios-pro,PASS,PASS,PARCIAL,P1,Integración agenda+cotización,
+obra,Claver Obra,pool-obra,PASS,PARCIAL,PARCIAL,P2,WhatsApp de cobro hitos,
+tienda,Claver Tienda,ECOM-B2C-01,PASS,PARCIAL,FAIL,P0,Checkout real con MP falta,
+presupuestos,Presupuestos,core.claver,FAIL,PASS,PASS,P2,Landing pública de MKT,precio $0 es feature de core no SKU
+menu-qr,Claver Menú,core.claver,PARCIAL,PASS,PARCIAL,P1,Carta no emite pedido a POS,
+contenido-ia,Contenido IA,gen.content.redes_rubro,FAIL,FAIL,FAIL,P3,Módulo inacabado,
+bot-wa,Claver Bot,com.whatsapp,FAIL,FAIL,PARCIAL,P2,Depende de Twilio manual,
+stock,Claver Stock,core.claver,FAIL,PASS,PARCIAL,P2,Landing publicitaria,
+puntos,Puntos,niche.gimnasio_barrio,FAIL,FAIL,PARCIAL,P2,Identificación QR falta,

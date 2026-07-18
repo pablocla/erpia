@@ -17,6 +17,7 @@ export interface NicheAppDefinition {
   /** Plantilla WhatsApp masivo ({{nombre}}, {{monto}}, {{concepto}}) */
   plantillaWhatsApp?: string
   redirectPath?: string
+  badge?: string
 }
 
 export interface NicheResumen {

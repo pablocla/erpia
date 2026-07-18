@@ -415,6 +415,105 @@ async function seedConsorciosDemo(empresaId: number): Promise<void> {
   }
 }
 
+async function seedInmobiliariaDemo(empresaId: number): Promise<void> {
+  let propietario = await prisma.cliente.findFirst({
+    where: { empresaId, nombre: "Propietario Demo — García" },
+  })
+  if (!propietario) {
+    propietario = await prisma.cliente.create({
+      data: {
+        empresaId,
+        nombre: "Propietario Demo — García",
+        telefono: "11-5555-1000",
+        condicionIva: "Responsable Inscripto",
+        activo: true,
+      },
+    })
+  }
+
+  let inquilino = await prisma.cliente.findFirst({
+    where: { empresaId, nombre: "Inquilino Demo — Martínez" },
+  })
+  if (!inquilino) {
+    inquilino = await prisma.cliente.create({
+      data: {
+        empresaId,
+        nombre: "Inquilino Demo — Martínez",
+        telefono: "11-5555-2000",
+        condicionIva: "Consumidor Final",
+        activo: true,
+      },
+    })
+  }
+
+  let prop = await prisma.propiedad.findFirst({
+    where: { empresaId, titulo: "Depto 2 amb. — Corrientes 2500" },
+  })
+  if (!prop) {
+    prop = await prisma.propiedad.create({
+      data: {
+        empresaId,
+        titulo: "Depto 2 amb. — Corrientes 2500",
+        direccion: "Av. Corrientes 2500 4° B, CABA",
+        tipo: "depto",
+        ambientes: 2,
+        m2: 48,
+        precioAlquiler: 450000,
+        estado: "disponible",
+        propietarioId: propietario.id,
+      },
+    })
+  }
+
+  const libre = await prisma.propiedad.findFirst({
+    where: { empresaId, titulo: "Monoambiente — Scalabrini 800" },
+  })
+  if (!libre) {
+    await prisma.propiedad.create({
+      data: {
+        empresaId,
+        titulo: "Monoambiente — Scalabrini 800",
+        direccion: "Scalabrini Ortiz 800 1° A, CABA",
+        tipo: "depto",
+        ambientes: 1,
+        m2: 32,
+        precioAlquiler: 320000,
+        estado: "disponible",
+        propietarioId: propietario.id,
+      },
+    })
+  }
+
+  const contratoActivo = await prisma.contratoAlquiler.findFirst({
+    where: { empresaId, propiedadId: prop.id, estado: "activo" },
+  })
+  if (!contratoActivo && prop.estado !== "alquilada") {
+    const inicio = new Date()
+    inicio.setMonth(inicio.getMonth() - 2)
+    const fin = new Date()
+    fin.setMonth(fin.getMonth() + 10)
+    await prisma.$transaction(async (tx) => {
+      await tx.contratoAlquiler.create({
+        data: {
+          empresaId,
+          propiedadId: prop!.id,
+          inquilinoId: inquilino!.id,
+          propietarioId: propietario!.id,
+          montoMensual: 450000,
+          diaVencimiento: 10,
+          fechaInicio: inicio,
+          fechaFin: fin,
+          estado: "activo",
+        },
+      })
+      await tx.propiedad.update({
+        where: { id: prop!.id },
+        data: { estado: "alquilada" },
+      })
+    })
+  }
+}
+
 async function seedVetDemo(empresaId: number): Promise<void> {
   const tutores = [
     { nombreCliente: "María González — Tutora de Bobby", nombrePaciente: "Bobby", especie: "Canino", raza: "Mestizo", sexo: "M" },
@@ -699,67 +798,70 @@ async function enableFiadoDemo(empresaId: number, template: IndustryTemplate): P
 export async function seedIndustryDemoData(
   empresaId: number,
   template: IndustryTemplate,
+  opts?: { skipProductos?: boolean },
 ): Promise<IndustryDemoSeedResult> {
   const rubro = template.rubro
   let productosCreados = 0
   let clientesCreados = 0
 
-  const retailSeedKey = ["almacen", "kiosco", "ferreteria", "carniceria", "panaderia"].includes(template.id)
-    ? template.id === "carniceria" || template.id === "panaderia"
-      ? template.id
-      : template.id === "almacen"
-        ? "almacen"
-        : "kiosco"
-    : "almacen"
+  if (!opts?.skipProductos) {
+    const retailSeedKey = ["almacen", "kiosco", "ferreteria", "carniceria", "panaderia"].includes(template.id)
+      ? template.id === "carniceria" || template.id === "panaderia"
+        ? template.id
+        : template.id === "almacen"
+          ? "almacen"
+          : "kiosco"
+      : "almacen"
 
-  const productos = template.isRetail
-    ? getProductosSeed(retailSeedKey)
-    : generarConfiguracionOnboarding(defaultAnswers(rubro)).productosEjemplo
+    const productos = template.isRetail
+      ? getProductosSeed(retailSeedKey)
+      : generarConfiguracionOnboarding(defaultAnswers(rubro)).productosEjemplo
 
-  for (const [index, p] of productos.entries()) {
-    const codigo = "codigo" in p ? p.codigo : `DEMO-${rubro.toUpperCase().slice(0, 4)}-${index + 1}`
-    const nombre = p.nombre
-    const precio = "precioVenta" in p ? p.precioVenta : p.precio
-    const iva = "porcentajeIva" in p ? (p.porcentajeIva ?? 21) : ("iva" in p ? (p as any).iva : 21)
+    for (const [index, p] of productos.entries()) {
+      const codigo = "codigo" in p ? p.codigo : `DEMO-${rubro.toUpperCase().slice(0, 4)}-${index + 1}`
+      const nombre = p.nombre
+      const precio = "precioVenta" in p ? p.precioVenta : p.precio
+      const iva = "porcentajeIva" in p ? (p.porcentajeIva ?? 21) : ("iva" in p ? (p as any).iva : 21)
 
-    const existe = await prisma.producto.findFirst({
-      where: { empresaId, codigo },
-    })
-    if (!existe) {
-      await prisma.producto.create({
-        data: {
-          empresaId,
-          codigo,
-          nombre,
-          precioVenta: precio,
-          porcentajeIva: iva,
-          activo: true,
-          stock: 100,
-          unidad: "unidad",
-        },
+      const existe = await prisma.producto.findFirst({
+        where: { empresaId, codigo },
       })
-      productosCreados++
+      if (!existe) {
+        await prisma.producto.create({
+          data: {
+            empresaId,
+            codigo,
+            nombre,
+            precioVenta: precio,
+            porcentajeIva: iva,
+            activo: true,
+            stock: 100,
+            unidad: "unidad",
+          },
+        })
+        productosCreados++
+      }
     }
-  }
 
-  if (rubro === "veterinaria") {
-    const vacuna = await prisma.producto.findFirst({
-      where: { empresaId, nombre: { contains: "Vacuna", mode: "insensitive" } },
-    })
-    if (!vacuna) {
-      await prisma.producto.create({
-        data: {
-          empresaId,
-          codigo: "VET-VAC-001",
-          nombre: "Vacuna antirrábica — Bobby",
-          precioVenta: 12500,
-          porcentajeIva: 21,
-          activo: true,
-          stock: 24,
-          unidad: "unidad",
-        },
+    if (rubro === "veterinaria") {
+      const vacuna = await prisma.producto.findFirst({
+        where: { empresaId, nombre: { contains: "Vacuna", mode: "insensitive" } },
       })
-      productosCreados++
+      if (!vacuna) {
+        await prisma.producto.create({
+          data: {
+            empresaId,
+            codigo: "VET-VAC-001",
+            nombre: "Vacuna antirrábica — Bobby",
+            precioVenta: 12500,
+            porcentajeIva: 21,
+            activo: true,
+            stock: 24,
+            unidad: "unidad",
+          },
+        })
+        productosCreados++
+      }
     }
   }
 
@@ -802,44 +904,65 @@ export async function seedIndustryDemoData(
     clientesCreados++
   }
 
-  await enableFiadoDemo(empresaId, template)
+  try {
+    await enableFiadoDemo(empresaId, template)
+  } catch (err) {
+    console.warn(`[industry-demo-seeds] enableFiadoDemo:`, err)
+  }
 
   const result: IndustryDemoSeedResult = { clientes: clientesCreados, productos: productosCreados }
 
+  async function safe(label: string, fn: () => Promise<void>) {
+    try {
+      await fn()
+    } catch (err) {
+      console.warn(`[industry-demo-seeds] ${label}:`, err)
+    }
+  }
+
   if (template.id === "bar_restaurant" || rubro === "bar_restaurant") {
-    const bar = await seedBarDemo(empresaId)
-    result.mesas = bar.mesas
-    result.comandas = bar.comandas
+    await safe("bar", async () => {
+      const bar = await seedBarDemo(empresaId)
+      result.mesas = bar.mesas
+      result.comandas = bar.comandas
+    })
   }
 
   if (template.id === "veterinaria" || rubro === "veterinaria") {
-    await seedVetDemo(empresaId)
+    await safe("vet", () => seedVetDemo(empresaId))
   }
 
   if (template.id === "gimnasio" || rubro === "gimnasio") {
-    const gym = await seedGymDemo(empresaId)
-    result.planes = gym.planes
-    result.membresias = gym.membresias
+    await safe("gym", async () => {
+      const gym = await seedGymDemo(empresaId)
+      result.planes = gym.planes
+      result.membresias = gym.membresias
+    })
   }
 
   if (template.id === "agro_cannabis" || rubro === "agro_cannabis") {
-    result.cannabis = await seedCannabisDemo(empresaId)
+    await safe("cannabis", async () => {
+      result.cannabis = await seedCannabisDemo(empresaId)
+    })
   }
 
   if (template.id === "consorcios_admin" || template.id === "inmobiliaria") {
-    await seedConsorciosDemo(empresaId)
+    await safe("consorcios", () => seedConsorciosDemo(empresaId))
   }
 
   if (template.id === "inmobiliaria") {
-    await seedNicheMovimientosDemo(empresaId, "niche.inmo_garantia")
+    await safe("inmobiliaria", async () => {
+      await seedInmobiliariaDemo(empresaId)
+      await seedNicheMovimientosDemo(empresaId, "niche.inmo_garantia")
+    })
   }
 
   if (template.id === "freelance_mt" || template.id === "servicios_pro") {
-    await seedPresupuestoDemo(empresaId)
+    await safe("presupuesto", () => seedPresupuestoDemo(empresaId))
   }
 
   if (template.id === "contratista_obra") {
-    await seedNicheMovimientosDemo(empresaId, "niche.obra_changas")
+    await safe("obra", () => seedNicheMovimientosDemo(empresaId, "niche.obra_changas"))
   }
 
   if (
@@ -848,15 +971,17 @@ export async function seedIndustryDemoData(
     template.id === "servicios_pro" ||
     template.goldenPath === "/dashboard/agenda"
   ) {
-    await seedAgendaDemo(empresaId, template)
+    await safe("agenda", () => seedAgendaDemo(empresaId, template))
   }
 
   if (template.id === "club_barrio") {
-    await seedClubDemo(empresaId)
+    await safe("club", () => seedClubDemo(empresaId))
   }
 
   if (template.engancheId?.startsWith("niche.")) {
-    await seedNicheMovimientosDemo(empresaId, template.engancheId)
+    await safe(`niche:${template.engancheId}`, () =>
+      seedNicheMovimientosDemo(empresaId, template.engancheId!),
+    )
   }
 
   return result

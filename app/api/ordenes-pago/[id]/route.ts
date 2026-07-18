@@ -1,4 +1,4 @@
-﻿import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
@@ -87,7 +87,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
       await tx.ordenPago.update({
         where: { id: op.id },
-        data: { estado: "anulada" },
+        data: { anulada: true },
       })
     })
 

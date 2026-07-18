@@ -16,23 +16,36 @@ export class CuentasService {
   /**
    * Generate CuentaCobrar records from an invoice.
    * Uses condicionPago to split into installments if needed.
+   *
+   * @param options.forzarCuenta — también generar CC en "contado" (facturas recurrentes / servicios).
+   * @param options.diasVencimiento — vencimiento en días cuando se fuerza una cuota (default 0 = cobrable ya).
    */
-  async generarCCPorFactura(facturaId: number): Promise<void> {
+  async generarCCPorFactura(
+    facturaId: number,
+    options?: { forzarCuenta?: boolean; diasVencimiento?: number },
+  ): Promise<number[]> {
     const factura = await prisma.factura.findUnique({
       where: { id: facturaId },
       include: { condicionPago: true },
     })
-    if (!factura) return
+    if (!factura) return []
+
+    const yaExiste = await prisma.cuentaCobrar.count({ where: { facturaId } })
+    if (yaExiste > 0) return []
 
     const cuotas = factura.condicionPago?.cuotas ?? 1
-    const diasBase = factura.condicionPago?.diasVencimiento ?? 0
+    let diasBase = factura.condicionPago?.diasVencimiento ?? 0
     const diasAdic = (factura.condicionPago?.diasAdicionales as number[] | null) ?? []
 
-    // Contado → no generar CC
-    if (cuotas === 1 && diasBase === 0) return
+    // Contado → no generar CC, salvo forzar (recurrente / crédito implícito)
+    if (cuotas === 1 && diasBase === 0) {
+      if (!options?.forzarCuenta) return []
+      diasBase = options.diasVencimiento ?? 0
+    }
 
     const montoCuota = Math.round((Number(factura.total) / cuotas) * 100) / 100
     const fechaBase = factura.createdAt
+    const ids: number[] = []
 
     for (let i = 0; i < cuotas; i++) {
       const dias = i === 0 ? diasBase : (diasAdic[i - 1] ?? diasBase * (i + 1))
@@ -44,7 +57,7 @@ export class CuentasService {
         ? Number(factura.total) - montoCuota * (cuotas - 1)
         : montoCuota
 
-      await prisma.cuentaCobrar.create({
+      const cc = await prisma.cuentaCobrar.create({
         data: {
           facturaId: factura.id,
           clienteId: factura.clienteId,
@@ -53,9 +66,13 @@ export class CuentasService {
           saldo: monto,
           fechaEmision: fechaBase,
           fechaVencimiento: vencimiento,
+          estado: "pendiente",
+          observaciones: options?.forzarCuenta ? "Generada por facturación recurrente / forzada" : undefined,
         },
       })
+      ids.push(cc.id)
     }
+    return ids
   }
 
   /**

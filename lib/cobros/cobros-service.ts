@@ -301,6 +301,23 @@ export class CobrosService {
       timestamp: new Date(),
     })
 
+    // 5. Si el cliente tiene deuda de libreta fiado, bajar saldo (misma plata)
+    try {
+      const { reducirDeudaCliente, deudaCliente } = await import("@/lib/fiado/fiado-service")
+      const cli = await prisma.cliente.findFirst({
+        where: { id: clienteId, empresaId },
+        select: { saldoCuentaCorriente: true },
+      })
+      if (cli && deudaCliente(cli.saldoCuentaCorriente) > 0) {
+        const aBajar = Math.min(montoTotal, deudaCliente(cli.saldoCuentaCorriente))
+        await prisma.$transaction(async (tx) => {
+          await reducirDeudaCliente(tx, clienteId, aBajar)
+        })
+      }
+    } catch (err) {
+      console.warn("[Cobros] No se pudo sincronizar saldo fiado:", err)
+    }
+
     return {
       reciboId: result.id,
       reciboNumero: numero,
@@ -308,6 +325,59 @@ export class CobrosService {
       totalRetenciones,
       netoRecibido,
     }
+  }
+
+  async aplicarCobroCliente(input: {
+    empresaId: number
+    clienteId: number
+    montoTotal: number
+    medioPago: "efectivo" | "transferencia" | "cheque" | "tarjeta"
+    fecha?: Date
+    observaciones?: string
+  }) {
+    const { empresaId, clienteId, montoTotal, medioPago, fecha, observaciones } = input
+
+    if (montoTotal <= 0) {
+      throw new Error("El monto a cobrar debe ser mayor a 0")
+    }
+
+    const cuentas = await prisma.cuentaCobrar.findMany({
+      where: {
+        cliente: { id: clienteId, empresaId },
+        saldo: { gt: 0 },
+      },
+      orderBy: { fechaVencimiento: "asc" },
+    })
+
+    if (cuentas.length === 0) {
+      throw new Error("El cliente no tiene cuentas por cobrar pendientes")
+    }
+
+    let montoRestante = montoTotal
+    const items: { cuentaCobrarId: number; monto: number }[] = []
+
+    for (const cc of cuentas) {
+      if (montoRestante <= 0) break
+
+      const saldoCC = Number(cc.saldo)
+      const aPagar = Math.min(saldoCC, montoRestante)
+
+      items.push({ cuentaCobrarId: cc.id, monto: aPagar })
+      montoRestante -= aPagar
+    }
+
+    if (montoRestante > 0.01) {
+      throw new Error("El monto excede la deuda total pendiente en Cuentas por Cobrar")
+    }
+
+    return this.registrarCobro({
+      empresaId,
+      clienteId,
+      items,
+      medioPago,
+      fecha,
+      observaciones,
+    })
   }
 }
 

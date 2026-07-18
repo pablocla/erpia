@@ -24,6 +24,12 @@ import {
   skusParaActivar,
   type ModoLite,
 } from "@/lib/comercial/pack-calle-catalog"
+import {
+  persistOfertaEmpresa,
+  resolveOferta,
+  skusAdicionalesOferta,
+  vigenciaParaSku,
+} from "@/lib/comercial/ofertas-comerciales"
 
 export interface ProvisionIndustryDemoResult {
   industryId: string
@@ -78,13 +84,26 @@ async function applyIndustryEnganche(
   const fiado = await getActiveSubscription(empresaId, "pos.fiado_barrio")
   if (fiado) skusActivados.add("pos.fiado_barrio")
 
+  // Misma lógica que retail: ancla gratis = vigenciaHasta null + oferta persistida
+  const oferta = resolveOferta(engancheId, modoLite)
+  for (const sku of skusAdicionalesOferta(oferta, [...skusActivados])) {
+    try {
+      await activarProducto(empresaId, sku, origen)
+      skusActivados.add(sku)
+    } catch (err) {
+      console.warn(`[industry-demo] No se pudo activar monetizado ${sku}:`, err)
+    }
+  }
+
   for (const sku of skusActivados) {
+    const vigenciaHasta = vigenciaParaSku(oferta, sku, trialExpiresAt)
     await prisma.suscripcionModulo.upsert({
       where: { empresaId_sku: { empresaId, sku } },
-      update: { activo: true, vigenciaHasta: trialExpiresAt },
-      create: { empresaId, sku, activo: true, vigenciaHasta: trialExpiresAt },
+      update: { activo: true, vigenciaHasta },
+      create: { empresaId, sku, activo: true, vigenciaHasta },
     })
   }
+  await persistOfertaEmpresa(empresaId, oferta.id)
 
   return { skusActivados: [...skusActivados], modoLite }
 }
@@ -131,7 +150,7 @@ export async function provisionIndustryDemo(
     modoLite = retail.modoLite
     productosFromRetail = retail.productosCreados
   } else {
-    await parametrizarEmpresa(empresaId, template.parametrizacionKey)
+    await parametrizarEmpresa(empresaId, template.parametrizacionKey, { mode: "demo" })
     await setIndustryModules(empresaId, rubro)
 
     await prisma.parametroFiscal.upsert({
@@ -155,27 +174,44 @@ export async function provisionIndustryDemo(
     }
   }
 
-  const seeds = await seedIndustryDemoData(empresaId, template)
+  // Retail ya sembró productos en onboarding — evitar catálogo duplicado DEMO-/ONB-
+  // Seeds no deben tumbar la demo: si fallan, igual devolvemos JWT + goldenPath
+  let seeds = { productos: 0, clientes: 0 }
+  try {
+    seeds = await seedIndustryDemoData(empresaId, template, {
+      skipProductos: template.isRetail,
+    })
+  } catch (err) {
+    console.warn(`[industry-demo] Seeds parciales fallaron empresa=${empresaId}:`, err)
+  }
 
-  await prisma.parametroFiscal.upsert({
-    where: { empresaId_clave_pais: { empresaId, clave: "demo_industry_id", pais: "AR" } },
-    update: { valor: 1, descripcion: template.id },
-    create: {
-      empresaId,
-      clave: "demo_industry_id",
-      valor: 1,
-      descripcion: template.id,
-      categoria: "operativo",
-      pais: "AR",
-    },
-  })
+  try {
+    await prisma.parametroFiscal.upsert({
+      where: { empresaId_clave_pais: { empresaId, clave: "demo_industry_id", pais: "AR" } },
+      update: { valor: 1, descripcion: template.id },
+      create: {
+        empresaId,
+        clave: "demo_industry_id",
+        valor: 1,
+        descripcion: template.id,
+        categoria: "operativo",
+        pais: "AR",
+      },
+    })
+  } catch (err) {
+    console.warn(`[industry-demo] No se pudo marcar demo_industry_id:`, err)
+  }
 
   const trialDias = template.isRetail ? 30 : 14
-  await setTrialExpiresAt(
-    empresaId,
-    new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000),
-    trialDias,
-  )
+  try {
+    await setTrialExpiresAt(
+      empresaId,
+      new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000),
+      trialDias,
+    )
+  } catch (err) {
+    console.warn(`[industry-demo] setTrialExpiresAt falló:`, err)
+  }
 
   return {
     industryId: template.id,

@@ -94,26 +94,29 @@ export function resolveEmissionPath(input: ResolveEmissionPathInput): EmissionPa
 
 /** Diagrama Mermaid para documentación / UI */
 export const EMISSION_FLOW_MERMAID = `flowchart TD
-  start([Emisión comprobante]) --> tipo{¿Tipo POS?}
-  tipo -->|Ticket sin CAE| tkt[Ticket operativo]
-  tipo -->|A / B / C fiscal| cliente{¿Cliente?}
+  start([Venta POS]) --> modo{Parámetro modoComprobante}
+  modo -->|afip default| sug[Tipo A/B/C auto o default]
+  modo -->|cajero| choose[Cajero elige A/B/C o Ticket]
+  modo -->|ticket_solo| tkt[Ticket sin CAE]
+  sug --> fiscal{¿Ticket sin CAE?}
+  choose --> fiscal
+  fiscal -->|Sí| tkt
+  fiscal -->|No A/B/C| cliente{¿Cliente?}
   cliente -->|Exportación| exp[Factura E — tipo 19]
   cliente -->|Gran Empresa ≥ umbral| fce[FCE MiPyME — 201/206/211]
   cliente -->|Nacional| afip{¿AFIP online?}
-  afip -->|Sí| cae[CAE WSFE + QR E]
-  afip -->|No + CAEA vigente| caea[CAEA + QR A]
+  afip -->|Sí| cae[CAE WSFE + QR]
+  afip -->|No + CAEA| caea[CAEA + QR]
   afip -->|No sin CAEA| pend[Pendiente CAE]
-  cae --> salida{Salida parametrizada}
+  cae --> salida{Salida: impresora / PDF / ambos / preguntar}
   caea --> salida
   exp --> salida
   fce --> salida
   pend --> salida
   tkt --> salida
-  salida -->|Impresora| hasar[Hasar / Epson ESC/POS]
-  salida -->|PDF| pdf[HTML A4 + QR]
-  salida -->|Ambos| hasar
-  salida -->|Ambos| pdf
-  hasar --> fin([Comprobante entregado])
+  salida -->|Térmica| hasar[Hasar o Epson ESC/POS :9100]
+  salida -->|PDF| pdf[HTML 80mm o A4 + QR]
+  hasar --> fin([Entregado al cliente])
   pdf --> fin
-  cobro[Cobro tarjeta/QR] -.->|Manual o MercadoPago| start
+  etiq[Etiqueta góndola] -.->|POST /api/impresion/etiqueta| hasar
 `

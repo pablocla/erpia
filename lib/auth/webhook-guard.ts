@@ -7,17 +7,16 @@ import crypto from "crypto"
  * de firmas específicas de proveedor (ej. Twilio).
  */
 export function validarFirmaWebhook(request: NextRequest, rawBody: string): boolean {
-  // En desarrollo/homologación puede saltarse si no hay secreto, 
-  // pero en PRD DEBE fallar si no hay secreto configurado.
-  const secret = process.env.WEBHOOK_SECRET
-  if (!secret) {
-    console.warn("[Webhook Guard] WEBHOOK_SECRET no está configurado. Rechazando petición por seguridad en PRD.")
-    return process.env.NODE_ENV !== "production"
-  }
+  const isProd = process.env.NODE_ENV === "production"
 
   // 1. Meta / Facebook / WhatsApp Cloud API / n8n
   const signature256 = request.headers.get("X-Hub-Signature-256") || request.headers.get("X-Webhook-Signature")
   if (signature256) {
+    const secret = process.env.WEBHOOK_SECRET
+    if (!secret) {
+      console.warn("[Webhook Guard] WEBHOOK_SECRET no configurado para firma Meta/n8n.")
+      return !isProd
+    }
     const hash = crypto.createHmac("sha256", secret).update(rawBody).digest("hex")
     const expected = signature256.startsWith("sha256=") ? signature256.slice(7) : signature256
     

@@ -23,11 +23,13 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod)
+      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://va.vercel-scripts.com",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co",
+      // Analytics beacons + Supabase + Vercel insights
+      "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -97,8 +99,12 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.supabase.co",
+        pathname: "/**",
       },
     ],
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 }
 

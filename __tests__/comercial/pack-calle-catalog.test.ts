@@ -13,7 +13,7 @@ describe("pack-calle-catalog", () => {
     const pack = resolvePackCalle("pos.fiado_barrio")
     expect(pack?.nombre).toBe("Libreta Fiado")
     expect(pack?.modoLite).toBe("fiado")
-    expect(pack?.precioArs).toBe(4990)
+    expect(pack?.precioArs).toBe(0)
   })
 
   it("resuelve pack almacén barrio con SKUs", () => {
@@ -78,7 +78,8 @@ describe("lite-sidebar", () => {
     const filtered = filterMenuItemsByModoLite(menuMock, "fiado")
     const labels = filtered.map((f) => f.label)
     expect(labels).toContain("Libreta Fiado")
-    expect(labels).not.toContain("Punto de Venta")
+    // Go-live: trial fiado incluye mostrador/caja para demo de venta
+    expect(labels).toContain("Punto de Venta")
     expect(labels).not.toContain("Contabilidad")
   })
 

@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/prisma"
+import { getPublicAppUrl } from "@/lib/config/public-app-url"
 
 // ─── Configuración ──────────────────────────────────────────────────────────
 
@@ -55,6 +56,8 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
   const config = await obtenerConfigMP(input.empresaId)
   if (!config?.activo) throw new Error("MercadoPago no está configurado o está inactivo")
 
+  const baseUrl = getPublicAppUrl()
+
   // Llamar a la API de MercadoPago para crear preferencia
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
@@ -74,12 +77,12 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
       external_reference: input.externalReference ?? `fac-${input.facturaId ?? "manual"}`,
       payer: input.emailPagador ? { email: input.emailPagador } : undefined,
       back_urls: input.backUrls ?? {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-exitoso`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-fallido`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/pago-pendiente`,
+        success: `${baseUrl}/portal/pago-exitoso`,
+        failure: `${baseUrl}/portal/pago-fallido`,
+        pending: `${baseUrl}/portal/pago-pendiente`,
       },
       auto_return: "approved",
-      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/webhook`,
+      notification_url: `${baseUrl}/api/mercadopago/webhook`,
     }),
   })
 
@@ -184,23 +187,27 @@ async function conciliarPagoMP(empresaId: number, transaccionId: number, externa
     return
   }
 
-  // Formato: "fac-123" o "cxc-456"
-  const match = externalRef.match(/^(fac|cxc)-(\d+)$/)
-  if (!match) return
-
-  const [, tipo, idStr] = match
-  const id = parseInt(idStr, 10)
-
-  if (tipo === "fac") {
-    await prisma.mercadoPagoTransaccion.update({
+  // Fiado / CxC / fac → emitir recibo y bajar deuda (P0-D)
+  const { isDeudorPagoRef } = await import("@/lib/mercadopago/deudor-pago-ref")
+  if (isDeudorPagoRef(externalRef)) {
+    const tx = await prisma.mercadoPagoTransaccion.findUnique({
       where: { id: transaccionId },
-      data: { facturaId: id, conciliado: true },
+      select: { monto: true, mpPaymentId: true },
     })
-  } else if (tipo === "cxc") {
-    await prisma.mercadoPagoTransaccion.update({
-      where: { id: transaccionId },
-      data: { cuentaCobrarId: id, conciliado: true },
+    if (!tx) return
+
+    const { aplicarPagoDeudorDesdeMp } = await import("@/lib/mercadopago/aplicar-pago-deudor")
+    const result = await aplicarPagoDeudorDesdeMp({
+      empresaId,
+      transaccionId,
+      externalRef,
+      monto: Number(tx.monto),
+      mpPaymentId: tx.mpPaymentId,
     })
+    if (!result.ok) {
+      console.warn("[MP] aplicarPagoDeudor:", result.error, externalRef)
+    }
+    return
   }
 }
 

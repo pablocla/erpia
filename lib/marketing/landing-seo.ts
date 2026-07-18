@@ -1,58 +1,61 @@
 import { CLAVER_GROUP, CLAVERP_PRODUCT } from "@/lib/marketing/brand-system"
+import { getPublicAppUrl } from "@/lib/config/public-app-url"
 
-/** URL canónica del sitio público */
+/** URL canónica del sitio público (misma fuente que webhooks MP / billing) */
 export function getSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
-  if (!raw) return `https://${CLAVER_GROUP.domain}`
-  if (raw.startsWith("http")) return raw.replace(/\/$/, "")
-  return `https://${raw.replace(/\/$/, "")}`
+  const fromPublic = getPublicAppUrl()
+  if (fromPublic && !fromPublic.includes("localhost")) return fromPublic
+  // Producción sin env: dominio de marca
+  if (!process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_BASE_URL && !process.env.VERCEL_URL) {
+    return `https://${CLAVER_GROUP.domain}`
+  }
+  return fromPublic
 }
 
 export const LANDING_KEYWORDS = [
-  "ERP Argentina",
-  "POS facturación AFIP",
   "software comercios Argentina",
+  "POS facturación AFIP",
   "libreta fiado digital",
+  "cobranzas WhatsApp",
   "gestión stock PyME",
   "sistema consorcios expensas",
-  "ERP distribuidoras",
   "factura electrónica AFIP",
-  "Claver ERP",
-  "demo ERP gratis",
+  "Claver",
   "software almacén barrio",
-  "cobranzas WhatsApp",
+  "demo software comercio gratis",
+  "turnos online Argentina",
 ] as const
 
 export const LANDING_FAQ = [
   {
     question: "¿Qué es Claver y para quién está pensado?",
     answer:
-      "Claver es el grupo de tecnología que ofrece Claver (ERP y POS con AFIP), Clavergrow (agro) y micro-apps para rubros como almacenes, consorcios y gimnasios. Está pensado para comercios, distribuidoras y PyMEs en Argentina que necesitan ordenar ventas, stock y cobranzas sin Excel.",
+      "Claver es software para comercios y PyMEs en Argentina: libreta de fiado, cobranzas por WhatsApp, turnos, POS con facturación AFIP, stock y packs por rubro. Ordenás ventas, cobros y el día a día desde el celular o la PC.",
   },
   {
-    question: "¿Puedo probar el sistema antes de pagar?",
+    question: "¿Puedo probar antes de pagar?",
     answer:
-      "Sí. Tenés 14 días de prueba gratuita y demos por rubro en claver.com.ar/demo. Elegís tu industria (almacén, consorcios, gimnasio, etc.) y el sistema arma un entorno con módulos y datos de ejemplo.",
+      "Sí. 14 días gratis sin tarjeta en la mayoría de las apps y packs. También hay demos por rubro en claver.com.ar/demo con datos de ejemplo, sin instalación.",
   },
   {
     question: "¿Incluye facturación electrónica AFIP?",
     answer:
-      "Claver incluye integración AFIP para emitir comprobantes electrónicos desde el POS y el módulo fiscal. La homologación en producción se realiza con acompañamiento de implementación según tu condición fiscal.",
+      "Sí, desde el POS y el módulo fiscal. Podés empezar con Fiado o Cobrá y activar facturación cuando la necesites. La homologación en producción se acompaña según tu condición fiscal.",
   },
   {
-    question: "¿Cuánto cuesta Claver?",
+    question: "¿Cuánto cuesta?",
     answer:
-      "Los enganches arrancan desde $4.990/mes (Libreta Fiado). El ERP completo y los packs por rubro tienen precios en la sección de precios. Podés empezar con un módulo chico y escalar cuando el negocio crece.",
+      "Claver Fiado es gratis para siempre. Cobrá, Turnos, POS y packs tienen precio mensual en pesos, visible en cada producto. Solo pagás lo que activás.",
   },
   {
     question: "¿Mis datos están aislados de otros clientes?",
     answer:
-      "Sí. Claver es multi-tenant: cada empresa opera en su propio espacio con usuarios, stock y facturas separados. Es la arquitectura estándar de Claver Cloud.",
+      "Sí. Cada empresa tiene su espacio: usuarios, stock y facturas separados.",
   },
   {
-    question: "¿Necesito instalar algo en la PC?",
+    question: "¿Necesito instalar algo?",
     answer:
-      "No. Claver funciona en el navegador (web) desde celular, tablet o computadora. El POS puede usarse en mostrador con impresora térmica según tu configuración.",
+      "No. Funciona en el navegador en celular, tablet o PC. El POS puede ir en mostrador con impresora térmica si la configurás.",
   },
 ] as const
 

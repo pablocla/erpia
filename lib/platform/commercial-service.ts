@@ -21,7 +21,7 @@ export async function seedCommercialCatalog() {
       sku: "channel.mercadopago",
       nombre: "Canal Mercado Pago",
       descripcion: "Cobros y conciliación MP",
-      precioArs: 9900,
+      precioArs: 10000,
       limiteEventosMes: null,
     },
     {
@@ -35,7 +35,7 @@ export async function seedCommercialCatalog() {
       sku: "channel.whatsapp",
       nombre: "Canal WhatsApp Business",
       descripcion: "Mensajería automatizada",
-      precioArs: 7900,
+      precioArs: 10000,
       limiteEventosMes: 5000,
     },
     {
@@ -49,7 +49,7 @@ export async function seedCommercialCatalog() {
       sku: SHEETS_LITE_SKU,
       nombre: "Clav Sheets Lite",
       descripcion: "Reportes pivot, gráficos y export Excel",
-      precioArs: 6900,
+      precioArs: 10000,
       limiteEventosMes: null,
     },
     {

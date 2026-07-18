@@ -28,7 +28,8 @@ function DemoSensorPageContent() {
     setLoadingId(industryId)
     try {
       const dest = await launchIndustryDemo(industryId, loginConToken, { activar: activarParam })
-      router.push(dest)
+      // replace: evita volver al sensor con back y re-provisionar
+      router.replace(dest)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de conexión")
       setLoadingId(null)
@@ -50,16 +51,19 @@ function DemoSensorPageContent() {
 
           <p className="text-sm text-slate-400">Grupo {CLAVER_GROUP.name}</p>
           <h1 className="mt-2 font-[var(--font-fraunces)] text-3xl font-semibold sm:text-4xl lg:text-5xl">
-            El sistema que habla el idioma de tu negocio
+            Probá Claver con datos de tu rubro
           </h1>
           <p className="mt-4 max-w-2xl text-slate-400">
-            Ni muy grande, ni muy chico. Elegí tu rubro y armamos una demo aislada — solo los
-            módulos que necesitás, con datos reales de tu industria.
+            Elegí tu industria: creamos una empresa demo aislada, con módulos y ejemplos listos.
+            Sin tarjeta. Entrá al panel en menos de un minuto.
           </p>
 
           <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-            <span className="font-medium text-white">¿Cuál es tu mundo hoy?</span>
-            <span className="text-slate-400"> — Elegí para armar tu demo en 10 segundos</span>
+            <span className="font-medium text-white">Elegí tu rubro</span>
+            <span className="text-slate-400">
+              {" "}
+              — la demo se arma al momento (puede tardar 15–40 s la primera vez)
+            </span>
           </div>
 
           {activarParam && (

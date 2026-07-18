@@ -2,8 +2,11 @@ import { canUseSku } from "@/lib/platform/entitlements"
 
 export const SKUS_INMOBILIARIA = [
   "niche.inmo_garantia",
+  "niche.inmobiliaria",
   "niche.consorcios",
+  "pool-propiedad",
   "intang.cobranzas_wa",
+  "core.claver",
 ] as const
 
 export async function tieneAccesoInmobiliaria(empresaId: number): Promise<boolean> {

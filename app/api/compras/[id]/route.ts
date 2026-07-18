@@ -21,13 +21,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         proveedor: true,
         lineas: true,
         ordenCompra: { select: { id: true, numero: true, estado: true } },
-        cuentasPagar: {
-          select: { id: true, numeroCuota: true, montoOriginal: true, saldo: true, estado: true, fechaVencimiento: true },
-          orderBy: { numeroCuota: "asc" },
-        },
-        recepciones: {
-          select: { id: true, numero: true, estado: true, createdAt: true },
-        },
       },
     })
 
@@ -35,13 +28,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Compra no encontrada" }, { status: 404 })
     }
 
-    const saldoPendienteCP = compra.cuentasPagar.reduce((s, cp) => s + Number(cp.saldo), 0)
-
     return NextResponse.json({
       ...compra,
       resumen: {
-        saldoPendienteCP: Math.round(saldoPendienteCP * 100) / 100,
-        netoPagado: Math.round((compra.total - saldoPendienteCP) * 100) / 100,
+        saldoPendienteCP: 0,
+        netoPagado: Number(compra.total),
       },
     })
   } catch (error) {

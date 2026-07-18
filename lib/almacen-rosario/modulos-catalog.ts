@@ -23,7 +23,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.margen_guard": {
     nombre: "Guardián de Margen",
     lema: "Que el costo no te coma el margen.",
-    precioArs: 3990,
+    precioArs: 10000,
     superficie: "automatico",
     activacion: "App Store → Activar → venta en POS evalúa costo vs precio",
     pasosUso: [
@@ -37,7 +37,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.zero_waste": {
     nombre: "Zero Waste",
     lema: "Vendé antes de tirar.",
-    precioArs: 5990,
+    precioArs: 10000,
     superficie: "dashboard",
     activacion: "App Store → Activar → cron y panel muestran ofertas",
     pasosUso: [
@@ -51,7 +51,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.stock_cero_alert": {
     nombre: "Alerta Stock Cero",
     lema: "Vendé sin frenar, avisá al dueño.",
-    precioArs: 2990,
+    precioArs: 10000,
     superficie: "automatico",
     activacion: "App Store → Activar → ventas con stock 0 se registran",
     pasosUso: ["Vendés aunque el stock figure en 0", "El dueño recibe resumen diario en panel Almacén"],
@@ -62,7 +62,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.promos_pago": {
     nombre: "Promos Medios de Pago",
     lema: "MODO y BSF sin memorizar.",
-    precioArs: 2990,
+    precioArs: 10000,
     superficie: "pos",
     activacion: "App Store → Activar → banner en cobro del POS",
     pasosUso: ["Al abrir cobro, el POS muestra promos del día (MP, MODO, BSF)", "El cajero ofrece el medio con reintegro"],
@@ -73,7 +73,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.lista_distribuidora": {
     nombre: "Importador Listas",
     lema: "Excel de distribuidora → precios POS.",
-    precioArs: 4990,
+    precioArs: 10000,
     superficie: "dashboard",
     activacion: "App Store → Activar → panel Almacén → pegar CSV",
     pasosUso: ["Pegá CSV de Micropack/Vital/Makro", "Analizá coincidencias", "Aplicá precios sugeridos"],
@@ -84,7 +84,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.panico_vecinal": {
     nombre: "Pánico Vecinal",
     lema: "Botón silencioso en el POS.",
-    precioArs: 1990,
+    precioArs: 10000,
     superficie: "pos",
     activacion: "App Store → Activar + WhatsApp ON → Alt+F12 3s en POS",
     pasosUso: ["Mantené Alt+F12 tres segundos en POS", "Se envía alerta WA a vecinos configurados"],
@@ -95,7 +95,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.envases_gaseosas": {
     nombre: "Envases de Gaseosas",
     lema: "Cajones retornables con depósito.",
-    precioArs: 2490,
+    precioArs: 10000,
     superficie: "pos",
     activacion: "App Store → Activar → tipos default se crean solos",
     pasosUso: [
@@ -109,7 +109,7 @@ const CORE_META: Record<string, Omit<ModuloAlmacenRosario, "sku" | "precioArs"> 
   "pos.vale_dinero": {
     nombre: "Vale de Dinero",
     lema: "Ticket canjeable en caja.",
-    precioArs: 1990,
+    precioArs: 10000,
     superficie: "ambos",
     activacion: "App Store → Activar → emitir en panel o cobrar en POS",
     pasosUso: [

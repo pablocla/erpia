@@ -8,6 +8,13 @@ import { CLAVER_NAV, CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 import { CombateAppsMegaMenu } from "@/components/marketing/combate-apps-mega-menu"
 import { Button } from "@/components/ui/button"
+import { activarRegisterHref } from "@/lib/comercial/activar-intent"
+import {
+  HOME_DOLOR_EVENT,
+  HOME_DOLOR_STORAGE_KEY,
+  isHomeDolorSlug,
+  type HomeDolorSlug,
+} from "@/lib/comercial/go-to-market-vitrine"
 
 interface ClaverShellProps {
   children: React.ReactNode
@@ -31,12 +38,35 @@ const LOGO_VARIANT = {
 export function ClaverShell({ children, context = "matrix", theme = "dark-hero" }: ClaverShellProps) {
   const [navOpen, setNavOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [registerHref, setRegisterHref] = useState("/login/register?trial=14")
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     onScroll()
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  // CTA del header alineado al dolor activo de la home (S3/S5).
+  useEffect(() => {
+    const apply = (slug: string | null | undefined) => {
+      if (isHomeDolorSlug(slug)) {
+        setRegisterHref(activarRegisterHref(slug))
+      } else {
+        setRegisterHref("/login/register?trial=14")
+      }
+    }
+    try {
+      apply(sessionStorage.getItem(HOME_DOLOR_STORAGE_KEY))
+    } catch {
+      /* private mode */
+    }
+    const onDolor = (e: Event) => {
+      const detail = (e as CustomEvent<HomeDolorSlug>).detail
+      apply(detail)
+    }
+    window.addEventListener(HOME_DOLOR_EVENT, onDolor)
+    return () => window.removeEventListener(HOME_DOLOR_EVENT, onDolor)
   }, [])
 
   useEffect(() => {
@@ -111,8 +141,8 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
               asChild
             >
-              <Link href="/login/register?trial=14">
-                Probar gratis
+              <Link href={registerHref}>
+                Probar 14 días
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -185,8 +215,8 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
                 </Link>
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-500" asChild>
-                <Link href="/login/register?trial=14" onClick={() => setNavOpen(false)}>
-                  Probar gratis 14 días
+                <Link href={registerHref} onClick={() => setNavOpen(false)}>
+                  Probar 14 días
                 </Link>
               </Button>
             </div>
@@ -224,7 +254,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Claver</p>
             <ul className="space-y-2 text-sm">
               <li><Link href="/" className="hover:text-white">Inicio</Link></li>
-              <li><Link href="/login/register?trial=14" className="hover:text-white">Registro gratis</Link></li>
+              <li><Link href={registerHref} className="hover:text-white">Registro gratis</Link></li>
               <li><Link href="/claver/contacto" className="hover:text-white">Contacto / ventas</Link></li>
               <li><Link href="/claver-cloud" className="hover:text-white">Claver Cloud</Link></li>
               <li><Link href="/claver/marca" className="hover:text-white">Identidad</Link></li>

@@ -1,4 +1,4 @@
-﻿import { type NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.empresa.update({
-      where: whereEmpresa(auth.auth.empresaId),
+      where: { id: auth.auth.empresaId },
       data: updateData,
     })
 

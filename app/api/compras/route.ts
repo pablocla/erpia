@@ -108,34 +108,6 @@ export const POST = withAuthAndTenant(async (request: NextRequest, auth) => {
       }
     }
 
-    // ── WSCDC: verify supplier CAE (optional) ────────────────────────────
-    let estadoVerificacionCAE: string = "no_verificado"
-    if (caeProveedor) {
-      try {
-        const { constatar } = await import("@/lib/afip/wscdc-client")
-        // Attempt verification – non-blocking (log only)
-        const wscdcResult = await constatar(
-          { token: "", sign: "" }, // Auth tokens injected by middleware in production
-          process.env.CUIT_EMPRESA ?? "",
-          {
-            cuitEmisor: (await prisma.proveedor.findFirst({
-              where: { id: proveedorId, empresaId: auth.empresaId },
-              select: { cuit: true },
-            }))?.cuit ?? "",
-            ptoVta: parseInt(puntoVenta, 10),
-            cbeTipo: tipo === "A" ? 1 : tipo === "B" ? 6 : 11,
-            cbeNro: parseInt(numero, 10),
-            cbeFch: fecha.replace(/-/g, "").substring(0, 8),
-            cae: caeProveedor,
-          },
-        )
-        estadoVerificacionCAE = wscdcResult.resultado === "A" ? "aprobado" : "rechazado"
-      } catch (err) {
-        console.error("WSCDC verification failed (non-blocking):", err)
-        estadoVerificacionCAE = "error"
-      }
-    }
-
     let subtotal = 0
     let totalIva = 0
 
@@ -147,6 +119,40 @@ export const POST = withAuthAndTenant(async (request: NextRequest, auth) => {
     }
 
     const total = subtotal + totalIva
+
+    // ── WSCDC: verify supplier CAE (optional) ────────────────────────────
+    let estadoVerificacionCAE: string = "no_verificado"
+    if (caeProveedor) {
+      try {
+        const { WSCDCClient } = await import("@/lib/afip/wscdc-client")
+        const client = new WSCDCClient("homologacion")
+        // Attempt verification – non-blocking (log only)
+        const wscdcResult = await client.constatar(
+          { token: "", sign: "", expirationTime: new Date() }, // Auth tokens injected by middleware in production
+          process.env.CUIT_EMPRESA ?? "",
+          {
+            cuitEmisor: (await prisma.proveedor.findFirst({
+              where: { id: proveedorId, empresaId: auth.empresaId },
+              select: { cuit: true },
+            }))?.cuit ?? "",
+            puntoVenta: parseInt(puntoVenta, 10),
+            tipoCbte: tipo === "A" ? 1 : tipo === "B" ? 6 : 11,
+            numeroCbte: parseInt(numero, 10),
+            fechaEmision: fecha.replace(/-/g, "").substring(0, 8),
+            codAutorizacion: caeProveedor,
+            importeTotal: total,
+            docTipoReceptor: 80,
+            docNroReceptor: process.env.CUIT_EMPRESA ?? "",
+          },
+        )
+        estadoVerificacionCAE = wscdcResult.resultado === "A" ? "aprobado" : "rechazado"
+      } catch (err) {
+        console.error("WSCDC verification failed (non-blocking):", err)
+        estadoVerificacionCAE = "error"
+      }
+    }
+
+
 
     const compra = await prisma.$transaction(async (tx) => {
       const nuevaCompra = await tx.compra.create({
@@ -197,7 +203,7 @@ export const POST = withAuthAndTenant(async (request: NextRequest, auth) => {
       payload: {
         compraId: compra.id,
         proveedorId: compra.proveedorId,
-        total: compra.total,
+        total: Number(compra.total),
         condicionPagoId: null,
         depositoId: null,
       },

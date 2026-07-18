@@ -8,6 +8,7 @@ import { resolvePackCalle } from "@/lib/comercial/pack-calle-catalog"
 import { getEngancheBySku } from "@/lib/marketplace/enganche-catalog"
 import { resolveSku } from "@/lib/marketplace/catalog-resolver"
 import { SUB_SAAS_APPS } from "@/lib/comercial/sub-saas-catalog"
+import { precioCobrableSku, aplicarPisoPrecioSuscripcion } from "@/lib/comercial/precio-minimo"
 import { prisma } from "@/lib/prisma"
 
 export type TrialScope = "monetizar" | "todo" | "nada"
@@ -54,9 +55,11 @@ export const OFERTA_FIADO_ANCLA: OfertaComercial = {
 export const OFERTA_POS_ANCLA: OfertaComercial = {
   id: "pos-ancla",
   nombre: "POS + Libreta Fiado",
-  lema: "Mostrador en trial. Fiado digital cuando lo necesités.",
-  anclaGratis: ["core.claver"],
-  monetizar: ["pos.fiado_barrio"],
+  lema: "Mostrador y stock en trial 14 días. Después desde $12.900/mes. Fiado se activa gratis cuando lo necesités.",
+  /** Sin ancla permanente de core: el trial monetiza el pack POS/ERP */
+  anclaGratis: [],
+  monetizar: ["core.claver"],
+  precioPackArs: 12900,
   modoLiteEntrada: "pos",
   trialDias: 14,
   trialScope: "monetizar",
@@ -80,20 +83,23 @@ export function getOfertaById(id: string): OfertaComercial | null {
 
 export function resolvePrecioSku(sku: string): number {
   const sub = SUB_SAAS_APPS.find((a) => a.sku === sku || a.skusAdicionales?.includes(sku))
-  if (sub && sub.precioArs > 0) return sub.precioArs
+  if (sub && sub.precioArs > 0) return precioCobrableSku(sku, sub.precioArs)
 
   const enganche = getEngancheBySku(sku)
-  if (enganche && enganche.precioArs > 0) return enganche.precioArs
+  if (enganche && enganche.precioArs > 0) return precioCobrableSku(sku, enganche.precioArs)
 
   const catalog = resolveSku(sku)
-  if (catalog && catalog.precioArs > 0) return catalog.precioArs
+  if (catalog && catalog.precioArs > 0) return precioCobrableSku(sku, catalog.precioArs)
 
-  return 0
+  return precioCobrableSku(sku, 0)
 }
 
 export function precioOfertaMonetizada(oferta: OfertaComercial): number {
-  if (oferta.precioPackArs != null && oferta.precioPackArs > 0) return oferta.precioPackArs
-  return oferta.monetizar.reduce((sum, sku) => sum + resolvePrecioSku(sku), 0)
+  if (oferta.precioPackArs != null && oferta.precioPackArs > 0) {
+    return aplicarPisoPrecioSuscripcion(oferta.precioPackArs)
+  }
+  const suma = oferta.monetizar.reduce((sum, sku) => sum + resolvePrecioSku(sku), 0)
+  return aplicarPisoPrecioSuscripcion(suma)
 }
 
 export function resolveOferta(engancheId: string, modoLite?: ModoLite): OfertaComercial {

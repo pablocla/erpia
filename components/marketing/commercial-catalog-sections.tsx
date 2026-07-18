@@ -8,16 +8,30 @@ import {
   hrefPublicoLinea,
   lineasPorTier,
   PACKS_DESTACADOS,
+  PACKS_HOME_STRIP,
   PLATAFORMAS_PRINCIPALES,
   PRODUCTOS_ENTRADA,
   totalSolucionesPublicadas,
 } from "@/lib/comercial/commercial-packaging"
+import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 import {
   SUB_SAAS_APPS,
+  isSubSaasFuncionalActiva,
+  sortSubSaasForMarketplace,
   subSaasDestacadas,
   subSaasLandingHref,
+  subSaasMarketplaceGroups,
+  type SubSaasApp,
 } from "@/lib/comercial/sub-saas-catalog"
-import { COMBATE_APPS } from "@/lib/comercial/go-to-market-vitrine"
+import {
+  COMBATE_APPS,
+  COMBATE_APPS_SLUGS,
+  GTM_VITRINE_COPY,
+  HOME_COMBATE_SLUGS,
+  homeCombateApps,
+  type HomeDolorSlug,
+} from "@/lib/comercial/go-to-market-vitrine"
+import { isSkuProvisionable } from "@/lib/marketplace/sku-availability"
 import type { ClaverServiceLine } from "@/lib/marketing/claver-services-catalog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -48,80 +62,343 @@ const SUB_SAAS_STATUS = {
   proximamente: { text: "Próximamente", className: "bg-slate-500 text-white" },
 } as const
 
-export function SubSaasAppsSection({
+/**
+ * Tres productos destacados en home: precio claro + CTA + landing.
+ * Resalta el producto activo del hero.
+ */
+export function CombateHomeSection({
   className,
-  destacadasOnly = false,
-  combateOnly = false,
+  highlightSlug,
 }: {
   className?: string
-  destacadasOnly?: boolean
-  combateOnly?: boolean
+  highlightSlug?: HomeDolorSlug
 }) {
-  let apps = SUB_SAAS_APPS
-  if (combateOnly) apps = COMBATE_APPS
-  else if (destacadasOnly) apps = subSaasDestacadas()
+  const apps = homeCombateApps()
 
   return (
-    <section aria-labelledby="subsaas-heading" className={cn("px-4 sm:px-6", className)}>
+    <section
+      id={GTM_VITRINE_COPY.combateHeadingId}
+      aria-labelledby="combate-heading"
+      className={cn("scroll-mt-24 border-b border-slate-200/80 bg-white px-4 py-14 sm:px-6", className)}
+    >
       <div className="mx-auto max-w-7xl">
-        <ScrollReveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2
-              id="subsaas-heading"
-              className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
-            >
-              {combateOnly ? "Productos de Combate" : "Apps para vender hoy"}
-            </h2>
-            <p className="mt-2 max-w-xl text-slate-600">
-              {combateOnly 
-                ? "Soluciones simples, rápidas y efectivas para tu día a día."
-                : "Diez productos chicos, celular y PC, sobre procesos que ya existen en Claver."}
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <Link href="/claver/apps#subsaas">
-              Ver las {SUB_SAAS_APPS.length} apps
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+        <ScrollReveal>
+          <h2
+            id="combate-heading"
+            className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
+          >
+            {GTM_VITRINE_COPY.combateTitle}
+          </h2>
+          <p className="mt-2 max-w-2xl text-slate-600">{GTM_VITRINE_COPY.combateSubtitle}</p>
         </ScrollReveal>
 
         <MotionList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {apps.map((app) => {
-            const status = SUB_SAAS_STATUS[app.estado]
+            const highlighted = highlightSlug === app.slug
+            const registerHref = activarRegisterHref(app.slug)
+            const isFree = app.precioArs === 0
             return (
               <MotionListItem key={app.slug}>
-                <Card className="flex h-full flex-col border-slate-200/80 transition hover:border-emerald-200 hover:shadow-md">
+                <Card
+                  className={cn(
+                    "flex h-full flex-col transition",
+                    highlighted
+                      ? "border-emerald-400/80 bg-emerald-50/40 shadow-md ring-1 ring-emerald-200"
+                      : "border-slate-200/80 hover:border-emerald-200 hover:shadow-md",
+                  )}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="font-[var(--font-fraunces)] text-lg">{app.nombre}</CardTitle>
-                      <Badge className={cn("shrink-0 text-[10px]", status.className)}>
-                        {status.text}
-                      </Badge>
+                      <p className="text-sm font-medium text-blue-700">{app.marca}</p>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                        {isFree && (
+                          <Badge className="bg-emerald-600 text-[10px] text-white">
+                            {GTM_VITRINE_COPY.badgeGratis}
+                          </Badge>
+                        )}
+                        {!isFree && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {GTM_VITRINE_COPY.badgeTrial}
+                          </Badge>
+                        )}
+                        {highlighted && (
+                          <Badge className="bg-slate-900 text-[10px] text-white">
+                            {GTM_VITRINE_COPY.badgeElegido}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm font-medium text-blue-700">{app.marca}</p>
-                    <p className="text-sm text-slate-600">{app.lema}</p>
+                    <CardTitle className="font-[var(--font-fraunces)] text-xl text-slate-900">
+                      {app.nombre}
+                    </CardTitle>
+                    <p className="text-sm text-slate-600 leading-relaxed">{app.lema}</p>
                   </CardHeader>
                   <CardContent className="flex-1">
-                    <p className="text-2xl font-bold text-slate-900">
-                      {app.precioArs === 0 ? "Incluido" : fmtPrecioArs(app.precioArs)}
+                    <p className="text-3xl font-bold text-slate-900">
+                      {isFree ? "Gratis" : fmtPrecioArs(app.precioArs)}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      {app.precioArs === 0 ? "con trial" : "/ mes"} · {app.listoPct}% listo
+                    <p className="text-sm text-slate-500">
+                      {isFree
+                        ? "para siempre · sin tarjeta"
+                        : `/ mes · ${app.trialDias} días de prueba`}
                     </p>
+                    {app.outcomes[0] && (
+                      <p className="mt-3 text-sm font-medium text-emerald-800">
+                        ✓ {app.outcomes[0]}
+                      </p>
+                    )}
+                    {app.outcomes[1] && (
+                      <p className="mt-1 text-xs text-slate-500">✓ {app.outcomes[1]}</p>
+                    )}
                   </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href={subSaasLandingHref(app.slug)}>
-                        Ver landing
+                  <CardFooter className="flex flex-col gap-2 sm:flex-row">
+                    <Button className="w-full bg-emerald-600 hover:bg-emerald-500" asChild>
+                      <Link href={registerHref}>
+                        {isFree ? "Empezar gratis" : GTM_VITRINE_COPY.ctaProbar}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href={subSaasLandingHref(app.slug)}>Ver detalle</Link>
                     </Button>
                   </CardFooter>
                 </Card>
               </MotionListItem>
             )
           })}
+        </MotionList>
+      </div>
+    </section>
+  )
+}
+
+/** 4 packs con precio en home (fuera del colapsable). */
+export function PacksHomeStripSection({ className }: { className?: string }) {
+  return (
+    <section
+      aria-labelledby="packs-home-heading"
+      className={cn("border-t border-slate-200/80 bg-white px-4 py-14 sm:px-6", className)}
+    >
+      <div className="mx-auto max-w-7xl">
+        <ScrollReveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2
+              id="packs-home-heading"
+              className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
+            >
+              {GTM_VITRINE_COPY.packsHomeTitle}
+            </h2>
+            <p className="mt-2 max-w-xl text-slate-600">{GTM_VITRINE_COPY.packsHomeSubtitle}</p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href="/claver/apps#packs">
+              Ver todos los packs
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </ScrollReveal>
+
+        <MotionList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {PACKS_HOME_STRIP.map((pack) => (
+            <MotionListItem key={pack.id}>
+              <Card className="flex h-full flex-col border-slate-200/80 transition hover:border-emerald-200 hover:shadow-md">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base leading-snug">{pack.nombre}</CardTitle>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      {pack.cantidadSkus} mod.
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 line-clamp-2">{pack.lema}</p>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-2xl font-bold text-slate-900">{fmtPrecioArs(pack.precioArs)}</p>
+                  <p className="text-xs text-slate-500">
+                    {tipoCobroLabel(pack.tipoCobro)}
+                    {pack.ahorroPct > 0 ? ` · ahorrás ${pack.ahorroPct}%` : ""}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">Trial 14 días · sin tarjeta</p>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500" asChild>
+                    <Link href={activarRegisterHref(pack.id)}>
+                      {GTM_VITRINE_COPY.ctaProbar}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            </MotionListItem>
+          ))}
+        </MotionList>
+      </div>
+    </section>
+  )
+}
+
+function SubSaasAppCard({
+  app,
+  featured = false,
+}: {
+  app: SubSaasApp
+  featured?: boolean
+}) {
+  const status = SUB_SAAS_STATUS[app.estado]
+  const provisionable = isSkuProvisionable(app.sku)
+  const isHome = (HOME_COMBATE_SLUGS as readonly string[]).includes(app.slug)
+  const isCombate = (COMBATE_APPS_SLUGS as readonly string[]).includes(app.slug)
+  const activa = isSubSaasFuncionalActiva(app) && provisionable
+
+  return (
+    <Card
+      className={cn(
+        "flex h-full flex-col border-slate-200/80 bg-white transition hover:border-emerald-200 hover:shadow-md",
+        featured && "border-emerald-300/80 ring-1 ring-emerald-100",
+        !activa && app.estado === "beta" && "opacity-95",
+      )}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm font-medium text-emerald-700">{app.marca}</p>
+          <div className="flex flex-wrap gap-1">
+            {isHome && (
+              <Badge className="shrink-0 bg-emerald-600 text-[10px] text-white">Destacada</Badge>
+            )}
+            {isCombate && !isHome && (
+              <Badge variant="outline" className="shrink-0 border-emerald-200 text-[10px] text-emerald-800">
+                Combate
+              </Badge>
+            )}
+            <Badge className={cn("shrink-0 text-[10px]", status.className)}>{status.text}</Badge>
+          </div>
+        </div>
+        <CardTitle className="font-[var(--font-fraunces)] text-lg text-slate-900">{app.nombre}</CardTitle>
+        <p className="text-sm text-slate-600 leading-relaxed">{app.lema}</p>
+      </CardHeader>
+      <CardContent className="flex-1">
+        <p className="text-2xl font-bold text-slate-900">
+          {app.precioArs === 0 ? (app.estado === "disponible" ? "Gratis" : "Incluido") : fmtPrecioArs(app.precioArs)}
+        </p>
+        <p className="text-xs text-slate-500">
+          {app.precioArs === 0
+            ? app.sku === "pos.fiado_barrio"
+              ? "ancla permanente · trial POS 14 días"
+              : "con trial"
+            : `/ mes · trial ${app.trialDias} días`}
+          {app.listoPct < 100 ? ` · ${app.listoPct}% listo` : ""}
+        </p>
+        {app.outcomes[0] && <p className="mt-3 text-xs text-slate-500">→ {app.outcomes[0]}</p>}
+      </CardContent>
+      <CardFooter className="flex flex-col gap-2 border-t border-slate-100 bg-[#f8fafc]/50 pt-4">
+        {provisionable && app.estado !== "proximamente" ? (
+          <Button className="w-full bg-emerald-600 font-semibold text-white hover:bg-emerald-500" asChild>
+            <Link href={activarRegisterHref(app.slug)}>
+              Probar gratis
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button className="w-full" variant="secondary" disabled>
+            Próximamente
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          className="w-full border-slate-200 text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/50"
+          asChild
+        >
+          <Link href={subSaasLandingHref(app.slug)}>Ver landing</Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+export function SubSaasAppsSection({
+  className,
+  destacadasOnly = false,
+  combateOnly = false,
+  activasOnly = false,
+  betaOnly = false,
+  hideCatalogLink = false,
+  hideHeader = false,
+}: {
+  className?: string
+  destacadasOnly?: boolean
+  combateOnly?: boolean
+  /** Solo apps funcionalmente listas (estado disponible + listoPct). */
+  activasOnly?: boolean
+  betaOnly?: boolean
+  hideCatalogLink?: boolean
+  hideHeader?: boolean
+}) {
+  let apps: SubSaasApp[]
+  if (combateOnly) {
+    apps = sortSubSaasForMarketplace(COMBATE_APPS)
+  } else if (destacadasOnly) {
+    apps = subSaasDestacadas()
+  } else if (activasOnly) {
+    apps = subSaasMarketplaceGroups().activas
+  } else if (betaOnly) {
+    apps = subSaasMarketplaceGroups().beta
+  } else {
+    apps = sortSubSaasForMarketplace(SUB_SAAS_APPS)
+  }
+
+  const title = combateOnly
+    ? GTM_VITRINE_COPY.combateTitle
+    : activasOnly
+      ? "Apps activas y listas"
+      : betaOnly
+        ? "En beta"
+        : "Todas las apps"
+
+  const subtitle = combateOnly
+    ? GTM_VITRINE_COPY.combateSubtitle
+    : activasOnly
+      ? "Mismas que podés activar y usar hoy — orden comercial (Fiado, Cobrá, Turnos primero)."
+      : betaOnly
+        ? "Funcionalidad parcial. Ideal para probar, no para operación crítica."
+        : "Catálogo completo ordenado: activas primero, después beta."
+
+  return (
+    <section aria-labelledby="subsaas-heading" className={cn("px-4 sm:px-6", className)}>
+      <div className="mx-auto max-w-7xl">
+        {!hideHeader && (
+          <ScrollReveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2
+                id="subsaas-heading"
+                className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
+              >
+                {title}
+              </h2>
+              <p className="mt-2 max-w-xl text-slate-600">{subtitle}</p>
+            </div>
+            {!hideCatalogLink && (
+              <Button
+                variant="outline"
+                className="border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/40"
+                asChild
+              >
+                <Link href="/claver/apps#activas">
+                  Ver las {subSaasMarketplaceGroups().activas.length} activas
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+          </ScrollReveal>
+        )}
+
+        <MotionList className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", !hideHeader && "mt-8")}>
+          {apps.map((app) => (
+            <MotionListItem key={app.slug}>
+              <SubSaasAppCard
+                app={app}
+                featured={(HOME_COMBATE_SLUGS as readonly string[]).includes(app.slug)}
+              />
+            </MotionListItem>
+          ))}
         </MotionList>
       </div>
     </section>
@@ -157,7 +434,7 @@ export function ProductosEntradaSection({ className }: { className?: string }) {
               </CardContent>
               <CardFooter>
                 {p.disponible ? (
-                  <Button className="w-full" asChild>
+                  <Button className="w-full bg-emerald-600 font-semibold hover:bg-emerald-500" asChild>
                     <Link href={p.href}>
                       Probar gratis
                       <ArrowRight className="ml-2 h-4 w-4" />

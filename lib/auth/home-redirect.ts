@@ -67,11 +67,34 @@ export function resolvePostLoginPath(opts: {
   return getHomePathForRol(opts.rol)
 }
 
+function isPublicDemoEmail(email?: string | null): boolean {
+  const e = email?.trim().toLowerCase() ?? ""
+  if (!e) return false
+  if (e === DEMO_ADMIN_EMAIL.toLowerCase()) return true
+  return e.startsWith("demo-") && e.endsWith("@claver.com.ar")
+}
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  ms: number,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function fetchIsClaverAnalyst(token: string): Promise<boolean> {
   try {
-    const res = await fetch("/api/claver/analista/status", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetchWithTimeout(
+      "/api/claver/analista/status",
+      { headers: { Authorization: `Bearer ${token}` } },
+      4000,
+    )
     if (!res.ok) return false
     const data = (await res.json()) as { isAnalyst?: boolean }
     return Boolean(data.isAnalyst)
@@ -82,9 +105,11 @@ export async function fetchIsClaverAnalyst(token: string): Promise<boolean> {
 
 async function fetchEmpresaRubro(token: string): Promise<string | null> {
   try {
-    const res = await fetch("/api/config/empresa", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetchWithTimeout(
+      "/api/config/empresa",
+      { headers: { Authorization: `Bearer ${token}` } },
+      4000,
+    )
     if (!res.ok) return null
     const data = (await res.json()) as { rubro?: string }
     return data.rubro ?? null
@@ -99,10 +124,22 @@ export async function resolvePostLoginPathAsync(
   nextPath?: string | null,
   email?: string | null,
 ): Promise<string> {
-  const isAnalyst = await fetchIsClaverAnalyst(token)
   const payload = parseJwtPayload(token)
   const resolvedEmail =
     email ?? (typeof payload?.email === "string" ? String(payload.email) : undefined)
+
+  // nextPath válido (ej. goldenPath de demo) — no hacer round-trips extra
+  const next = nextPath?.trim()
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    return next
+  }
+
+  // Demos públicas: nunca van a Claver Cloud; home por rol
+  if (isPublicDemoEmail(resolvedEmail)) {
+    return getHomePathForRol(rol)
+  }
+
+  const isAnalyst = await fetchIsClaverAnalyst(token)
   const rubro = await fetchEmpresaRubro(token)
   return resolvePostLoginPath({ rol, email: resolvedEmail, nextPath, isAnalyst, rubro })
 }

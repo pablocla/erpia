@@ -46,7 +46,8 @@ export default function TrialVencidoPage() {
   }
 
   const tieneAncla = access?.tieneAnclaGratis
-  const precio = access?.precioUpgradeArs ?? 0
+  /** Piso comercial $10.000 — nunca mostrar CTA a $0 de pago */
+  const precio = Math.max(Number(access?.precioUpgradeArs) || 12_900, 10_000)
 
   return (
     <div className="flex h-full min-h-[80vh] flex-col items-center justify-center p-4">
@@ -105,13 +106,9 @@ export default function TrialVencidoPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button className="w-full" size="lg" onClick={handleSubscribe} disabled={loading || precio <= 0}>
+          <Button className="w-full" size="lg" onClick={handleSubscribe} disabled={loading}>
             <CreditCard className="mr-2 h-4 w-4" />
-            {loading
-              ? "Generando link..."
-              : precio > 0
-                ? `Suscribirse · ${fmtPrecioArs(precio)}/mes`
-                : "Suscribirse con Mercado Pago"}
+            {loading ? "Generando link..." : `Suscribirse · ${fmtPrecioArs(precio)}/mes`}
           </Button>
           {tieneAncla && (
             <Button asChild variant="secondary" className="w-full">

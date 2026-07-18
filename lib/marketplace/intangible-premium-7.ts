@@ -140,7 +140,7 @@ export const INTANGIBLE_PREMIUM_7: IntangiblePremiumMeta[] = [
       "Mail compras@claver.com o upload PDF/XML: Gemini Vision extrae datos y pre-carga la compra mapeando productos del proveedor.",
     monetizacion: "por_uso",
     monetizacionDetalle: "$9.900/mes (100 docs) o $99 por PDF extra",
-    precioArs: 9900,
+    precioArs: 10000,
     precioPorUsoArs: 99,
     audiencia: "B2B",
     autoCertLevel: "SEMI_AUTO",

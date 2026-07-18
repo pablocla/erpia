@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!ctx.ok) return ctx.response
 
   const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
-  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
+  if (!isLicensed.ok) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const todos = searchParams.get("todos") === "1"

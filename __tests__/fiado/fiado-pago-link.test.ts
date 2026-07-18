@@ -51,7 +51,9 @@ describe("resolverLinkPagoFiado", () => {
         empresaId: 1,
         monto: 5000,
         cuentaCobrarId: 99,
-        externalReference: "fiado-10-2",
+        // Preferencia cxc-* para conciliación unificada en webhook
+        externalReference: "cxc-99",
+        titulo: "Fiado Juan",
       }),
     )
   })

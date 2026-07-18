@@ -1,0 +1,65 @@
+import { prisma } from "@/lib/prisma"
+
+export async function cerrarConsultaVeterinaria(empresaId: number, consultaId: string, userId: string, insumosUsadosIds: string[]) {
+  // 1. Obtener la consulta y sus datos
+  const consulta = await prisma.consulta.findUnique({
+    where: { id: consultaId },
+    include: { mascota: { include: { tutor: true } } }
+  })
+  
+  if (!consulta || consulta.empresaId !== empresaId) {
+    throw new Error("Consulta no encontrada")
+  }
+
+  // 2. Obtener insumos usados
+  const insumos = await prisma.producto.findMany({
+    where: { id: { in: insumosUsadosIds }, empresaId }
+  })
+
+  const totalInsumos = insumos.reduce((acc, i) => acc + i.precioVenta, 0)
+  
+  // Precio de consulta base ficticio o buscar desde tabla de servicios
+  const precioConsulta = 5000 
+  const total = precioConsulta + totalInsumos
+
+  // 3. Crear una venta (factura automática)
+  const venta = await prisma.venta.create({
+    data: {
+      empresaId,
+      sucursalId: 1, // Mock
+      clienteId: consulta.mascota.tutor.id,
+      creadoPorId: userId,
+      total,
+      estado: "pendiente",
+      origen: "veterinaria",
+      detalles: {
+        create: [
+          { nombre: "Consulta Clínica", cantidad: 1, precioUnitario: precioConsulta, subtotal: precioConsulta },
+          ...insumos.map(insumo => ({
+            productoId: insumo.id,
+            nombre: insumo.nombre,
+            cantidad: 1,
+            precioUnitario: insumo.precioVenta,
+            subtotal: insumo.precioVenta
+          }))
+        ]
+      }
+    }
+  })
+
+  // 4. Descontar recetas/insumos del stock
+  for (const insumo of insumos) {
+    await prisma.producto.update({
+      where: { id: insumo.id },
+      data: { stockActual: { decrement: 1 } }
+    })
+  }
+
+  // 5. Cerrar la consulta
+  await prisma.consulta.update({
+    where: { id: consultaId },
+    data: { estado: "completada" }
+  })
+
+  return { ok: true, ventaId: venta.id, total }
+}

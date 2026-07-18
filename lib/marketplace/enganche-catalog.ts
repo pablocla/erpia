@@ -5,6 +5,7 @@
  */
 
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
+import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
 import { MARKETPLACE_CATALOG } from "./marketplace-catalog"
 import { MARKETPLACE_BUNDLES } from "./bundles"
 import { INTANGIBLES_TOP5, INTANGIBLE_PREMIUM_7 } from "./intangible-services"
@@ -34,11 +35,12 @@ export const ENGANCHES: EngancheProducto[] = [
   {
     sku: "pos.fiado_barrio",
     nombre: "Libreta Fiado",
-    lema: "Fiá con límite. Que el otro se entere.",
+    lema: "Gratis para siempre. Subí a Cobrá o POS cuando crezcas.",
     tier: "implementado",
     nichos: ["almacen_barrio"],
-    precioArs: 4990,
-    upsellA: ["intang.cobranzas_wa", "com.whatsapp", "fiscal.clavpay_link"],
+    /** Ancla comercial: $0 permanente (OFERTA_FIADO_ANCLA). Upsell = cobranzas / core. */
+    precioArs: 0,
+    upsellA: ["intang.cobranzas_wa", "com.whatsapp", "fiscal.clavpay_link", "core.claver"],
     dolorResuelve: "Pérdida de control del fiado en papel / WhatsApp suelto",
   },
   {
@@ -67,7 +69,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Link de pago en cada deuda.",
     tier: "parcial",
     nichos: ["almacen_barrio", "pyme_cobranzas"],
-    precioArs: 6000,
+    precioArs: 10000,
     upsellA: ["intang.cobranzas_wa", "channel.mercadopago"],
     dolorResuelve: "Cobrar sin ir a buscar el efectivo",
   },
@@ -77,7 +79,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Abrís el negocio sabiendo qué pasó ayer.",
     tier: "parcial",
     nichos: ["horizontal", "almacen_barrio"],
-    precioArs: 6000,
+    precioArs: 10000,
     upsellA: ["core.claver", "data.nps"],
     dolorResuelve: "Dueño sin visibilidad diaria de caja y stock",
   },
@@ -107,7 +109,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Sacale foto al remito y cargá compras.",
     tier: "parcial",
     nichos: ["almacen_barrio", "fiscal"],
-    precioArs: 9000,
+    precioArs: 10000,
     upsellA: ["core.claver", "impl.homologacion_afip"],
     dolorResuelve: "Carga manual de facturas de proveedores",
   },
@@ -127,7 +129,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Que no te roben la cuenta del sistema.",
     tier: "parcial",
     nichos: ["horizontal", "seguridad_ops"],
-    precioArs: 7000,
+    precioArs: 10000,
     upsellA: ["sec.backup"],
     dolorResuelve: "Accesos compartidos sin seguridad",
   },
@@ -177,7 +179,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Tu abogado de bolsillo en 30 segundos.",
     tier: "catalogo",
     nichos: ["pyme_cobranzas", "horizontal"],
-    precioArs: 9900,
+    precioArs: 10000,
     upsellA: ["core.claver"],
     dolorResuelve: "Contratos y letras chicas sin revisar",
   },
@@ -187,7 +189,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Plata que se escapa sin que te des cuenta.",
     tier: "catalogo",
     nichos: ["horizontal"],
-    precioArs: 3000,
+    precioArs: 10000,
     upsellA: ["core.claver"],
     dolorResuelve: "Suscripciones olvidadas en resumen bancario",
   },
@@ -207,7 +209,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Sabé qué anuncio trae ventas reales.",
     tier: "catalogo",
     nichos: ["ecommerce", "marketing"],
-    precioArs: 5000,
+    precioArs: 10000,
     upsellA: ["integ.tienda_nube", "integ.shopify"],
     dolorResuelve: "Publicidad a ciegas",
   },
@@ -217,7 +219,7 @@ export const ENGANCHES: EngancheProducto[] = [
     lema: "Pedidos y consultas sin atender el teléfono.",
     tier: "catalogo",
     nichos: ["pyme_cobranzas", "ecommerce"],
-    precioArs: 4000,
+    precioArs: 10000,
     upsellA: ["com.whatsapp", "core.claver"],
     dolorResuelve: "Leads perdidos fuera de horario",
   },
@@ -248,7 +250,10 @@ export interface EngancheResumen {
 }
 
 export function getEngancheBySku(sku: string): EngancheProducto | undefined {
-  return ENGANCHES.find((e) => e.sku === sku)
+  const e = ENGANCHES.find((item) => item.sku === sku)
+  if (!e) return undefined
+  // Precio de vitrina/checkout: piso $10.000 salvo anclas $0
+  return { ...e, precioArs: precioCobrableSku(e.sku, e.precioArs) }
 }
 
 export function getEnganchesPorNicho(nicho: EngancheNicho): EngancheProducto[] {

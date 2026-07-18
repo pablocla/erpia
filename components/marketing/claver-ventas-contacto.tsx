@@ -30,6 +30,10 @@ interface ClaverVentasContactoProps {
   variant?: "dark" | "light"
   showSidebar?: boolean
   className?: string
+  /** Mensaje WA prellenado (ej. según dolor de la home). */
+  waMessage?: string
+  /** CTA "Probar gratis" con ?activar= coherente. */
+  registerHref?: string
 }
 
 export function ClaverVentasContacto({
@@ -38,11 +42,14 @@ export function ClaverVentasContacto({
   variant = "dark",
   showSidebar = true,
   className,
+  waMessage,
+  registerHref = "/login/register?trial=14",
 }: ClaverVentasContactoProps) {
   const { form, setForm, tipo, setTipo, saving, submit } = useVentasConsulta(defaultTipo)
   const dark = variant === "dark"
   const wa = whatsappUrl(
-    "Hola Claver, quiero info sobre el sistema para mi negocio. Mi rubro es: ",
+    waMessage ??
+      "Hola Claver, quiero info sobre el sistema para mi negocio. Mi rubro es: ",
   )
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,7 +102,7 @@ export function ClaverVentasContacto({
                 className={dark ? "bg-white text-slate-900 hover:bg-slate-100" : "bg-blue-600 hover:bg-blue-500 text-white"}
                 asChild
               >
-                <Link href="/login/register?trial=14">
+                <Link href={registerHref}>
                   Probar gratis 14 días
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

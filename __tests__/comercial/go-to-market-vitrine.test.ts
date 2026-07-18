@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest"
+import { activarRegisterHref } from "@/lib/comercial/activar-intent"
+import { PACKS_HOME_STRIP } from "@/lib/comercial/commercial-packaging"
 import {
   COBRA_ENTRY,
   COMBATE_APPS,
@@ -6,14 +8,21 @@ import {
   ENTRY_DOOR_SLUG,
   FIADO_ENTRY,
   GTM_VITRINE_COPY,
+  HOME_COMBATE_SLUGS,
+  HOME_DOLOR_CHIPS,
   MONOTRIBUTO_ENTRY,
   OBRA_ENTRY,
+  PRODUCT_ENTRIES,
   PROPIEDAD_ENTRY,
   SERVICIOS_ENTRY,
   TURNOS_ENTRY,
   combateLandingMetadata,
   getProductEntry,
+  homeCombateApps,
   isCombateAppSlug,
+  isHomeDolorSlug,
+  resolveHomeDolor,
+  ventasWhatsappMessage,
 } from "@/lib/comercial/go-to-market-vitrine"
 
 describe("go-to-market-vitrine", () => {
@@ -32,8 +41,46 @@ describe("go-to-market-vitrine", () => {
     expect(COMBATE_APPS.find((a) => a.slug === "propiedad")?.sku).toBe("pool-propiedad")
   })
 
+  it("home muestra solo fiado, cobra y turnos", () => {
+    expect(HOME_COMBATE_SLUGS).toEqual(["fiado", "cobra", "turnos"])
+    expect(homeCombateApps().map((a) => a.slug)).toEqual(["fiado", "cobra", "turnos"])
+    expect(HOME_DOLOR_CHIPS).toHaveLength(3)
+    expect(resolveHomeDolor(null)).toBe("fiado")
+    expect(resolveHomeDolor("cobra")).toBe("cobra")
+    expect(resolveHomeDolor("turnos")).toBe("turnos")
+    expect(resolveHomeDolor("propiedad")).toBe("fiado")
+    expect(isHomeDolorSlug("cobra")).toBe(true)
+    expect(isHomeDolorSlug("pos")).toBe(false)
+  })
+
+  it("CTAs de home usan register?activar=", () => {
+    for (const slug of HOME_COMBATE_SLUGS) {
+      const href = activarRegisterHref(slug)
+      expect(href).toContain("/login/register?")
+      expect(href).toContain(`activar=${slug}`)
+      expect(href).toContain("trial=14")
+      expect(PRODUCT_ENTRIES[slug].ctaPrimaryActivar).toBe(slug)
+    }
+  })
+
+  it("mensaje de WhatsApp de ventas menciona el producto del dolor", () => {
+    expect(ventasWhatsappMessage("fiado")).toMatch(/Fiado|fiado/i)
+    expect(ventasWhatsappMessage("cobra")).toMatch(/Cobrá|cobranza|WhatsApp/i)
+    expect(ventasWhatsappMessage("turnos")).toMatch(/Turnos|turno/i)
+  })
+
+  it("strip de packs en home tiene 3–4 packs con precio", () => {
+    expect(PACKS_HOME_STRIP.length).toBeGreaterThanOrEqual(3)
+    expect(PACKS_HOME_STRIP.length).toBeLessThanOrEqual(4)
+    for (const pack of PACKS_HOME_STRIP) {
+      expect(pack.precioArs).toBeGreaterThan(0)
+      expect(pack.id).toBeTruthy()
+    }
+  })
+
   it("alinea copy GTM con hero fiado", () => {
     expect(GTM_VITRINE_COPY.heroTagline).toBe(FIADO_ENTRY.h1)
+    expect(GTM_VITRINE_COPY.combateHeadingId).toBe("combate-heading")
     expect(FIADO_ENTRY.steps).toHaveLength(3)
     expect(FIADO_ENTRY.benefits.length).toBeGreaterThanOrEqual(3)
   })

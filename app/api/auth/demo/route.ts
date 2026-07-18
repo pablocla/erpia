@@ -7,10 +7,14 @@ import { DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/brand"
 import { provisionIndustryDemo } from "@/lib/comercial/industry-demo-service"
 import { getIndustryTemplate, DEMO_INDUSTRY_IDS } from "@/lib/comercial/industry-templates"
 
+export const maxDuration = 60
+export const dynamic = "force-dynamic"
+
 /**
  * POST /api/auth/demo
  *
- * Demo segmentada por rubro — provisiona industria y devuelve JWT + goldenPath.
+ * Demo segmentada por rubro — reutiliza empresa fija para testing interno.
+ * Preferir /api/onboarding/industry-demo para demos de calle (empresa aislada).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const provision = await provisionIndustryDemo(empresa.id, industryId)
 
-    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10)
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 8)
 
     let usuario = await prisma.usuario.findUnique({
       where: { email: ADMIN_EMAIL },
@@ -108,7 +112,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error en demo login:", error)
     return NextResponse.json(
-      { error: "Error al crear sesión demo" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Error al crear sesión demo",
+      },
       { status: 500 },
     )
   }

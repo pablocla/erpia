@@ -1,6 +1,7 @@
 /**
  * Sistema de marca — Grupo Claver
- * Claver = matriz · Claver = producto ERP (una línea del conglomerado)
+ * Nombres de producto sin renombrar: Claver, Clavergrow, apps (Fiado, Cobrá, …).
+ * Copy de marketing: funcional (qué hace), sin marco “dolor → sistema/ERP”.
  */
 
 /** Marca matriz — conglomerado de sistemas y servicios */
@@ -12,12 +13,12 @@ export const CLAVER_GROUP = {
   tone: ["confiable", "premium", "local", "escalable"],
 } as const
 
-/** Producto ERP — línea de negocio dentro de Claver */
+/** Producto principal (slug técnico claverp) — nombre de marca: Claver */
 export const CLAVERP_PRODUCT = {
   name: "Claver",
   slug: "claverp",
   tagline: "Un sistema. Toda tu operación.",
-  descriptor: "ERP & POS con facturación AFIP para comercios y distribuidoras",
+  descriptor: "POS con facturación AFIP, stock, caja y reportes para comercios y distribuidoras",
   parent: "Claver",
 } as const
 
@@ -31,7 +32,7 @@ export const CLAVERGROW_PRODUCT = {
   parent: "Claver",
 } as const
 
-/** @deprecated Usar CLAVERP_PRODUCT */
+/** @deprecated Usar CLAVERP_PRODUCT / CLAVER_GROUP */
 export const BRAND_RECOMMENDED = {
   name: CLAVERP_PRODUCT.name,
   tagline: CLAVERP_PRODUCT.tagline,

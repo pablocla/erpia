@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package, Upload } from "lucide-react"
+import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package, Upload, Tag } from "lucide-react"
 import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
@@ -530,6 +530,35 @@ export default function ProductosPage() {
                 hidden: false,
                 cell: (p) => (
                   <div className="flex gap-1 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Imprimir etiqueta góndola"
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        try {
+                          const res = await fetch("/api/impresion/etiqueta", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", ...authHeaders() },
+                            body: JSON.stringify({ productoId: p.id, cantidad: 1 }),
+                          })
+                          const data = await res.json().catch(() => ({}))
+                          if (!res.ok) {
+                            toast({
+                              title: "Etiqueta",
+                              description: data.error ?? "Configurá impresora Hasar/Epson",
+                              variant: "destructive",
+                            })
+                            return
+                          }
+                          toast({ title: "Etiqueta enviada", description: p.nombre })
+                        } catch {
+                          toast({ title: "Error de conexión", variant: "destructive" })
+                        }
+                      }}
+                    >
+                      <Tag className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

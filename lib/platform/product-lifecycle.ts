@@ -17,6 +17,8 @@ import {
 } from "./product-registry"
 import { getProductHooks } from "./product-hooks"
 import { prepararDependenciasNicho } from "@/lib/niche/niche-provision"
+import { assertSkuProvisionable } from "@/lib/marketplace/sku-availability"
+import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
 
 export interface ProductoEstado {
   sku: string
@@ -51,6 +53,23 @@ async function dependenciasSatisfechas(empresaId: number, producto: ProductoHori
 }
 
 export async function activarProducto(empresaId: number, sku: string, origen = "manual") {
+  // Overrides exactos; packs usan origen "industry_demo:packId" → se toma el prefijo
+  const origenLibre = new Set([
+    "ops_force",
+    "seed_demo",
+    "retail_onboarding",
+    "demo",
+    "subscribe_free",
+    "industry_demo",
+    "test",
+    "marketplace_analista",
+    "pack",
+  ])
+  const origenBase = origen.split(":")[0] ?? origen
+  if (!origenLibre.has(origen) && !origenLibre.has(origenBase)) {
+    assertSkuProvisionable(sku)
+  }
+
   await prepararDependenciasNicho(empresaId, sku)
 
   const producto = getProductoHorizontal(sku)
@@ -161,7 +180,7 @@ export async function obtenerEstadoProductos(empresaId: number): Promise<Product
       dependenciasOk: deps.ok,
       dependenciasFaltantes: deps.faltantes,
       navPaths: p.navPaths,
-      precioArs: p.precioArs,
+      precioArs: precioCobrableSku(p.sku, p.precioArs),
     })
     mapa[p.sku] = activo
   }

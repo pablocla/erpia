@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { AlertTriangle, Building2, FileDown, Globe, MessageCircle, Plus, RefreshCw } from "lucide-react"
+import {
+  AlertTriangle,
+  Building2,
+  FileDown,
+  Globe,
+  MessageCircle,
+  Banknote,
+  Link2,
+  Plus,
+  RefreshCw,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -68,6 +78,8 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
     unidades: number
   } | null>(null)
   const [morosos, setMorosos] = useState<Moroso[]>([])
+  const [emitirFacturaLiq, setEmitirFacturaLiq] = useState(false)
+  const [cobrandoId, setCobrandoId] = useState<number | null>(null)
 
   const cargar = useCallback(async () => {
     const res = await fetch("/api/consorcios", { headers: getAuthHeaders() })
@@ -171,10 +183,16 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
 
   async function liquidar() {
     if (!selected) return
+    const resumenMsg = `¿Liquidar período ${periodo}?\nUnidades: ${unidades.length}\nSe generarán deudas (CxC) por UF con residente.`
+    if (!confirm(resumenMsg)) return
     const res = await fetch(`/api/consorcios/${selected}`, {
       method: "POST",
       headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "liquidar", periodo, emitirFactura: false }),
+      body: JSON.stringify({
+        action: "liquidar",
+        periodo,
+        emitirFactura: emitirFacturaLiq,
+      }),
     })
     const data = res.ok ? await res.json() : null
     if (!res.ok) {
@@ -204,7 +222,7 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
     const res = await fetch("/api/consorcios/morosos", {
       method: "POST",
       headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
-      body: JSON.stringify({ expensaId }),
+      body: JSON.stringify({ expensaId, action: "avisar" }),
     })
     const data = res.ok ? null : await res.json().catch(() => ({}))
     if (!res.ok) {
@@ -217,6 +235,60 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
     }
     toast({ title: "Aviso encolado", description: "WhatsApp al inquilino moroso." })
     void completarPasoOnboardingPropiedad("primer_wa")
+  }
+
+  async function cobrarMoroso(expensaId: number) {
+    setCobrandoId(expensaId)
+    try {
+      const res = await fetch("/api/consorcios/morosos", {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ expensaId, action: "cobrar", medioPago: "transferencia" }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast({
+          variant: "destructive",
+          title: "Cobro fallido",
+          description: data?.error ?? "No se pudo registrar el cobro",
+        })
+        return
+      }
+      toast({
+        title: "Expensa cobrada",
+        description: data.reciboNumero
+          ? `Recibo ${data.reciboNumero}`
+          : "Recibo emitido y deuda actualizada",
+      })
+      if (selected) void cargarMorosos(selected)
+      else void cargarMorosos()
+    } finally {
+      setCobrandoId(null)
+    }
+  }
+
+  async function linkPagoMoroso(expensaId: number) {
+    const res = await fetch("/api/consorcios/morosos", {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ expensaId, action: "link_pago" }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.linkPago) {
+      toast({
+        variant: "destructive",
+        title: "Sin link de pago",
+        description: data?.error ?? "Configurá Mercado Pago o ClavPay en la empresa",
+      })
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(data.linkPago as string)
+      toast({ title: "Link copiado", description: "Listo para enviar por WhatsApp o mail" })
+    } catch {
+      toast({ title: "Link generado", description: String(data.linkPago).slice(0, 80) + "…" })
+    }
+    window.open(data.linkPago as string, "_blank")
   }
 
   async function descargarPdf() {
@@ -379,10 +451,28 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
                     {m.diasMora > 0 ? ` · ${m.diasMora}d mora` : ""}
                   </p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => void avisarMoroso(m.expensaId)}>
-                  <MessageCircle className="h-4 w-4 mr-1" />
-                  Cobrar / WA
-                </Button>
+                <div className="flex gap-1 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    disabled={cobrandoId === m.expensaId}
+                    onClick={() => void cobrarMoroso(m.expensaId)}
+                  >
+                    <Banknote className="h-4 w-4 mr-1" />
+                    {cobrandoId === m.expensaId ? "…" : "Cobrar"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => void avisarMoroso(m.expensaId)}>
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    WA
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => void linkPagoMoroso(m.expensaId)}>
+                    <Link2 className="h-4 w-4 mr-1" />
+                    Link MP
+                  </Button>
+                  <Button size="sm" variant="ghost" asChild>
+                    <Link href="/dashboard/cuentas-cobrar">CxC</Link>
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
@@ -436,6 +526,15 @@ export function NicheConsorciosPanel({ app }: { app: NicheAppDefinition }) {
                 <Label>Período (YYYY-MM)</Label>
                 <Input value={periodo} onChange={(e) => setPeriodo(e.target.value)} />
               </div>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={emitirFacturaLiq}
+                  onChange={(e) => setEmitirFacturaLiq(e.target.checked)}
+                  className="rounded border"
+                />
+                Preparar facturas AFIP (B) al liquidar — si no, solo deuda interna + CxC
+              </label>
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
                   <Label>Gasto — descripción</Label>

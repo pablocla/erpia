@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { getSiteUrl } from "@/lib/marketing/landing-seo"
 import { getOfertaEmpresa } from "@/lib/comercial/ofertas-comerciales"
+import { aplicarPisoPrecioSuscripcion } from "@/lib/comercial/precio-minimo"
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN ?? ""
 const MP_MOCK = !MP_ACCESS_TOKEN || MP_ACCESS_TOKEN.startsWith("TEST-mock")
@@ -21,6 +22,10 @@ interface MpPreapprovalResponse {
 
 export async function createMercadoPagoSubscription(params: CreateSubscriptionParams) {
   const externalRef = `claver-empresa-${params.empresaId}-sku-${params.sku ?? "plan"}`
+  const priceArs = aplicarPisoPrecioSuscripcion(params.priceArs)
+  if (priceArs <= 0) {
+    throw new Error("Monto de suscripción inválido (mínimo $10.000 o plan gratis por otro flujo)")
+  }
 
   if (MP_MOCK) {
     const mockSubscriptionId = `mp_sub_${Date.now()}`
@@ -53,7 +58,7 @@ export async function createMercadoPagoSubscription(params: CreateSubscriptionPa
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: params.priceArs,
+        transaction_amount: priceArs,
         currency_id: "ARS",
       },
       back_url: siteUrl.includes("localhost") 
@@ -154,7 +159,27 @@ export async function cancelMercadoPagoSubscription(empresaId: number) {
   return { success: true }
 }
 
-export async function handleMercadoPagoWebhook(payload: { type?: string; data?: { id?: string }; action?: string }) {
+export async function handleMercadoPagoWebhook(payload: {
+  type?: string
+  data?: { id?: string }
+  action?: string
+}) {
+  // Pagos one-shot de deudores (fiado/cxc) — además de /api/mercadopago/webhook
+  if ((payload.type === "payment" || payload.action?.includes("payment")) && payload.data?.id) {
+    const paymentId = String(payload.data.id)
+    const configs = await prisma.mercadoPagoConfig.findMany({ where: { activo: true } })
+    for (const config of configs) {
+      try {
+        const { procesarWebhookMP } = await import("@/lib/mercadopago/mercadopago-service")
+        await procesarWebhookMP(config.empresaId, paymentId)
+        break
+      } catch {
+        continue
+      }
+    }
+    return { received: true, kind: "payment" as const }
+  }
+
   if (payload.type === "subscription_preapproval" && payload.data?.id) {
     const subId = payload.data.id
     const empresa = await prisma.empresa.findFirst({

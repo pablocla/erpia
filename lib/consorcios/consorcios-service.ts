@@ -121,10 +121,11 @@ export class ConsorciosService {
           },
         })
 
+        // Convención ERP: saldoCuentaCorriente < 0 = deuda del cliente
         if (unidad.residenteId) {
           await tx.cliente.update({
             where: { id: unidad.residenteId },
-            data: { saldoCuentaCorriente: { increment: montoExpensa } },
+            data: { saldoCuentaCorriente: { decrement: montoExpensa } },
           })
         }
 

@@ -11,9 +11,7 @@
  * - Default clasificaciones fiscales
  */
 
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/prisma"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODULE MATRIX PER RUBRO
@@ -286,28 +284,58 @@ const TIPOS_COMPROBANTE_AFIP = [
 // MAIN PARAMETRIZATION FUNCTION
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export async function parametrizarEmpresa(empresaId: number, rubro: string): Promise<void> {
+/** Ejecuta promesas en lotes para no saturar el pool de Prisma (causa de hangs en /demo). */
+async function mapInBatches<T>(
+  items: T[],
+  batchSize: number,
+  fn: (item: T) => Promise<unknown>,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const slice = items.slice(i, i + batchSize)
+    await Promise.all(slice.map(fn))
+  }
+}
+
+export type ParametrizarOptions = {
+  /**
+   * Demo / onboarding rápido: menos cuentas y comprobantes, createMany cuando la empresa es nueva.
+   * Evita cientos de upserts concurrentes que cuelgan el pool.
+   */
+  mode?: "full" | "demo"
+}
+
+/**
+ * Parametriza una empresa por rubro.
+ * Siempre usa el cliente Prisma compartido (@/lib/prisma) — no crear PrismaClient extra.
+ */
+export async function parametrizarEmpresa(
+  empresaId: number,
+  rubro: string,
+  options?: ParametrizarOptions,
+): Promise<void> {
+  const mode = options?.mode ?? "full"
   const rubroKey = rubro.toLowerCase().replace(/\s+/g, "_")
-  console.log(`\n📦 Parametrizando empresa ${empresaId} (rubro: ${rubroKey})...`)
+  const t0 = Date.now()
+  console.log(`\n📦 Parametrizando empresa ${empresaId} (rubro: ${rubroKey}, mode: ${mode})...`)
 
   // 1. Module configuration
   const modulos = MODULOS_POR_RUBRO[rubroKey] ?? MODULOS_POR_RUBRO.comercio!
-  for (const modulo of modulos) {
-    await prisma.configuracionModulo.upsert({
+  await mapInBatches(modulos, 8, (modulo) =>
+    prisma.configuracionModulo.upsert({
       where: { empresaId_modulo: { empresaId, modulo } },
       update: { habilitado: true },
       create: { empresaId, modulo, habilitado: true },
-    })
-  }
+    }),
+  )
   console.log(`  ✓ ${modulos.length} módulos habilitados`)
 
   // 2. Plan de cuentas
-  const cuentas = [...PLAN_CUENTAS_BASE, ...(CUENTAS_EXTRA_RUBRO[rubroKey] ?? [])]
-  for (const cuenta of cuentas) {
-    await prisma.cuentaContable.upsert({
-      where: { empresaId_codigo: { empresaId, codigo: cuenta.codigo } },
-      update: { nombre: cuenta.nombre },
-      create: {
+  const cuentasExtra = mode === "demo" ? [] : (CUENTAS_EXTRA_RUBRO[rubroKey] ?? [])
+  const cuentas = [...PLAN_CUENTAS_BASE, ...cuentasExtra]
+  const existingCuentas = await prisma.cuentaContable.count({ where: { empresaId } })
+  if (existingCuentas === 0) {
+    await prisma.cuentaContable.createMany({
+      data: cuentas.map((cuenta) => ({
         empresaId,
         codigo: cuenta.codigo,
         nombre: cuenta.nombre,
@@ -317,58 +345,105 @@ export async function parametrizarEmpresa(empresaId: number, rubro: string): Pro
         nivel: cuenta.nivel,
         imputable: cuenta.imputable,
         ajustaInflacion: cuenta.ajustaInflacion ?? false,
-      },
+      })),
+      skipDuplicates: true,
     })
+  } else {
+    await mapInBatches(cuentas, 6, (cuenta) =>
+      prisma.cuentaContable.upsert({
+        where: { empresaId_codigo: { empresaId, codigo: cuenta.codigo } },
+        update: { nombre: cuenta.nombre },
+        create: {
+          empresaId,
+          codigo: cuenta.codigo,
+          nombre: cuenta.nombre,
+          tipo: cuenta.tipo,
+          categoria: cuenta.categoria,
+          naturaleza: cuenta.naturaleza,
+          nivel: cuenta.nivel,
+          imputable: cuenta.imputable,
+          ajustaInflacion: cuenta.ajustaInflacion ?? false,
+        },
+      }),
+    )
   }
   console.log(`  ✓ ${cuentas.length} cuentas contables`)
 
   // 3. Asiento config
-  for (const map of ASIENTO_MAP_BASE) {
-    await prisma.configAsientoCuenta.upsert({
-      where: {
-        empresaId_tipoTransaccion_campo: {
-          empresaId,
-          tipoTransaccion: map.tipoTransaccion,
-          campo: map.campo,
-        },
-      },
-      update: { cuentaCodigo: map.cuentaCodigo, cuentaNombre: map.cuentaNombre },
-      create: {
+  const existingAsientos = await prisma.configAsientoCuenta.count({ where: { empresaId } })
+  if (existingAsientos === 0) {
+    await prisma.configAsientoCuenta.createMany({
+      data: ASIENTO_MAP_BASE.map((map) => ({
         empresaId,
         tipoTransaccion: map.tipoTransaccion,
         campo: map.campo,
         cuentaCodigo: map.cuentaCodigo,
         cuentaNombre: map.cuentaNombre,
-      },
+      })),
+      skipDuplicates: true,
     })
+  } else {
+    await mapInBatches(ASIENTO_MAP_BASE, 6, (map) =>
+      prisma.configAsientoCuenta.upsert({
+        where: {
+          empresaId_tipoTransaccion_campo: {
+            empresaId,
+            tipoTransaccion: map.tipoTransaccion,
+            campo: map.campo,
+          },
+        },
+        update: { cuentaCodigo: map.cuentaCodigo, cuentaNombre: map.cuentaNombre },
+        create: {
+          empresaId,
+          tipoTransaccion: map.tipoTransaccion,
+          campo: map.campo,
+          cuentaCodigo: map.cuentaCodigo,
+          cuentaNombre: map.cuentaNombre,
+        },
+      }),
+    )
   }
   console.log(`  ✓ ${ASIENTO_MAP_BASE.length} mapeos de asientos`)
 
   // 4. Numeradores
-  for (const num of NUMERADORES_BASE) {
-    await prisma.numerador.upsert({
-      where: {
-        empresaId_tipoDocumento_sucursal: {
-          empresaId,
-          tipoDocumento: num.tipoDocumento,
-          sucursal: "0001",
-        },
-      },
-      update: {},
-      create: {
+  const existingNums = await prisma.numerador.count({ where: { empresaId } })
+  if (existingNums === 0) {
+    await prisma.numerador.createMany({
+      data: NUMERADORES_BASE.map((num) => ({
         empresaId,
         tipoDocumento: num.tipoDocumento,
         prefijo: num.prefijo,
         digitos: num.digitos,
         sucursal: "0001",
-      },
+      })),
+      skipDuplicates: true,
     })
+  } else {
+    await mapInBatches(NUMERADORES_BASE, 6, (num) =>
+      prisma.numerador.upsert({
+        where: {
+          empresaId_tipoDocumento_sucursal: {
+            empresaId,
+            tipoDocumento: num.tipoDocumento,
+            sucursal: "0001",
+          },
+        },
+        update: {},
+        create: {
+          empresaId,
+          tipoDocumento: num.tipoDocumento,
+          prefijo: num.prefijo,
+          digitos: num.digitos,
+          sucursal: "0001",
+        },
+      }),
+    )
   }
   console.log(`  ✓ ${NUMERADORES_BASE.length} numeradores`)
 
   // 5. Parámetros fiscales
-  for (const param of PARAMETROS_FISCALES_DEFAULT) {
-    await prisma.parametroFiscal.upsert({
+  await mapInBatches(PARAMETROS_FISCALES_DEFAULT, 6, (param) =>
+    prisma.parametroFiscal.upsert({
       where: {
         empresaId_clave_pais: { empresaId, clave: param.clave, pais: "AR" },
       },
@@ -382,26 +457,32 @@ export async function parametrizarEmpresa(empresaId: number, rubro: string): Pro
         pais: "AR",
         normativa: param.normativa,
       },
-    })
-  }
+    }),
+  )
   console.log(`  ✓ ${PARAMETROS_FISCALES_DEFAULT.length} parámetros fiscales`)
 
-  // 6. Clasificaciones fiscales
-  for (const clf of CLASIFICACIONES_FISCALES_DEFAULT) {
-    await prisma.clasificacionFiscal.upsert({
-      where: { codigo: clf.codigo },
-      update: {},
-      create: clf,
-    })
-  }
+  // 6. Clasificaciones fiscales (globales — createMany evita deadlocks de upsert concurrente)
+  await prisma.clasificacionFiscal.createMany({
+    data: CLASIFICACIONES_FISCALES_DEFAULT.map((clf) => ({
+      codigo: clf.codigo,
+      nombre: clf.nombre,
+      alicuotaIva: clf.alicuotaIva,
+      exentoIva: clf.exentoIva,
+      noGravado: clf.noGravado,
+    })),
+    skipDuplicates: true,
+  })
   console.log(`  ✓ ${CLASIFICACIONES_FISCALES_DEFAULT.length} clasificaciones fiscales`)
 
-  // 7. Tipos de comprobante AFIP
-  for (const tc of TIPOS_COMPROBANTE_AFIP) {
-    await prisma.tipoComprobanteMaestro.upsert({
-      where: { empresaId_codigoAfip: { empresaId, codigoAfip: tc.codigoAfip } },
-      update: {},
-      create: {
+  // 7. Tipos de comprobante AFIP (demo: solo A/B/C principales)
+  const tiposCbte =
+    mode === "demo"
+      ? TIPOS_COMPROBANTE_AFIP.filter((tc) => [1, 6, 11, 3, 8, 13].includes(tc.codigoAfip))
+      : TIPOS_COMPROBANTE_AFIP
+  const existingTipos = await prisma.tipoComprobanteMaestro.count({ where: { empresaId } })
+  if (existingTipos === 0) {
+    await prisma.tipoComprobanteMaestro.createMany({
+      data: tiposCbte.map((tc) => ({
         empresaId,
         codigoAfip: tc.codigoAfip,
         letra: tc.letra,
@@ -411,10 +492,29 @@ export async function parametrizarEmpresa(empresaId: number, rubro: string): Pro
         esNotaCredito: tc.esNotaCredito ?? false,
         esNotaDebito: tc.esNotaDebito ?? false,
         esFCE: tc.esFCE ?? false,
-      },
+      })),
+      skipDuplicates: true,
     })
+  } else {
+    await mapInBatches(tiposCbte, 5, (tc) =>
+      prisma.tipoComprobanteMaestro.upsert({
+        where: { empresaId_codigoAfip: { empresaId, codigoAfip: tc.codigoAfip } },
+        update: {},
+        create: {
+          empresaId,
+          codigoAfip: tc.codigoAfip,
+          letra: tc.letra,
+          nombre: tc.nombre,
+          abreviatura: tc.abreviatura,
+          esFactura: tc.esFactura ?? false,
+          esNotaCredito: tc.esNotaCredito ?? false,
+          esNotaDebito: tc.esNotaDebito ?? false,
+          esFCE: tc.esFCE ?? false,
+        },
+      }),
+    )
   }
-  console.log(`  ✓ ${TIPOS_COMPROBANTE_AFIP.length} tipos de comprobante AFIP`)
+  console.log(`  ✓ ${tiposCbte.length} tipos de comprobante AFIP`)
 
   // 8. Config fiscal empresa
   await prisma.configFiscalEmpresa.upsert({
@@ -445,21 +545,26 @@ export async function parametrizarEmpresa(empresaId: number, rubro: string): Pro
   console.log(`  ✓ Sucursal principal creada`)
 
   // 10. Depósito principal
-  await prisma.deposito.upsert({
-    where: { id: -1 }, // Force create
-    update: {},
-    create: {
-      empresaId,
-      codigo: "DEP_PRINCIPAL",
-      nombre: "Depósito Principal",
-      tipo: "principal",
-    },
-  }).catch(() => {
-    // If already exists, ignore
+  // codigo es @unique GLOBAL en schema — no reutilizar "DEP_PRINCIPAL" entre empresas
+  const depCodigo = `DEP_E${empresaId}`
+  const depExistente = await prisma.deposito.findFirst({
+    where: { empresaId, OR: [{ codigo: depCodigo }, { tipo: "principal" }] },
   })
+  if (!depExistente) {
+    await prisma.deposito.create({
+      data: {
+        empresaId,
+        codigo: depCodigo,
+        nombre: "Depósito Principal",
+        tipo: "principal",
+      },
+    })
+  }
   console.log(`  ✓ Depósito principal`)
 
-  console.log(`✅ Parametrización completada para empresa ${empresaId} (${rubroKey})\n`)
+  console.log(
+    `✅ Parametrización completada para empresa ${empresaId} (${rubroKey}) en ${Date.now() - t0}ms\n`,
+  )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

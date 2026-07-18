@@ -128,16 +128,18 @@ export async function applyRetailOnboarding(
     data: { rubro, modoLite },
   })
 
-  await parametrizarEmpresa(empresaId, parametrizacionParaRubro(rubro))
+  await parametrizarEmpresa(empresaId, parametrizacionParaRubro(rubro), {
+    mode: origen === "industry_demo" ? "demo" : "full",
+  })
 
   await prisma.productoComercial.upsert({
     where: { sku: "pos.fiado_barrio" },
-    update: {},
+    update: { precioArs: 0, nombre: "Libreta Fiado", descripcion: "Libreta Fiado — ancla gratis" },
     create: {
       sku: "pos.fiado_barrio",
       nombre: "Libreta Fiado",
-      descripcion: "Libreta Fiado de Barrio",
-      precioArs: 4990,
+      descripcion: "Libreta Fiado — ancla gratis permanente",
+      precioArs: 0,
       activo: true,
     },
   })

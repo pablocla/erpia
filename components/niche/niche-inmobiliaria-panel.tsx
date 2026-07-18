@@ -9,6 +9,10 @@ import {
   Home,
   Plus,
   RefreshCw,
+  Receipt,
+  Banknote,
+  Link2,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -88,6 +92,18 @@ export function NicheInmobiliariaPanel() {
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [resumen, setResumen] = useState<Resumen | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<string>("todos")
+  const [facturando, setFacturando] = useState(false)
+  const [pendientesMes, setPendientesMes] = useState<{ periodo: string; pendientes: number } | null>(
+    null,
+  )
+  type AlquilerPendiente = {
+    cuentaCobrarId: number
+    monto: number
+    concepto: string | null
+    clienteNombre: string
+    vencimiento: string | null
+  }
+  const [alquileresPendientes, setAlquileresPendientes] = useState<AlquilerPendiente[]>([])
 
   const cargar = useCallback(async () => {
     const q = filtroEstado !== "todos" ? `?estado=${filtroEstado}` : ""
@@ -103,10 +119,90 @@ export function NicheInmobiliariaPanel() {
     if (contRes.ok) setContratos(await contRes.json())
   }, [filtroEstado])
 
+  const cargarPendientes = useCallback(async () => {
+    const res = await fetch("/api/inmobiliaria/facturar-mes", { headers: getAuthHeaders() })
+    if (res.ok) setPendientesMes(await res.json())
+  }, [])
+
+  const cargarAlquileresCxC = useCallback(async () => {
+    const res = await fetch("/api/inmobiliaria/cobrar-alquiler", { headers: getAuthHeaders() })
+    if (res.ok) setAlquileresPendientes(await res.json())
+    else setAlquileresPendientes([])
+  }, [])
+
   useEffect(() => {
     void cargar()
+    void cargarPendientes()
+    void cargarAlquileresCxC()
     void completarPasoOnboardingPropiedad("ver_cartera")
-  }, [cargar])
+  }, [cargar, cargarPendientes, cargarAlquileresCxC])
+
+  async function accionAlquiler(cuentaCobrarId: number, action: "cobrar" | "link_pago" | "avisar") {
+    const res = await fetch("/api/inmobiliaria/cobrar-alquiler", {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ cuentaCobrarId, action, medioPago: "transferencia" }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast({
+        variant: "destructive",
+        title: "No se pudo completar",
+        description: data.error ?? "Error",
+      })
+      return
+    }
+    if (action === "link_pago" && data.linkPago) {
+      try {
+        await navigator.clipboard.writeText(data.linkPago as string)
+        toast({ title: "Link MP copiado" })
+      } catch {
+        toast({ title: "Link generado" })
+      }
+      window.open(data.linkPago as string, "_blank")
+      return
+    }
+    if (action === "cobrar") {
+      toast({
+        title: "Alquiler cobrado",
+        description: data.reciboNumero ? `Recibo ${data.reciboNumero}` : "OK",
+      })
+      void cargarAlquileresCxC()
+      return
+    }
+    toast({
+      title: "Aviso enviado",
+      description: data.linkPago ? "WA + link de pago" : "WhatsApp encolado",
+    })
+  }
+
+  async function facturarAlquileresMes() {
+    setFacturando(true)
+    try {
+      const res = await fetch("/api/inmobiliaria/facturar-mes", {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast({
+          variant: "destructive",
+          title: "No se pudo facturar",
+          description: data.error ?? "Error al generar alquileres",
+        })
+        return
+      }
+      toast({
+        title: "Alquileres del mes",
+        description: `${data.generados ?? 0} generados · ${data.omitidos ?? 0} omitidos · período ${data.periodo}`,
+      })
+      void cargarPendientes()
+      void cargarAlquileresCxC()
+    } finally {
+      setFacturando(false)
+    }
+  }
 
   async function crearPropiedad(data: {
     titulo: string
@@ -201,17 +297,27 @@ export function NicheInmobiliariaPanel() {
           <Button variant="outline" size="sm" onClick={() => void cargar()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/nicho/consorcios">Consorcios</Link>
+          <Button
+            size="sm"
+            disabled={facturando || (pendientesMes?.pendientes ?? 0) === 0}
+            onClick={() => void facturarAlquileresMes()}
+          >
+            <Receipt className="h-4 w-4 mr-1" />
+            {facturando
+              ? "Generando…"
+              : `Cobrar alquileres mes${pendientesMes ? ` (${pendientesMes.pendientes})` : ""}`}
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/nicho/garantia">Contratos legacy</Link>
+            <Link href="/dashboard/cuentas-cobrar">Cuentas a cobrar</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/nicho/consorcios">Consorcios</Link>
           </Button>
         </div>
       </div>
 
       {resumen && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sticky top-0 z-10 bg-background/95 backdrop-blur py-2">
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="text-xs text-muted-foreground">Propiedades</CardTitle>
@@ -230,6 +336,14 @@ export function NicheInmobiliariaPanel() {
             </CardHeader>
             <CardContent className="text-xl font-semibold text-amber-600">{resumen.vencen30}</CardContent>
           </Card>
+          <Card className="border-primary/30">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs text-muted-foreground">A facturar mes</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xl font-semibold text-primary">
+              {pendientesMes?.pendientes ?? "—"}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -238,6 +352,54 @@ export function NicheInmobiliariaPanel() {
           <CardContent className="pt-4 text-sm flex items-center gap-2 text-amber-900">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             {resumen.vencen30} contrato(s) vencen en los próximos 30 días — el cron avisa por WhatsApp.
+          </CardContent>
+        </Card>
+      )}
+
+      {alquileresPendientes.length > 0 && (
+        <Card className="border-rose-200 bg-rose-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-rose-900">
+              <Banknote className="h-4 w-4" />
+              Alquileres a cobrar ({alquileresPendientes.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {alquileresPendientes.map((a) => (
+              <div
+                key={a.cuentaCobrarId}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-sm"
+              >
+                <div>
+                  <strong>{a.clienteNombre}</strong>
+                  <p className="text-xs text-muted-foreground">
+                    {a.concepto ?? "Alquiler"} · {fmt(a.monto)}
+                    {a.vencimiento ? ` · vto ${a.vencimiento}` : ""}
+                  </p>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  <Button size="sm" onClick={() => void accionAlquiler(a.cuentaCobrarId, "cobrar")}>
+                    Cobrar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void accionAlquiler(a.cuentaCobrarId, "link_pago")}
+                  >
+                    <Link2 className="h-4 w-4 mr-1" />
+                    Link MP
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void accionAlquiler(a.cuentaCobrarId, "avisar")}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    WA
+                  </Button>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

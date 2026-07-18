@@ -5,8 +5,8 @@ import { CLAVER_GROUP, CLAVERP_PRODUCT } from "@/lib/marketing/brand-system"
 import { getSiteUrl, LANDING_KEYWORDS } from "@/lib/marketing/landing-seo"
 
 const siteUrl = getSiteUrl()
-const title = `${CLAVER_GROUP.name} — ERP, POS y software para empresas en Argentina`
-const description = `${CLAVER_GROUP.descriptor}. ${CLAVERP_PRODUCT.tagline} Facturación AFIP, libreta fiado, stock y demos por rubro. Trial 14 días gratis.`
+const title = `${CLAVER_GROUP.name} — Fiado, cobranzas, turnos y POS para Argentina`
+const description = `${CLAVER_GROUP.tagline} Libreta de fiado gratis, Cobrá por WhatsApp, turnos online, POS con AFIP y packs por rubro. 14 días de prueba sin tarjeta.`
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
         url: "/claver/opengraph-image",
         width: 1200,
         height: 630,
-        alt: `${CLAVER_GROUP.name} — ERP y POS Argentina`,
+        alt: `${CLAVER_GROUP.name} — software para comercios en Argentina`,
       },
     ],
   },

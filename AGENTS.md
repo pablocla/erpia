@@ -103,3 +103,9 @@ Ventas, Compras, Stock, Caja, Banco, Contabilidad, Impuestos (IVA/IIBB/TES),
 Hospitalidad (KDS/Mesas/Platos), Logística, Industria, Picking, IoT,
 Agenda, Historia Clínica, Membresías, Veterinaria, Portal B2B,
 App Vendedor en Ruta, Onboarding IA, Asistente IA, Soporte, Auditoría
+
+## Go-live / commercial alignment
+- **PRD packs vs demo/piloto:** `docs/GO_LIVE_PRD.md` (canonical)
+- **End-to-end vendible (commercial → support):** `docs/PRODUCTO_VENDIBLE_END_TO_END.md`
+- **Technical gaps by niche:** `docs/qa/FALTANTES_TECNICOS_NICHOS.md`
+- **Vercel env:** `docs/deploy/VERCEL_ENV.md` · health: `GET /api/go-live/status`

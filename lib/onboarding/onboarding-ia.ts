@@ -544,6 +544,12 @@ function getProductosEjemploByRubro(rubro: Rubro): { nombre: string; codigo: str
       { nombre: "Cinta métrica 5m", codigo: "CIN001", precio: 1200, iva: 21 },
       { nombre: "Cable unipolar 1.5mm (x metro)", codigo: "CAB001", precio: 280, iva: 21 },
     ],
+    taller_mecanico: [
+      { nombre: "Aceite Sintético 5W40 4L", codigo: "TM-ACT01", precio: 45000, iva: 21 },
+      { nombre: "Filtro de Aceite", codigo: "TM-FLT01", precio: 8500, iva: 21 },
+      { nombre: "Juego Pastillas de Freno", codigo: "TM-FRN01", precio: 28000, iva: 21 },
+      { nombre: "Service Básico (Mano de Obra)", codigo: "TM-SRV01", precio: 35000, iva: 21 },
+    ],
     kiosco: [
       { nombre: "Coca-Cola 500ml", codigo: "CCL001", precio: 650, iva: 21 },
       { nombre: "Alfajor Oreo", codigo: "ALF001", precio: 380, iva: 10.5 },

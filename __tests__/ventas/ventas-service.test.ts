@@ -204,6 +204,7 @@ describe("VentasService", () => {
             facturaId: 99,
             empresaId: 1,
             clienteId: 10,
+            total: 1210,
             condicionPagoId: 2,
             depositoId: 3,
           },

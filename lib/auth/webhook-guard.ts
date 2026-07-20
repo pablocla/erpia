@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import crypto from "crypto"
+import { getMpWebhookSecret } from "@/lib/config/env"
 
 /**
  * Valida la firma criptográfica de un webhook entrante.
@@ -66,7 +67,7 @@ export function validarFirmaWebhook(request: NextRequest, rawBody: string): bool
   const mpSignature = request.headers.get("x-signature")
   const mpRequestId = request.headers.get("x-request-id")
   if (mpSignature && mpRequestId) {
-    const mpSecret = process.env.MP_WEBHOOK_SECRET
+    const mpSecret = getMpWebhookSecret()
     if (!mpSecret) return process.env.NODE_ENV !== "production"
     const tsMatch = mpSignature.match(/ts=(\d+)/)
     const v1Match = mpSignature.match(/v1=([a-f0-9]+)/)

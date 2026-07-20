@@ -30,6 +30,10 @@ import {
   skusAdicionalesOferta,
   vigenciaParaSku,
 } from "@/lib/comercial/ofertas-comerciales"
+import {
+  partitionSkusForAutoActivate,
+  resolveAutoSubscribe,
+} from "@/lib/comercial/product-auto-subscribe"
 
 export interface ProvisionIndustryDemoResult {
   industryId: string
@@ -40,6 +44,9 @@ export interface ProvisionIndustryDemoResult {
   clientesCreados: number
   skusActivados: string[]
   modoLite: string
+  /** SKUs que el sistema no auto-activó (analista / planned) */
+  skusRequiereAnalista: string[]
+  skusBloqueados: string[]
 }
 
 export function resolveIndustryId(raw: string): IndustryTemplate | null {
@@ -50,12 +57,25 @@ async function applyIndustryEnganche(
   empresaId: number,
   engancheId: string,
   trialDias: number,
-): Promise<{ skusActivados: string[]; modoLite: ModoLite }> {
+): Promise<{
+  skusActivados: string[]
+  modoLite: ModoLite
+  skusRequiereAnalista: string[]
+  skusBloqueados: string[]
+}> {
   const pack = resolvePackCalle(engancheId)
   const modoLite = pack?.modoLite ?? inferModoLiteFromEnganche(engancheId)
   const trialExpiresAt = new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000)
   const origen = "industry_demo"
   const activados: string[] = []
+
+  const candidatos = skusParaActivar(engancheId)
+  const partition = partitionSkusForAutoActivate(candidatos, {
+    context: "industry_demo",
+    engancheId,
+    modoLite,
+    origen,
+  })
 
   await prisma.empresa.update({
     where: { id: empresaId },
@@ -63,10 +83,17 @@ async function applyIndustryEnganche(
   })
 
   if (pack?.tipo === "pack" && getPackHorizontal(engancheId)) {
-    await activarPack(empresaId, engancheId, origen)
-    activados.push(...pack.skus)
+    // Pack: solo activar SKUs auto (skip planned/analyst)
+    for (const sku of partition.auto) {
+      try {
+        await activarProducto(empresaId, sku, `${origen}:${engancheId}`)
+        activados.push(sku)
+      } catch (err) {
+        console.warn(`[industry-demo] No se pudo activar ${sku}:`, err)
+      }
+    }
   } else {
-    for (const sku of skusParaActivar(engancheId)) {
+    for (const sku of partition.auto) {
       try {
         await activarProducto(empresaId, sku, origen)
         activados.push(sku)
@@ -77,7 +104,7 @@ async function applyIndustryEnganche(
   }
 
   const skusActivados = new Set(activados)
-  for (const sku of skusParaActivar(engancheId)) {
+  for (const sku of partition.auto) {
     const sub = await getActiveSubscription(empresaId, sku)
     if (sub) skusActivados.add(sku)
   }
@@ -87,6 +114,17 @@ async function applyIndustryEnganche(
   // Misma lógica que retail: ancla gratis = vigenciaHasta null + oferta persistida
   const oferta = resolveOferta(engancheId, modoLite)
   for (const sku of skusAdicionalesOferta(oferta, [...skusActivados])) {
+    const decision = resolveAutoSubscribe(sku, {
+      context: "industry_demo",
+      engancheId,
+      modoLite,
+      origen,
+    })
+    if (!decision.canAutoActivate) {
+      if (decision.mode === "blocked") partition.blocked.push(sku)
+      else partition.analyst.push(sku)
+      continue
+    }
     try {
       await activarProducto(empresaId, sku, origen)
       skusActivados.add(sku)
@@ -105,7 +143,18 @@ async function applyIndustryEnganche(
   }
   await persistOfertaEmpresa(empresaId, oferta.id)
 
-  return { skusActivados: [...skusActivados], modoLite }
+  if (partition.analyst.length || partition.blocked.length) {
+    console.info(
+      `[industry-demo] empresa=${empresaId} auto=${[...skusActivados].join(",")} analyst=${partition.analyst.join(",")} blocked=${partition.blocked.join(",")}`,
+    )
+  }
+
+  return {
+    skusActivados: [...skusActivados],
+    modoLite,
+    skusRequiereAnalista: [...new Set(partition.analyst)],
+    skusBloqueados: [...new Set(partition.blocked)],
+  }
 }
 
 export async function provisionIndustryDemo(
@@ -136,6 +185,8 @@ export async function provisionIndustryDemo(
   let skusActivados: string[] = []
   let modoLite = "completo"
   let productosFromRetail = 0
+  let skusRequiereAnalista: string[] = []
+  let skusBloqueados: string[] = []
 
   if (template.isRetail) {
     const engancheId = resolveIndustryEnganche(template)
@@ -149,6 +200,14 @@ export async function provisionIndustryDemo(
     skusActivados = retail.skusActivados
     modoLite = retail.modoLite
     productosFromRetail = retail.productosCreados
+    // Retail ya auto-activa el pack; clasificar qué queda fuera de auto
+    const part = partitionSkusForAutoActivate(skusActivados, {
+      context: "industry_demo",
+      engancheId,
+      modoLite: retail.modoLite as ModoLite,
+    })
+    skusRequiereAnalista = part.analyst
+    skusBloqueados = part.blocked
   } else {
     await parametrizarEmpresa(empresaId, template.parametrizacionKey, { mode: "demo" })
     await setIndustryModules(empresaId, rubro)
@@ -171,6 +230,8 @@ export async function provisionIndustryDemo(
       const enganche = await applyIndustryEnganche(empresaId, template.engancheId, trialDiasNicho)
       skusActivados = enganche.skusActivados
       modoLite = enganche.modoLite
+      skusRequiereAnalista = enganche.skusRequiereAnalista
+      skusBloqueados = enganche.skusBloqueados
     }
   }
 
@@ -222,5 +283,7 @@ export async function provisionIndustryDemo(
     clientesCreados: seeds.clientes,
     skusActivados,
     modoLite,
+    skusRequiereAnalista,
+    skusBloqueados,
   }
 }

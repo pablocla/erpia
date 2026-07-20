@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
+import { listarVentasSuspendidas } from "@/lib/pos/ventas-suspendidas"
 
 interface DashboardStats {
   resumenMes: {
@@ -113,9 +114,33 @@ function usePendientes(rol: string) {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.pendientes) {
-          setPendientes(data.pendientes)
+        let list = data.pendientes || []
+        
+        // Inyectar ventas suspendidas (local) para el cajero
+        if (rol === "cajero") {
+          try {
+            const suspendidas = listarVentasSuspendidas()
+            if (suspendidas.length > 0) {
+              list = [
+                {
+                  id: "ventas-suspendidas",
+                  tipo: "caja",
+                  titulo: `${suspendidas.length} Venta(s) Suspendida(s)`,
+                  descripcion: "Tenés carritos en espera. Recuperalos para facturar.",
+                  prioridad: "media",
+                  href: "/dashboard/pos",
+                  accion: "Recuperar",
+                  origen: "local",
+                },
+                ...list,
+              ]
+            }
+          } catch (e) {
+            // silencioso
+          }
         }
+        
+        setPendientes(list)
       })
       .catch(() => {})
       .finally(() => setLoading(false))

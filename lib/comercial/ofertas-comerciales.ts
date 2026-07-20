@@ -66,9 +66,58 @@ export const OFERTA_POS_ANCLA: OfertaComercial = {
   engancheIds: ["pos.core", "core.claver", "pool-kiosco-barrio", "pool-almacen-rosario", "pos.balanza_peso"],
 }
 
+/** Pack contador — reportes + export + trial corto (upsell fácil post-fiado) */
+export const OFERTA_CONTADOR: OfertaComercial = {
+  id: "pack-contador",
+  nombre: "Pack Contador",
+  lema: "Libros, export y reportes listos para el estudio. Trial 14 días.",
+  anclaGratis: [],
+  monetizar: ["data.reportes_prog", "core.claver"],
+  precioPackArs: 19900,
+  modoLiteEntrada: "completo",
+  trialDias: 14,
+  trialScope: "monetizar",
+  engancheIds: ["data.reportes_prog", "pack.contador", "contador"],
+}
+
+/** Setup one-shot (implementador cobra aparte o Claver cobra setup) */
+export const SETUP_FEE_ARS = 50000
+export const SETUP_FEE_SKU = "impl.setup_one_shot"
+
+/** Hardware POS (checklist + SKU comercial) */
+export const OFERTA_HARDWARE_POS: OfertaComercial = {
+  id: "pack-hardware-pos",
+  nombre: "Pack Hardware POS",
+  lema: "Go-live con impresora, lectora y checklist de mostrador.",
+  anclaGratis: [],
+  monetizar: ["pack.hardware_pos", "core.claver"],
+  precioPackArs: 89000,
+  modoLiteEntrada: "pos",
+  trialDias: 7,
+  trialScope: "monetizar",
+  engancheIds: ["pack.hardware_pos", "hardware", "pos.hardware"],
+}
+
+/** Cobranza as a service — fee % sobre recuperado */
+export const OFERTA_COBRANZA_AAS: OfertaComercial = {
+  id: "cobranza-aas",
+  nombre: "Cobranza as a Service",
+  lema: "Secretaria WA + fee solo sobre lo cobrado (default 5%).",
+  anclaGratis: [],
+  monetizar: ["svc.cobranza_as_a_service", "intang.cobranzas_wa"],
+  precioPackArs: 0,
+  modoLiteEntrada: "cobranza",
+  trialDias: 14,
+  trialScope: "monetizar",
+  engancheIds: ["svc.cobranza_as_a_service", "cobranza-aas", "cobranza_aas"],
+}
+
 export const OFERTAS_COMERCIALES: OfertaComercial[] = [
   OFERTA_FIADO_ANCLA,
   OFERTA_POS_ANCLA,
+  OFERTA_CONTADOR,
+  OFERTA_HARDWARE_POS,
+  OFERTA_COBRANZA_AAS,
   OFERTA_CLASICO,
 ]
 

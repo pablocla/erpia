@@ -2,9 +2,14 @@ import { prisma } from "@/lib/prisma"
 import { getSiteUrl } from "@/lib/marketing/landing-seo"
 import { getOfertaEmpresa } from "@/lib/comercial/ofertas-comerciales"
 import { aplicarPisoPrecioSuscripcion } from "@/lib/comercial/precio-minimo"
+import { getMpAccessToken, isMpMockMode } from "@/lib/config/env"
 
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN ?? ""
-const MP_MOCK = !MP_ACCESS_TOKEN || MP_ACCESS_TOKEN.startsWith("TEST-mock")
+function mpToken() {
+  return getMpAccessToken()
+}
+function mpMock() {
+  return isMpMockMode()
+}
 
 export interface CreateSubscriptionParams {
   empresaId: number
@@ -27,7 +32,17 @@ export async function createMercadoPagoSubscription(params: CreateSubscriptionPa
     throw new Error("Monto de suscripción inválido (mínimo $10.000 o plan gratis por otro flujo)")
   }
 
-  if (MP_MOCK) {
+  if (mpMock()) {
+    // Oleada 0: en production no se simula cobro salvo FORCE_MOCK_MP_PROD=true
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.FORCE_MOCK_MP_PROD !== "true"
+    ) {
+      throw new Error(
+        "Mercado Pago no está configurado en producción (MP_ACCESS_TOKEN). " +
+          "No se puede simular cobro. Configurá el token en Vercel Environment Variables.",
+      )
+    }
     const mockSubscriptionId = `mp_sub_${Date.now()}`
     await prisma.empresa.update({
       where: { id: params.empresaId },
@@ -49,7 +64,7 @@ export async function createMercadoPagoSubscription(params: CreateSubscriptionPa
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${mpToken()}`,
     },
     body: JSON.stringify({
       reason: params.planName,
@@ -102,12 +117,12 @@ export async function syncMercadoPagoSubscription(empresaId: number) {
     return { synced: false, reason: "no_subscription_id", status: empresa?.mpSubscriptionStatus ?? null }
   }
 
-  if (MP_MOCK) {
+  if (mpMock()) {
     return { synced: false, reason: "mock_mode", status: empresa.mpSubscriptionStatus }
   }
 
   const res = await fetch(`https://api.mercadopago.com/preapproval/${empresa.mpSubscriptionId}`, {
-    headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+    headers: { Authorization: `Bearer ${mpToken()}` },
   })
 
   if (!res.ok) {
@@ -140,12 +155,12 @@ export async function cancelMercadoPagoSubscription(empresaId: number) {
     throw new Error("La empresa no tiene una suscripción activa de MercadoPago")
   }
 
-  if (!MP_MOCK) {
+  if (!mpMock()) {
     await fetch(`https://api.mercadopago.com/preapproval/${empresa.mpSubscriptionId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${mpToken()}`,
       },
       body: JSON.stringify({ status: "cancelled" }),
     })
@@ -188,9 +203,9 @@ export async function handleMercadoPagoWebhook(payload: {
 
     if (empresa) {
       let status = "updated"
-      if (!MP_MOCK) {
+      if (!mpMock()) {
         const res = await fetch(`https://api.mercadopago.com/preapproval/${subId}`, {
-          headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+          headers: { Authorization: `Bearer ${mpToken()}` },
         })
         if (res.ok) {
           const detail = (await res.json()) as { status?: string }
@@ -225,13 +240,16 @@ function skusDesdeExternalRef(ref: string | null | undefined): string[] {
   return raw.split("+").map((s) => s.trim()).filter(Boolean)
 }
 
-/** Extiende vigencia de módulos pagos tras confirmación MP */
-export async function activarSuscripcionPagada(empresaId: number, skusExplicitos?: string[]) {
-  const empresa = await prisma.empresa.findUnique({
-    where: { id: empresaId },
-    select: { mpSubscriptionId: true },
-  })
-
+/** Extiende vigencia de módulos pagos tras confirmación MP (o crédito partner). */
+export async function activarSuscripcionPagada(
+  empresaId: number,
+  skusExplicitos?: string[],
+  opts?: {
+    /** Crédito interno / canjes: no genera comisiones (no hubo cash de cliente) */
+    skipComisiones?: boolean
+    montoOverride?: number
+  },
+) {
   const oferta = await getOfertaEmpresa(empresaId)
   const skus =
     skusExplicitos?.length
@@ -262,6 +280,20 @@ export async function activarSuscripcionPagada(empresaId: number, skusExplicitos
       pais: "AR",
     },
   })
+
+  // Growth loop solo con pago real (MP/mock cash)
+  if (!opts?.skipComisiones) {
+    try {
+      const { onSuscripcionPagada } = await import("@/lib/billing/facturacion-suscripcion")
+      await onSuscripcionPagada({
+        empresaId,
+        skus,
+        montoOverride: opts?.montoOverride,
+      })
+    } catch (err) {
+      console.warn("[billing] comisiones afiliado no aplicadas:", err)
+    }
+  }
 }
 
 /** Revoca vigencia de módulos pagos tras cancelación o pausa en MP */

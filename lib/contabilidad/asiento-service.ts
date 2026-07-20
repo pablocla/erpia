@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 import type { PrismaClient } from "@prisma/client"
 import { getCuentaLabel } from "@/lib/config/parametro-service"
 import { resolveCuentaCobro, resolveCuentaPago } from "@/lib/contabilidad/medio-pago-cuentas"
@@ -47,7 +47,7 @@ export class AsientoService {
     const [ctaCaja, ctaVentas, ctaIvaDF, ctaPercepciones] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "venta", "caja", "1.1", "Caja"),
       getCuentaLabel(resolvedEmpresaId, "venta", "ingreso", "4.1", "Ventas"),
-      getCuentaLabel(resolvedEmpresaId, "venta", "iva_df", "2.2", "IVA DÃ©bito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "iva_df", "2.2", "IVA Débito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "venta", "percepciones", "2.3", "Percepciones a Pagar"),
     ])
 
@@ -58,7 +58,7 @@ export class AsientoService {
         data: {
           fecha: factura.createdAt,
           numero,
-          descripcion: `Venta segÃºn Factura ${factura.tipo} ${factura.numero.toString().padStart(8, "0")} - Cliente: ${factura.cliente.nombre}`,
+          descripcion: `Venta según Factura ${factura.tipo} ${factura.numero.toString().padStart(8, "0")} - Cliente: ${factura.cliente.nombre}`,
           tipo: "venta",
           tipoAsientoId: await resolveTipoAsientoId("VENTA", resolvedEmpresaId, tx),
           facturaId: factura.id,
@@ -89,8 +89,8 @@ export class AsientoService {
     await periodoFiscalService.validarPeriodoAbierto(compra.fecha, resolvedEmpresaId)
 
     const [ctaMercaderia, ctaIvaCF, ctaProveedores] = await Promise.all([
-      getCuentaLabel(resolvedEmpresaId, "compra", "mercaderia", "1.4", "MercaderÃ­as"),
-      getCuentaLabel(resolvedEmpresaId, "compra", "iva_cf", "1.6", "IVA CrÃ©dito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "mercaderia", "1.4", "Mercaderías"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "iva_cf", "1.6", "IVA Crédito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "compra", "proveedores", "2.1", "Proveedores"),
     ])
 
@@ -107,7 +107,7 @@ export class AsientoService {
         data: {
           fecha: compra.fecha,
           numero,
-          descripcion: `Compra segÃºn Factura ${compra.tipo} ${compra.numero} - Proveedor: ${compra.proveedor.nombre}`,
+          descripcion: `Compra según Factura ${compra.tipo} ${compra.numero} - Proveedor: ${compra.proveedor.nombre}`,
           tipo: "compra",
           tipoAsientoId: await resolveTipoAsientoId("COMPRA", resolvedEmpresaId, tx),
           compraId: compra.id,
@@ -141,7 +141,7 @@ export class AsientoService {
     const totalHaber = data.movimientos.reduce((sum, m) => sum + m.haber, 0)
 
     if (Math.abs(totalDebe - totalHaber) > 0.01) {
-      throw new Error("El asiento no estÃ¡ balanceado. Debe = Haber")
+      throw new Error("El asiento no está balanceado. Debe = Haber")
     }
 
     await prisma.$transaction(async (tx) => {
@@ -279,7 +279,7 @@ export class AsientoService {
 
     const [ctaVentas, ctaIvaDF, ctaCaja] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "nc", "ingreso", "4.1", "Ventas"),
-      getCuentaLabel(resolvedEmpresaId, "nc", "iva_df", "2.2", "IVA DÃ©bito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "nc", "iva_df", "2.2", "IVA Débito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "nc", "caja", "1.1", "Caja"),
     ])
 
@@ -335,7 +335,7 @@ export class AsientoService {
 
     const [ctaCMV, ctaMercaderia] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "cmv", "cmv", "5.1", "CMV"),
-      getCuentaLabel(resolvedEmpresaId, "cmv", "mercaderia", "1.4", "MercaderÃ­as"),
+      getCuentaLabel(resolvedEmpresaId, "cmv", "mercaderia", "1.4", "Mercaderías"),
     ])
 
     const movimientos = await buildMovimientosConCentro(resolvedEmpresaId, [
@@ -387,7 +387,7 @@ export class AsientoService {
 
     const [ctaCMV, ctaMercaderia] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "cmv", "cmv", "5.1", "CMV"),
-      getCuentaLabel(resolvedEmpresaId, "cmv", "mercaderia", "1.4", "MercaderÃ­as"),
+      getCuentaLabel(resolvedEmpresaId, "cmv", "mercaderia", "1.4", "Mercaderías"),
     ])
 
     await prisma.$transaction(async (tx) => {
@@ -434,8 +434,8 @@ export class AsientoService {
 
     // Resolve account labels from DB config
     const [ctaIvaDF, ctaIvaCF, ctaIvaPagar, ctaIvaFavor] = await Promise.all([
-      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_df", "2.2", "IVA DÃ©bito Fiscal"),
-      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_cf", "1.6", "IVA CrÃ©dito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_df", "2.2", "IVA Débito Fiscal"),
+      getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_cf", "1.6", "IVA Crédito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_a_pagar", "2.5", "IVA a Pagar"),
       getCuentaLabel(resolvedEmpresaId, "liquidacion_iva", "iva_a_favor", "1.8", "IVA a Favor"),
     ])

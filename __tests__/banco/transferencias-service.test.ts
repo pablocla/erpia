@@ -21,6 +21,7 @@ describe("TransferenciasService", () => {
     mockPrismaClient.movimientoBancario.create
       .mockResolvedValueOnce({ id: 100 })
       .mockResolvedValueOnce({ id: 101 })
+    mockPrismaClient.asientoContable.create.mockResolvedValue({ id: 999 })
 
     const result = await service.transferir({
       empresaId: 10,

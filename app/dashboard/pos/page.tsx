@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 /**
  * Sistema POS — Punto de Venta
@@ -1443,7 +1443,26 @@ export default function POSPage() {
   // RENDER
   // ──────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-full min-h-0 overflow-hidden ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
+    <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
+      {cajaOk === false && cajaMotivo === "cerrada" && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md">
+          <div className="p-8 max-w-md w-full bg-card border rounded-2xl shadow-2xl text-center space-y-6">
+            <div className="h-20 w-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-10 w-10" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-extrabold tracking-tight">Caja Cerrada</h2>
+              <p className="text-muted-foreground mt-2 text-sm">Para facturar o usar el Punto de Venta, primero tenés que abrir tu caja del turno actual.</p>
+            </div>
+            <Link href="/dashboard/caja" className="block w-full">
+              <Button size="lg" className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20">
+                Abrir Caja Ahora
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @media print {
           @page { margin: 0; size: 80mm auto; }

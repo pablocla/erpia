@@ -66,8 +66,23 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    // If creating a new patient
+    // If creating a new patient — tutor debe ser de la misma empresa
     if (body.tipo === "paciente") {
+      const clienteId = Number(body.clienteId)
+      if (!Number.isFinite(clienteId)) {
+        return NextResponse.json({ error: "clienteId inválido" }, { status: 400 })
+      }
+      const tutor = await prisma.cliente.findFirst({
+        where: { id: clienteId, empresaId: usuario.empresaId },
+        select: { id: true },
+      })
+      if (!tutor) {
+        return NextResponse.json(
+          { error: "Tutor no encontrado en tu empresa" },
+          { status: 404 },
+        )
+      }
+
       const paciente = await prisma.paciente.create({
         data: {
           nombre: body.nombre,
@@ -76,15 +91,29 @@ export async function POST(request: NextRequest) {
           sexo: body.sexo,
           fechaNac: body.fechaNac ? new Date(body.fechaNac) : null,
           peso: body.peso,
-          clienteId: body.clienteId,
+          clienteId: tutor.id,
         },
         include: { cliente: { select: { id: true, nombre: true } } },
       })
       return NextResponse.json({ success: true, paciente }, { status: 201 })
     }
 
-    // Creating a consultation
+    // Creating a consultation — paciente debe pertenecer a la empresa del token
     const data = crearConsultaSchema.parse(body)
+    const pacienteOk = await prisma.paciente.findFirst({
+      where: {
+        id: data.pacienteId,
+        cliente: { empresaId: usuario.empresaId },
+      },
+      select: { id: true },
+    })
+    if (!pacienteOk) {
+      return NextResponse.json(
+        { error: "Paciente no encontrado en tu empresa" },
+        { status: 404 },
+      )
+    }
+
     const consulta = await prisma.consulta.create({
       data: {
         pacienteId: data.pacienteId,
@@ -100,7 +129,10 @@ export async function POST(request: NextRequest) {
 
     // Update patient weight if provided
     if (data.peso) {
-      await prisma.paciente.update({ where: { id: data.pacienteId }, data: { peso: data.peso } })
+      await prisma.paciente.update({
+        where: { id: data.pacienteId },
+        data: { peso: data.peso },
+      })
     }
 
     return NextResponse.json({ success: true, consulta }, { status: 201 })

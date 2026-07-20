@@ -13,6 +13,7 @@ export type SignupOrigen =
   | "provisioning"
   | "relevamiento"
   | "manual"
+  | "partner_ref"
 
 export interface SignupMeta {
   origen: SignupOrigen | null
@@ -71,7 +72,8 @@ function parseOrigen(raw: string | null | undefined): SignupOrigen | null {
     raw === "industry_demo" ||
     raw === "provisioning" ||
     raw === "relevamiento" ||
-    raw === "manual"
+    raw === "manual" ||
+    raw === "partner_ref"
   ) {
     return raw
   }
@@ -136,4 +138,5 @@ export const ORIGEN_LABELS: Record<SignupOrigen, string> = {
   provisioning: "Provisioning",
   relevamiento: "Relevamiento",
   manual: "Manual",
+  partner_ref: "Referido Partner",
 }

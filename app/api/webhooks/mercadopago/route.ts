@@ -6,8 +6,6 @@ export async function POST(request: NextRequest) {
   try {
     const signature = request.headers.get("x-signature")
     const requestId = request.headers.get("x-request-id")
-    const webhookSecret = process.env.MP_WEBHOOK_SECRET
-    
     const rawBody = await request.text()
     let payload
     try {

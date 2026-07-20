@@ -19,6 +19,7 @@ describe("marketplace-checkout-policy", () => {
   })
 
   it("MARKETPLACE_CHECKOUT_MOCK=true → paid", () => {
+    process.env.NODE_ENV = "test"
     process.env.MARKETPLACE_CHECKOUT_MOCK = "true"
     expect(allowsInstantMarketplaceCheckout()).toBe(true)
     expect(initialMarketplaceOrdenEstado()).toBe("paid")

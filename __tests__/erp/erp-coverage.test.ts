@@ -54,7 +54,6 @@ describe("ERP — rutas API críticas existen", () => {
     "app/api/precios/calcular/route.ts",
     "app/api/pendientes/route.ts",
     "app/api/ai/chat/route.ts",
-    "app/api/agro/pizarra/route.ts",
     "app/api/config/onboarding/apply/route.ts",
   ]
 

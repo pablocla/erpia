@@ -69,7 +69,7 @@ describe("dispatchScheduledJobs", () => {
     const summary = await dispatchScheduledJobs(new Date("2026-07-06T09:00:00Z"))
 
     expect(summary.jobs.find((j) => j.id === "ia-diaria")).toBeUndefined()
-    expect(summary.jobs.find((j) => j.id === "cobranzas-ia")).toBeUndefined()
+    expect(summary.jobs.find((j) => j.id === "cobranzas-ia")).toBeDefined()
   })
 
   it("incluye jobs premium cuando SCHEDULER_TIER=premium", async () => {

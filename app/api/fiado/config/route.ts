@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   if (!ctx.ok) return ctx.response
 
   const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
-  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
+  if (!isLicensed.ok) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   const config = await obtenerConfigFiado(ctx.auth.empresaId)
   if (!config) return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 })
@@ -28,7 +28,7 @@ export async function PATCH(request: NextRequest) {
   if (!ctx.ok) return ctx.response
 
   const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
-  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
+  if (!isLicensed.ok) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   if (!["admin", "propietario", "administrador", "dueno"].includes(ctx.auth.rol)) {
     return NextResponse.json({ error: "Sin permisos" }, { status: 403 })

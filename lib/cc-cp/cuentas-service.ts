@@ -123,6 +123,19 @@ export class CuentasService {
       })
     }
 
+    // Cobranza-as-a-service: fee % sobre lo recuperado
+    if (empresaId) {
+      void import("@/lib/cobranza/as-a-service")
+        .then(({ registrarFeePorCobroRecuperado }) =>
+          registrarFeePorCobroRecuperado({
+            empresaId,
+            montoRecuperado: montoTotal,
+            reciboId: recibo.id,
+          }),
+        )
+        .catch((err) => console.warn("[cobranza-aas] fee:", err))
+    }
+
     return recibo.id
   }
 

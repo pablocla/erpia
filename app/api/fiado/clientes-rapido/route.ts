@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   if (!ctx.ok) return ctx.response
 
   const isLicensed = await canUseSku(ctx.auth.empresaId, "pos.fiado_barrio")
-  if (!isLicensed) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
+  if (!isLicensed.ok) return NextResponse.json({ error: "SKU_REQUIRED" }, { status: 403 })
 
   const body = await request.json()
   const parsed = schema.safeParse(body)

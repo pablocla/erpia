@@ -20,9 +20,9 @@ describe("onboarding-retail-lite-modes", () => {
     expect(labels).toContain("Libreta Fiado")
     expect(labels).toContain("Clientes")
     expect(labels).toContain("Configuración")
-    expect(labels).not.toContain("Punto de Venta")
-    expect(labels).not.toContain("Cuentas a Cobrar")
-    expect(labels).not.toContain("Productos")
+    expect(labels).toContain("Punto de Venta")
+    expect(labels).toContain("Cuentas a Cobrar")
+    expect(labels).toContain("Productos")
     expect(labels).not.toContain("Contabilidad")
   })
 
@@ -33,7 +33,7 @@ describe("onboarding-retail-lite-modes", () => {
     expect(labels).toContain("Clientes")
     expect(labels).toContain("Configuración")
     expect(labels).toContain("Cuentas a Cobrar")
-    expect(labels).not.toContain("Libreta Fiado")
+    expect(labels).toContain("Libreta Fiado")
     expect(labels).not.toContain("Punto de Venta")
   })
 

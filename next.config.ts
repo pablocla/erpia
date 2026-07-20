@@ -103,9 +103,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
 }
 
 export default withNextIntl(nextConfig)

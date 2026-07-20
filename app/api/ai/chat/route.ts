@@ -24,6 +24,21 @@ export async function POST(request: NextRequest) {
     const blocked = await guardAiRequest(request, ctx.auth, "chat")
     if (blocked) return blocked
 
+    // Soft meter mensual (usage billing / techo freemium)
+    const { checkAndRecordAiChatUsage } = await import("@/lib/ai/usage-meter")
+    const usage = await checkAndRecordAiChatUsage(ctx.auth.empresaId)
+    if (!usage.ok) {
+      return NextResponse.json(
+        {
+          error: `Llegaste al tope de ${usage.limite} mensajes IA este mes. Activá plan IA o esperá al próximo mes.`,
+          code: usage.code,
+          usado: usage.usado,
+          limite: usage.limite,
+        },
+        { status: 402 },
+      )
+    }
+
     const body = await request.json()
     const parsed = ChatSchema.safeParse(body)
     if (!parsed.success) {
@@ -53,7 +68,16 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    return NextResponse.json({ success: true, data: { respuesta } })
+    return NextResponse.json({
+      success: true,
+      data: {
+        respuesta,
+        usage:
+          usage.ok
+            ? { usado: usage.usado, limite: usage.limite, remaining: usage.remaining }
+            : undefined,
+      },
+    })
   } catch (error) {
     console.error("[AI Chat] Error:", error)
     return NextResponse.json({ error: "Error en chat IA" }, { status: 500 })

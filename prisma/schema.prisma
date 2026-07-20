@@ -202,6 +202,16 @@ model Empresa {
   tenantEntornos              TenantEntorno[]
   despachosImportacion        DespachoImportacion[]
 
+  referredByPartnerId Int?
+  referredByPartner   PartnerProfile? @relation("EmpresaReferred", fields: [referredByPartnerId], references: [id])
+
+  /// Estudio contable: empresas cliente vinculadas (multi-empresa lectura)
+  contadorClientesComoEstudio ContadorClienteLink[]     @relation("ContadorEstudio")
+  contadorClientesComoCliente ContadorClienteLink[]     @relation("ContadorCliente")
+  cobranzaAsAServiceConfig    CobranzaAsAServiceConfig?
+  cobranzaAsAServiceCargos    CobranzaAsAServiceCargo[]
+  ordenServicios              OrdenServicio[]
+
   @@map("empresas")
 }
 
@@ -344,6 +354,7 @@ model Cliente {
   contratosInquilino     ContratoAlquiler[]     @relation("ContratoInquilino")
   contratosPropietario   ContratoAlquiler[]     @relation("ContratoPropietario")
   nicheMovimientos       NicheMovimiento[]
+  ordenServicios         OrdenServicio[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -867,6 +878,7 @@ model Producto {
   clasificacionFiscalId Int?
   clasificacionFiscal   ClasificacionFiscal? @relation(fields: [clasificacionFiscalId], references: [id])
   posPlus               PosPlu[]             @relation("ProductoPosPlus")
+  ordenServicioItems    OrdenServicioItem[]
 
   /// FIX C-004: código único por empresa
   @@unique([empresaId, codigo])
@@ -6881,15 +6893,110 @@ model PartnerProfile {
   tipo           String // "dev" | "seller" | "implementer" | "hybrid"
   nombreFantasia String?
   bio            String?  @db.Text
-  nivel          String   @default("novice") // "novice" | "pro" | "elite"
+  /// Código público de referido: /login/register?ref=CONTADOR_PEREZ
+  referralCode   String?  @unique
+  nivel          String   @default("novice") // "novice" | "pro" | "elite" | "oro" | "plata"
   comisionGlobal Decimal  @default(0) @db.Decimal(5, 2)
   activo         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  parentPartnerId Int?
+  parentPartner   PartnerProfile?  @relation("PartnerGenealogy", fields: [parentPartnerId], references: [id])
+  childPartners   PartnerProfile[] @relation("PartnerGenealogy")
+
+  empresasReferidas Empresa[]         @relation("EmpresaReferred")
+  comisiones        ComisionPartner[]
+
   appsPublicadas MarketplaceApp[] @relation("DevApps")
 
+  @@index([referralCode])
   @@map("partner_profiles")
+}
+
+/// Billetera de comisiones multi-nivel (crédito interno hasta liquidar).
+model ComisionPartner {
+  id              Int            @id @default(autoincrement())
+  partnerId       Int
+  partner         PartnerProfile @relation(fields: [partnerId], references: [id])
+  empresaOrigenId Int // Empresa tenant que pagó
+  monto           Decimal        @db.Decimal(12, 2)
+  /// Base sobre la que se calculó (pago de suscripción)
+  montoBase       Decimal?       @db.Decimal(12, 2)
+  porcentaje      Decimal?       @db.Decimal(5, 2)
+  nivel           Int            @default(1) // 1 directo, 2 padre del partner
+  /// "seller" | "implementer"
+  rolPartner      String?
+  sku             String?
+  /// Idempotencia: empresaId + periodo + nivel + partnerId
+  idempotencyKey  String?        @unique
+  estado          String         @default("pendiente") // pendiente | solicitado | liquidado | anulado
+  fecha           DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([partnerId, estado])
+  @@index([empresaOrigenId])
+  @@map("comisiones_partner")
+}
+
+/// Pack Contador multi-empresa: estudio ve clientes con lectura fiscal/reportes
+model ContadorClienteLink {
+  id               Int      @id @default(autoincrement())
+  estudioEmpresaId Int
+  clienteEmpresaId Int
+  creadoPorUserId  Int?
+  /// lectura_fiscal | export | full_ro
+  permisos         String   @default("lectura_fiscal")
+  activo           Boolean  @default(true)
+  notas            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  estudioEmpresa Empresa @relation("ContadorEstudio", fields: [estudioEmpresaId], references: [id])
+  clienteEmpresa Empresa @relation("ContadorCliente", fields: [clienteEmpresaId], references: [id])
+
+  @@unique([estudioEmpresaId, clienteEmpresaId])
+  @@index([estudioEmpresaId, activo])
+  @@index([clienteEmpresaId])
+  @@map("contador_cliente_links")
+}
+
+/// Cobranza-as-a-service: fee % sobre lo recuperado
+model CobranzaAsAServiceConfig {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int      @unique
+  activo          Boolean  @default(false)
+  /// % sobre monto cobrado (ej. 5 = 5%)
+  feePct          Decimal  @default(5) @db.Decimal(5, 2)
+  feeMinArs       Decimal  @default(0) @db.Decimal(12, 2)
+  autoAprobarWa   Boolean  @default(false)
+  diasVencimiento Int      @default(7)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+
+  @@map("cobranza_as_a_service_config")
+}
+
+model CobranzaAsAServiceCargo {
+  id              Int      @id @default(autoincrement())
+  empresaId       Int
+  montoRecuperado Decimal  @db.Decimal(12, 2)
+  feeCobrado      Decimal  @db.Decimal(12, 2)
+  reciboId        Int?
+  cuentaCobrarId  Int?
+  periodo         String
+  estado          String   @default("pendiente") // pendiente | facturado | anulado
+  idempotencyKey  String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  empresa Empresa @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, periodo])
+  @@map("cobranza_as_a_service_cargos")
 }
 
 model MarketplaceApp {
@@ -7386,4 +7493,49 @@ model DespachoImportacion {
 
   @@index([empresaId, numeroDespacho])
   @@map("despachos_importacion")
+}
+
+// --- �rdenes de Servicio (OT Module - Fase 4) ---
+model OrdenServicio {
+  id              Int       @id @default(autoincrement())
+  empresaId       Int
+  clienteId       Int
+  numero          String
+  estado          String // PENDIENTE, PRESUPUESTADO, EN_PROCESO, LISTO, ENTREGADO, CANCELADO
+  titulo          String?
+  descripcion     String?   @db.Text
+  fechaCreacion   DateTime  @default(now())
+  fechaPrometida  DateTime?
+  tecnicoAsignado String?
+  total           Decimal   @default(0) @db.Decimal(10, 2)
+  metadata        Json?
+  activo          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items   OrdenServicioItem[]
+  cliente Cliente             @relation(fields: [clienteId], references: [id])
+  empresa Empresa             @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, estado])
+  @@index([empresaId, clienteId])
+  @@map("ordenes_servicio")
+}
+
+model OrdenServicioItem {
+  id             Int      @id @default(autoincrement())
+  ordenId        Int
+  productoId     Int?
+  descripcion    String
+  cantidad       Decimal  @db.Decimal(10, 2)
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  tipo           String // 'REPUESTO', 'MANO_OBRA'
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orden    OrdenServicio @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  producto Producto?     @relation(fields: [productoId], references: [id])
+
+  @@index([ordenId])
+  @@map("ordenes_servicio_items")
 }

@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma"
 import type { IndustryTemplate } from "@/lib/comercial/industry-templates"
 import { getProductosSeed } from "@/lib/comercial/retail-onboarding-service"
+import { OTService } from "@/lib/ot/ot-service"
 import {
   generarConfiguracionOnboarding,
   type Rubro,
@@ -63,8 +64,9 @@ const CLIENTES_POR_RUBRO: Partial<Record<string, ClienteSeed[]>> = {
     { nombre: "Familia González", deudaFiado: 2100, fiadoHabilitado: true, limiteCredito: 5000 },
   ],
   veterinaria: [
-    { nombre: "María González — Tutora de Bobby", telefono: "11-5555-1234", email: "maria.gonzalez@email.com" },
-    { nombre: "Lucas Fernández — Max (Labrador)", telefono: "11-4444-5678" },
+    // Guion ASCII "-" (mismo string que seedVetDemo). No usar em-dash "—".
+    { nombre: "María González - Tutora de Bobby", telefono: "11-5555-1234", email: "maria.gonzalez@email.com" },
+    { nombre: "Lucas Fernández - Max (Labrador)", telefono: "11-4444-5678" },
   ],
   gimnasio: [
     { nombre: "Ana Martínez — Cuota Pilates", telefono: "11-3333-2211", saldoCuentaCorriente: -18500, observaciones: "Morosa — vence 15/03" },
@@ -72,6 +74,12 @@ const CLIENTES_POR_RUBRO: Partial<Record<string, ClienteSeed[]>> = {
     { nombre: "Sofía Ruiz — Trimestral", saldoCuentaCorriente: -9200, observaciones: "Débito fallido" },
     { nombre: "Carlos Pintos — Funcional", saldoCuentaCorriente: 0 },
     { nombre: "Valentina Soto — Pilates reformer", saldoCuentaCorriente: -14200, observaciones: "2 meses atrasada" },
+  ],
+  club_barrio: [
+    { nombre: "Juan Pérez - Socio Activo", telefono: "11-5555-1234" },
+    { nombre: "Familia Gómez - Grupo Familiar", telefono: "11-5555-9999" },
+    { nombre: "Equipo Los Pumas - Torneo Amateur", telefono: "11-4000-1000", saldoCuentaCorriente: -35000, observaciones: "Suspendido — debe cancha" },
+    { nombre: "Roberto Díaz - Moroso", telefono: "11-4222-3344", saldoCuentaCorriente: -12000, observaciones: "Cuota social vencida" },
   ],
   estacion_servicio: [
     { nombre: "Transportes Río SA — Flota", telefono: "0341-422-8899", saldoCuentaCorriente: 485000, observaciones: "CC mensual — 12 camiones/semana" },
@@ -197,7 +205,34 @@ async function seedBarDemo(empresaId: number): Promise<{ mesas: number; comandas
   return { mesas: mesasCreadas, comandas: comandasCreadas }
 }
 
+async function ensureClienteDemo(
+  empresaId: number,
+  nombre: string,
+  extra?: { telefono?: string; observaciones?: string; saldoCuentaCorriente?: number },
+) {
+  let cliente = await findClienteBySeedNombre(empresaId, nombre)
+  if (!cliente) {
+    cliente = await prisma.cliente.create({
+      data: {
+        empresaId,
+        nombre,
+        telefono: extra?.telefono ?? null,
+        observaciones: extra?.observaciones ?? null,
+        saldoCuentaCorriente: extra?.saldoCuentaCorriente ?? 0,
+        condicionIva: "Consumidor Final",
+        activo: true,
+      },
+    })
+  }
+  return cliente
+}
+
 async function seedGymDemo(empresaId: number): Promise<{ planes: number; membresias: number }> {
+  // Limpiar posible plan espurio inyectado por niche-provision (engine cuotas)
+  await prisma.planMembresia.deleteMany({
+    where: { empresaId, nombre: { in: ["Claver Gimnasio", "Claver Club", "Gimnasio"] } },
+  })
+
   const planDefs = [
     { nombre: "Plan mensual", precio: 28000, periodicidad: "mensual", duracionDias: 30 },
     { nombre: "Trimestral", precio: 75000, periodicidad: "trimestral", duracionDias: 90 },
@@ -210,28 +245,69 @@ async function seedGymDemo(empresaId: number): Promise<{ planes: number; membres
     let plan = await prisma.planMembresia.findFirst({ where: { empresaId, nombre: p.nombre } })
     if (!plan) {
       plan = await prisma.planMembresia.create({
-        data: { empresaId, nombre: p.nombre, precio: p.precio, periodicidad: p.periodicidad, duracionDias: p.duracionDias },
+        data: {
+          empresaId,
+          nombre: p.nombre,
+          precio: p.precio,
+          periodicidad: p.periodicidad,
+          duracionDias: p.duracionDias,
+        },
       })
       planesCreados++
     }
     planes.push({ id: plan.id, nombre: plan.nombre, duracionDias: plan.duracionDias })
   }
 
+  // Nombres alineados a CLIENTES_POR_RUBRO.gimnasio (match resiliente a guiones)
   const socios = [
-    { clienteNombre: "Ana Martínez — Cuota Pilates", planNombre: "Pilates reformer", estado: "suspendida", diasAtras: 45 },
-    { clienteNombre: "Diego López — Plan mensual", planNombre: "Plan mensual", estado: "activa", diasAtras: 0 },
-    { clienteNombre: "Sofía Ruiz — Trimestral", planNombre: "Trimestral", estado: "vencida", diasAtras: 12 },
-    { clienteNombre: "Valentina Soto — Pilates reformer", planNombre: "Pilates reformer", estado: "vencida", diasAtras: 60 },
+    {
+      clienteNombre: "Ana Martínez — Cuota Pilates",
+      planNombre: "Pilates reformer",
+      estado: "suspendida",
+      diasAtras: 45,
+      telefono: "11-3333-2211",
+    },
+    {
+      clienteNombre: "Diego López — Plan mensual",
+      planNombre: "Plan mensual",
+      estado: "activa",
+      diasAtras: 0,
+    },
+    {
+      clienteNombre: "Sofía Ruiz — Trimestral",
+      planNombre: "Trimestral",
+      estado: "vencida",
+      diasAtras: 12,
+    },
+    {
+      clienteNombre: "Valentina Soto — Pilates reformer",
+      planNombre: "Pilates reformer",
+      estado: "vencida",
+      diasAtras: 60,
+    },
+    // Antes quedaba sin membresía (auditoría wow roto)
+    {
+      clienteNombre: "Carlos Pintos — Funcional",
+      planNombre: "Plan mensual",
+      estado: "activa",
+      diasAtras: 5,
+    },
   ]
 
   let membresiasCreadas = 0
   const hoy = new Date()
   for (const s of socios) {
-    const cliente = await prisma.cliente.findFirst({ where: { empresaId, nombre: s.clienteNombre } })
+    const cliente = await ensureClienteDemo(empresaId, s.clienteNombre, {
+      telefono: s.telefono,
+      observaciones: s.estado !== "activa" ? "Demo gym — moroso / reclamable" : undefined,
+      saldoCuentaCorriente: s.estado === "vencida" || s.estado === "suspendida" ? -15000 : 0,
+    })
     const plan = planes.find((p) => p.nombre === s.planNombre)
-    if (!cliente || !plan) continue
+    if (!plan) continue
 
-    const existe = await prisma.membresia.findFirst({ where: { clienteId: cliente.id, planId: plan.id } })
+    const existe = await prisma.membresia.findFirst({
+      where: { clienteId: cliente.id, planId: plan.id },
+    })
     if (existe) continue
 
     const inicio = new Date(hoy)
@@ -246,7 +322,7 @@ async function seedGymDemo(empresaId: number): Promise<{ planes: number; membres
         fechaInicio: inicio,
         fechaFin: fin,
         estado: s.estado,
-        notas: s.estado !== "activa" ? "Demo — moroso" : null,
+        notas: s.estado !== "activa" ? "Demo — moroso (wow: reclamá por WA)" : "Demo — al día",
       },
     })
     membresiasCreadas++
@@ -514,47 +590,95 @@ async function seedInmobiliariaDemo(empresaId: number): Promise<void> {
   }
 }
 
+/** Unifica em-dash/en-dash/guion para match de seeds (Gemini + legacy). */
+function normalizeSeedNombre(s: string): string {
+  return s
+    .replace(/[\u2013\u2014\u2212]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+}
+
+async function findClienteBySeedNombre(empresaId: number, nombre: string) {
+  const exact = await prisma.cliente.findFirst({
+    where: { empresaId, nombre },
+  })
+  if (exact) return exact
+
+  const target = normalizeSeedNombre(nombre)
+  const candidatos = await prisma.cliente.findMany({
+    where: { empresaId, activo: true },
+    select: { id: true, nombre: true, empresaId: true },
+    take: 80,
+  })
+  const hit = candidatos.find((c) => normalizeSeedNombre(c.nombre) === target)
+  if (!hit) return null
+  return prisma.cliente.findUnique({ where: { id: hit.id } })
+}
+
 async function seedVetDemo(empresaId: number): Promise<void> {
   const tutores = [
-    { nombreCliente: "María González — Tutora de Bobby", nombrePaciente: "Bobby", especie: "Canino", raza: "Mestizo", sexo: "M" },
-    { nombreCliente: "Lucas Fernández — Max (Labrador)", nombrePaciente: "Max", especie: "Canino", raza: "Labrador Retriever", sexo: "M" },
+    {
+      nombreCliente: "María González - Tutora de Bobby",
+      nombrePaciente: "Bobby",
+      especie: "Canino",
+      raza: "Mestizo",
+      sexo: "M",
+      peso: 15.5,
+    },
+    {
+      nombreCliente: "Lucas Fernández - Max (Labrador)",
+      nombrePaciente: "Max",
+      especie: "Canino",
+      raza: "Labrador Retriever",
+      sexo: "M",
+      peso: 28,
+    },
   ]
 
   for (const t of tutores) {
-    const cliente = await prisma.cliente.findFirst({
-      where: { empresaId, nombre: t.nombreCliente }
-    })
-    
-    if (cliente) {
-      const pacienteExiste = await prisma.paciente.findFirst({
-        where: { clienteId: cliente.id, nombre: t.nombrePaciente }
+    let cliente = await findClienteBySeedNombre(empresaId, t.nombreCliente)
+    if (!cliente) {
+      cliente = await prisma.cliente.create({
+        data: {
+          empresaId,
+          nombre: t.nombreCliente,
+          condicionIva: "Consumidor Final",
+          activo: true,
+        },
       })
-      
-      if (!pacienteExiste) {
-        const paciente = await prisma.paciente.create({
-          data: {
-            clienteId: cliente.id,
-            nombre: t.nombrePaciente,
-            especie: t.especie,
-            raza: t.raza,
-            sexo: t.sexo,
-            peso: 15,
-            fechaNac: new Date("2020-01-01"),
-            activo: true,
-          }
-        })
-        
-        await prisma.consulta.create({
-          data: {
-            pacienteId: paciente.id,
-            motivo: "Control anual y vacunación",
-            diagnostico: "Paciente sano. Se aplica vacuna séxtuple.",
-            peso: 15.5,
-            temperatura: 38.5,
-            fecha: new Date(),
-          }
-        })
-      }
+    }
+
+    const pacienteExiste = await prisma.paciente.findFirst({
+      where: { clienteId: cliente.id, nombre: t.nombrePaciente },
+    })
+
+    if (!pacienteExiste) {
+      const paciente = await prisma.paciente.create({
+        data: {
+          clienteId: cliente.id,
+          nombre: t.nombrePaciente,
+          especie: t.especie,
+          raza: t.raza,
+          sexo: t.sexo,
+          peso: t.peso,
+          fechaNac: new Date("2020-01-01"),
+          activo: true,
+        },
+      })
+
+      await prisma.consulta.create({
+        data: {
+          pacienteId: paciente.id,
+          motivo: "Control anual y vacunación",
+          diagnostico: "Paciente sano. Se aplica vacuna séxtuple.",
+          tratamiento: "Vacuna séxtuple + desparasitación",
+          peso: t.peso,
+          temperatura: 38.5,
+          fecha: new Date(),
+          proximaVisita: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        },
+      })
     }
   }
 }
@@ -592,59 +716,160 @@ const NICHE_MOVIMIENTO_SEEDS: Record<
   "niche.club_barrio": [
     { titulo: "Cuota Social - Juan Pérez", categoria: "cuota", monto: 12000, estado: "pagado" },
     { titulo: "Alquiler Cancha 1 - Turno Noche", categoria: "alquiler", monto: 35000, estado: "pendiente" },
+    { titulo: "Cuota impaga - Roberto Díaz", categoria: "cuota", monto: 12000, estado: "pendiente" },
+    { titulo: "Consumo cantina - Los Pumas", categoria: "consumo", monto: 18500, estado: "pendiente" },
   ],
 }
 
+/** Clientes demo por SKU de nicho (una sola clave por app — no duplicar keys JS). */
 const NICHE_CUOTA_CLIENTES: Record<string, { nombre: string; telefono?: string }[]> = {
+  "niche.taller_mecanico": [
+    { nombre: "Carlos Silva - Ford Ranger", telefono: "11-5555-4444" },
+    { nombre: "María Gómez - Gol Trend", telefono: "11-4444-3333" },
+    { nombre: "Empresa Logística Sur (Flota Ford)", telefono: "11-9988-7766" },
+  ],
   "niche.gimnasio_barrio": [
     { nombre: "Ana Martínez — Cuota Pilates", telefono: "11-3333-2211" },
     { nombre: "Diego López — Plan mensual" },
     { nombre: "Sofía Ruiz — Trimestral", telefono: "11-2222-3344" },
   ],
-  "niche.taller_mecanico": [
-    { nombre: "Empresa Logística Sur (Flota Ford)", telefono: "11-9988-7766" },
-    { nombre: "Martín Gómez (Gol Trend)" },
-  ],
   "niche.club_barrio": [
     { nombre: "Juan Pérez - Socio Activo", telefono: "11-5555-1234" },
-    { nombre: "Equipo Los Pumas - Torneo Amateur" },
+    { nombre: "Equipo Los Pumas - Torneo Amateur", telefono: "11-4000-1000" },
+    { nombre: "Roberto Díaz - Moroso", telefono: "11-4222-3344" },
+    { nombre: "Familia Gómez - Grupo Familiar", telefono: "11-5555-9999" },
   ],
 }
 
-async function seedClubDemo(empresaId: number): Promise<void> {
-  const socios = [
-    { nombre: "Juan Pérez - Socio Activo", plan: "Socio Activo Mensual", precio: 12000 },
-    { nombre: "Familia Gómez - Grupo Familiar", plan: "Grupo Familiar", precio: 35000 },
+/**
+ * Club de barrio — demo con socios, planes, morosos y consumo cantina.
+ * (Fase 3: fuera del alcance Gemini vet/taller.)
+ */
+async function seedClubDemo(empresaId: number): Promise<{ planes: number; membresias: number }> {
+  // Limpiar posible plan espurio inyectado por niche-provision (engine cuotas)
+  await prisma.planMembresia.deleteMany({
+    where: { empresaId, nombre: { in: ["Claver Gimnasio", "Claver Club", "Gimnasio"] } },
+  })
+
+  const planDefs = [
+    { nombre: "Socio Activo Mensual", precio: 12000, periodicidad: "mensual", duracionDias: 30 },
+    { nombre: "Grupo Familiar", precio: 35000, periodicidad: "mensual", duracionDias: 30 },
+    { nombre: "Vitalicio honorario", precio: 0, periodicidad: "anual", duracionDias: 365 },
   ]
-  
-  for (const s of socios) {
-    let cliente = await prisma.cliente.findFirst({ where: { empresaId, nombre: s.nombre } })
-    if (!cliente) {
-      cliente = await prisma.cliente.create({
-        data: { empresaId, nombre: s.nombre, activo: true }
-      })
-    }
-    
-    let plan = await prisma.planMembresia.findFirst({ where: { empresaId, nombre: s.plan } })
+
+  let planesCreados = 0
+  const planes: { id: number; nombre: string; duracionDias: number }[] = []
+  for (const p of planDefs) {
+    let plan = await prisma.planMembresia.findFirst({ where: { empresaId, nombre: p.nombre } })
     if (!plan) {
       plan = await prisma.planMembresia.create({
-        data: { empresaId, nombre: s.plan, precio: s.precio, periodicidad: "mensual", duracionDias: 30 }
-      })
-    }
-    
-    const membresiaExiste = await prisma.membresia.findFirst({ where: { clienteId: cliente.id, planId: plan.id } })
-    if (!membresiaExiste) {
-      await prisma.membresia.create({
         data: {
-          clienteId: cliente.id,
-          planId: plan.id,
-          fechaInicio: new Date(),
-          fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          estado: "activa",
-        }
+          empresaId,
+          nombre: p.nombre,
+          precio: p.precio,
+          periodicidad: p.periodicidad,
+          duracionDias: p.duracionDias,
+          descripcion: "Demo club de barrio",
+        },
+      })
+      planesCreados++
+    }
+    planes.push({ id: plan.id, nombre: plan.nombre, duracionDias: plan.duracionDias })
+  }
+
+  const socios = [
+    {
+      nombre: "Juan Pérez - Socio Activo",
+      plan: "Socio Activo Mensual",
+      estado: "activa",
+      diasAtras: 0,
+      telefono: "11-5555-1234",
+    },
+    {
+      nombre: "Familia Gómez - Grupo Familiar",
+      plan: "Grupo Familiar",
+      estado: "activa",
+      diasAtras: 3,
+      telefono: "11-5555-9999",
+    },
+    {
+      nombre: "Equipo Los Pumas - Torneo Amateur",
+      plan: "Grupo Familiar",
+      estado: "suspendida",
+      diasAtras: 40,
+      telefono: "11-4000-1000",
+    },
+    {
+      nombre: "Roberto Díaz - Moroso",
+      plan: "Socio Activo Mensual",
+      estado: "vencida",
+      diasAtras: 25,
+      telefono: "11-4222-3344",
+    },
+  ]
+
+  let membresiasCreadas = 0
+  const hoy = new Date()
+  for (const s of socios) {
+    const cliente = await ensureClienteDemo(empresaId, s.nombre, {
+      telefono: s.telefono,
+      observaciones:
+        s.estado === "vencida" || s.estado === "suspendida"
+          ? "Demo club — moroso (avisar por WA antes del partido)"
+          : "Demo club — al día",
+      saldoCuentaCorriente: s.estado === "vencida" ? -12000 : s.estado === "suspendida" ? -35000 : 0,
+    })
+    const plan = planes.find((p) => p.nombre === s.plan)
+    if (!plan) continue
+
+    const existe = await prisma.membresia.findFirst({
+      where: { clienteId: cliente.id, planId: plan.id },
+    })
+    if (existe) continue
+
+    const inicio = new Date(hoy)
+    inicio.setDate(inicio.getDate() - (plan.duracionDias ?? 30) - s.diasAtras)
+    const fin = new Date(inicio)
+    fin.setDate(fin.getDate() + (plan.duracionDias ?? 30))
+
+    await prisma.membresia.create({
+      data: {
+        clienteId: cliente.id,
+        planId: plan.id,
+        fechaInicio: inicio,
+        fechaFin: fin,
+        estado: s.estado,
+        notas: s.estado !== "activa" ? "Demo — cuota impaga" : null,
+      },
+    })
+    membresiasCreadas++
+  }
+
+  // Productos “cantina del club” (no PRD001)
+  const cantina = [
+    { codigo: "CLUB-CERV", nombre: "Cerveza cantina", precio: 2500 },
+    { codigo: "CLUB-EMPE", nombre: "Empanada cantina", precio: 800 },
+    { codigo: "CLUB-ALQ", nombre: "Alquiler cancha 1h", precio: 15000 },
+  ]
+  for (const p of cantina) {
+    const ex = await prisma.producto.findFirst({ where: { empresaId, codigo: p.codigo } })
+    if (!ex) {
+      await prisma.producto.create({
+        data: {
+          empresaId,
+          codigo: p.codigo,
+          nombre: p.nombre,
+          precioVenta: p.precio,
+          porcentajeIva: 21,
+          stock: 50,
+          activo: true,
+          unidad: "unidad",
+        },
       })
     }
   }
+
+  return { planes: planesCreados, membresias: membresiasCreadas }
 }
 
 async function seedPresupuestoDemo(empresaId: number): Promise<void> {
@@ -805,23 +1030,51 @@ export async function seedIndustryDemoData(
   let clientesCreados = 0
 
   if (!opts?.skipProductos) {
-    const retailSeedKey = ["almacen", "kiosco", "ferreteria", "carniceria", "panaderia"].includes(template.id)
-      ? template.id === "carniceria" || template.id === "panaderia"
-        ? template.id
-        : template.id === "almacen"
-          ? "almacen"
-          : "kiosco"
-      : "almacen"
+    const hasRetailSeed = ["almacen", "kiosco", "ferreteria", "carniceria", "panaderia"].includes(
+      template.id,
+    )
+    const retailSeedKey = hasRetailSeed ? template.id : "almacen"
 
-    const productos = template.isRetail
-      ? getProductosSeed(retailSeedKey)
-      : generarConfiguracionOnboarding(defaultAnswers(rubro)).productosEjemplo
+    // Catálogo por template.id (taller usa rubro "otro" → sin esto cae en PRD001/SRV001).
+    // No pasar template.id a defaultAnswers: no es Rubro y rompe CONFIG_POR_RUBRO.
+    const PRODUCTOS_POR_TEMPLATE: Record<
+      string,
+      { nombre: string; codigo: string; precio: number; iva: number }[]
+    > = {
+      taller_mecanico: [
+        { nombre: "Aceite Sintético 5W40 4L", codigo: "TM-ACT01", precio: 45000, iva: 21 },
+        { nombre: "Filtro de Aceite", codigo: "TM-FLT01", precio: 8500, iva: 21 },
+        { nombre: "Juego Pastillas de Freno", codigo: "TM-FRN01", precio: 28000, iva: 21 },
+        { nombre: "Service Básico 10.000 km (Mano de Obra)", codigo: "TM-SRV01", precio: 35000, iva: 21 },
+        { nombre: "Bujías iridium (juego x4)", codigo: "TM-BUJ01", precio: 22000, iva: 21 },
+      ],
+      club_barrio: [
+        { nombre: "Cuota social mensual", codigo: "CLUB-CUO", precio: 12000, iva: 21 },
+        { nombre: "Alquiler cancha 1 hora", codigo: "CLUB-ALQ", precio: 15000, iva: 21 },
+        { nombre: "Cerveza cantina", codigo: "CLUB-CERV", precio: 2500, iva: 21 },
+        { nombre: "Empanada cantina", codigo: "CLUB-EMPE", precio: 800, iva: 21 },
+      ],
+    }
+
+    const productos =
+      template.isRetail && hasRetailSeed
+        ? getProductosSeed(retailSeedKey)
+        : PRODUCTOS_POR_TEMPLATE[template.id] ??
+          generarConfiguracionOnboarding(defaultAnswers(rubro)).productosEjemplo
 
     for (const [index, p] of productos.entries()) {
-      const codigo = "codigo" in p ? p.codigo : `DEMO-${rubro.toUpperCase().slice(0, 4)}-${index + 1}`
+      const codigo =
+        "codigo" in p && p.codigo
+          ? String(p.codigo)
+          : `DEMO-${template.id.toUpperCase().slice(0, 6)}-${index + 1}`
       const nombre = p.nombre
-      const precio = "precioVenta" in p ? p.precioVenta : p.precio
-      const iva = "porcentajeIva" in p ? (p.porcentajeIva ?? 21) : ("iva" in p ? (p as any).iva : 21)
+      const precio = "precioVenta" in p ? (p as { precioVenta: number }).precioVenta : p.precio
+      const iva =
+        "porcentajeIva" in p
+          ? ((p as { porcentajeIva?: number }).porcentajeIva ?? 21)
+          : "iva" in p
+            ? ((p as { iva?: number }).iva ?? 21)
+            : 21
 
       const existe = await prisma.producto.findFirst({
         where: { empresaId, codigo },
@@ -932,7 +1185,11 @@ export async function seedIndustryDemoData(
     await safe("vet", () => seedVetDemo(empresaId))
   }
 
-  if (template.id === "gimnasio" || rubro === "gimnasio") {
+  if (
+    template.id === "gimnasio" ||
+    template.id === "gimnasio_barrio" ||
+    rubro === "gimnasio"
+  ) {
     await safe("gym", async () => {
       const gym = await seedGymDemo(empresaId)
       result.planes = gym.planes
@@ -975,14 +1232,64 @@ export async function seedIndustryDemoData(
   }
 
   if (template.id === "club_barrio") {
-    await safe("club", () => seedClubDemo(empresaId))
+    await safe("club", async () => {
+      const club = await seedClubDemo(empresaId)
+      result.planes = (result.planes ?? 0) + club.planes
+      result.membresias = (result.membresias ?? 0) + club.membresias
+    })
   }
 
+  // Movimientos de nicho DESPUÉS de socios/clientes para poder linkear clienteId
   if (template.engancheId?.startsWith("niche.")) {
-    await safe(`niche:${template.engancheId}`, () =>
-      seedNicheMovimientosDemo(empresaId, template.engancheId!),
-    )
+    if (template.engancheId === "niche.taller_mecanico") {
+      await safe("ot:taller_mecanico", () => seedTallerMecanicoOTDemo(empresaId))
+    } else {
+      await safe(`niche:${template.engancheId}`, () =>
+        seedNicheMovimientosDemo(empresaId, template.engancheId!),
+      )
+    }
   }
 
   return result
+}
+
+async function seedTallerMecanicoOTDemo(empresaId: number) {
+  const service = new OTService()
+  
+  // Buscar clientes creados por los seeds
+  const c1 = await prisma.cliente.findFirst({ where: { empresaId, nombre: { contains: "Carlos Silva" } } })
+  const c2 = await prisma.cliente.findFirst({ where: { empresaId, nombre: { contains: "Gómez" } } })
+  const c3 = await prisma.cliente.findFirst({ where: { empresaId, nombre: { contains: "Logística" } } })
+
+  // Buscar repuestos creados por los seeds
+  const aceite = await prisma.producto.findFirst({ where: { empresaId, codigo: "TM-ACT01" } })
+  const filtro = await prisma.producto.findFirst({ where: { empresaId, codigo: "TM-FLT01" } })
+  
+  if (c1) {
+    await service.crearOrden(empresaId, {
+      clienteId: c1.id,
+      numero: "OT-0001",
+      titulo: "Reparación motor - Ford Ranger",
+      estado: "PENDIENTE",
+      metadata: { patente: "AD123ZZ", vehiculo: "Ford Ranger 2022", km: 45000 },
+      items: [
+        { descripcion: "Mano de obra diagnóstico", cantidad: 1, precioUnitario: 35000, tipo: "MANO_OBRA" }
+      ]
+    })
+  }
+
+  if (c2) {
+    await service.crearOrden(empresaId, {
+      clienteId: c2.id,
+      numero: "OT-0002",
+      titulo: "Cambio de aceite y filtros - Gol Trend",
+      estado: "LISTO",
+      metadata: { patente: "AA999BB", vehiculo: "VW Gol Trend 2018", km: 80000 },
+      items: [
+        { productoId: aceite?.id, descripcion: "Aceite Sintético 5W40", cantidad: 1, precioUnitario: 45000, tipo: "REPUESTO" },
+        { productoId: filtro?.id, descripcion: "Filtro de Aceite", cantidad: 1, precioUnitario: 8500, tipo: "REPUESTO" },
+        { descripcion: "Mano de obra service", cantidad: 1, precioUnitario: 15000, tipo: "MANO_OBRA" }
+      ]
+    })
+  }
 }

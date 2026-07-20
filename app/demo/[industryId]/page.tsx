@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
+import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react"
 import { useAuth } from "@/lib/auth/hooks"
@@ -21,7 +21,6 @@ const STEPS = [
 export default function DemoIndustryDeepLinkPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { loginConToken } = useAuth()
   const industryId = typeof params.industryId === "string" ? params.industryId : ""
   const present = searchParams.get("present") === "1"
@@ -31,6 +30,8 @@ export default function DemoIndustryDeepLinkPage() {
   const [error, setError] = useState("")
   const [launching, setLaunching] = useState(true)
   const [stepIdx, setStepIdx] = useState(0)
+  /** Evita re-disparar el effect en re-renders; el dedup real está en launchIndustryDemo */
+  const startedForRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!launching || error) return
@@ -47,6 +48,10 @@ export default function DemoIndustryDeepLinkPage() {
       return
     }
 
+    const launchKey = `${industryId}::${activarParam ?? ""}::${present ? "1" : "0"}`
+    if (startedForRef.current === launchKey) return
+    startedForRef.current = launchKey
+
     let cancelled = false
     ;(async () => {
       try {
@@ -56,12 +61,14 @@ export default function DemoIndustryDeepLinkPage() {
         })
         if (!cancelled) {
           setStepIdx(STEPS.length - 1)
-          router.replace(dest)
+          // Hard navigation: asegura cookie + store listos en el dashboard
+          window.location.assign(dest)
         }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Error de conexión")
           setLaunching(false)
+          startedForRef.current = null
         }
       }
     })()

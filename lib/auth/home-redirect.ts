@@ -21,7 +21,9 @@ export function shouldRedirectAnalystToCloud(opts: {
   if (!opts.isAnalyst) return false
   const email = opts.email?.trim().toLowerCase()
   if (email === DEMO_ADMIN_EMAIL.toLowerCase()) return false
-  if (opts.rol === ANALYST_ROLE) return true
+  
+  // If explicitly flagged as analyst via JWT, or role is analista_claver
+  if (opts.isAnalyst || opts.rol === ANALYST_ROLE) return true
   return false
 }
 

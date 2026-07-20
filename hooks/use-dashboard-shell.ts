@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { isImpersonatingSession, performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { shouldRedirectAnalystToCloud } from "@/lib/auth/home-redirect"
-import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
+import { getAuthHeaders, getToken, useAuthStore } from "@/lib/stores/auth-store"
 import { getCountryFeatures, type CountryFeatures } from "@/lib/country/country-features"
 import { normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { isMenuItemAllowedInModoLite } from "@/lib/comercial/lite-sidebar"
@@ -47,6 +47,7 @@ export function useDashboardShell() {
 
   const user = useAuthStore((s) => s.user)
   const token = useAuthStore((s) => s.token)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
   const role = user?.rol
   const userId = user?.id ?? null
   const pathname = usePathname()
@@ -87,15 +88,19 @@ export function useDashboardShell() {
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    const stored = localStorage.getItem("token")
-    if (!stored) return
+    if (!mounted || !isHydrated) return
+    const stored = getToken()
+    if (!stored) {
+      router.replace("/login")
+      return
+    }
     fetch("/api/claver/analista/status", {
       headers: { Authorization: `Bearer ${stored}` },
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
       .catch(() => setIsClaverAnalyst(false))
-  }, [mounted])
+  }, [mounted, isHydrated, token, router])
 
   useEffect(() => {
     if (!mounted || !isClaverAnalyst) return
@@ -124,11 +129,6 @@ export function useDashboardShell() {
       document.body.style.overflow = prev
     }
   }, [mobileSidebarOpen, compactShell])
-
-  useEffect(() => {
-    const stored = localStorage.getItem("token")
-    if (!stored && mounted) router.replace("/login")
-  }, [mounted, router])
 
   const addRecentPage = useUIStore((s) => s.addRecentPage)
   useEffect(() => {
@@ -215,6 +215,10 @@ export function useDashboardShell() {
   }, [authHeaders])
 
   useEffect(() => {
+    // No spamear el backend con 401/403 si aún no hay sesión (caso demo mal logueada)
+    if (!mounted || !isHydrated) return
+    if (!getToken()) return
+
     cargarModulos()
     cargarRubro()
     cargarCountryContext()
@@ -232,7 +236,16 @@ export function useDashboardShell() {
       window.removeEventListener("modulos-updated", handler)
       window.removeEventListener("productos-updated", handler)
     }
-  }, [cargarModulos, cargarRubro, cargarFeatures, cargarProductosSku])
+  }, [
+    mounted,
+    isHydrated,
+    token,
+    cargarModulos,
+    cargarRubro,
+    cargarCountryContext,
+    cargarFeatures,
+    cargarProductosSku,
+  ])
 
   const isAdmin = ["administrador", "admin", "dueno"].includes(role || "")
   const effectiveRubro = industryTemplate?.rubro ?? rubro

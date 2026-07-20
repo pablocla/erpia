@@ -1,5 +1,9 @@
 # ClavERP — Propuesta de Valor y Ficha Comercial
 
+> **Fuente de verdad go-live / qué vender en PRD:** [`docs/GO_LIVE_PRD.md`](docs/GO_LIVE_PRD.md)  
+> **Faltantes para ser vendible de punta a punta (venta→soporte):** [`docs/PRODUCTO_VENDIBLE_END_TO_END.md`](docs/PRODUCTO_VENDIBLE_END_TO_END.md)  
+> (Esta ficha es comercial; si hay overpromise vs producto, manda GO_LIVE_PRD.)
+
 ClavERP es la solución integral de gestión administrativa, fiscal y operativa para PyMEs y comercios en Argentina. Unifica el punto de venta (POS), la facturación oficial AFIP, el control de stock, la logística y la contabilidad en una plataforma moderna, rápida y multi-tenant.
 
 ---

@@ -74,11 +74,36 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
+      /**
+       * Si loginConToken corre antes de que termine la rehidratación,
+       * no pisar la sesión fresca con el snapshot viejo de localStorage.
+       */
+      merge: (persistedState, currentState) => {
+        const p = (persistedState ?? {}) as Partial<AuthState>
+        if (currentState.token && currentState.isAuthenticated) {
+          return {
+            ...currentState,
+            isHydrated: true,
+          }
+        }
+        return {
+          ...currentState,
+          ...p,
+          isHydrated: true,
+        }
+      },
+      onRehydrateStorage: () => (state, _error) => {
         if (state?.token && typeof window !== "undefined") {
           setAuthTokenCookie(state.token)
+          // Mantener legacy key alineada con el store
+          localStorage.setItem("token", state.token)
         }
-        state?.setHydrated()
+        if (state) {
+          state.setHydrated()
+        } else {
+          // Rehidratación fallida o sin snapshot: igual marcar listo para no colgar el dashboard
+          useAuthStore.setState({ isHydrated: true })
+        }
       },
     },
   ),
@@ -116,12 +141,14 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   const token = getToken()
   const headers = new Headers(options.headers)
   if (token) headers.set("Authorization", `Bearer ${token}`)
-  headers.set("Content-Type", "application/json")
+  if (!headers.has("Content-Type") && options.body) {
+    headers.set("Content-Type", "application/json")
+  }
 
   const response = await fetch(url, { ...options, headers })
 
-  // Auto-logout on 401
-  if (response.status === 401) {
+  // Auto-logout on sesión inválida (middleware usa 401 o 403 + code)
+  if (response.status === 401 || response.status === 403) {
     const data = await response.clone().json().catch(() => ({}))
     if (data.code === "TOKEN_EXPIRED" || data.code === "TOKEN_INVALID") {
       useAuthStore.getState().logout()

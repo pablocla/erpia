@@ -17,6 +17,7 @@ function RegisterPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activarParam = searchParams.get("activar")
+  const refParam = searchParams.get("ref")
   const activarIntent = resolveActivarIntent(activarParam)
   const { loginConToken } = useAuth()
 
@@ -27,6 +28,7 @@ function RegisterPageContent() {
     password: "",
     confirmar: "",
   })
+  const [acceptTerms, setAcceptTerms] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
 
@@ -46,6 +48,10 @@ function RegisterPageContent() {
       setError("La contraseña debe tener al menos 8 caracteres")
       return
     }
+    if (!acceptTerms) {
+      setError("Debés aceptar los Términos y la Política de privacidad")
+      return
+    }
 
     setCargando(true)
     try {
@@ -58,6 +64,8 @@ function RegisterPageContent() {
           email: form.email,
           password: form.password,
           activar: activarParam || undefined,
+          ref: refParam || undefined,
+          acceptTerms: true,
         }),
       })
 
@@ -123,6 +131,14 @@ function RegisterPageContent() {
                   Al crear la cuenta activamos solo{" "}
                   <span className="font-medium text-foreground">{activarIntent.productName}</span>.
                   No vas a ver el ERP completo.
+                </AlertDescription>
+              </Alert>
+            )}
+            {refParam && (
+              <Alert className="border-blue-500/30 bg-blue-500/5">
+                <AlertDescription className="text-sm text-muted-foreground">
+                  Registro con código partner{" "}
+                  <span className="font-medium text-foreground">{refParam.toUpperCase()}</span>.
                 </AlertDescription>
               </Alert>
             )}
@@ -195,7 +211,27 @@ function RegisterPageContent() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={cargando}>
+            <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 rounded border"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+              />
+              <span>
+                Acepto los{" "}
+                <Link href="/legal/terminos" className="text-primary hover:underline" target="_blank">
+                  Términos y condiciones
+                </Link>{" "}
+                y la{" "}
+                <Link href="/legal/privacidad" className="text-primary hover:underline" target="_blank">
+                  Política de privacidad
+                </Link>
+                .
+              </span>
+            </label>
+
+            <Button type="submit" className="w-full" disabled={cargando || !acceptTerms}>
               {cargando
                 ? "Creando cuenta..."
                 : activarIntent

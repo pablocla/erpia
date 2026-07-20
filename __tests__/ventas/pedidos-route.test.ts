@@ -5,10 +5,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NextRequest } from "next/server"
 import { POST } from "@/app/api/ventas/pedidos/route"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
 
 vi.mock("@/lib/auth/empresa-guard", () => ({
-  getAuthContext: vi.fn(),
+  withAuthAndTenant: (handler: any) => {
+    return async (req: any, ...args: any[]) => {
+      return handler(req, { empresaId: 1, userId: 42 }, ...args)
+    }
+  },
 }))
 
 vi.mock("@/lib/ventas/ventas-service", () => ({
@@ -17,15 +20,8 @@ vi.mock("@/lib/ventas/ventas-service", () => ({
   },
 }))
 
-const mockGetAuthContext = getAuthContext as unknown as ReturnType<typeof vi.fn>
-
-beforeEach(() => {
-  vi.clearAllMocks()
-})
-
 describe("POST /api/ventas/pedidos", () => {
   it("should facturar pedido and emit FACTURA_EMITIDA event", async () => {
-    mockGetAuthContext.mockResolvedValue({ ok: true, auth: { empresaId: 1, userId: 42 } })
 
     const mockResult = {
       id: 55,

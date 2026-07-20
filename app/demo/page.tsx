@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { IndustrySelector } from "@/components/onboarding/industry-selector"
@@ -16,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MotionFadeDown } from "@/components/ui/motion"
 
 function DemoSensorPageContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const activarParam = searchParams.get("activar")
   const { loginConToken } = useAuth()
@@ -28,8 +27,9 @@ function DemoSensorPageContent() {
     setLoadingId(industryId)
     try {
       const dest = await launchIndustryDemo(industryId, loginConToken, { activar: activarParam })
-      // replace: evita volver al sensor con back y re-provisionar
-      router.replace(dest)
+      // Hard navigation: la sesión queda en localStorage/cookie y el dashboard no pega
+      // APIs sin token (SPA replace a veces corría effects antes de hidratar el store).
+      window.location.assign(dest)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de conexión")
       setLoadingId(null)

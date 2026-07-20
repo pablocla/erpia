@@ -207,11 +207,9 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     tagline: "Socios, cuotas y morosos en semáforo.",
     wowMoment: "Reclamá cuota vencida por WhatsApp con un botón.",
     goldenPath: "/dashboard/membresias",
-    engancheId: "niche.gimnasio_barrio",
     featured: true,
     menuLabels: {
       "/dashboard/membresias": "Socios",
-      "/dashboard/nicho/gimnasio": "Cuotas barrio",
       "/dashboard/agenda": "Clases",
       "/dashboard/clientes": "Socios",
       "/dashboard/cuentas-cobrar": "Cuotas vencidas",

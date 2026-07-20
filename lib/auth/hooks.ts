@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { clearAuthTokenCookie, setAuthTokenCookie } from "@/lib/auth/token-cookie"
 import { useAuthStore } from "@/lib/stores/auth-store"
 
@@ -12,80 +12,116 @@ interface Usuario {
   empresaId: number
 }
 
+/** Rutas donde un token inválido no debe expulsar al usuario (flujo demo/público). */
+function isAuthOptionalPath(pathname: string): boolean {
+  if (pathname.startsWith("/login")) return true
+  if (pathname.startsWith("/demo")) return true
+  if (pathname.startsWith("/claver") && !pathname.startsWith("/claver-cloud")) return true
+  if (pathname.startsWith("/marketing")) return true
+  if (pathname.startsWith("/modulos")) return true
+  if (pathname === "/" || pathname === "") return true
+  return false
+}
+
+function toAuthUser(usuarioData: Usuario) {
+  return {
+    ...usuarioData,
+    id: String(usuarioData.id),
+  } as unknown as import("@/lib/stores/auth-store").AuthUser
+}
+
 export function useAuth() {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [token, setToken] = useState<string | null>(null)
+  /** Evita que un /api/auth/me obsoleto borre un login/demo recién aplicado. */
+  const sessionGenRef = useRef(0)
+
+  const clearSessionLocal = useCallback(() => {
+    localStorage.removeItem("token")
+    clearAuthTokenCookie()
+    setToken(null)
+    setUsuario(null)
+    useAuthStore.getState().logout()
+  }, [])
+
+  const cargarUsuario = useCallback(
+    async (tokenActual: string, gen: number) => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${tokenActual}`,
+          },
+        })
+
+        // Login/demo concurrente: no tocar la sesión nueva
+        if (gen !== sessionGenRef.current) return
+        if (typeof window !== "undefined" && localStorage.getItem("token") !== tokenActual) return
+
+        if (response.ok) {
+          const data = await response.json()
+          setUsuario(data.usuario)
+          useAuthStore.getState().login(tokenActual, data.usuario)
+          return
+        }
+
+        const data = await response.json().catch(() => ({}))
+        if (data.code === "TOKEN_EXPIRED" || response.status === 401) {
+          const refreshed = await intentarRefresh(tokenActual, gen)
+          if (refreshed) return
+        }
+
+        // Token inválido: limpiar sin redirigir en rutas públicas (demo, marketing…)
+        if (gen !== sessionGenRef.current) return
+        if (typeof window !== "undefined" && localStorage.getItem("token") !== tokenActual) return
+
+        clearSessionLocal()
+        if (typeof window !== "undefined" && !isAuthOptionalPath(window.location.pathname)) {
+          window.location.href = "/login"
+        }
+      } catch (error) {
+        console.error("Error al cargar usuario:", error)
+      } finally {
+        if (gen === sessionGenRef.current) setCargando(false)
+      }
+    },
+    [clearSessionLocal],
+  )
 
   useEffect(() => {
-    // Cargar token del localStorage
     const tokenGuardado = localStorage.getItem("token")
     if (tokenGuardado) {
       setAuthTokenCookie(tokenGuardado)
       setToken(tokenGuardado)
-      cargarUsuario(tokenGuardado)
+      const gen = sessionGenRef.current
+      void cargarUsuario(tokenGuardado, gen)
     } else {
       setCargando(false)
     }
-  }, [])
+  }, [cargarUsuario])
 
-  const cargarUsuario = async (tokenActual: string) => {
-    try {
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${tokenActual}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUsuario(data.usuario)
-        // Sync to Zustand store
-        useAuthStore.getState().login(tokenActual, data.usuario)
-      } else {
-        // If token expired, try to refresh it
-        const data = await response.json().catch(() => ({}))
-        if (data.code === "TOKEN_EXPIRED" || response.status === 401) {
-          const refreshed = await intentarRefresh(tokenActual)
-          if (refreshed) return
-        }
-        // Token inválido and refresh failed, clean up and redirect to login
-        localStorage.removeItem("token")
-        clearAuthTokenCookie()
-        setToken(null)
-        useAuthStore.getState().logout()
-        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-          window.location.href = "/login"
-        }
-      }
-    } catch (error) {
-      console.error("Error al cargar usuario:", error)
-    } finally {
-      setCargando(false)
-    }
-  }
-
-  const intentarRefresh = async (tokenExpirado: string): Promise<boolean> => {
+  const intentarRefresh = async (tokenExpirado: string, gen: number): Promise<boolean> => {
     try {
       const res = await fetch("/api/auth/refresh", {
         method: "POST",
         headers: { Authorization: `Bearer ${tokenExpirado}` },
       })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.token) {
-          localStorage.setItem("token", data.token)
-          setToken(data.token)
-          if (data.usuario) {
-            setUsuario(data.usuario)
-            // Sync to Zustand store
-            useAuthStore.getState().login(data.token, data.usuario)
-          }
-          return true
-        }
+      if (!res.ok) return false
+      const data = await res.json()
+      if (!data.token) return false
+      if (gen !== sessionGenRef.current) return false
+
+      localStorage.setItem("token", data.token)
+      setAuthTokenCookie(data.token)
+      setToken(data.token)
+      if (data.usuario) {
+        setUsuario(data.usuario)
+        useAuthStore.getState().login(data.token, data.usuario)
       }
-    } catch {}
-    return false
+      return true
+    } catch {
+      return false
+    }
   }
 
   const login = async (email: string, password: string) => {
@@ -100,12 +136,13 @@ export function useAuth() {
     const data = await response.json()
 
     if (data.success) {
+      sessionGenRef.current += 1
       localStorage.setItem("token", data.token)
       setAuthTokenCookie(data.token)
       setToken(data.token)
       setUsuario(data.usuario)
-      // Sync to Zustand store
-      useAuthStore.getState().login(data.token, { ...data.usuario, id: String(data.usuario.id) } as unknown as import("@/lib/stores/auth-store").AuthUser)
+      useAuthStore.getState().login(data.token, toAuthUser(data.usuario))
+      setCargando(false)
       return { success: true, usuario: data.usuario, token: data.token as string }
     }
 
@@ -113,6 +150,7 @@ export function useAuth() {
   }
 
   const logout = () => {
+    sessionGenRef.current += 1
     localStorage.removeItem("token")
     sessionStorage.removeItem("claver-cloud-verified")
     sessionStorage.removeItem("claver_analyst_token")
@@ -120,24 +158,25 @@ export function useAuth() {
     clearAuthTokenCookie()
     setToken(null)
     setUsuario(null)
-    // Sync to Zustand store
     useAuthStore.getState().logout()
   }
 
   const loginConToken = (tokenNuevo: string, usuarioData: Usuario) => {
+    // Invalida cualquier /api/auth/me en vuelo de un token viejo
+    sessionGenRef.current += 1
     localStorage.setItem("token", tokenNuevo)
     setAuthTokenCookie(tokenNuevo)
     setToken(tokenNuevo)
     setUsuario(usuarioData)
-    // Sync to Zustand store
-    useAuthStore.getState().login(tokenNuevo, { ...usuarioData, id: String(usuarioData.id) } as unknown as import("@/lib/stores/auth-store").AuthUser)
+    useAuthStore.getState().login(tokenNuevo, toAuthUser(usuarioData))
+    setCargando(false)
   }
 
   return {
     usuario,
     token,
     cargando,
-    autenticado: !!usuario,
+    autenticado: !!usuario && !!token,
     login,
     loginConToken,
     logout,

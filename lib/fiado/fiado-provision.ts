@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { prisma } from "@/lib/prisma"
 import { persistSistemaLog } from "@/lib/ops/sistema-log"
 
@@ -22,8 +21,9 @@ export async function activarLibretaFiado(empresaId: number) {
 
   await persistSistemaLog({
     empresaId,
-    severidad: "error",
+    severidad: "info",
     categoria: "FIADO_PROVISION",
+    contexto: "activacion_fiado",
     mensaje: "Libreta Fiado activada — defaults de configuración aplicados",
     metadata: { whatsappSugerido: !!waActivo },
   })

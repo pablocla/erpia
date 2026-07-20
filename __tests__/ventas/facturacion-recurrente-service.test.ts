@@ -99,7 +99,9 @@ describe("Facturación Recurrente Service", () => {
       ])
       mockPrismaClient.cliente.findUnique.mockResolvedValue({ condicionIva: "Consumidor Final" })
       mockPrismaClient.empresa.findUnique.mockResolvedValue({ puntoVenta: 1 })
-      mockPrismaClient.factura.findFirst.mockResolvedValue({ numero: 10 })
+      mockPrismaClient.factura.findFirst
+        .mockResolvedValueOnce(null as any)
+        .mockResolvedValueOnce({ numero: 10 } as any)
       mockPrismaClient.factura.create.mockResolvedValue({ id: 99, numero: 11 })
       mockPrismaClient.facturaRecurrente.update.mockResolvedValue({ id: 1 })
 

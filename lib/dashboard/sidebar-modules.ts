@@ -120,6 +120,10 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", translationKey: "items.dashboard" },
       { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas", translationKey: "items.myTasks" },
+      { href: "/dashboard/partner-portal", icon: Users, label: "Portal Partner" },
+      { href: "/dashboard/contador", icon: Calculator, label: "Pack Contador" },
+      { href: "/dashboard/cobranza-aas", icon: Wallet, label: "Cobranza as a Service" },
+      { href: "/dashboard/hardware-setup", icon: Package, label: "Hardware POS" },
     ],
   },
   {

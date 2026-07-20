@@ -28,6 +28,7 @@ vi.mock("@/lib/afip/soap-client", () => {
 
 vi.mock("@/lib/config/rubro-config-service", () => ({
   isFeatureActiva: vi.fn().mockResolvedValue(true),
+  FEATURES: { MERCADO_LIBRE: "mercado_libre" },
 }))
 
 import { FacturaService } from "@/lib/afip/factura-service"

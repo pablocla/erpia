@@ -129,11 +129,14 @@ function LoginPageContent() {
           )}
 
           <Button asChild variant="outline" className="w-full h-11 gap-2">
-            <Link href={activarParam ? `/demo?activar=${activarParam}` : "/demo"}>
+            <Link href={activarParam ? `/demo?activar=${encodeURIComponent(activarParam)}` : "/demo"}>
               <PlayCircle className="h-4 w-4" />
               Probar demo interactiva por rubro
             </Link>
           </Button>
+          <p className="text-center text-xs text-muted-foreground -mt-1">
+            Elegís el rubro, se crea una empresa de prueba y entrás logueado al panel.
+          </p>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

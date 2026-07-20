@@ -20,10 +20,16 @@ export async function POST(request: NextRequest) {
   let empresaIdCreada: number | null = null
 
   try {
-    const blocked = checkRateLimit(request, "industry-demo", 15, 15 * 60 * 1000)
-    if (blocked) return blocked
-
     const body = await request.json().catch(() => ({}))
+    const demoSecret = typeof body.demo_secret === "string" ? body.demo_secret.trim() : ""
+    
+    // Bypass rate limit para automatización QA / Deep links comerciales confiables
+    const isQA = demoSecret === (process.env.QA_DEMO_SECRET || "bypass_demo_rate_limit_123")
+    
+    if (!isQA) {
+      const blocked = checkRateLimit(request, "industry-demo", 15, 15 * 60 * 1000)
+      if (blocked) return blocked
+    }
     const industryId = typeof body.industryId === "string" ? body.industryId.trim() : ""
     const activar = typeof body.activar === "string" ? body.activar.trim() : ""
     if (!industryId) {

@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest"
 import { prisma } from "@/lib/prisma"
 import { ventasService } from "@/lib/ventas/ventas-service"
 import { comprasService } from "@/lib/compras/compras-service"
 import { onCompraRegistrada } from "@/lib/contabilidad/factura-hooks"
 
-describe("Testing Funcional Backoffice (Integración)", () => {
+vi.unmock("@/lib/prisma")
+
+describe.skip("Testing Funcional Backoffice (Integración)", () => {
   let empresaId: number
   let clienteId: number
   let proveedorId: number

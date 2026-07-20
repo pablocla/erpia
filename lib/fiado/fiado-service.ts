@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Libreta Fiado — almacenes de barrio
  * Convención saldo: saldoCuentaCorriente < 0 = deuda del cliente
@@ -25,7 +24,7 @@ export function calcularCreditoDisponible(limiteCredito: number, saldoCuentaCorr
 }
 
 export type ValidarFiadoResult =
-  | { ok: true; disponible: number; deudaActual: number }
+  | { ok: true; disponible: number; deudaActual: number; error?: never }
   | { ok: false; error: string; deudaActual?: number; limite?: number; disponible?: number }
 
 export async function validarFiadoPos(
@@ -188,6 +187,8 @@ export async function anotarFiadoLibreta(input: {
   await persistSistemaLog({
     empresaId: input.empresaId,
     severidad: "info",
+    categoria: "FIADO",
+    contexto: "anotar_fiado",
     mensaje: `Fiado libreta $${monto} cliente #${input.clienteId}`,
     metadata: {
       modulo: "fiado",
@@ -374,6 +375,8 @@ export async function cobrarFiadoLibreta(input: {
   await persistSistemaLog({
     empresaId: input.empresaId,
     severidad: "info",
+    categoria: "FIADO",
+    contexto: "cobrar_fiado",
     mensaje: `Cobro fiado $${monto} cliente #${input.clienteId} → ${result.reciboNumero}`,
     metadata: {
       modulo: "fiado",
@@ -382,6 +385,16 @@ export async function cobrarFiadoLibreta(input: {
       monto,
     },
   })
+
+  void import("@/lib/cobranza/as-a-service")
+    .then(({ registrarFeePorCobroRecuperado }) =>
+      registrarFeePorCobroRecuperado({
+        empresaId: input.empresaId,
+        montoRecuperado: monto,
+        reciboId: result.reciboId,
+      }),
+    )
+    .catch((err) => console.warn("[cobranza-aas] fee fiado:", err))
 
   return {
     ok: true,
@@ -584,6 +597,8 @@ export async function enviarNotificacionFiado(input: {
   await persistSistemaLog({
     empresaId: input.empresaId,
     severidad: "info",
+    categoria: "FIADO",
+    contexto: "notificar_fiado",
     mensaje: `Notificación fiado ${input.numeroCompleto} → email:${enviados} wa:${whatsapp ? "si" : "no"}`,
     metadata: { facturaId: input.facturaId, clienteId: input.clienteId, linkPago: !!linkPago, modulo: "fiado" },
   })

@@ -71,6 +71,11 @@ export function ProductUpsellPanel({ className }: { className?: string }) {
     try {
       const res = await authFetch("/api/billing/create-subscription", { method: "POST" })
       const data = await res.json()
+      if (res.ok && data.paidWithCredit) {
+        toast({ title: "Pagado con crédito partner", description: data.message })
+        window.location.reload()
+        return
+      }
       if (res.ok && data.init_point) {
         window.location.href = data.init_point
         return
@@ -97,6 +102,11 @@ export function ProductUpsellPanel({ className }: { className?: string }) {
       const data = await res.json()
       if (res.ok && data.free) {
         toast({ title: data.message ?? "Módulo activado" })
+        window.location.reload()
+        return
+      }
+      if (res.ok && data.paidWithCredit) {
+        toast({ title: "Activado con crédito partner", description: data.message })
         window.location.reload()
         return
       }

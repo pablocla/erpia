@@ -288,6 +288,17 @@ export class CobrosService {
       return recibo
     })
 
+    // Cobranza-as-a-service fee (fuera de la tx contable)
+    void import("@/lib/cobranza/as-a-service")
+      .then(({ registrarFeePorCobroRecuperado }) =>
+        registrarFeePorCobroRecuperado({
+          empresaId,
+          montoRecuperado: montoTotal,
+          reciboId: result.id,
+        }),
+      )
+      .catch((err) => console.warn("[cobranza-aas] fee cobro:", err))
+
     // 4. Emit domain event
     await eventBus.emit<ReciboEmitidoPayload>({
       type: "RECIBO_EMITIDO",

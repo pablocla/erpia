@@ -53,7 +53,7 @@ export function PosPendientesPanel({
           <Clock className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-xs font-semibold">Pendientes del turno</span>
           {suspendidas.length > 0 && (
-            <Badge variant="secondary" className="h-5 text-[10px]">
+            <Badge variant="default" className="h-5 text-[10px] animate-pulse bg-primary">
               {suspendidas.length}
             </Badge>
           )}

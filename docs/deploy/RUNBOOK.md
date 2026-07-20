@@ -2,6 +2,9 @@
 
 Este documento describe el procedimiento paso a paso para desplegar y configurar el sistema ClavERP en entornos de staging/producción (Recomendado: **Vercel** para el frontend Next.js y **Railway / Supabase** para la base de datos PostgreSQL).
 
+**Alineación producto / comercial (demo vs trial vs go-live PRD):** ver [`docs/GO_LIVE_PRD.md`](../GO_LIVE_PRD.md).  
+**Variables en Vercel (no `.env` en el server):** [`docs/deploy/VERCEL_ENV.md`](./VERCEL_ENV.md).
+
 ---
 
 ## 1. Infraestructura Requerida
@@ -23,7 +26,7 @@ Las siguientes variables de entorno deben estar configuradas en la plataforma de
 ### Base de Datos
 - `DATABASE_URL`: String de conexión de pooling (transaccional) para Prisma Client.
   *Ejemplo: `postgresql://user:pass@pooler-host:5432/dbname?pgbounce=true`*
-- `DIRECT_DATABASE_URL`: String de conexión directa a la base de datos (requerida por Prisma para ejecutar migraciones `prisma migrate deploy`).
+- `DIRECT_URL` (alias: `DIRECT_DATABASE_URL`): String de conexión directa a la base de datos (requerida por Prisma para migraciones).
   *Ejemplo: `postgresql://user:pass@direct-host:5432/dbname`*
 
 ### Autenticación y Seguridad
@@ -37,8 +40,9 @@ Las siguientes variables de entorno deben estar configuradas en la plataforma de
 - `TWILIO_PHONE_NUMBER`: Número del sandbox o número de producción de Twilio (formato `whatsapp:+14155552671`).
 
 ### Pasarela de Pagos (MercadoPago)
-- `MERCADOPAGO_ACCESS_TOKEN`: Token de producción/sandbox para cobros con QR y links de pago en el POS/E-commerce.
-- `MERCADOPAGO_WEBHOOK_SECRET`: Clave para validar la firma HMAC de notificaciones instantáneas de pago (IPN).
+- `MP_ACCESS_TOKEN` (alias: `MERCADOPAGO_ACCESS_TOKEN`): Token de producción/sandbox.
+- `MP_WEBHOOK_SECRET` (alias: `MERCADOPAGO_WEBHOOK_SECRET`): Firma HMAC del webhook.
+- Ver checklist completa en **`docs/deploy/VERCEL_ENV.md`** (panel Environment de Vercel, sin `.env` en el server).
 
 ### AFIP / Facturación Electrónica
 - `AFIP_CUIT`: CUIT de la empresa emisora (formato numérico sin guiones: `20123456789`).

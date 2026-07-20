@@ -14,6 +14,10 @@ const signupSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
   activar: z.string().optional(),
+  /** Código de partner: /login/register?ref=CONTADOR_PEREZ */
+  ref: z.string().max(40).optional(),
+  /** Oleada 0: aceptación de Términos y Privacidad */
+  acceptTerms: z.boolean().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -30,7 +34,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { empresa: nombreEmpresa, nombre, email, password, activar } = validacion.data
+    const { empresa: nombreEmpresa, nombre, email, password, activar, ref, acceptTerms } =
+      validacion.data
+
+    if (acceptTerms !== true) {
+      return NextResponse.json(
+        {
+          error:
+            "Debés aceptar los Términos y condiciones y la Política de privacidad para crear la cuenta",
+        },
+        { status: 400 },
+      )
+    }
 
     // Verificar que el email no esté en uso
     const usuarioExistente = await prisma.$queryRaw<{ id: number }[]>`
@@ -73,6 +88,26 @@ export async function POST(request: NextRequest) {
       setSignupOrigen(empresaId, "web_register", `email:${email}`),
       ensureWebSignupTrial(empresaId, 14),
     ])
+
+    try {
+      const { persistTosAcceptance } = await import("@/lib/ops/commercial-go-live-checklist")
+      await persistTosAcceptance({ empresaId, email })
+    } catch (err) {
+      console.warn("[signup] tos_accepted no persistido:", err)
+    }
+
+    // Afiliado multi-nivel: ?ref=CODIGO
+    if (ref?.trim()) {
+      try {
+        const { assignReferralToEmpresa } = await import("@/lib/partners/affiliate-service")
+        const r = await assignReferralToEmpresa(empresaId, ref)
+        if (r.assigned) {
+          await setSignupOrigen(empresaId, "partner_ref", `ref:${ref.trim()}|partner:${r.partnerId}`)
+        }
+      } catch (err) {
+        console.warn("[signup] ref partner no asignado:", err)
+      }
+    }
 
     void ensureProyectoImplementacion({
       empresaId,

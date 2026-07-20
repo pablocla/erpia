@@ -80,13 +80,14 @@ Crons en `vercel.json` (trial-dunning). Plan Pro para crons + `maxDuration` alto
 
 ---
 
-## AFIP (cuando facturás real)
+## AFIP Multi-Tenant (Facturación Legal A/B/C)
 
-| Variable |
-|----------|
-| `AFIP_CUIT` o `AFIP_CUIT_EMPRESA` |
-| `AFIP_ENTORNO` = `homologacion` \| `produccion` |
-| `AFIP_CERT_PROD` / `AFIP_KEY_PROD` (base64 o PEM) |
+> **Arquitectura Multi-Tenant**: Los certificados `.crt` y `.key` de cada empresa **NO se configuran globalmente en Vercel**, sino que se cargan de forma independiente para cada tenant en la Base de Datos desde `/dashboard/configuracion` (API `/api/afip/subir-certificados`). Esto permite que múltiples empresas emitan facturas con sus propios CUITs y certificados en el mismo deploy.
+
+| Variable Global (Opcional Fallback) | Notas |
+|-------------------------------------|-------|
+| `AFIP_ENTORNO` | `homologacion` \| `produccion` (Default global si no está seteado por empresa). |
+| `AFIP_CERT_PROD` / `AFIP_KEY_PROD` | Certificado de fallback dev/testing global (opcional). |
 
 ---
 

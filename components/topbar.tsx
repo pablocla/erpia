@@ -192,6 +192,21 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
       </Badge>
     )
 
+  const tieneModuloPosOCaja = Boolean(
+    !modoLite ||
+    modoLite === "completo" ||
+    ["pos", "almacen", "fiado", "ferreteria", "kiosco", "carniceria"].includes(modoLite) ||
+    productosSku?.["core.pos"] ||
+    productosSku?.["core.caja"]
+  )
+
+  const tieneModuloAfip = Boolean(
+    !modoLite ||
+    modoLite === "completo" ||
+    ["pos", "almacen", "fiado", "ferreteria", "monotributo", "freelance_mt", "kiosco", "carniceria"].includes(modoLite) ||
+    productosSku?.["core.facturacion"]
+  )
+
   return (
     <header className="app-topbar h-[52px] border-b flex items-center justify-between gap-2 px-3 sm:px-5 shrink-0 z-30 relative">
       <div className="flex items-center gap-2 min-w-0">
@@ -260,14 +275,16 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
             </TooltipProvider>
           )}
 
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-            <Link href="/dashboard/caja">
-              <Wallet className="h-3.5 w-3.5" />
-              {cajaBadge}
-            </Link>
-          </Button>
+          {tieneModuloPosOCaja && (
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
+              <Link href="/dashboard/caja">
+                <Wallet className="h-3.5 w-3.5" />
+                {cajaBadge}
+              </Link>
+            </Button>
+          )}
 
-          {afipLabel && afipLabel !== "AFIP OK" && (
+          {tieneModuloAfip && afipLabel && afipLabel !== "AFIP OK" && (
             <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs hidden lg:inline-flex" asChild>
               <Link href="/dashboard/configuracion?seccion=afip">
                 <Badge variant="outline" className="h-4 text-[10px] px-1.5 bg-amber-500/10 text-amber-800 border-amber-200">
@@ -373,13 +390,15 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
             <DropdownMenuSeparator />
 
             <div className="md:hidden">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/caja" className="gap-2">
-                  <Wallet className="h-4 w-4" />
-                  Caja {cajaAbierta ? "(abierta)" : cajaAbierta === false ? "(cerrada)" : ""}
-                </Link>
-              </DropdownMenuItem>
-              {afipLabel && afipLabel !== "AFIP OK" && (
+              {tieneModuloPosOCaja && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/caja" className="gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Caja {cajaAbierta ? "(abierta)" : cajaAbierta === false ? "(cerrada)" : ""}
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              {tieneModuloAfip && afipLabel && afipLabel !== "AFIP OK" && (
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/configuracion?seccion=afip" className="gap-2">
                     <Badge variant="outline" className="text-[10px]">{afipLabel}</Badge>

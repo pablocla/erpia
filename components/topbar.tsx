@@ -38,6 +38,7 @@ import {
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import { useAuthFetch } from "@/hooks/use-auth-fetch"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
 import { TrialTopbarPill } from "@/components/dashboard/trial-topbar-pill"
 import { ProductContextPill } from "@/components/dashboard/product-context-pill"
@@ -53,130 +54,55 @@ interface TopbarProps {
 export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: TopbarProps) {
   const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
   const toggleChatWidget = useUIStore((s) => s.toggleChatWidget)
-  const [tareasPendientes, setTareasPendientes] = useState(0)
-  const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [afipLabel, setAfipLabel] = useState<string | null>(null)
-  const [ticketsAbiertos, setTicketsAbiertos] = useState(0)
-  const [isClaverAnalyst, setIsClaverAnalyst] = useState(false)
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([])
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([])
 
-  const handleMarkRead = (id: string) =>
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-  const handleMarkAllRead = () =>
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  const handleDismiss = (id: string) =>
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-  const handleClearAll = () => setNotifications([])
+  // 1) Caja & AFIP Status
+  const { data: posData } = useAuthFetch<{ cajaAbierta?: boolean; afip?: { label?: string } }>("/api/pos/venta", {
+    refreshInterval: 60_000,
+  })
+  const cajaAbierta = posData ? Boolean(posData.cajaAbierta) : null
+  const afipLabel = posData?.afip?.label ?? null
 
-  useEffect(() => {
-    const cargarCaja = async () => {
-      const token = localStorage.getItem("token")
-      if (!token) return
-      try {
-        const res = await fetch("/api/pos/venta", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setCajaAbierta(Boolean(data.cajaAbierta))
-          setAfipLabel(data.afip?.label ?? null)
-        }
-      } catch {
-        /* silencioso */
-      }
-    }
-    void cargarCaja()
-    const interval = setInterval(() => void cargarCaja(), 60_000)
-    return () => clearInterval(interval)
-  }, [])
+  // 2) Centro de Alertas
+  const { data: alertasData } = useAuthFetch<{ preview?: Array<{ id: string; titulo: string; descripcion?: string; prioridad?: string; createdAt?: string; href?: string }> }>("/api/centro-alertas?preview=true", {
+    refreshInterval: 120_000,
+  })
+  const rawNotifications: Notification[] = (alertasData?.preview ?? []).map((a) => ({
+    id: a.id,
+    title: a.titulo,
+    description: a.descripcion,
+    type: a.prioridad === "alta" ? ("alerta" as const) : ("info" as const),
+    module: "alertas",
+    timestamp: a.createdAt ? new Date(a.createdAt) : new Date(),
+    read: readNotificationIds.includes(a.id),
+    href: a.href ?? "/dashboard/centro-alertas",
+  }))
+  const notifications = rawNotifications.filter((n) => !dismissedNotificationIds.includes(n.id))
 
-  useEffect(() => {
-    const cargarAlertas = async () => {
-      const token = localStorage.getItem("token")
-      if (!token) return
-      try {
-        const res = await fetch("/api/centro-alertas?preview=true", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) return
-        const data = await res.json()
-        const items = data.preview ?? []
-        setNotifications(
-          items.map((a: { id: string; titulo: string; descripcion?: string; prioridad?: string; createdAt?: string; href?: string }) => ({
-            id: a.id,
-            title: a.titulo,
-            description: a.descripcion,
-            type: a.prioridad === "alta" ? "alerta" as const : "info" as const,
-            module: "alertas",
-            timestamp: a.createdAt ? new Date(a.createdAt) : new Date(),
-            read: false,
-            href: a.href ?? "/dashboard/centro-alertas",
-          })),
-        )
-      } catch {
-        /* silencioso */
-      }
-    }
-    void cargarAlertas()
-    const interval = setInterval(() => void cargarAlertas(), 120_000)
-    return () => clearInterval(interval)
-  }, [])
+  const handleMarkRead = (id: string) => setReadNotificationIds((prev) => [...prev, id])
+  const handleMarkAllRead = () => setReadNotificationIds(notifications.map((n) => n.id))
+  const handleDismiss = (id: string) => setDismissedNotificationIds((prev) => [...prev, id])
+  const handleClearAll = () => setDismissedNotificationIds(notifications.map((n) => n.id))
 
-  useEffect(() => {
-    const cargarTickets = async () => {
-      const token = localStorage.getItem("token")
-      if (!token) return
-      try {
-        const res = await fetch("/api/tickets/metricas", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setTicketsAbiertos(data.resumen?.abiertos ?? 0)
-        }
-      } catch {
-        /* silencioso */
-      }
-    }
-    void cargarTickets()
-    const interval = setInterval(() => void cargarTickets(), 120_000)
-    return () => clearInterval(interval)
-  }, [])
+  // 3) Tickets abiertos
+  const { data: ticketsData } = useAuthFetch<{ resumen?: { abiertos?: number } }>("/api/tickets/metricas", {
+    refreshInterval: 120_000,
+  })
+  const ticketsAbiertos = ticketsData?.resumen?.abiertos ?? 0
+
+  // 4) Tareas pendientes
+  const { data: tareasData } = useAuthFetch<unknown[]>("/api/mis-tareas?incluirCompletadas=false", {
+    refreshInterval: 60_000,
+  })
+  const tareasPendientes = Array.isArray(tareasData) ? tareasData.length : 0
+
+  // 5) Analista Claver Cloud status
+  const { data: analystData } = useAuthFetch<{ isAnalyst?: boolean }>("/api/claver/analista/status")
+  const isClaverAnalyst = Boolean(analystData?.isAnalyst)
 
   const handleLogout = useCallback(() => {
     performLogoutAndRedirect("/login")
-  }, [])
-
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-    fetch("/api/claver/analista/status", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
-      .catch(() => setIsClaverAnalyst(false))
-  }, [])
-
-  useEffect(() => {
-    const cargarTareas = async () => {
-      const token = localStorage.getItem("token")
-      if (!token) return
-      try {
-        const res = await fetch("/api/mis-tareas?incluirCompletadas=false", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setTareasPendientes(Array.isArray(data) ? data.length : 0)
-        }
-      } catch {
-        /* silencioso */
-      }
-    }
-    void cargarTareas()
-    const interval = setInterval(() => void cargarTareas(), 60_000)
-    return () => clearInterval(interval)
   }, [])
 
   const cajaBadge =

@@ -11,6 +11,7 @@ function db() {
 export async function iniciarImpersonacionTenant(
   analyst: { userId: number; email: string },
   empresaId: number,
+  targetPath?: string,
 ) {
   const allowed = await canAnalystAccessEmpresa(analyst.email, empresaId)
   if (!allowed) throw new Error("No tenés asignado este cliente")
@@ -33,19 +34,21 @@ export async function iniciarImpersonacionTenant(
     analystEmail: analyst.email,
   })
 
+  const redirectUrl = targetPath && targetPath.startsWith("/") ? targetPath : "/dashboard/configuracion"
+
   await persistSistemaLog({
     empresaId,
     severidad: "info",
     categoria: "ops",
     contexto: "impersonacion:analista",
-    mensaje: `Analista ${analyst.email} abrió sesión impersonada en el ERP`,
-    metadata: { analystUserId: analyst.userId },
+    mensaje: `Analista ${analyst.email} abrió sesión impersonada en el ERP (${redirectUrl})`,
+    metadata: { analystUserId: analyst.userId, targetPath: redirectUrl },
   })
 
   return {
     token,
     empresa,
-    redirectUrl: "/dashboard/configuracion",
+    redirectUrl,
     expiresInSec: 7200,
   }
 }

@@ -1,7 +1,11 @@
 import { describe, it, expect, afterEach, vi } from "vitest"
 import { NextRequest } from "next/server"
 import crypto from "crypto"
-import { validateTwilioSignature, validarFirmaWebhook } from "@/lib/auth/webhook-guard"
+import {
+  validateTwilioSignature,
+  validarFirmaWebhook,
+  validarWebhookMercadoLibre,
+} from "@/lib/auth/webhook-guard"
 
 describe("validateTwilioSignature", () => {
   it("valida HMAC-SHA1 de URL + params ordenados", () => {
@@ -66,5 +70,89 @@ describe("validarFirmaWebhook Twilio", () => {
       body: "{}",
     })
     expect(validarFirmaWebhook(r, "{}")).toBe(false)
+  })
+})
+
+describe("validarWebhookMercadoLibre", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    delete process.env.ML_WEBHOOK_SECRET
+    delete process.env.WEBHOOK_SECRET
+    delete process.env.ALLOW_INSECURE_WEBHOOKS
+    delete process.env.ML_WEBHOOK_ALLOW_QUERY
+  })
+
+  it("production sin secret: rechaza", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    delete process.env.ML_WEBHOOK_SECRET
+    delete process.env.WEBHOOK_SECRET
+    const r = new NextRequest("https://app.claver.com.ar/api/webhooks/mercadolibre/1", {
+      method: "POST",
+      body: "{}",
+    })
+    expect(validarWebhookMercadoLibre(r, "{}")).toBe(false)
+  })
+
+  it("acepta Bearer con ML_WEBHOOK_SECRET", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.ML_WEBHOOK_SECRET = "ml-secret-xyz"
+    const r = new NextRequest("https://app.claver.com.ar/api/webhooks/mercadolibre/1", {
+      method: "POST",
+      headers: { Authorization: "Bearer ml-secret-xyz" },
+      body: '{"topic":"orders_v2"}',
+    })
+    expect(validarWebhookMercadoLibre(r, '{"topic":"orders_v2"}')).toBe(true)
+  })
+
+  it("acepta x-webhook-secret", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.WEBHOOK_SECRET = "shared-wh"
+    const r = new NextRequest("https://app.claver.com.ar/api/webhooks/mercadolibre/9", {
+      method: "POST",
+      headers: { "x-webhook-secret": "shared-wh" },
+      body: "{}",
+    })
+    expect(validarWebhookMercadoLibre(r, "{}")).toBe(true)
+  })
+
+  it("rechaza secret incorrecto", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.ML_WEBHOOK_SECRET = "good"
+    const r = new NextRequest("https://app.claver.com.ar/api/webhooks/mercadolibre/1", {
+      method: "POST",
+      headers: { Authorization: "Bearer bad" },
+      body: "{}",
+    })
+    expect(validarWebhookMercadoLibre(r, "{}")).toBe(false)
+  })
+
+  it("acepta HMAC sha256 del body", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.ML_WEBHOOK_SECRET = "hmac-key"
+    const body = '{"topic":"items"}'
+    const hash = crypto.createHmac("sha256", "hmac-key").update(body).digest("hex")
+    const r = new NextRequest("https://app.claver.com.ar/api/webhooks/mercadolibre/1", {
+      method: "POST",
+      headers: { "x-hub-signature-256": `sha256=${hash}` },
+      body,
+    })
+    expect(validarWebhookMercadoLibre(r, body)).toBe(true)
+  })
+
+  it("query token en prod solo con ML_WEBHOOK_ALLOW_QUERY=1", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    process.env.ML_WEBHOOK_SECRET = "q-secret"
+    const rDeny = new NextRequest(
+      "https://app.claver.com.ar/api/webhooks/mercadolibre/1?token=q-secret",
+      { method: "POST", body: "{}" },
+    )
+    expect(validarWebhookMercadoLibre(rDeny, "{}")).toBe(false)
+
+    process.env.ML_WEBHOOK_ALLOW_QUERY = "1"
+    const rOk = new NextRequest(
+      "https://app.claver.com.ar/api/webhooks/mercadolibre/1?token=q-secret",
+      { method: "POST", body: "{}" },
+    )
+    expect(validarWebhookMercadoLibre(rOk, "{}")).toBe(true)
   })
 })

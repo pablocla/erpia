@@ -151,7 +151,8 @@ export default function ClaverTenantSuperAdminPage() {
 
     const res = await fetch(`/api/claver/tenants/${empresaId}/impersonate`, {
       method: "POST",
-      headers: authHeaders(),
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ targetPath: redirectPath }),
     })
     if (!res.ok) return
     const session = await res.json()
@@ -163,7 +164,7 @@ export default function ClaverTenantSuperAdminPage() {
       empresaId: session.empresa.id,
       empresaNombre: session.empresa.nombre,
     })
-    window.location.href = redirectPath ?? session.redirectUrl ?? "/dashboard/configuracion"
+    window.location.href = session.redirectUrl ?? redirectPath ?? "/dashboard/configuracion"
   }
 
   const diagnosticar = async () => {

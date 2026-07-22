@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/trial-dunning",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/sync-afip",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/dispatch",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -9,8 +9,12 @@ import { OTKanban } from "@/components/ot/ot-kanban"
 import { OTDialog } from "@/components/ot/ot-dialog"
 
 export default function OTPage() {
-  const { data, mutate, isLoading } = useAuthFetch("/api/ot")
-  const ots = data?.ots || []
+  const { data, mutate, isLoading } = useAuthFetch<unknown>("/api/ot")
+  const ots = Array.isArray(data)
+    ? data
+    : Array.isArray((data as { ots?: unknown[] } | null)?.ots)
+      ? ((data as { ots: unknown[] }).ots)
+      : []
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (

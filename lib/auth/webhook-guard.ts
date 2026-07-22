@@ -147,3 +147,63 @@ export function validarFirmaWebhook(request: NextRequest, rawBody: string): bool
   // Sin headers de firma reconocidos
   return false
 }
+
+/**
+ * Webhook MercadoLibre (notificaciones por tenant en URL).
+ *
+ * ML no envía un HMAC estándar universal; usamos secreto compartido:
+ * - Header `x-webhook-secret` o `Authorization: Bearer <secret>`
+ * - Query `?token=<secret>` (solo non-prod o si se permite explícito)
+ * - Opcional: `x-signature` / `x-hub-signature-256` = sha256=HMAC(body)
+ *
+ * Secrets (en orden): ML_WEBHOOK_SECRET → WEBHOOK_SECRET
+ * Producción: fail-closed si no hay secret configurado.
+ */
+export function validarWebhookMercadoLibre(
+  request: NextRequest,
+  rawBody: string,
+): boolean {
+  const secret =
+    process.env.ML_WEBHOOK_SECRET?.trim() || process.env.WEBHOOK_SECRET?.trim() || ""
+
+  if (!secret) {
+    if (isProd()) {
+      console.warn("[Webhook Guard] ML_WEBHOOK_SECRET/WEBHOOK_SECRET no configurado — rechazo ML")
+      return false
+    }
+    return allowInsecureWebhooks()
+  }
+
+  const auth = request.headers.get("authorization")
+  if (auth === `Bearer ${secret}`) return true
+
+  const headerSecret =
+    request.headers.get("x-webhook-secret") ||
+    request.headers.get("x-ml-webhook-secret") ||
+    request.headers.get("x-callback-token")
+  if (headerSecret && timingSafeEqualStr(headerSecret, secret)) return true
+
+  // HMAC del body (si el orquestador / proxy lo firma)
+  const sigHeader =
+    request.headers.get("x-hub-signature-256") ||
+    request.headers.get("x-signature") ||
+    request.headers.get("x-webhook-signature")
+  if (sigHeader) {
+    const hash = crypto.createHmac("sha256", secret).update(rawBody).digest("hex")
+    const expected = sigHeader.startsWith("sha256=") ? sigHeader.slice(7) : sigHeader
+    if (timingSafeEqualStr(hash, expected)) return true
+    // Si hay signature header pero no matchea, no caer a query en prod
+    if (isProd()) return false
+  }
+
+  // Query token: útil en URL de notificación ML; en prod solo si ML_WEBHOOK_ALLOW_QUERY=1
+  const queryToken =
+    request.nextUrl.searchParams.get("token") ||
+    request.nextUrl.searchParams.get("secret")
+  if (queryToken) {
+    const allowQuery = !isProd() || process.env.ML_WEBHOOK_ALLOW_QUERY === "1"
+    if (allowQuery && timingSafeEqualStr(queryToken, secret)) return true
+  }
+
+  return false
+}

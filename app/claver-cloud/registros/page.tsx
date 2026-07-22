@@ -100,17 +100,18 @@ export default function RegistrosWebPage() {
     }
   }
 
-  async function impersonar(empresaId: number) {
+  async function impersonar(empresaId: number, targetPath?: string) {
     setActionId(empresaId)
     try {
       const res = await fetch(`/api/claver/tenants/${empresaId}/impersonate`, {
         method: "POST",
-        headers: cloudAuthHeaders(),
+        headers: { "Content-Type": "application/json", ...cloudAuthHeaders() },
+        body: JSON.stringify({ targetPath }),
       })
       const data = await res.json()
       if (data.token) {
         localStorage.setItem("token", data.token)
-        window.open("/dashboard", "_blank")
+        window.open(data.redirectUrl || targetPath || "/dashboard", "_blank")
       }
     } finally {
       setActionId(null)

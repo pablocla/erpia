@@ -4,8 +4,19 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Loader2, ArrowRight, User, Calendar, Settings } from "lucide-react"
+import { OTFacturarButton } from "@/components/ot/ot-facturar-button"
 
-export function OTCard({ ot, onMove, isMoving }: { ot: any, onMove: (estado: string) => void, isMoving: boolean }) {
+export function OTCard({
+  ot,
+  onMove,
+  isMoving,
+  onUpdate,
+}: {
+  ot: any
+  onMove: (estado: string) => void
+  isMoving: boolean
+  onUpdate?: () => void
+}) {
   const getNextEstado = (estado: string) => {
     switch (estado) {
       case "RECEPCION": return "PRESUPUESTADO"
@@ -45,15 +56,22 @@ export function OTCard({ ot, onMove, isMoving }: { ot: any, onMove: (estado: str
         )}
         <div className="mt-1 font-medium">{fmt(ot.montoTotal || 0)}</div>
       </CardContent>
-      <CardFooter className="flex gap-2 p-3 pt-0">
-        <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => {/* TODO: Dialog de detalle */}}>
+      <CardFooter className="flex flex-wrap gap-2 p-3 pt-0">
+        <Button variant="outline" size="sm" className="flex-1 text-xs min-w-[4rem]" onClick={() => {/* TODO: Dialog de detalle */}}>
           <Settings className="mr-1 h-3.5 w-3.5" />
           Ver
         </Button>
+        <OTFacturarButton
+          otId={ot.id}
+          estado={ot.estado}
+          disabled={isMoving}
+          onSuccess={onUpdate}
+          className="flex-1 text-xs min-w-[5rem]"
+        />
         {nextEstado && (
           <Button 
             size="sm" 
-            className="w-full text-xs" 
+            className="flex-1 text-xs min-w-[3rem]" 
             disabled={isMoving} 
             onClick={() => onMove(nextEstado)}
           >

@@ -94,4 +94,164 @@ export class OTService {
       data: { estado: nuevoEstado }
     })
   }
+
+  async obtenerPorId(empresaId: number, ordenId: number) {
+    return prisma.ordenServicio.findFirst({
+      where: { id: ordenId, empresaId, activo: true },
+      include: {
+        cliente: { select: { id: true, nombre: true, cuit: true, condicionIva: true } },
+        items: true,
+      },
+    })
+  }
+
+  /**
+   * Facturación 1-click: OT → Factura (borrador pendiente_cae).
+   * Repuestos y mano de obra se mapean a líneas con IVA 21% por defecto.
+   * No solicita CAE síncrono aquí — el caller puede llamar intentarCaeConContingencia.
+   */
+  async facturar(
+    empresaId: number,
+    ordenId: number,
+    opts?: { tipo?: "A" | "B" | "C"; alicuotaIva?: number; solicitarCae?: boolean },
+  ) {
+    const orden = await this.obtenerPorId(empresaId, ordenId)
+    if (!orden) throw new Error("Orden de trabajo no encontrada")
+    if (orden.estado === "CANCELADO") throw new Error("No se puede facturar una OT cancelada")
+    if (orden.estado === "FACTURADA") {
+      const meta = (orden.metadata ?? {}) as Record<string, unknown>
+      if (typeof meta.facturaId === "number") {
+        const existente = await prisma.factura.findFirst({
+          where: { id: meta.facturaId, empresaId },
+          include: { lineas: true },
+        })
+        if (existente) return { factura: existente, yaFacturada: true as const }
+      }
+      throw new Error("La OT ya está facturada")
+    }
+    if (!orden.items.length) throw new Error("La OT no tiene ítems para facturar")
+
+    const tipo = opts?.tipo ?? "B"
+    const alicuota = opts?.alicuotaIva ?? 21
+    const TIPO_CBTE: Record<string, number> = { A: 1, B: 6, C: 11 }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { puntoVenta: true },
+    })
+    const puntoVenta = empresa?.puntoVenta ?? 1
+
+    const lineasCalc = orden.items.map((item) => {
+      const cantidad = Number(item.cantidad)
+      const precioUnitario = Number(item.precioUnitario)
+      const bruto = cantidad * precioUnitario
+      const neto = parseFloat((bruto / (1 + alicuota / 100)).toFixed(2))
+      const iva = parseFloat((bruto - neto).toFixed(2))
+      const tipoLabel = item.tipo === "MANO_OBRA" ? "Mano de obra" : "Repuesto"
+      return {
+        productoId: item.productoId ?? undefined,
+        descripcion: `[${tipoLabel}] ${item.descripcion}`.slice(0, 200),
+        cantidad,
+        precioUnitario,
+        porcentajeIva: alicuota,
+        subtotal: neto,
+        iva,
+        total: parseFloat(bruto.toFixed(2)),
+      }
+    })
+
+    const subtotal = lineasCalc.reduce((s, l) => s + l.subtotal, 0)
+    const ivaTotal = lineasCalc.reduce((s, l) => s + l.iva, 0)
+    const total = lineasCalc.reduce((s, l) => s + l.total, 0)
+
+    const factura = await prisma.$transaction(async (tx) => {
+      const ultima = await tx.factura.findFirst({
+        where: { empresaId, tipo, puntoVenta },
+        orderBy: { numero: "desc" },
+      })
+      const numero = (ultima?.numero ?? 0) + 1
+
+      const fac = await tx.factura.create({
+        data: {
+          empresaId,
+          clienteId: orden.clienteId,
+          tipo,
+          tipoCbte: TIPO_CBTE[tipo] ?? 6,
+          numero,
+          puntoVenta,
+          subtotal: parseFloat(subtotal.toFixed(2)),
+          iva: parseFloat(ivaTotal.toFixed(2)),
+          total: parseFloat(total.toFixed(2)),
+          estado: "pendiente_cae",
+          concepto: 3,
+          observaciones: `Facturado desde OT #${orden.numero}`,
+          lineas: {
+            create: lineasCalc.map((l) => ({
+              productoId: l.productoId,
+              descripcion: l.descripcion,
+              cantidad: l.cantidad,
+              precioUnitario: l.precioUnitario,
+              porcentajeIva: l.porcentajeIva,
+              subtotal: l.subtotal,
+              iva: l.iva,
+              total: l.total,
+            })),
+          },
+        },
+        include: { lineas: true },
+      })
+
+      const prevMeta = (orden.metadata ?? {}) as Record<string, unknown>
+      await tx.ordenServicio.update({
+        where: { id: ordenId },
+        data: {
+          estado: "FACTURADA",
+          metadata: {
+            ...prevMeta,
+            facturaId: fac.id,
+            facturadoAt: new Date().toISOString(),
+          },
+        },
+      })
+
+      return fac
+    })
+
+    let caeResult: { ok: boolean; cae?: string; error?: string } | undefined
+    if (opts?.solicitarCae !== false) {
+      try {
+        const { intentarCaeConContingencia } = await import("@/lib/afip/afip-contingency-service")
+        const r = await intentarCaeConContingencia(factura.id, empresaId)
+        caeResult = {
+          ok: r.estado === "CAE_APROBADO",
+          cae: r.cae,
+          error: r.error,
+        }
+        if (r.cae) {
+          const updated = await prisma.factura.findUnique({
+            where: { id: factura.id },
+            include: { lineas: true },
+          })
+          return {
+            factura: updated ?? factura,
+            yaFacturada: false as const,
+            caeResult,
+            printUrl: `/dashboard/facturas/${factura.id}`,
+          }
+        }
+      } catch (e) {
+        caeResult = {
+          ok: false,
+          error: e instanceof Error ? e.message : "Error al solicitar CAE",
+        }
+      }
+    }
+
+    return {
+      factura,
+      yaFacturada: false as const,
+      caeResult,
+      printUrl: `/dashboard/facturas/${factura.id}`,
+    }
+  }
 }

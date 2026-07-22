@@ -64,7 +64,9 @@ Opcional:
 | `CLAVER_ANALYST_EMAILS` | emails con acceso Cloud, coma-separados |
 | `CRON_SECRET` | **Obligatorio en prod.** Solo `Authorization: Bearer $CRON_SECRET` (no `?secret=` en prod) |
 | `OPS_WORKER_SECRET` | Worker ops `/api/ops/worker/execute` — fail-closed en prod |
-| `WEBHOOK_SECRET` | HMAC Meta/n8n/WhatsApp Cloud |
+| `WEBHOOK_SECRET` | HMAC Meta/n8n/WhatsApp Cloud (+ fallback ML si no hay `ML_WEBHOOK_SECRET`) |
+| `ML_WEBHOOK_SECRET` | **Prod ML.** Bearer / `x-webhook-secret` en `/api/webhooks/mercadolibre/:empresaId` |
+| `ML_WEBHOOK_ALLOW_QUERY` | Solo `1` si la URL de notificación ML usa `?token=` (menos seguro) |
 | `TWILIO_AUTH_TOKEN` | Validación real `X-Twilio-Signature` |
 | `MP_WEBHOOK_SECRET` | Firma webhook MP (canónico + legacy) |
 | `SENTRY_DSN` | Errores fatales (recomendado) |
@@ -74,9 +76,19 @@ Opcional:
 **Webhook MP canónico:** `https://TU_DOMINIO/api/webhooks/mercadopago`  
 (La ruta legacy `/api/mercadopago/webhook` también exige firma; preferí la canónica.)
 
+**Webhook MercadoLibre:** `https://TU_DOMINIO/api/webhooks/mercadolibre/{empresaId}`  
+Auth: `Authorization: Bearer $ML_WEBHOOK_SECRET` o header `x-webhook-secret`.
+
 **Panel analistas:** `/claver-cloud/platform-health` · API `GET /api/claver/platform-health`
 
-Crons en `vercel.json` (trial-dunning). Plan Pro para crons + `maxDuration` altos (demo 60s).
+**Crons en `vercel.json`:**
+| Path | Schedule | Notas |
+|------|----------|--------|
+| `/api/cron/trial-dunning` | `0 12 * * *` | Diario |
+| `/api/cron/sync-afip` | `0 * * * *` | CAE pendiente (horario) |
+| `/api/cron/dispatch` | `*/5 * * * *` | Scheduler (sync-afip + jobs free). Requiere plan que permita cron cada 5 min; si no, usá GitHub Actions → `dispatch` |
+
+Todos los crons: `Authorization: Bearer $CRON_SECRET` en prod.
 
 ---
 

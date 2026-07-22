@@ -44,6 +44,7 @@ import {
   Download,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { matchColumns, type ColumnMatchTarget } from "@/lib/utils/excel-column-matcher"
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -144,9 +145,15 @@ export function CSVImport({
     setCsvHeaders(headers)
     setCsvRows(rows)
 
-    // Auto-map columns by fuzzy matching
-    const autoMap: Record<string, string> = {}
+    // Auto-map con heurística de alias (SKU, PVP, Costo, Alicuota, etc.)
+    const targets: ColumnMatchTarget[] = columns.map((col) => ({
+      key: col.key,
+      label: col.label,
+    }))
+    const autoMap = matchColumns(headers, targets)
+    // Fallback simple para keys no cubiertas por el matcher
     columns.forEach((col) => {
+      if (autoMap[col.key]) return
       const match = headers.find(
         (h) =>
           h.toLowerCase() === col.key.toLowerCase() ||

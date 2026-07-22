@@ -14,8 +14,11 @@
  *
  * Atajos de teclado:
  *   /  o  F1      → foco en búsqueda
+ *   F2            → cobro en efectivo
+ *   F3            → cobro QR / MercadoPago
+ *   F4            → toggle descuento global 10%
  *   F12 / Enter   → abrir cobro (con carrito lleno)
- *   Esc           → limpiar búsqueda / cerrar modal
+ *   Esc           → limpiar búsqueda / vaciar carrito
  *   + / -         → modificar cantidad del último ítem
  *   Del           → eliminar último ítem del carrito
  */
@@ -44,7 +47,7 @@ import {
   Banknote, Smartphone, Receipt, UtensilsCrossed, Store,
   Monitor, CheckCircle2, RefreshCw, X, ScanLine, Percent,
   ArrowLeft, Wallet, User, AlertTriangle, Printer, Settings,
-  BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package,
+  BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package, Scale,
 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -82,6 +85,7 @@ import { resolvePosComprobante } from "@/lib/fiscal/pos-comprobante-policy"
 import type { VarianteGrupo } from "@/lib/pos/pos-catalogo-grupos"
 import { beepEscaneoError, beepEscaneoOk } from "@/lib/pos/barcode-feedback"
 import { productoRequiereCantidadVariable } from "@/lib/pos/producto-cantidad-variable"
+import { parseEAN13ScaleBarcode } from "@/lib/pos/ean13-scale-parser"
 import { useAuthStore } from "@/lib/stores"
 import { useTranslations } from "next-intl"
 
@@ -266,6 +270,13 @@ export default function POSPage() {
   const [tipoManual, setTipoManual] = useState(false)
   const [balanzaProducto, setBalanzaProducto] = useState<Producto | null>(null)
   const [balanzaOpen, setBalanzaOpen] = useState(false)
+  const [modoBalanza, setModoBalanza] = useState<"price" | "weight">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("pos_scale_mode")
+      if (saved === "weight" || saved === "price") return saved
+    }
+    return "price"
+  })
   const empresaNombre = useAuthStore((s) => s.user?.empresaNombre ?? "Comercio")
 
   // ── Modal mesas (modo mesa) ─────────────────────────────────
@@ -582,38 +593,94 @@ export default function POSPage() {
   }
 
   const buscarYAgregarCodigo = useCallback((code: string) => {
-    const p = productos.find(
-      (prod) => prod.codigoBarras === code || prod.codigo === code,
+    const scale = parseEAN13ScaleBarcode(code, 100, modoBalanza)
+    const lookupCode = scale.isScaleBarcode && scale.productSku
+      ? scale.productSku.replace(/^0+/, "") || scale.productSku
+      : code
+    const skuCandidates = scale.isScaleBarcode && scale.productSku
+      ? [scale.productSku, scale.productSku.replace(/^0+/, ""), lookupCode, code]
+      : [code]
+
+    const matchLocal = productos.find(
+      (prod) =>
+        skuCandidates.some(
+          (c) => prod.codigoBarras === c || prod.codigo === c || prod.codigo === code,
+        ),
     )
-    if (p) {
+
+    const finishAdd = (p: Producto) => {
+      if (scale.isScaleBarcode) {
+        if (scale.mode === "weight" && scale.weightKg != null && scale.weightKg > 0) {
+          const qty = Math.round(scale.weightKg * 1000) / 1000
+          agregarProducto(p, {
+            precio: p.precioVenta,
+            cantidad: qty > 0 ? qty : 1,
+          })
+          beepEscaneoOk()
+          toast({
+            title: "Balanza (Peso)",
+            description: `${p.nombre} · ${qty} kg ($${(qty * p.precioVenta).toFixed(2)})`,
+            duration: 1500,
+          })
+          return
+        }
+        if (scale.totalPrice != null && scale.totalPrice > 0 && p.precioVenta > 0) {
+          const qty = Math.round((scale.totalPrice / p.precioVenta) * 1000) / 1000
+          agregarProducto(p, {
+            precio: p.precioVenta,
+            cantidad: qty > 0 ? qty : 1,
+          })
+          beepEscaneoOk()
+          toast({
+            title: "Balanza (Importe)",
+            description: `${p.nombre} · $${scale.totalPrice.toFixed(2)} (${qty} kg)`,
+            duration: 1500,
+          })
+          return
+        }
+      }
       iniciarAgregarProducto(p)
       beepEscaneoOk()
       toast({ title: "Agregado", description: p.nombre, duration: 1200 })
+    }
+
+    if (matchLocal) {
+      finishAdd(matchLocal)
       return
     }
-    fetch(`/api/productos?codigoBarras=${encodeURIComponent(code)}&soloActivos=true`, {
+
+    fetch(`/api/productos?codigoBarras=${encodeURIComponent(lookupCode)}&soloActivos=true`, {
       headers: authH(),
     })
       .then((r) => r.json())
       .then((data) => {
         const list = Array.isArray(data) ? data : []
         const found = list.find(
-          (prod: Producto) => prod.codigoBarras === code || prod.codigo === code,
+          (prod: Producto) =>
+            skuCandidates.some(
+              (c) => prod.codigoBarras === c || prod.codigo === c,
+            ) ||
+            prod.codigoBarras === code ||
+            prod.codigo === code,
         )
         if (found) {
-          iniciarAgregarProducto(found)
-          beepEscaneoOk()
-          toast({ title: "Agregado", description: found.nombre, duration: 1200 })
+          finishAdd(found)
         } else {
           beepEscaneoError()
-          toast({ variant: "destructive", title: "No encontrado", description: `Código ${code}` })
+          toast({
+            variant: "destructive",
+            title: "No encontrado",
+            description: scale.isScaleBarcode
+              ? `PLU balanza ${scale.productSku}`
+              : `Código ${code}`,
+          })
         }
       })
       .catch(() => {
         beepEscaneoError()
         toast({ variant: "destructive", title: "Error al buscar código" })
       })
-  }, [productos, authH, toast, iniciarAgregarProducto])
+  }, [productos, authH, toast, iniciarAgregarProducto, agregarProducto, modoBalanza])
 
   const seleccionarVariante = (productoId: number) => {
     const p = productos.find((x) => x.id === productoId)
@@ -821,13 +888,32 @@ export default function POSPage() {
         searchRef.current?.focus()
         searchRef.current?.select()
       }
+      // F2: cobro efectivo · F3: cobro QR/MP · F4: foco descuento · F12: cobro genérico
+      if (e.key === "F2" && carrito.length > 0) {
+        e.preventDefault()
+        abrirCobro()
+        setPagos([{ medio: "efectivo", monto: 0 }])
+      }
+      if (e.key === "F3" && carrito.length > 0) {
+        e.preventDefault()
+        abrirCobro()
+        setPagos([{ medio: "qr", monto: 0 }])
+      }
+      if (e.key === "F4") {
+        e.preventDefault()
+        setDescuentoGlobal((d) => (d === 0 ? 10 : d === 10 ? 0 : d))
+      }
       if (e.key === "F12" && carrito.length > 0) {
         e.preventDefault()
         abrirCobro()
       }
       if (e.key === "Escape") {
+        if (modalCobroOpen) return
         setBusqueda("")
         searchRef.current?.blur()
+        if (carrito.length > 0 && !busqueda) {
+          setCarrito([])
+        }
       }
       if (e.key === "Delete" && carrito.length > 0) {
         setCarrito((c) => c.slice(0, -1))
@@ -861,7 +947,7 @@ export default function POSPage() {
       window.removeEventListener("click", refocusHandler)
       window.removeEventListener("focus", refocusHandler)
     }
-  }, [carrito, modalCobroOpen, envasesDialogOpen, posLayout.ux.keyboardShortcuts, buscarYAgregarCodigo, abrirCobro])
+  }, [carrito, busqueda, modalCobroOpen, envasesDialogOpen, posLayout.ux.keyboardShortcuts, buscarYAgregarCodigo, abrirCobro])
 
   useEffect(() => {
     let holdTimer: ReturnType<typeof setTimeout> | null = null
@@ -1660,6 +1746,27 @@ export default function POSPage() {
               )}
             </div>
             <PosBarcodeCamera onScan={buscarYAgregarCodigo} disabled={modalCobroOpen} />
+            <Button
+              variant="outline"
+              size="sm"
+              title={`Modo Balanza EAN-13: ${modoBalanza === "price" ? "Importe ($)" : "Peso (kg)"}`}
+              onClick={() =>
+                setModoBalanza((m) => {
+                  const next = m === "price" ? "weight" : "price"
+                  if (typeof window !== "undefined") localStorage.setItem("pos_scale_mode", next)
+                  toast({
+                    title: "Balanza EAN-13",
+                    description: `Modo: ${next === "price" ? "Importe en centavos ($)" : "Peso en gramos (kg)"}`,
+                    duration: 1500,
+                  })
+                  return next
+                })
+              }
+              className="px-2.5 font-mono text-xs gap-1.5 shrink-0"
+            >
+              <Scale className="h-4 w-4" />
+              {modoBalanza === "price" ? "$" : "kg"}
+            </Button>
             {modo === "mesa" && (
               <Button variant="outline" size="sm" onClick={() => { cargarMesas(); setModalMesasOpen(true) }}>
                 <UtensilsCrossed className="h-4 w-4 mr-1" />

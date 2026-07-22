@@ -71,6 +71,7 @@ export function OTKanban({ ots, onUpdate, isLoading }: { ots: OT[], onUpdate: ()
                   ot={ot}
                   isMoving={movingId === ot.id}
                   onMove={(nuevoEstado) => handleMove(ot.id, nuevoEstado)}
+                  onUpdate={onUpdate}
                 />
               ))}
               {colOts.length === 0 && (

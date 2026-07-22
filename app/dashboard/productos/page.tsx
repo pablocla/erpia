@@ -19,6 +19,16 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
 import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 import { formatARS, toNumber } from "@/lib/format/currency"
+import { CSVImport, type ImportColumn, type ImportResult } from "@/components/csv-import"
+
+const PRODUCTO_IMPORT_COLUMNS: ImportColumn[] = [
+  { key: "codigo", label: "Código / SKU", required: true },
+  { key: "nombre", label: "Nombre / Descripción", required: true },
+  { key: "precioVenta", label: "Precio de Venta", required: false },
+  { key: "precioCompra", label: "Precio de Compra (Costo)", required: false },
+  { key: "stock", label: "Stock Inicial", required: false },
+  { key: "porcentajeIva", label: "Alícuota IVA (%)", required: false },
+]
 
 interface Categoria {
   id: number
@@ -80,8 +90,6 @@ export default function ProductosPage() {
   const [bulkEditIds, setBulkEditIds] = useState<number[]>([])
   const [bulkValor, setBulkValor] = useState("")
   const [aplicandoBulk, setAplicandoBulk] = useState(false)
-  const [importandoCSV, setImportandoCSV] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { toast } = useToast()
 
@@ -185,56 +193,50 @@ export default function ProductosPage() {
     }
   }
 
-  const procesarCSV = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      const text = e.target?.result
-      if (typeof text !== "string") return
-      
-      const lineas = text.split("\n").filter(l => l.trim() !== "")
-      const headers = lineas[0].split(",").map(h => h.trim().toLowerCase())
-      
-      const productosAImportar = lineas.slice(1).map(linea => {
-        const valores = linea.split(",").map(v => v.trim().replace(/^"|"$/g, ""))
-        const prod: any = {}
-        headers.forEach((header, i) => {
-          prod[header] = valores[i]
-        })
-        return prod
-      }).filter(p => p.codigo && p.nombre)
+  const handleImportarCSV = async (rows: Record<string, string>[]): Promise<ImportResult> => {
+    const productosAImportar = rows
+      .filter((r) => r.codigo && r.nombre)
+      .map((r) => ({
+        codigo: r.codigo.trim(),
+        nombre: r.nombre.trim(),
+        precioVenta: r.precioVenta ?? "0",
+        precioCompra: r.precioCompra ?? "0",
+        stock: r.stock ?? "0",
+        porcentajeIva: r.porcentajeIva ?? "21",
+      }))
 
-      if (productosAImportar.length === 0) {
-        toast({ title: "Error", description: "No se encontraron productos válidos en el CSV. Asegúrese de incluir 'codigo' y 'nombre'.", variant: "destructive" })
-        return
-      }
-
-      setImportandoCSV(true)
-      try {
-        const res = await fetch("/api/productos/importar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify({ productos: productosAImportar })
-        })
-        const data = await res.json()
-        if (res.ok) {
-          toast({ title: "Importación exitosa", description: `Insertados: ${data.insertados}. Actualizados: ${data.actualizados}.` })
-          cargarProductos()
-        } else {
-          toast({ title: "Error al importar", description: data.error, variant: "destructive" })
-        }
-      } catch {
-        toast({ title: "Error de conexión", description: "Falló la importación", variant: "destructive" })
-      } finally {
-        setImportandoCSV(false)
-        if (fileInputRef.current) fileInputRef.current.value = ""
+    if (productosAImportar.length === 0) {
+      return {
+        success: 0,
+        errors: [{ row: 0, field: "General", message: "No se encontraron productos válidos con código y nombre." }],
       }
     }
-    reader.readAsText(file)
-  }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarCSV(e.target.files[0])
+    try {
+      const res = await fetch("/api/productos/importar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ productos: productosAImportar }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast({
+          title: "Importación exitosa",
+          description: `Insertados: ${data.insertados}. Actualizados: ${data.actualizados}.`,
+        })
+        cargarProductos()
+        return { success: (data.insertados || 0) + (data.actualizados || 0), errors: [] }
+      } else {
+        return {
+          success: 0,
+          errors: [{ row: 0, field: "General", message: data.error || "Error al importar productos" }],
+        }
+      }
+    } catch {
+      return {
+        success: 0,
+        errors: [{ row: 0, field: "General", message: "Error de conexión al servidor" }],
+      }
     }
   }
 
@@ -350,17 +352,14 @@ export default function ProductosPage() {
         }
         actions={
           <div className="flex gap-2">
-            <input 
-              type="file" 
-              accept=".csv" 
-              className="hidden" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
+            <CSVImport
+              columns={PRODUCTO_IMPORT_COLUMNS}
+              onImport={handleImportarCSV}
+              triggerLabel="Importar CSV"
+              title="Importar Catálogo de Productos"
+              templateFilename="plantilla_productos.csv"
+              templateCSV="codigo,nombre,precioVenta,precioCompra,stock,porcentajeIva&#10;PROD-001,Producto Ejemplo,1500.00,1000.00,50,21"
             />
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importandoCSV}>
-              {importandoCSV ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-              Importar CSV
-            </Button>
             <Button onClick={abrirNuevo}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Producto

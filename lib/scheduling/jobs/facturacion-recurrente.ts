@@ -1,0 +1,69 @@
+/**
+ * Cron: procesa facturas recurrentes de todos los tenants con planes activos.
+ */
+
+import { prisma } from "@/lib/prisma"
+import { procesarFacturasRecurrentes } from "@/lib/ventas/facturacion-recurrente-service"
+import { persistSistemaLog } from "@/lib/ops/sistema-log"
+
+export async function runFacturacionRecurrenteAllTenants() {
+  const hoy = new Date()
+  hoy.setHours(23, 59, 59, 999)
+
+  const empresaIds = await prisma.facturaRecurrente.findMany({
+    where: {
+      activo: true,
+      proximaEmision: { lte: hoy },
+    },
+    select: { empresaId: true },
+    distinct: ["empresaId"],
+  })
+
+  const resultados: {
+    empresaId: number
+    procesadas: number
+    error?: string
+  }[] = []
+
+  for (const { empresaId } of empresaIds) {
+    try {
+      const r = await procesarFacturasRecurrentes(empresaId)
+      resultados.push({ empresaId, procesadas: r.procesadas })
+      if (r.procesadas > 0) {
+        await persistSistemaLog({
+          empresaId,
+          severidad: "info",
+          categoria: "cron",
+          contexto: "facturacion-recurrente",
+          mensaje: `Cron facturación recurrente: ${r.procesadas} factura(s)`,
+          metadata: {
+            modulo: "facturacion-recurrente",
+            facturas: r.facturas.map((f) => ({
+              id: f.facturaId,
+              afipOk: f.afipOk,
+              cc: f.cuentaCobrarIds?.length ?? 0,
+            })),
+          },
+        })
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      resultados.push({ empresaId, procesadas: 0, error: message })
+      await persistSistemaLog({
+        empresaId,
+        severidad: "error",
+        categoria: "cron",
+        contexto: "facturacion-recurrente",
+        mensaje: `Cron facturación recurrente falló: ${message}`,
+        metadata: { modulo: "facturacion-recurrente" },
+      })
+    }
+  }
+
+  return {
+    empresas: empresaIds.length,
+    totalProcesadas: resultados.reduce((a, r) => a + r.procesadas, 0),
+    errores: resultados.filter((r) => r.error).length,
+    detalle: resultados,
+  }
+}

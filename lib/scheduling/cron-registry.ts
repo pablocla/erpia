@@ -7,6 +7,7 @@ import { runScheduledAgents } from "./jobs/agentes"
 import { runOpsAlertas } from "./jobs/ops-alertas"
 import { runRecordatoriosTurnos } from "./jobs/recordatorios"
 import { runWhatsAppOutbound } from "./jobs/whatsapp-outbound"
+import { runScheduledEmpleadosDigitales } from "./jobs/empleados-digitales"
 
 export type CronJobGranularity = "tick" | "hour" | "day"
 
@@ -60,6 +61,15 @@ export const CRON_JOBS: CronJobDefinition[] = [
     windowMinutes: 60,
     dedup: "hour",
     run: runScheduledAgents,
+  },
+  {
+    id: "empleados-digitales",
+    label: "Empleados digitales (Leo Cobranza)",
+    tier: "free",
+    schedule: "0 * * * *",
+    windowMinutes: 60,
+    dedup: "hour",
+    run: runScheduledEmpleadosDigitales,
   },
   {
     id: "recordatorios",

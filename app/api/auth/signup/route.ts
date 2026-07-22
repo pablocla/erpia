@@ -56,13 +56,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear empresa usando SQL crudo (evita problemas con columnas nuevas no migradas)
+    // modoLite=pos + rubro=kiosco: menú liviano, no ERP completo ruidoso
     const empresaCreada = await prisma.$queryRaw<{ id: number }[]>`
-      INSERT INTO empresas ("nombre", "razonSocial", "cuit", "email", "createdAt", "updatedAt")
+      INSERT INTO empresas ("nombre", "razonSocial", "cuit", "email", "rubro", "modoLite", "createdAt", "updatedAt")
       VALUES (
         ${nombreEmpresa},
         ${nombreEmpresa},
         ${`DEMO-${Date.now()}`},
         ${email},
+        ${"kiosco"},
+        ${"pos"},
         NOW(), NOW()
       )
       RETURNING id

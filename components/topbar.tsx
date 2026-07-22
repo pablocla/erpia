@@ -192,18 +192,27 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
       </Badge>
     )
 
+  // Acciones top según pack (nav-matrix mental); SKU refuerza
+  const topHints = (() => {
+    const m = modoLite || "completo"
+    if (m === "cobranza") return { posCaja: false, afip: false }
+    if (m === "niche" || m === "servicios") return { posCaja: Boolean(productosSku?.["core.pos"]), afip: true }
+    if (m === "fiado") return { posCaja: true, afip: false }
+    if (m === "pos") return { posCaja: true, afip: Boolean(productosSku?.["core.facturacion"]) }
+    return {
+      posCaja: true,
+      afip: true,
+    }
+  })()
+
   const tieneModuloPosOCaja = Boolean(
-    !modoLite ||
-    modoLite === "completo" ||
-    ["pos", "almacen", "fiado", "ferreteria", "kiosco", "carniceria"].includes(modoLite) ||
+    topHints.posCaja ||
     productosSku?.["core.pos"] ||
     productosSku?.["core.caja"]
   )
 
   const tieneModuloAfip = Boolean(
-    !modoLite ||
-    modoLite === "completo" ||
-    ["pos", "almacen", "fiado", "ferreteria", "monotributo", "freelance_mt", "kiosco", "carniceria"].includes(modoLite) ||
+    topHints.afip ||
     productosSku?.["core.facturacion"]
   )
 
@@ -495,6 +504,19 @@ function UserAvatar({ size = "sm" }: { size?: "sm" | "lg" }) {
   const user = useAuthStore((s) => s.user)
   const initials = user?.nombre ? getInitials(user.nombre) : "U"
   const dim = size === "lg" ? "h-8 w-8 text-xs" : "h-6 w-6 text-[10px]"
+
+  if (user?.avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={user.avatarUrl}
+        alt={user.nombre ?? "Usuario"}
+        className={`${dim} rounded-full object-cover ring-1 ring-primary/20`}
+        referrerPolicy="no-referrer"
+      />
+    )
+  }
+
   return (
     <div
       className={`${dim} rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center font-bold text-primary ring-1 ring-primary/20`}

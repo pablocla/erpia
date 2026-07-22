@@ -2,6 +2,7 @@ import {
   BookOpen,
   Calendar,
   CreditCard,
+  MapPin,
   MessageSquare,
   MoreHorizontal,
   Package,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react"
 import { type SubSaasSlug, SUB_SAAS_APPS } from "./sub-saas-catalog"
 import type { ModoLite } from "./pack-calle-catalog"
+import { getMicroSaasBySlug } from "./micro-saas-portfolio"
 
 export interface ProductShellTab {
   href: string
@@ -109,7 +111,7 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
   },
   turnos: {
     slug: "turnos",
-    marca: "Claver Turnos",
+    marca: "Claver Confirmá",
     icono: Calendar,
     tabs: [
       { href: "/dashboard/agenda", icon: Calendar, label: "Agenda" },
@@ -303,10 +305,11 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
   },
   puntos: {
     slug: "puntos",
-    marca: "Claver Puntos",
+    marca: "Claver Cuota",
     icono: Users,
     tabs: [
       { href: "/dashboard/membresias", icon: Users, label: "Socios" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cuotas" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       DEFAULT_MORE_TAB,
     ],
@@ -318,7 +321,165 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
     ],
     primaryAction: { label: "Registrar socio", href: "/dashboard/membresias" },
   },
+  // ── Micro-SaaS freemium (portfolio 11) ───────────────────────────────────
+  expensas: {
+    slug: "expensas",
+    marca: "Claver Expensas",
+    icono: BookOpen,
+    tabs: [
+      { href: "/dashboard/nicho/consorcios", icon: BookOpen, label: "Expensas" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cobros" },
+      { href: "/dashboard/clientes", icon: Users, label: "Unidades" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "morosos", label: "Morosos UF", icon: Users, format: "number" },
+      { id: "periodo", label: "Período", icon: Calendar, format: "text" },
+      { id: "pendiente", label: "Por cobrar", icon: Wallet, format: "currency" },
+      { id: "unidades", label: "Unidades", icon: Package, format: "number" },
+    ],
+    primaryAction: { label: "Liquidar mes", href: "/dashboard/nicho/consorcios" },
+  },
+  renta: {
+    slug: "renta",
+    marca: "Claver Renta",
+    icono: BookOpen,
+    tabs: [
+      { href: "/dashboard/nicho/inmobiliaria", icon: BookOpen, label: "Cartera" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cobros" },
+      { href: "/dashboard/clientes", icon: Users, label: "Inquilinos" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "contratos", label: "Activos", icon: BookOpen, format: "number" },
+      { id: "vencen", label: "Vencen 7d", icon: Calendar, format: "number" },
+      { id: "morosos", label: "Morosos", icon: Users, format: "number" },
+      { id: "mes", label: "Cobrado mes", icon: Wallet, format: "currency" },
+    ],
+    primaryAction: { label: "Ver vencimientos", href: "/dashboard/nicho/inmobiliaria" },
+  },
+  sena: {
+    slug: "sena",
+    marca: "Claver Seña",
+    icono: CreditCard,
+    tabs: [
+      { href: "/dashboard/ventas/presupuestos", icon: BookOpen, label: "Reservas" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Señas" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "pendientes", label: "Seña pendiente", icon: CreditCard, format: "number" },
+      { id: "confirmadas", label: "Confirmadas", icon: Users, format: "number" },
+      { id: "mes", label: "Señas mes", icon: Wallet, format: "currency" },
+      { id: "saldo", label: "Saldos", icon: BookOpen, format: "number" },
+    ],
+    primaryAction: { label: "Nueva reserva", href: "/dashboard/ventas/presupuestos" },
+  },
+  caja: {
+    slug: "caja",
+    marca: "Claver Caja",
+    icono: Wallet,
+    tabs: [
+      { href: "/dashboard/caja", icon: Wallet, label: "Caja" },
+      { href: "/dashboard/pos", icon: ShoppingBag, label: "Mostrador" },
+      { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "estado", label: "Estado", icon: Wallet, format: "text", href: "/dashboard/caja" },
+      { id: "movimientos", label: "Mov. hoy", icon: CreditCard, format: "number" },
+      { id: "diff", label: "Diff arqueo", icon: Package, format: "currency" },
+      { id: "alertas", label: "Alertas", icon: MessageSquare, format: "number" },
+    ],
+    primaryAction: { label: "Abrir caja", href: "/dashboard/caja" },
+  },
+  abono: {
+    slug: "abono",
+    marca: "Claver Abono",
+    icono: Calendar,
+    tabs: [
+      { href: "/dashboard/ventas", icon: BookOpen, label: "Abonos" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cobros" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "activos", label: "Abonos activos", icon: BookOpen, format: "number" },
+      { id: "emitir", label: "A emitir hoy", icon: Calendar, format: "number" },
+      { id: "cobrar", label: "Por cobrar", icon: Wallet, format: "currency" },
+      { id: "mes", label: "Emitidos mes", icon: CreditCard, format: "number" },
+    ],
+    primaryAction: { label: "Ver abonos", href: "/dashboard/ventas" },
+  },
+  reactiva: {
+    slug: "reactiva",
+    marca: "Claver Reactiva",
+    icono: MessageSquare,
+    tabs: [
+      { href: "/dashboard/crm", icon: Users, label: "Dormidos" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "dormidos", label: "Dormidos 90d", icon: Users, format: "number" },
+      { id: "campanas", label: "Campañas", icon: MessageSquare, format: "number" },
+      { id: "reactivados", label: "Reactivados", icon: CreditCard, format: "number" },
+      { id: "ticket", label: "Ticket medio", icon: Wallet, format: "currency" },
+    ],
+    primaryAction: { label: "Ver dormidos", href: "/dashboard/crm" },
+  },
+  ruta: {
+    slug: "ruta",
+    marca: "Claver Ruta",
+    icono: MapPin,
+    tabs: [
+      { href: "/vendedor", icon: MapPin, label: "Mapa / Ruta" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cuotas" },
+      { href: "/dashboard/ventas", icon: ShoppingBag, label: "Pedidos" },
+      { href: "/dashboard/productos", icon: Package, label: "Stock" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "paradas", label: "Paradas hoy", icon: MapPin, format: "number" },
+      { id: "cuotas", label: "Cuotas vence", icon: CreditCard, format: "number" },
+      { id: "pedidos", label: "Pedidos ruta", icon: ShoppingBag, format: "number" },
+      { id: "cobrado", label: "Cobrado calle", icon: Wallet, format: "currency" },
+    ],
+    primaryAction: { label: "Abrir ruta", href: "/vendedor" },
+  },
 }
+
+// Asegura shell para cualquier slug micro-saas aún no listado explícitamente
+const _microShellFallback = (() => {
+  for (const app of SUB_SAAS_APPS) {
+    if (PRODUCT_SHELLS[app.slug as SubSaasSlug]) continue
+    const micro = getMicroSaasBySlug(app.slug)
+    if (!micro) continue
+    ;(PRODUCT_SHELLS as Record<string, ProductShellConfig>)[app.slug] = {
+      slug: app.slug as SubSaasSlug,
+      marca: micro.marca,
+      icono: BookOpen,
+      tabs: [
+        ...micro.shellTabs.map((t) => ({
+          href: t.href,
+          icon: BookOpen,
+          label: t.label,
+        })),
+        DEFAULT_MORE_TAB,
+      ],
+      kpis: [
+        { id: "kpi1", label: "Actividad", icon: Users, format: "number" as const },
+        { id: "kpi2", label: "Pendiente", icon: Wallet, format: "currency" as const },
+        { id: "kpi3", label: "Hoy", icon: Calendar, format: "number" as const },
+        { id: "kpi4", label: "Estado", icon: MessageSquare, format: "text" as const },
+      ],
+      primaryAction: micro.primaryAction,
+    }
+  }
+})()
 
 function shellBySlug(slug: string): ProductShellConfig | null {
   return PRODUCT_SHELLS[slug as SubSaasSlug] ?? null

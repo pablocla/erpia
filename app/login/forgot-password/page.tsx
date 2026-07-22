@@ -12,6 +12,8 @@ import Link from "next/link"
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [enviado, setEnviado] = useState(false)
+  const [mensaje, setMensaje] = useState("")
+  const [googleOnly, setGoogleOnly] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
 
@@ -28,6 +30,11 @@ export default function ForgotPasswordPage() {
       })
       const data = await res.json()
       if (data.success) {
+        setGoogleOnly(data.googleOnly === true)
+        setMensaje(
+          data.mensaje ||
+            "Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.",
+        )
         setEnviado(true)
       } else {
         setError(data.error || "Error al procesar solicitud")
@@ -44,14 +51,19 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Revisa tu email</CardTitle>
-            <CardDescription>
-              Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.
-            </CardDescription>
+            <CardTitle>{googleOnly ? "Cuenta con Google" : "Revisa tu email"}</CardTitle>
+            <CardDescription>{mensaje}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            {googleOnly && (
+              <Link href="/login">
+                <Button className="w-full">Ir al login con Google</Button>
+              </Link>
+            )}
             <Link href="/login">
-              <Button variant="outline" className="w-full">Volver al inicio de sesión</Button>
+              <Button variant="outline" className="w-full">
+                Volver al inicio de sesión
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -64,7 +76,10 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Restablecer contraseña</CardTitle>
-          <CardDescription>Ingresa tu email y te enviaremos instrucciones</CardDescription>
+          <CardDescription>
+            Ingresá tu email. Si la cuenta usa solo Google, te lo indicaremos (no se puede
+            restablecer contraseña).
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

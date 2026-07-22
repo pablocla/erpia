@@ -13,8 +13,7 @@ export const SKUS_PLANNED_ONLY = new Set([
   "sec.backup",
   "sec.mfa",
   "bridge.opo_studio",
-  // Catálogo (Planned)
-  "intang.reactivador_clientes",
+  // Catálogo (Planned) — reactivador liberado al portfolio freemium (beta)
   "intang.reputation_firewall",
   "intang.legal_shield",
   "intang.subs_tax_scanner",

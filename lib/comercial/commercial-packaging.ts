@@ -24,6 +24,13 @@ import {
   type IaSaasPack,
   type IaSaasTierPack,
 } from "@/lib/comercial/ia-saas-top20"
+import {
+  MICRO_SAAS_PORTFOLIO,
+  microSaasActivarHref,
+  microSaasLandingHref,
+  microSaasResumenComercial,
+  microSaasVendiblesCalle,
+} from "@/lib/comercial/micro-saas-portfolio"
 
 export type LineaTier = "plataforma" | "servicio" | "proximamente"
 
@@ -57,9 +64,45 @@ export interface CatalogoResumen {
   packs: number
   skusMarketplace: number
   productosCalle: number
+  microSaasFreemium: number
 }
 
-const ENTRADA_SKUS = ["pos.fiado_barrio", "intang.cobranzas_wa"] as const
+/** 11 micro-SaaS freemium para vitrine / home / calle */
+export function microSaasProductosEntrada(): ProductoEntrada[] {
+  return microSaasVendiblesCalle().map((p) => ({
+    sku: p.sku,
+    nombre: p.marca,
+    lema: p.lema,
+    precioArs: p.precioArs,
+    href: microSaasLandingHref(p),
+    disponible: p.estado === "disponible" || p.estado === "beta",
+    trialDias: p.trialDias,
+  }))
+}
+
+export function microSaasPacksComerciales(): PackComercial[] {
+  return MICRO_SAAS_PORTFOLIO.filter((p) => p.vendibleCalle).map((p) => ({
+    id: p.sku,
+    nombre: p.marca,
+    lema: p.lema,
+    precioArs: p.precioArs,
+    cantidadSkus: 1 + (p.skusAdicionales?.length ?? 0),
+    href: microSaasActivarHref(p),
+    tipoCobro: "mensual" as const,
+    ahorroPct: 0,
+  }))
+}
+
+export { microSaasResumenComercial, MICRO_SAAS_PORTFOLIO }
+
+const ENTRADA_SKUS = [
+  "pos.fiado_barrio",
+  "intang.cobranzas_wa",
+  "micro.confirma_turnos",
+  "niche.gimnasio_barrio",
+  "niche.consorcios",
+  "micro.claver_ruta",
+] as const
 
 const PACKS_HOME_IDS = [
   "pool-almacen-barrio",
@@ -100,6 +143,7 @@ export const CATALOGO_RESUMEN: CatalogoResumen = {
   packs: MARKETPLACE_BUNDLES.length,
   skusMarketplace: MARKETPLACE_CATALOG.length,
   productosCalle: PACKS_CALLE.filter((p) => p.vendibleHoy).length,
+  microSaasFreemium: MICRO_SAAS_PORTFOLIO.length,
 }
 
 export function totalSolucionesPublicadas(): number {

@@ -6,6 +6,7 @@
 
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
+import { microSaasEnganchesNuevos } from "@/lib/comercial/micro-saas-portfolio"
 import { MARKETPLACE_CATALOG } from "./marketplace-catalog"
 import { MARKETPLACE_BUNDLES } from "./bundles"
 import { INTANGIBLES_TOP5, INTANGIBLE_PREMIUM_7 } from "./intangible-services"
@@ -155,12 +156,12 @@ export const ENGANCHES: EngancheProducto[] = [
   },
   {
     sku: "intang.reactivador_clientes",
-    nombre: "Despertador de Clientes",
+    nombre: "Claver Reactiva",
     lema: "Oro de la basura: clientes dormidos.",
-    tier: "catalogo",
+    tier: "parcial",
     nichos: ["pyme_cobranzas", "marketing"],
     precioArs: 12900,
-    upsellA: ["com.whatsapp", "mkt.referidos"],
+    upsellA: ["com.whatsapp", "mkt.referidos", "intang.cobranzas_wa"],
     dolorResuelve: "Clientes que dejaron de comprar",
   },
   {
@@ -233,6 +234,16 @@ export const ENGANCHES: EngancheProducto[] = [
     upsellA: ["com.whatsapp", "core.claver"],
     dolorResuelve: app.dolorResuelve,
   })),
+  // Micro-SaaS freemium (SKUs nuevos del portfolio 11)
+  ...(() => {
+    const existing = new Set([
+      "pos.fiado_barrio",
+      "intang.cobranzas_wa",
+      "intang.reactivador_clientes",
+      ...NICHE_APPS.map((a) => a.sku),
+    ])
+    return microSaasEnganchesNuevos(existing) as EngancheProducto[]
+  })(),
 ]
 
 export interface EngancheResumen {

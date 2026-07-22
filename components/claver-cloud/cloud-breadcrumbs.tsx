@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 const LABELS: Record<string, string> = {
   "claver-cloud": "Inicio",
   superadmin: "Super Admin",
+  "platform-health": "Salud y seguridad",
   organizations: "Organizaciones",
   tenants: "Organización",
   operations: "Operaciones",

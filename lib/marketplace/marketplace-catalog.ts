@@ -1,6 +1,7 @@
 import { NICHE_MARKETPLACE_CATALOG } from "@/lib/niche/niche-marketplace-entries"
 import { RETAIL_EXTENSION_CATALOG } from "./retail-extension-catalog"
 import { GENERATIVE_CATALOG } from "./generative-catalog"
+import { microSaasMarketplaceEntries } from "@/lib/comercial/micro-saas-portfolio"
 
 export type AutoCertLevel = "GLOBAL_AUTO" | "REGION_AUTO" | "SEMI_AUTO" | "HUMAN_GATE"
 
@@ -771,24 +772,24 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
   },
   {
     sku: "intang.reactivador_clientes",
-    nombre: "Despertador de Clientes",
-    categoria: "Intangibles",
+    nombre: "Claver Reactiva",
+    categoria: "Micro-SaaS Freemium",
     precioArs: 12900,
     tipoCobro: "recurrente",
     autoCertLevel: "REGION_AUTO",
     paisesHabilitados: ["AR", "MX", "UY"],
     i18n: {
       "es-AR": {
-        nombre: "Despertador de Clientes",
-        descripcion: "Reactivá clientes dormidos con WA/SMS hiper-personalizado y ROI visible",
+        nombre: "Claver Reactiva",
+        descripcion: "Reactivá clientes dormidos con WhatsApp. Free: lista. Paid: campaña auto.",
         packOnboardSubject: "Tu primera campaña de reactivación está lista",
       },
     },
     segmentoAds: ["ecommerce", "retail", "distribuidora"],
     playbookId: "playbook.intang.reactivador_clientes",
     dependeDe: ["com.whatsapp"],
-    status: "planned",
-    trialDias: 7,
+    status: "beta",
+    trialDias: 14,
   },
 
   // --- Servicios intangibles Premium 7 (SAP/Odoo/Salesforce adaptados AR) ---
@@ -850,7 +851,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["retail", "kiosco", "restaurante"],
     playbookId: "playbook.intang.guardian_pos",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -935,7 +936,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["kiosco", "almacen", "retail"],
     playbookId: "playbook.pos.margen_guard",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -956,7 +957,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "fiambreria", "verduleria"],
     playbookId: "playbook.pos.zero_waste",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -977,7 +978,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["kiosco", "almacen"],
     playbookId: "playbook.pos.stock_cero_alert",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -998,7 +999,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "retail"],
     playbookId: "playbook.pos.promos_pago",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -1019,7 +1020,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "autoservicio"],
     playbookId: "playbook.pos.lista_distribuidora",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "beta",
     trialDias: 14,
   },
@@ -1040,7 +1041,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "kiosco"],
     playbookId: "playbook.pos.panico_vecinal",
-    dependeDe: ["core.pos", "com.whatsapp"],
+    dependeDe: ["core.claver", "com.whatsapp"],
     status: "disponible",
     trialDias: 7,
   },
@@ -1061,7 +1062,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "kiosco", "distribuidora"],
     playbookId: "playbook.pos.envases_gaseosas",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -1082,7 +1083,7 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     },
     segmentoAds: ["almacen", "kiosco"],
     playbookId: "playbook.pos.vale_dinero",
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   },
@@ -1256,4 +1257,16 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
   ...(RETAIL_EXTENSION_CATALOG as any),
   ...(GENERATIVE_CATALOG as any),
   ...(NICHE_MARKETPLACE_CATALOG as any),
+
+  // --- Micro-SaaS freemium portfolio (sin duplicar SKUs ya listados) ---
+  ...microSaasMarketplaceEntries().filter(
+    (m) =>
+      ![
+        "pos.fiado_barrio",
+        "intang.cobranzas_wa",
+        "intang.reactivador_clientes",
+        "niche.consorcios",
+        "niche.gimnasio_barrio",
+      ].includes(m.sku),
+  ),
 ]

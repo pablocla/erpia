@@ -1,29 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { runTrialDunning } from "@/lib/comercial/trial-dunning-service"
+import { requireCronAuth } from "@/lib/auth/cron-guard"
+import { recordPlatformEvent } from "@/lib/ops/platform-events"
 
 export const maxDuration = 60
 export const dynamic = "force-dynamic"
 
 /**
  * GET/POST /api/cron/trial-dunning
- * Auth: Authorization: Bearer $CRON_SECRET  o  ?secret=
- * Vercel Cron / scheduler externo.
+ * Auth production: Authorization: Bearer $CRON_SECRET
  */
-function authorize(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) {
-    // Sin secret en dev: permitir en non-production
-    return process.env.NODE_ENV !== "production"
-  }
-  const auth = request.headers.get("authorization")
-  if (auth === `Bearer ${secret}`) return true
-  const q = request.nextUrl.searchParams.get("secret")
-  return q === secret
-}
-
 async function handle(request: NextRequest) {
-  if (!authorize(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const denied = requireCronAuth(request)
+  if (denied) {
+    void recordPlatformEvent({
+      severity: "sev2",
+      source: "cron",
+      code: "CRON_UNAUTHORIZED",
+      message: "Intento no autorizado a /api/cron/trial-dunning",
+    })
+    return denied
   }
 
   try {

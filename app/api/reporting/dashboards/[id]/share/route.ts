@@ -2,9 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { SignJWT } from "jose"
 
+import { getEncodedJwtSecret } from "@/lib/auth/jwt-secret"
+
 function getEncodedSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || "dev-pos-system-argentina-2025-unsafe"
-  return new TextEncoder().encode(secret)
+  return getEncodedJwtSecret()
 }
 
 export async function POST(

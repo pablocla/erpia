@@ -210,16 +210,33 @@ export default function ClientesPage() {
       const url = clienteEditando ? `/api/clientes/${clienteEditando.id}` : "/api/clientes"
       const method = clienteEditando ? "PUT" : "POST"
       const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(formToPayload(formData)) })
+      const resJson = await res.json().catch(() => ({}))
+      
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast({ title: "Error al guardar cliente", description: err.error || "Ocurrió un error inesperado", variant: "destructive" })
+        toast({ title: "Error al guardar cliente", description: resJson.error || "Ocurrió un error inesperado", variant: "destructive" })
         return
       }
       setDialogAbierto(false)
       setClienteEditando(null)
       setFormData({ ...EMPTY_FORM })
       cargarClientes()
-      toast({ title: clienteEditando ? "Cliente actualizado" : "Cliente creado", description: "Los datos se guardaron correctamente" })
+      
+      const warnings = resJson._warnings || resJson.warnings
+      if (warnings && warnings.length > 0) {
+        toast({ 
+          title: "Cliente guardado, faltan datos recomendados", 
+          description: (
+            <div className="mt-2 space-y-1">
+              {warnings.map((w: any, idx: number) => (
+                <div key={idx} className="text-xs">{w.label} — {w.reason}</div>
+              ))}
+            </div>
+          ),
+          duration: 8000
+        })
+      } else {
+        toast({ title: clienteEditando ? "Cliente actualizado" : "Cliente creado", description: "Los datos se guardaron correctamente" })
+      }
     } catch (error) {
       console.error("Error al guardar cliente:", error)
       toast({ title: "Error al guardar cliente", description: "Error de conexión", variant: "destructive" })
@@ -365,7 +382,22 @@ export default function ClientesPage() {
             data={clientesFiltrados}
             columns={[
               { key: "codigo", header: "Código", sortable: true, cell: (c: any) => <span className="font-mono text-xs">{c.codigo || "-"}</span> },
-              { key: "nombre", header: "Razón Social", sortable: true, cell: (c: any) => <span className="font-medium">{c.nombre}</span> },
+              { key: "nombre", header: "Razón Social", sortable: true, cell: (c: any) => (
+                <div>
+                  <span className="font-medium">{c.nombre}</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {!c.telefono && (
+                      <Badge variant="outline" className="text-[10px] h-4">Sin teléfono</Badge>
+                    )}
+                    {c.fiadoHabilitado && (
+                      <Badge variant="secondary" className="text-[10px] h-4">Fiado</Badge>
+                    )}
+                    {c.fiadoHabilitado && (!c.limiteCredito || Number(c.limiteCredito) <= 0) && (
+                      <Badge variant="outline" className="text-[10px] h-4">Sin límite</Badge>
+                    )}
+                  </div>
+                </div>
+              ) },
               { key: "cuit", header: "CUIT", sortable: true, cell: (c: any) => c.cuit || "-" },
               { key: "condicionIva", header: "Cond. IVA", cell: (c: any) => <span className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</span> },
               { key: "provincia", header: "Provincia", cell: (c: any) => <span className="text-xs">{c.provincia?.nombre || "-"}</span>, exportFn: (c: any) => c.provincia?.nombre ?? "" },

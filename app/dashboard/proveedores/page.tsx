@@ -180,15 +180,30 @@ export default function ProveedoresPage() {
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(formToPayload()),
       })
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const data = await res.json()
         setError(data.error || "Error al guardar")
         toast({ title: "Error al guardar proveedor", description: data.error || "Ocurrió un error", variant: "destructive" })
         return
       }
       setDialogOpen(false)
       cargarProveedores()
-      toast({ title: proveedorSeleccionado ? "Proveedor actualizado" : "Proveedor creado", description: "Los datos se guardaron correctamente" })
+      const warnings = data._warnings || data.warnings
+      if (Array.isArray(warnings) && warnings.length > 0 && !proveedorSeleccionado) {
+        const detail = warnings
+          .slice(0, 4)
+          .map((w: { label?: string; reason?: string }) =>
+            w.label ? `${w.label}${w.reason ? ` — ${w.reason}` : ""}` : "",
+          )
+          .filter(Boolean)
+          .join(" · ")
+        toast({
+          title: "Proveedor guardado, faltan datos recomendados",
+          description: detail || "Completá datos fiscales cuando puedas.",
+        })
+      } else {
+        toast({ title: proveedorSeleccionado ? "Proveedor actualizado" : "Proveedor creado", description: "Los datos se guardaron correctamente" })
+      }
     } catch {
       setError("Error de conexión")
       toast({ title: "Error de conexión", description: "No se pudo conectar con el servidor", variant: "destructive" })
@@ -223,7 +238,20 @@ export default function ProveedoresPage() {
           <DataTable<Proveedor>
             data={proveedoresFiltrados}
             columns={[
-              { key: "nombre", header: "Nombre", sortable: true, cell: (p) => (<div><p className="font-medium">{p.nombre}</p>{p.direccion && <p className="text-xs text-muted-foreground">{p.direccion}</p>}</div>) },
+              { key: "nombre", header: "Nombre", sortable: true, cell: (p) => (
+                <div>
+                  <p className="font-medium">{p.nombre}</p>
+                  {p.direccion && <p className="text-xs text-muted-foreground">{p.direccion}</p>}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {(!p.cuit || String(p.cuit).replace(/\D/g, "").length !== 11) && (
+                      <Badge variant="outline" className="text-[10px] h-4">Revisar CUIT</Badge>
+                    )}
+                    {!p.telefono && !p.email && (
+                      <Badge variant="outline" className="text-[10px] h-4">Sin contacto</Badge>
+                    )}
+                  </div>
+                </div>
+              ) },
               { key: "cuit", header: "CUIT", sortable: true, cell: (p) => <span className="font-mono text-sm">{p.cuit}</span> },
               { key: "condicionIva", header: "Cond. IVA", cell: (p) => <Badge variant="outline">{p.condicionIva}</Badge> },
               { key: "telefono", header: "Contacto", cell: (p) => (<div className="space-y-1">{p.telefono && <div className="flex items-center gap-1 text-sm text-muted-foreground"><Phone className="h-3 w-3" /> {p.telefono}</div>}{p.email && <div className="flex items-center gap-1 text-sm text-muted-foreground"><Mail className="h-3 w-3" /> {p.email}</div>}</div>), exportFn: (p) => `${p.telefono ?? ""} ${p.email ?? ""}` },

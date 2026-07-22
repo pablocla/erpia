@@ -28,6 +28,10 @@ import {
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { DASHBOARD_SIDEBAR_MODULOS } from "@/lib/dashboard/sidebar-modules"
 import { canRenderMenuItem, ordenarModulosPorRubro } from "@/lib/dashboard/sidebar-filters"
+import {
+  goLiveBadgeForHref,
+  shouldHideHrefForGoLive,
+} from "@/lib/comercial/go-live-nav-badges"
 
 export function useDashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -275,7 +279,7 @@ export function useDashboardShell() {
               featuresActivas,
               productosSku,
               userId,
-              rubro,
+              effectiveRubro,
               isClaverAnalyst,
               countryFeatures,
               condicionIva,
@@ -289,16 +293,21 @@ export function useDashboardShell() {
           if (!item.href || !isMenuHrefVisibleInAllowlist(item.href, sidebarAllowlist)) {
             return false
           }
+          // Ocultar verticales no vendibles en menú comercial
+          if (shouldHideHrefForGoLive(item.href, { showNoVender: isClaverAnalyst })) {
+            return false
+          }
           return true
         }),
       })).filter((modulo) => {
+        // Nunca secciones vacías
+        if (modulo.items.length === 0 && modulo.label !== "Claver Nicho") return false
         if (!isModuloSectionVisible(modulo.label, modulo.moduloKey, effectiveRubro, sidebarAllowlist)) {
           return false
         }
         if (!modulo.moduloKey) return modulo.items.length > 0
-        if (isAdmin && !sidebarAllowlist) return true
-        if (!modulosActivos) return modulo.items.length > 0
-        if (modulosActivos[modulo.moduloKey] === false) return false
+        // Dueño ya no ve módulos apagados ni secciones sin ítems
+        if (modulosActivos && modulosActivos[modulo.moduloKey] === false) return false
         return modulo.items.length > 0
       }),
     [
@@ -307,20 +316,18 @@ export function useDashboardShell() {
       featuresActivas,
       productosSku,
       userId,
-      rubro,
       isClaverAnalyst,
       countryFeatures,
       modoLite,
       sidebarAllowlist,
       effectiveRubro,
-      isAdmin,
       condicionIva,
     ],
   )
 
   const modulosOrdenados = useMemo(
-    () => ordenarModulosPorRubro(modulosFiltrados, rubro),
-    [modulosFiltrados, rubro],
+    () => ordenarModulosPorRubro(modulosFiltrados, effectiveRubro),
+    [modulosFiltrados, effectiveRubro],
   )
 
   const modulosConLabels = useMemo(() => {
@@ -336,22 +343,30 @@ export function useDashboardShell() {
       }))
       .filter((item) => isMenuHrefVisibleInAllowlist(item.href, sidebarAllowlist))
 
-    return modulosOrdenados.map((modulo) => {
-      const items =
-        modulo.label === "Claver Nicho" ? [...modulo.items, ...nicheAppItems] : modulo.items
+    return modulosOrdenados
+      .map((modulo) => {
+        const items =
+          modulo.label === "Claver Nicho" ? [...modulo.items, ...nicheAppItems] : modulo.items
 
-      return {
-        ...modulo,
-        label: getSectionLabelForRubro(modulo.moduloKey, modulo.label, rubro, demoIndustryId),
-        items: items.map((item) => ({
-          ...item,
-          label: item.href
-            ? getMenuLabelForRubro(item.href, item.label, rubro, demoIndustryId)
-            : item.label,
-        })),
-      }
-    })
-  }, [modulosOrdenados, rubro, demoIndustryId, productosSku, sidebarAllowlist])
+        return {
+          ...modulo,
+          label: getSectionLabelForRubro(modulo.moduloKey, modulo.label, effectiveRubro, demoIndustryId),
+          items: items.map((item) => {
+            const goLive = goLiveBadgeForHref(item.href)
+            return {
+              ...item,
+              label: item.href
+                ? getMenuLabelForRubro(item.href, item.label, effectiveRubro, demoIndustryId)
+                : item.label,
+              // badge explícito del ítem gana; si no, profundidad go-live
+              badge: item.badge ?? goLive?.label,
+              goLiveTier: goLive?.tier,
+            }
+          }),
+        }
+      })
+      .filter((modulo) => modulo.items.length > 0)
+  }, [modulosOrdenados, effectiveRubro, demoIndustryId, productosSku, sidebarAllowlist])
 
   const modulosBuscados = useMemo(() => {
     if (!sidebarSearch.trim()) return modulosConLabels

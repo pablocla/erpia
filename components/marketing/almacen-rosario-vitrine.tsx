@@ -108,9 +108,9 @@ export function AlmacenRosarioVitrine({ variant = "full", ctaMode = "public" }: 
         <>
           <div className="grid gap-4 md:grid-cols-3">
             {ALMACEN_ROSARIO_CASOS.map((c) => (
-              <Card key={c.titulo} className="border-slate-200">
+              <Card key={c.titulo} className="border-slate-200 bg-white text-slate-900">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{c.titulo}</CardTitle>
+                  <CardTitle className="text-base font-semibold text-slate-900">{c.titulo}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm space-y-2">
                   <ul className="text-xs text-slate-600 space-y-1">

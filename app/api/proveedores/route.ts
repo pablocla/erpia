@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { evaluateProveedorCompleteness } from "@/lib/maestros/data-quality-profiles"
 
 const proveedorSchema = z.object({
   nombre: z.string().min(2),
@@ -68,10 +69,18 @@ export async function POST(request: NextRequest) {
     const data = { ...validacion.data }
     if (data.email === "") data.email = null
 
+    const empresa = await prisma.empresa.findUnique({ where: { id: ctx.auth.empresaId }, select: { modoLite: true, rubro: true } })
+    const evalCtx = { modoLite: empresa?.modoLite || "pos", rubro: empresa?.rubro || "kiosco" }
+    const completeness = evaluateProveedorCompleteness(validacion.data, evalCtx)
+
+    if (!completeness.ok && completeness.missingRequired.some(r => r.field === "nombre" || r.field === "cuit")) {
+      return NextResponse.json({ error: "Datos faltantes requeridos", warnings: completeness.missingRequired }, { status: 400 })
+    }
+
     const proveedor = await prisma.proveedor.create({
       data: { ...data, empresaId: ctx.auth.empresaId, createdBy: ctx.auth.userId },
     })
-    return NextResponse.json(proveedor, { status: 201 })
+    return NextResponse.json({ ...proveedor, _warnings: completeness.ok ? undefined : completeness.missingRequired.concat(completeness.missingRecommended) }, { status: 201 })
   } catch (error) {
     console.error("Error al crear proveedor:", error)
     return NextResponse.json({ error: "Error al crear proveedor" }, { status: 500 })

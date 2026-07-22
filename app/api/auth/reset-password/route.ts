@@ -54,18 +54,33 @@ export async function POST(request: NextRequest) {
     // Verify user exists and is active
     const usuario = await prisma.usuario.findUnique({
       where: { id: userId },
-      select: { id: true, activo: true },
+      select: { id: true, activo: true, authProvider: true, password: true },
     })
 
     if (!usuario || !usuario.activo) {
       return NextResponse.json({ error: "Usuario no encontrado o inactivo" }, { status: 400 })
     }
 
+    // Google-only: block password reset (must use Google Sign-In)
+    if (usuario.authProvider === "google" && !usuario.password) {
+      return NextResponse.json(
+        {
+          error:
+            "Esta cuenta usa Google para iniciar sesión. No se puede definir contraseña por este medio.",
+        },
+        { status: 400 },
+      )
+    }
+
     // Update password
     const hashedPassword = await bcrypt.hash(password, 10)
     await prisma.usuario.update({
       where: { id: userId },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        // Keep hybrid if they also have googleId; credentials is fine
+        authProvider: usuario.authProvider === "google" ? "credentials" : usuario.authProvider,
+      },
     })
 
     // Invalidate the token (mark used)

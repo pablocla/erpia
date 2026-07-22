@@ -8,6 +8,7 @@ import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { INTANGIBLE_PREMIUM_7 } from "@/lib/marketplace/intangible-premium-7"
 import { RETAIL_EXTENSION_SKUS, RETAIL_SKU_META } from "@/lib/almacen-rosario/retail-skus"
 import { FEATURES } from "@/lib/config/rubro-config-service"
+import { microSaasHorizontalProductos } from "@/lib/comercial/micro-saas-portfolio"
 
 export interface ProductoHorizontal {
   sku: string
@@ -113,7 +114,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -123,7 +124,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -133,7 +134,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -143,7 +144,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -153,7 +154,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "parcial",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -163,7 +164,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos", "com.whatsapp"],
+    dependeDe: ["core.claver", "com.whatsapp"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -173,7 +174,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   {
@@ -183,7 +184,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado",
     horizontal: true,
     precioArs: 10000,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   },
   ...RETAIL_EXTENSION_SKUS.map((sku) => ({
@@ -193,7 +194,7 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     tier: "implementado" as const,
     horizontal: true as const,
     precioArs: RETAIL_SKU_META[sku].precioArs,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     navPaths: ALMACEN_ROSARIO_NAV,
   })),
   ...INTANGIBLE_PREMIUM_7.filter((s) => !ENGANCHE_SKUS.has(s.sku))
@@ -209,6 +210,10 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     dependeDe: app.engine === "libreta" ? (["pos.fiado_barrio"] as string[]) : ([] as string[]),
     navPaths: [app.goldenPath, "/dashboard/nicho", "/dashboard/clientes"],
   })),
+  // Micro-SaaS freemium — SKUs aún no registrados
+  ...microSaasHorizontalProductos().filter(
+    (p) => !ENGANCHE_SKUS.has(p.sku) && !NICHE_APPS.some((a) => a.sku === p.sku),
+  ),
 ]
 
 export interface ProductoPack {

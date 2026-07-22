@@ -120,7 +120,12 @@ export async function applyRetailOnboarding(
   } = input
 
   const pack = resolvePackCalle(engancheId)
-  const modoLite = modoLiteInput ?? pack?.modoLite ?? inferModoLiteFromEnganche(engancheId)
+  let modoLite = modoLiteInput ?? pack?.modoLite ?? inferModoLiteFromEnganche(engancheId)
+  // Evitar ERP completo ruidoso en onboarding retail salvo pack que lo pida
+  if (modoLite === "completo" && !pack?.modoLite) {
+    const { defaultModoLiteForRubro } = await import("@/lib/comercial/nav-matrix")
+    modoLite = defaultModoLiteForRubro(rubro)
+  }
   const trialExpiresAt = new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000)
 
   await prisma.empresa.update({

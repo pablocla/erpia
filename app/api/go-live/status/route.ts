@@ -1,14 +1,16 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { PRECIO_MINIMO_SUSCRIPCION_ARS } from "@/lib/comercial/precio-minimo"
 import { getPublicAppUrl } from "@/lib/config/public-app-url"
 import { getEnvPresenceChecklist, isMpMockMode } from "@/lib/config/env"
+import { getClaverAnalystContext } from "@/lib/auth/claver-analyst"
+import { authorizeCronRequest } from "@/lib/auth/cron-guard"
 
 /**
- * Health comercial de go-live (sin secretos).
- * GET /api/go-live/status
- * Útil tras configurar Environment Variables en Vercel.
+ * Health comercial de go-live.
+ * Público: solo booleans agregados (sin nombres de secretos faltantes).
+ * Analista JWT o CRON_SECRET: detalle completo (checks + bloqueantes).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const presence = getEnvPresenceChecklist()
   const publicUrl = getPublicAppUrl()
   const mpMock = isMpMockMode()
@@ -32,14 +34,54 @@ export async function GET() {
       Boolean(process.env.AFIP_CERT_PROD && process.env.AFIP_KEY_PROD),
   }
 
+  const bloqueantesCount = [
+    !checks.database,
+    !checks.jwt,
+    !checks.mpConfigured,
+    !checks.mpWebhookSecret,
+  ].filter(Boolean).length
+
+  const go = bloqueantesCount === 0
+
+  // Acceso extendido: analista o cron secret
+  let fullDetail = false
+  if (authorizeCronRequest(request)) {
+    fullDetail = true
+  } else {
+    const authHeader = request.headers.get("authorization")
+    if (authHeader?.startsWith("Bearer ")) {
+      const ctx = await getClaverAnalystContext(request)
+      if (ctx.ok) fullDetail = true
+    }
+  }
+
+  if (!fullDetail) {
+    return NextResponse.json({
+      go,
+      precioMinimoSuscripcionArs: PRECIO_MINIMO_SUSCRIPCION_ARS,
+      anclaGratis: "pos.fiado_barrio",
+      webhookUrl: `${publicUrl}/api/webhooks/mercadopago`,
+      checks: {
+        database: checks.database,
+        jwt: checks.jwt,
+        mpConfigured: checks.mpConfigured,
+        mpWebhookSecret: checks.mpWebhookSecret,
+        mpMock: checks.mpMock,
+      },
+      missingCriticalCount: bloqueantesCount,
+      message: go
+        ? "Config mínima de cobro OK."
+        : `NO-GO: faltan ${bloqueantesCount} variables críticas (detalle solo para analistas).`,
+      hint: "Vercel → Project → Settings → Environment Variables (Production).",
+    })
+  }
+
   const bloqueantes = [
     !checks.database && "DATABASE_URL",
     !checks.jwt && "JWT_SECRET",
     !checks.mpConfigured && "MP_ACCESS_TOKEN (prod) — alias: MERCADOPAGO_ACCESS_TOKEN",
     !checks.mpWebhookSecret && "MP_WEBHOOK_SECRET — alias: MERCADOPAGO_WEBHOOK_SECRET",
   ].filter(Boolean) as string[]
-
-  const go = bloqueantes.length === 0
 
   return NextResponse.json({
     go,
@@ -56,6 +98,7 @@ export async function GET() {
       !checks.afipProd && "AFIP no está en producción (OK para demo ticket)",
       checks.mpMock && "Mercado Pago en modo mock",
       !checks.cronSecret && "Sin CRON_SECRET: crons Vercel pueden quedar abiertos",
+      process.env.ALLOW_DEMO === "1" && "ALLOW_DEMO=1: endpoint /api/auth/demo habilitado en este entorno",
     ].filter(Boolean),
     message: go
       ? "Config mínima de cobro OK. Completá advertencias según lo que vendas."

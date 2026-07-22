@@ -85,6 +85,13 @@ await authFetch("/api/endpoint", { method: "POST", body: JSON.stringify(data) })
 Every API route MUST use `getAuthContext()` + `whereEmpresa()` to scope data by empresa.
 Never return data without filtering by `empresaId`.
 
+### Auth (email + Google)
+- Schema: `Usuario.password?`, `authProvider` (`credentials`|`google`), `googleId`, `avatarUrl`
+- Login Google: `POST /api/auth/google` via `lib/auth/google-auth-service.ts` — **no free join by `empresaId`**
+- Subusers: invite with `authMethod: "google"` → activate on first Google login (open invitation)
+- User managers: `canManageUsers()` = `dueno` | `administrador` | `admin` | `propietario` (`lib/auth/admin-roles.ts`)
+- Docs: `docs/funcional/GOOGLE_AUTH_USUARIOS.md`
+
 ### Component Style
 - Use shadcn/ui primitives from `@/components/ui/`
 - Use `cn()` from `@/lib/utils` for conditional classes

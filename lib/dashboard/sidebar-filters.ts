@@ -1,4 +1,8 @@
-// @ts-nocheck
+/**
+ * Filtros de sidebar: rol, features, SKU, rubro.
+ * Los dueños/admins ven todos los módulos de SU oficio, no todos los nichos ajenos.
+ */
+
 import { getRubroUx, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ROLES_SISTEMA } from "@/lib/auth/roles"
 import type { CountryFeatures } from "@/lib/country/country-features"
@@ -9,9 +13,14 @@ function getRoleDefinition(role?: string) {
   return ROLES_SISTEMA.find((rol) => rol.codigo === role)
 }
 
+function isElevatedRole(role: string | undefined | null): boolean {
+  if (!role) return false
+  return ["administrador", "admin", "dueno", "propietario"].includes(role)
+}
+
 function hasRoleAccessToModulo(role: string | undefined, modulo: string): boolean {
   if (!role) return false
-  if (["administrador", "admin", "dueno"].includes(role)) return true
+  if (isElevatedRole(role)) return true
   const def = getRoleDefinition(role)
   return def?.modulosAcceso.some((m) => m.modulo === modulo) ?? false
 }
@@ -28,6 +37,7 @@ export function canRenderMenuItem(
   countryFeatures: CountryFeatures,
   condicionIva?: string,
 ): boolean {
+  // ── País / fiscal ────────────────────────────────────────────────────────
   if (condicionIva?.toLowerCase() === "monotributista" || condicionIva?.toLowerCase() === "monotributo") {
     if (item.href?.startsWith("/dashboard/contabilidad")) return false
     if (item.href === "/dashboard/impuestos/iibb") return false
@@ -45,39 +55,43 @@ export function canRenderMenuItem(
 
   if (item.claverAnalystOnly && !isClaverAnalyst) return false
 
+  // SKU: si el ítem exige producto y el mapa está cargado, debe estar activo
   if (item.skuKey && productosSku && productosSku[item.skuKey] !== true) return false
 
-  if (["administrador", "admin", "dueno"].includes(role || "")) return true
-
-  if (!role) {
-    if (item.featureKey) {
-      if (features && features[item.featureKey] === false) return false
-      if (modulosActivos && modulosActivos[item.featureKey] === false) return false
-    }
-    return true
-  }
-
-  if (item.allowedUsers?.length && userId) {
-    if (!item.allowedUsers.includes(userId)) return false
-  }
-
-  if (item.allowedRoles) {
-    if (!item.allowedRoles.includes(role)) return false
-  }
-
-  if (item.allowedRubros && !item.allowedRubros.includes(rubro)) {
+  // Rubro del ítem: SIEMPRE se respeta (también para dueño/admin)
+  if (item.allowedRubros?.length && !item.allowedRubros.includes(rubro)) {
     return false
   }
 
-  if (item.excludedRoles && item.excludedRoles.includes(role)) return false
-
-  if (item.permisoModulo) {
-    if (!hasRoleAccessToModulo(role, item.permisoModulo)) return false
+  if (item.allowedUsers?.length && userId) {
+    if (!item.allowedUsers.includes(String(userId))) return false
   }
 
+  if (item.allowedRoles?.length && role && !item.allowedRoles.includes(role)) {
+    return false
+  }
+
+  if (item.excludedRoles?.length && role && item.excludedRoles.includes(role)) {
+    return false
+  }
+
+  // Features explícitamente apagadas
   if (item.featureKey) {
     if (features && features[item.featureKey] === false) return false
     if (modulosActivos && modulosActivos[item.featureKey] === false) return false
+  }
+
+  // Dueño/admin: acceso a módulos del negocio (sin saltarse rubro/SKU/feature off)
+  if (isElevatedRole(role)) {
+    return true
+  }
+
+  if (!role) {
+    return true
+  }
+
+  if (item.permisoModulo) {
+    if (!hasRoleAccessToModulo(role, item.permisoModulo)) return false
   }
 
   return true
@@ -90,6 +104,7 @@ function getModuloScore(
 ) {
   if (modulo.label === "Principal") return -1000
   if (modulo.label === "Claver Nicho") return -800
+  if (modulo.label === "Claver Platform") return -700
   if (modulo.label === "Configuración") return 10000 + index
   if (!modulo.moduloKey) return 5000 + index
   const priorityIndex = prioridad.indexOf(modulo.moduloKey)

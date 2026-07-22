@@ -21,6 +21,8 @@ import {
 import Link from "next/link"
 import { getRubroUx, normalizeRubroValue, type Rubro } from "@/lib/onboarding/onboarding-ia"
 import { ProductDashboardHome } from "@/components/dashboard/product-dashboard-home"
+import { BuenDiaHome } from "@/components/dashboard/buen-dia-home"
+import { RubroSetupChecklist } from "@/components/onboarding/rubro-setup-checklist"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { useAuthStore } from "@/lib/stores/auth-store"
@@ -966,6 +968,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Home del oficio — Fase 3/4 (Gemini + review) */}
+      <BuenDiaHome modoLite={modoLite} rubro={rubro} />
+      <RubroSetupChecklist rubro={rubro} />
+
       <MotionFadeDown>
         <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 sm:p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
           {/* Subtle gradient background for main header */}
@@ -1182,17 +1188,21 @@ export default function DashboardPage() {
         />
       </MotionList>
 
-      <Collapsible open={analyticsOpen} onOpenChange={setAnalyticsOpen}>
+      <Collapsible
+        open={analyticsOpen}
+        onOpenChange={setAnalyticsOpen}
+        className="w-full space-y-2 border rounded-xl p-4 bg-muted/10"
+      >
         <CollapsibleTrigger asChild>
-          <Button variant="outline" className="w-full justify-between h-10 text-sm">
+          <Button variant="ghost" className="w-full flex justify-between p-0 h-auto font-semibold hover:bg-transparent">
             <span className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              Análisis detallado y gráficos
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Más reportes y analítica avanzada
             </span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${analyticsOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${analyticsOpen ? "rotate-180" : ""}`} />
           </Button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-6 pt-4">
+        <CollapsibleContent className="space-y-6 pt-4 mt-2 border-t">
       <AIInsightsWidget />
 
       <ScrollReveal>
@@ -1314,6 +1324,7 @@ export default function DashboardPage() {
     </div>
   )
 }
+
 
 // ─── AI Insights Widget ───────────────────────────────────────────────────────
 

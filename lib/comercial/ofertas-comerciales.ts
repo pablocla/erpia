@@ -9,6 +9,7 @@ import { getEngancheBySku } from "@/lib/marketplace/enganche-catalog"
 import { resolveSku } from "@/lib/marketplace/catalog-resolver"
 import { SUB_SAAS_APPS } from "@/lib/comercial/sub-saas-catalog"
 import { precioCobrableSku, aplicarPisoPrecioSuscripcion } from "@/lib/comercial/precio-minimo"
+import { resolvePrecioIndexadoSiAplica } from "@/lib/inflacion/billing-trigger"
 import { prisma } from "@/lib/prisma"
 
 export type TrialScope = "monetizar" | "todo" | "nada"
@@ -131,21 +132,26 @@ export function getOfertaById(id: string): OfertaComercial | null {
 }
 
 export function resolvePrecioSku(sku: string): number {
+  let base = 0
   const sub = SUB_SAAS_APPS.find((a) => a.sku === sku || a.skusAdicionales?.includes(sku))
-  if (sub && sub.precioArs > 0) return precioCobrableSku(sku, sub.precioArs)
+  if (sub && sub.precioArs > 0) base = sub.precioArs
+  else {
+    const enganche = getEngancheBySku(sku)
+    if (enganche && enganche.precioArs > 0) base = enganche.precioArs
+    else {
+      const catalog = resolveSku(sku)
+      if (catalog && catalog.precioArs > 0) base = catalog.precioArs
+    }
+  }
 
-  const enganche = getEngancheBySku(sku)
-  if (enganche && enganche.precioArs > 0) return precioCobrableSku(sku, enganche.precioArs)
-
-  const catalog = resolveSku(sku)
-  if (catalog && catalog.precioArs > 0) return precioCobrableSku(sku, catalog.precioArs)
-
-  return precioCobrableSku(sku, 0)
+  // Gatillo IPC plataforma (Claver cobra a tenants): CLAVER_INDEXAR_PRECIOS=1
+  base = resolvePrecioIndexadoSiAplica(base)
+  return precioCobrableSku(sku, base)
 }
 
 export function precioOfertaMonetizada(oferta: OfertaComercial): number {
   if (oferta.precioPackArs != null && oferta.precioPackArs > 0) {
-    return aplicarPisoPrecioSuscripcion(oferta.precioPackArs)
+    return aplicarPisoPrecioSuscripcion(resolvePrecioIndexadoSiAplica(oferta.precioPackArs))
   }
   const suma = oferta.monetizar.reduce((sum, sku) => sum + resolvePrecioSku(sku), 0)
   return aplicarPisoPrecioSuscripcion(suma)

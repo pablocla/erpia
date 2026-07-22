@@ -19,7 +19,10 @@ import { Switch } from "@/components/ui/switch"
 import { getAuthHeaders } from "@/lib/stores/auth-store"
 import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
 import { getFiadoExperience } from "@/lib/comercial/app-experience"
+import { InflacionFiadoPanel } from "@/components/fiado/inflacion-fiado-panel"
 import { useToast } from "@/hooks/use-toast"
+import { useProductEntitlements } from "@/hooks/use-product-entitlements"
+import { PaywallModal } from "@/components/billing/paywall-modal"
 
 type Deudor = {
   id: number
@@ -63,6 +66,9 @@ export default function LibretaFiadoPage() {
   const [configOpen, setConfigOpen] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
   const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
+  
+  const { tieneSku } = useProductEntitlements()
+  const [showPaywall, setShowPaywall] = useState(false)
   const [opCliente, setOpCliente] = useState<Deudor | null>(null)
   const [opMode, setOpMode] = useState<"anotar" | "cobrar" | null>(null)
   const [opMonto, setOpMonto] = useState("")
@@ -226,6 +232,9 @@ export default function LibretaFiadoPage() {
         guide={experience}
         onPrimaryClick={() => setOpen(true)}
       />
+
+      <InflacionFiadoPanel saldoTotal={resumen?.saldoFiadoTotal} />
+
       <div className="flex flex-wrap justify-end gap-2">
           <Dialog open={configOpen} onOpenChange={setConfigOpen}>
             <DialogTrigger asChild>
@@ -273,10 +282,23 @@ export default function LibretaFiadoPage() {
                         Requiere WhatsApp ON activo en App Store.
                       </p>
                     </div>
-                    <Switch
-                      checked={config.fiadoNotificarWhatsApp !== false}
-                      onCheckedChange={(v) => setConfig({ ...config, fiadoNotificarWhatsApp: v })}
-                    />
+                    <div onClick={(e) => {
+                      if (!tieneSku("channel.whatsapp")) {
+                        e.preventDefault()
+                        setShowPaywall(true)
+                      }
+                    }}>
+                      <Switch
+                        checked={config.fiadoNotificarWhatsApp !== false}
+                        onCheckedChange={(v) => {
+                          if (!tieneSku("channel.whatsapp")) {
+                            setShowPaywall(true)
+                            return
+                          }
+                          setConfig({ ...config, fiadoNotificarWhatsApp: v })
+                        }}
+                      />
+                    </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={savingConfig}>
                     {savingConfig ? "Guardando…" : "Guardar"}
@@ -285,6 +307,13 @@ export default function LibretaFiadoPage() {
               )}
             </DialogContent>
           </Dialog>
+          <PaywallModal 
+            open={showPaywall} 
+            onOpenChange={setShowPaywall} 
+            title="Suscripción Requerida" 
+            description="El envío automático de WhatsApp requiere el módulo 'Claver Cobrá'." 
+            requiredSku="channel.whatsapp" 
+          />
           <Button variant="outline" onClick={() => void cargar()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Actualizar

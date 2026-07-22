@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
@@ -12,14 +12,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
 
 function RegisterPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activarParam = searchParams.get("activar")
   const refParam = searchParams.get("ref")
+  const googleIdToken = searchParams.get("google")
   const activarIntent = resolveActivarIntent(activarParam)
-  const { loginConToken } = useAuth()
+  const { loginConToken, loginConGoogle } = useAuth()
 
   const [form, setForm] = useState({
     empresa: "",
@@ -28,9 +30,43 @@ function RegisterPageContent() {
     password: "",
     confirmar: "",
   })
+  const [googleUser, setGoogleUser] = useState<{
+    email: string
+    nombre: string
+    avatarUrl?: string
+    idToken: string
+  } | null>(null)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
+
+  // Si viene de Google auth sin empresa, pre-cargar datos
+  useEffect(() => {
+    if (googleIdToken && !googleUser) {
+      // Llamar al endpoint para obtener datos del Google token sin crear usuario
+      void (async () => {
+        const res = await fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: googleIdToken }),
+        })
+        const data = await res.json()
+        if (data.error === "EMPRESA_REQUIRED" && data.googleUser) {
+          setGoogleUser({ ...data.googleUser, idToken: googleIdToken })
+          setForm((prev) => ({
+            ...prev,
+            nombre: data.googleUser.nombre ?? prev.nombre,
+            email: data.googleUser.email ?? prev.email,
+          }))
+        } else if (data.success) {
+          // El usuario ya fue creado (tenía empresa), redirigir
+          loginConToken(data.token, data.usuario)
+          router.push("/dashboard")
+        }
+      })()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleIdToken])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -40,13 +76,15 @@ function RegisterPageContent() {
     e.preventDefault()
     setError("")
 
-    if (form.password !== form.confirmar) {
-      setError("Las contraseñas no coinciden")
-      return
-    }
-    if (form.password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres")
-      return
+    if (!googleUser) {
+      if (form.password !== form.confirmar) {
+        setError("Las contraseñas no coinciden")
+        return
+      }
+      if (form.password.length < 8) {
+        setError("La contraseña debe tener al menos 8 caracteres")
+        return
+      }
     }
     if (!acceptTerms) {
       setError("Debés aceptar los Términos y la Política de privacidad")
@@ -55,6 +93,34 @@ function RegisterPageContent() {
 
     setCargando(true)
     try {
+      // ── Flujo Google: crear empresa y usuario vía /api/auth/google ──────
+      if (googleUser) {
+        const result = await loginConGoogle(googleUser.idToken, {
+          empresaNombre: form.empresa,
+        })
+        if (!result.success) {
+          setError(result.error ?? "Error al crear la cuenta con Google")
+          return
+        }
+
+        let dest = "/dashboard"
+        if (activarIntent && activarParam && result.token) {
+          const r = await activarProductoDesdeIntent(result.token, activarParam)
+          if (r.landingPath) dest = r.landingPath
+        }
+
+        try {
+          localStorage.setItem("claver_fresh_signup", "1")
+          if (activarIntent) {
+            localStorage.setItem("claver_product_marca", activarIntent.marca)
+          }
+        } catch { /* ignore */ }
+
+        router.push(dest)
+        return
+      }
+
+      // ── Flujo credenciales estándar ──────────────────────────────────────
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -169,6 +235,8 @@ function RegisterPageContent() {
                 onChange={handleChange}
                 required
                 placeholder="Juan Pérez"
+                readOnly={!!googleUser}
+                className={googleUser ? "bg-muted" : ""}
               />
             </div>
 
@@ -182,34 +250,40 @@ function RegisterPageContent() {
                 onChange={handleChange}
                 required
                 placeholder="juan@miempresa.com"
+                readOnly={!!googleUser}
+                className={googleUser ? "bg-muted" : ""}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                placeholder="Mínimo 8 caracteres"
-              />
-            </div>
+            {!googleUser && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                    placeholder="Mínimo 8 caracteres"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmar">Confirmar contraseña</Label>
-              <Input
-                id="confirmar"
-                name="confirmar"
-                type="password"
-                value={form.confirmar}
-                onChange={handleChange}
-                required
-                placeholder="Repetí la contraseña"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmar">Confirmar contraseña</Label>
+                  <Input
+                    id="confirmar"
+                    name="confirmar"
+                    type="password"
+                    value={form.confirmar}
+                    onChange={handleChange}
+                    required
+                    placeholder="Repetí la contraseña"
+                  />
+                </div>
+              </>
+            )}
 
             <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer">
               <input
@@ -245,6 +319,45 @@ function RegisterPageContent() {
                 Iniciá sesión
               </Link>
             </p>
+
+            {!googleUser && (
+              <>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">o registrate con Google</span>
+                  </div>
+                </div>
+                <GoogleSignInButton
+                  onCredential={async (idToken) => {
+                    setError("")
+                    setCargando(true)
+                    try {
+                      const result = await loginConGoogle(idToken, {
+                        empresaNombre: form.empresa || undefined,
+                      })
+                      if (result.success && result.usuario) {
+                        router.push("/dashboard")
+                      } else if (result.needsEmpresa) {
+                        setGoogleUser({ ...result.googleUser!, idToken })
+                        setForm((prev) => ({
+                          ...prev,
+                          nombre: result.googleUser?.nombre ?? prev.nombre,
+                          email: result.googleUser?.email ?? prev.email,
+                        }))
+                      } else {
+                        setError(result.error || "Error con Google")
+                      }
+                    } finally {
+                      setCargando(false)
+                    }
+                  }}
+                  text="signup_with"
+                />
+              </>
+            )}
           </form>
         </CardContent>
       </Card>

@@ -87,7 +87,7 @@ export const INTANGIBLE_PREMIUM_7: IntangiblePremiumMeta[] = [
     status: "disponible",
     prioridadBuild: "ahora",
     stackTecnico: ["movimientoCaja", "notaCredito", "anular-venta-pos", "auditoria", "WhatsApp"],
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
   },
   {
     sku: "intang.reactivador_clientes",

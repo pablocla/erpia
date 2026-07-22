@@ -18,7 +18,22 @@ export const dynamic = "force-dynamic"
  */
 export async function POST(request: NextRequest) {
   try {
-    const blocked = checkRateLimit(request, "demo", 10, 15 * 60 * 1000)
+    // Production: demo deshabilitado salvo ALLOW_DEMO=1
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO !== "1") {
+      const { recordPlatformEvent } = await import("@/lib/ops/platform-events")
+      void recordPlatformEvent({
+        severity: "sev3",
+        source: "auth",
+        code: "DEMO_BLOCKED",
+        message: "Intento de /api/auth/demo bloqueado en production",
+      })
+      return NextResponse.json(
+        { error: "Demo deshabilitado en producción", code: "DEMO_DISABLED" },
+        { status: 403 },
+      )
+    }
+
+    const blocked = checkRateLimit(request, "demo", 5, 15 * 60 * 1000)
     if (blocked) return blocked
     const ADMIN_EMAIL = DEMO_ADMIN_EMAIL
     const ADMIN_PASSWORD = DEMO_ADMIN_PASSWORD
@@ -93,6 +108,17 @@ export async function POST(request: NextRequest) {
       email: usuario.email,
       rol: usuario.rol,
       empresaId: usuario.empresaId,
+    })
+
+    const { recordPlatformEvent } = await import("@/lib/ops/platform-events")
+    void recordPlatformEvent({
+      severity: "sev4",
+      source: "auth",
+      code: "DEMO_LOGIN",
+      message: `Demo login industry=${industryId}`,
+      empresaId: empresa.id,
+      meta: { industryId },
+      skipDedupe: true,
     })
 
     return NextResponse.json({

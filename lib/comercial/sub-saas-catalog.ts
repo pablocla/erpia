@@ -1,9 +1,11 @@
 /**
  * Catálogo de Sub-SaaS empaquetados — celular + web PC sobre procesos existentes.
  * Fuente de verdad para landings /claver/apps/[slug], activación y documentación.
+ * Portfolio freemium 11: lib/comercial/micro-saas-portfolio.ts
  */
 
 import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
+import { microSaasSubSaasToAppend } from "@/lib/comercial/micro-saas-portfolio"
 
 function activarSkuHref(sku: string): string {
   return `/login?activar=${encodeURIComponent(sku)}`
@@ -162,14 +164,14 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
   },
   {
     slug: "turnos",
-    marca: "Claver Turnos",
-    nombre: "Turnero online",
-    lema: "Un link. El cliente reserva solo.",
+    marca: "Claver Confirmá",
+    nombre: "Turnos que confirman solos",
+    lema: "Menos no-shows. Más sillas ocupadas.",
     descripcion:
-      "Agenda online para salón, barbería, consultorio o servicios. Link 24/7, menos no-shows y recordatorios por WhatsApp.",
-    sku: "niche.peluqueria_barrio",
-    skusAdicionales: ["com.whatsapp"],
-    precioArs: 10000,
+      "Agenda online + recordatorio WhatsApp la víspera. Link 24/7, menos no-shows. Producto freemium: Confirmá.",
+    sku: "micro.confirma_turnos",
+    skusAdicionales: ["niche.peluqueria_barrio", "com.whatsapp"],
+    precioArs: 14900,
     trialDias: 14,
     modoLite: "niche",
     dashboardPath: "/dashboard/agenda",
@@ -191,12 +193,12 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
     pains: ["Coordinación por WhatsApp caótica", "Clientas que no vienen", "Agenda en papel"],
     outcomes: ["Link de reserva 24/7", "Menos no-shows", "Agenda centralizada"],
     pasosActivacion: [
-      "Activar niche.peluqueria_barrio o rubro salón",
+      "Activar micro.confirma_turnos",
       "Cargar profesionales y servicios",
       "Compartir link /agenda-online/{empresaId}",
-      "Opcional: com.whatsapp para recordatorios",
+      "Activar recordatorios WhatsApp",
     ],
-    upsellSkus: ["fiscal.clavpay_link", "core.claver"],
+    upsellSkus: ["fiscal.clavpay_link", "intang.cobranzas_wa", "core.claver"],
   },
   {
     slug: "propiedad",
@@ -628,13 +630,14 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
   },
   {
     slug: "puntos",
-    marca: "Claver Puntos",
-    nombre: "Fidelización digital",
-    lema: "Tirá la tarjeta de cartón. Sumá puntos en pantalla.",
+    marca: "Claver Cuota",
+    nombre: "Cuotas de socio / gym",
+    lema: "Socios, planes y morosos sin cuaderno.",
     descripcion:
-      "Cuotas, membresías y puntos para cafeterías, gimnasios y clubes. Celular o tablet en mostrador.",
+      "Planes, membresías y cobro de cuotas para gym de barrio, pilates y clubes. Freemium: Claver Cuota.",
     sku: "niche.gimnasio_barrio",
-    precioArs: 10000,
+    skusAdicionales: ["com.whatsapp", "intang.cobranzas_wa"],
+    precioArs: 19900,
     trialDias: 14,
     modoLite: "niche",
     dashboardPath: "/dashboard/membresias",
@@ -645,23 +648,43 @@ export const SUB_SAAS_APPS: SubSaasApp[] = [
       "app/api/membresias/route.ts",
       "lib/niche/niche-apps-catalog.ts",
     ],
-    listoPct: 45,
-    estado: "beta",
+    listoPct: 78,
+    estado: "disponible",
     plataforma: "ambos",
-    redesScore: 6,
-    impactoScore: 6,
-    rubros: ["gimnasio", "cafetería", "heladería", "club"],
-    reelHook: "Tarjeta de cartón vs puntos en la tablet.",
-    pains: ["Tarjetas perdidas", "No saber quién es socio activo", "Colas en entrada"],
-    outcomes: ["Socios digitalizados", "Cuotas vencidas visibles", "WhatsApp a morosos"],
+    redesScore: 8,
+    impactoScore: 9,
+    rubros: ["gimnasio", "pilates", "club", "cafetería"],
+    reelHook: "Cuaderno de socios vs panel de morosos en un toque.",
+    pains: ["Cuotas en papel", "Morosos sin avisar", "No saber quién está al día"],
+    outcomes: ["Planes claros", "Morosos visibles", "WhatsApp de cuota"],
     pasosActivacion: [
-      "Activar niche.gimnasio_barrio o membresías",
+      "Activar niche.gimnasio_barrio",
       "Definir planes y precios",
       "Registrar socios",
-      "Cobrar cuota desde panel",
+      "Cobrar / avisar cuotas",
     ],
-    upsellSkus: ["com.whatsapp", "intang.cobranzas_wa"],
+    upsellSkus: ["com.whatsapp", "intang.cobranzas_wa", "core.claver"],
   },
+  // Portfolio freemium: expensas, renta, seña, caja, abono, reactiva, ruta (+ aliases)
+  ...(microSaasSubSaasToAppend(
+    new Set([
+      "pos",
+      "cobra",
+      "fiado",
+      "turnos",
+      "puntos",
+      "tienda",
+      "presupuestos",
+      "menu-qr",
+      "contenido-ia",
+      "bot-wa",
+      "stock",
+      "monotributo",
+      "servicios",
+      "obra",
+      "propiedad",
+    ]),
+  ) as SubSaasApp[]),
 ]
 
 export const SUB_SAAS_SLUGS = SUB_SAAS_APPS.map((a) => a.slug) as readonly string[]
@@ -676,6 +699,14 @@ export const SUB_SAAS_MARKETPLACE_ORDER = [
   "fiado",
   "cobra",
   "turnos",
+  "puntos",
+  "expensas",
+  "renta",
+  "sena",
+  "ruta",
+  "caja",
+  "abono",
+  "reactiva",
   "pos",
   "monotributo",
   "servicios",
@@ -687,20 +718,19 @@ export const SUB_SAAS_MARKETPLACE_ORDER = [
   "stock",
   "bot-wa",
   "contenido-ia",
-  "puntos",
 ] as const satisfies readonly SubSaasSlug[]
 
-/** Slugs destacados en home y marketplace (orden comercial). */
+/** Slugs destacados en home y marketplace (orden comercial freemium). */
 export const SUB_SAAS_DESTACADOS = [
   "fiado",
   "cobra",
   "turnos",
-  "pos",
-  "monotributo",
-  "servicios",
-  "propiedad",
-  "obra",
-  "tienda",
+  "puntos",
+  "expensas",
+  "ruta",
+  "sena",
+  "caja",
+  "renta",
 ] as const satisfies readonly SubSaasSlug[]
 
 /** Apps con motor usable hoy (no beta / no próximamente). */

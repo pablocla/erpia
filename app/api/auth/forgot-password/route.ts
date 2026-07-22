@@ -29,12 +29,22 @@ export async function POST(request: NextRequest) {
     }
 
     const usuario = await prisma.usuario.findUnique({
-      where: { email },
-      select: { id: true, activo: true },
+      where: { email: email.toLowerCase().trim() },
+      select: { id: true, activo: true, authProvider: true, password: true },
     })
 
     if (!usuario || !usuario.activo) {
       return NextResponse.json(genericResponse)
+    }
+
+    // Google-only accounts: do not issue password reset (use Google Sign-In)
+    if (usuario.authProvider === "google" && !usuario.password) {
+      return NextResponse.json({
+        success: true,
+        mensaje:
+          "Esta cuenta inicia sesión con Google. Usá el botón «Continuar con Google» en el login. No se puede restablecer contraseña.",
+        googleOnly: true,
+      })
     }
 
     // Generate secure reset token (valid 1 hour)

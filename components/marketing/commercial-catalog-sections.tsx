@@ -101,7 +101,7 @@ export function CombateHomeSection({
               <MotionListItem key={app.slug}>
                 <Card
                   className={cn(
-                    "flex h-full flex-col transition",
+                    "flex h-full flex-col bg-white text-slate-900 transition",
                     highlighted
                       ? "border-emerald-400/80 bg-emerald-50/40 shadow-md ring-1 ring-emerald-200"
                       : "border-slate-200/80 hover:border-emerald-200 hover:shadow-md",
@@ -201,10 +201,10 @@ export function PacksHomeStripSection({ className }: { className?: string }) {
         <MotionList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PACKS_HOME_STRIP.map((pack) => (
             <MotionListItem key={pack.id}>
-              <Card className="flex h-full flex-col border-slate-200/80 transition hover:border-emerald-200 hover:shadow-md">
+              <Card className="flex h-full flex-col border-slate-200/80 bg-white text-slate-900 transition hover:border-emerald-200 hover:shadow-md">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base leading-snug">{pack.nombre}</CardTitle>
+                    <CardTitle className="text-base leading-snug text-slate-900">{pack.nombre}</CardTitle>
                     <Badge variant="outline" className="shrink-0 text-[10px]">
                       {pack.cantidadSkus} mod.
                     </Badge>
@@ -252,7 +252,7 @@ function SubSaasAppCard({
   return (
     <Card
       className={cn(
-        "flex h-full flex-col border-slate-200/80 bg-white transition hover:border-emerald-200 hover:shadow-md",
+        "flex h-full flex-col border-slate-200/80 bg-white text-slate-900 transition hover:border-emerald-200 hover:shadow-md",
         featured && "border-emerald-300/80 ring-1 ring-emerald-100",
         !activa && app.estado === "beta" && "opacity-95",
       )}
@@ -272,7 +272,7 @@ function SubSaasAppCard({
             <Badge className={cn("shrink-0 text-[10px]", status.className)}>{status.text}</Badge>
           </div>
         </div>
-        <CardTitle className="font-[var(--font-fraunces)] text-lg text-slate-900">{app.nombre}</CardTitle>
+        <CardTitle className="font-[var(--font-fraunces)] text-lg font-semibold text-slate-900">{app.nombre}</CardTitle>
         <p className="text-sm text-slate-600 leading-relaxed">{app.lema}</p>
       </CardHeader>
       <CardContent className="flex-1">
@@ -423,9 +423,9 @@ export function ProductosEntradaSection({ className }: { className?: string }) {
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {PRODUCTOS_ENTRADA.map((p) => (
-            <Card key={p.sku} className="flex h-full flex-col border-slate-200/80 bg-white shadow-sm">
+            <Card key={p.sku} className="flex h-full flex-col border-slate-200/80 bg-white text-slate-900 shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="font-[var(--font-fraunces)] text-xl">{p.nombre}</CardTitle>
+                <CardTitle className="font-[var(--font-fraunces)] text-xl font-semibold text-slate-900">{p.nombre}</CardTitle>
                 <p className="text-sm text-slate-600">{p.lema}</p>
               </CardHeader>
               <CardContent className="flex-1">
@@ -478,18 +478,18 @@ export function PacksRubroSection({ className }: { className?: string }) {
         <MotionList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PACKS_DESTACADOS.map((pack) => (
             <MotionListItem key={pack.id}>
-              <Card className="h-full border-slate-200/80 transition hover:border-emerald-200 hover:shadow-md">
+              <Card className="h-full border-slate-200/80 bg-white text-slate-900 transition hover:border-emerald-200 hover:shadow-md">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg">{pack.nombre}</CardTitle>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                    <CardTitle className="text-lg font-semibold text-slate-900">{pack.nombre}</CardTitle>
+                    <Badge variant="outline" className="shrink-0 text-[10px] text-slate-700">
                       {pack.cantidadSkus} módulos
                     </Badge>
                   </div>
                   <p className="text-sm text-slate-600">{pack.lema}</p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold">{fmtPrecioArs(pack.precioArs)}</p>
+                  <p className="text-2xl font-bold text-slate-900">{fmtPrecioArs(pack.precioArs)}</p>
                   <p className="text-xs text-slate-500">
                     {tipoCobroLabel(pack.tipoCobro)}
                     {pack.ahorroPct > 0 ? ` · −${pack.ahorroPct}% vs sueltos` : ""}
@@ -516,7 +516,7 @@ function LineaCard({ line, compact }: { line: ClaverServiceLine; compact?: boole
   const activo = line.status !== "proximamente" && !!href
 
   const inner = (
-    <Card className={cn("h-full bg-white", compact ? "border-slate-200/80" : "border-slate-200/80 shadow-sm")}>
+    <Card className={cn("h-full bg-white text-slate-900", compact ? "border-slate-200/80" : "border-slate-200/80 shadow-sm")}>
       <CardHeader className={compact ? "pb-2" : undefined}>
         <div className="flex items-start justify-between gap-2">
           <div
@@ -530,7 +530,7 @@ function LineaCard({ line, compact }: { line: ClaverServiceLine; compact?: boole
           </div>
           <Badge className={status.className}>{status.text}</Badge>
         </div>
-        <CardTitle className={cn("font-[var(--font-fraunces)]", compact ? "text-lg" : "text-xl")}>
+        <CardTitle className={cn("font-[var(--font-fraunces)] font-semibold text-slate-900", compact ? "text-lg" : "text-xl")}>
           {line.name}
         </CardTitle>
         <p className="text-sm font-medium text-blue-700">{line.tagline}</p>

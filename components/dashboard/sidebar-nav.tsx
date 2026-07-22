@@ -53,7 +53,25 @@ export function SidebarNavItem({
         <item.icon className="sidebar-icon h-4 w-4 flex-shrink-0" />
         {sidebarOpen && <span className="sidebar-label truncate">{label}</span>}
         {sidebarOpen && item.badge && (
-          <Badge className="ml-auto h-4 text-[10px] px-1" variant="secondary">
+          <Badge
+            className="ml-auto h-4 text-[10px] px-1 shrink-0"
+            variant={
+              item.badge === "Piloto"
+                ? "secondary"
+                : item.badge === "Demo"
+                  ? "outline"
+                  : item.badge === "No vender"
+                    ? "destructive"
+                    : "secondary"
+            }
+            title={
+              item.badge === "Piloto"
+                ? "Módulo en piloto: usable con limitaciones"
+                : item.badge === "Demo"
+                  ? "Demo / incompleto: no vender como producto cerrado"
+                  : undefined
+            }
+          >
             {item.badge}
           </Badge>
         )}

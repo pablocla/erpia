@@ -4,7 +4,8 @@ import { completeWorkerJob } from "@/lib/ops/orchestrator/job-runner"
 import type { OpsJobTipo } from "@/lib/ops/ops-types"
 
 function verifyWorkerSecret(request: NextRequest): boolean {
-  const secret = process.env.OPS_WORKER_SECRET
+  const secret = process.env.OPS_WORKER_SECRET?.trim()
+  // Production: fail-closed sin secret
   if (!secret) return process.env.NODE_ENV !== "production"
   const auth = request.headers.get("authorization")
   return auth === `Bearer ${secret}`

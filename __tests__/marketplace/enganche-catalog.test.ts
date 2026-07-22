@@ -3,15 +3,15 @@ import { ENGANCHES, resumenEnganches, getEnganchesPorNicho } from "@/lib/marketp
 
 describe("enganche-catalog", () => {
   it("tiene 40 enganches definidos (base + apps nicho LATAM)", () => {
-    expect(ENGANCHES).toHaveLength(40)
+    expect(ENGANCHES).toHaveLength(46)
   })
 
   it("resumenEnganches cuenta tiers correctamente", () => {
     const r = resumenEnganches()
-    expect(r.totalEnganches).toBe(40)
-    expect(r.porTier.implementado).toBe(25)
-    expect(r.porTier.parcial).toBe(8)
-    expect(r.porTier.catalogo).toBe(7)
+    expect(r.totalEnganches).toBe(46)
+    expect(r.porTier.implementado).toBe(27)
+    expect(r.porTier.parcial).toBe(13)
+    expect(r.porTier.catalogo).toBe(6)
     expect(r.skusMarketplaceTotal).toBeGreaterThanOrEqual(57)
     expect(r.intangiblesTop5).toBe(5)
     expect(r.intangiblesPremium7).toBe(7)

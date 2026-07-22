@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { normalizarTelefono } from "@/lib/alertas/whatsapp-regla-dispatcher"
+import { canUseSku } from "@/lib/platform/entitlements"
+import { recordUsageEvent } from "@/lib/platform/commercial-service"
 
 export async function encolarWhatsAppFiado(input: {
   empresaId: number
@@ -13,21 +15,20 @@ export async function encolarWhatsAppFiado(input: {
   const tel = normalizarTelefono(input.telefono)
   if (!tel) return false
 
-  const [waActivo, empresa] = await Promise.all([
-    prisma.suscripcionModulo.findFirst({
-      where: {
-        empresaId: input.empresaId,
-        sku: { in: ["com.whatsapp", "channel.whatsapp"] },
-        activo: true,
-      },
-    }),
+  const [access, empresa] = await Promise.all([
+    canUseSku(input.empresaId, "channel.whatsapp"),
     prisma.empresa.findUnique({
       where: { id: input.empresaId },
       select: { fiadoNotificarWhatsApp: true },
     }),
   ])
 
-  if (!waActivo || empresa?.fiadoNotificarWhatsApp === false) return false
+  if (!access.ok || empresa?.fiadoNotificarWhatsApp === false) return false
+
+  // Track event to increase the usage counter
+  if (access.source === "subscription" || access.source === "feature") {
+    await recordUsageEvent(input.empresaId, "channel.whatsapp", "fiado_wa")
+  }
 
   const fmt = (n: number) =>
     n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })

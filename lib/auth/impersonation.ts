@@ -1,11 +1,8 @@
 import { SignJWT } from "jose"
+import { getEncodedJwtSecret } from "@/lib/auth/jwt-secret"
 
 function getEncodedSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET no está configurado")
-  }
-  return new TextEncoder().encode(secret || "dev-pos-system-argentina-2025-unsafe")
+  return getEncodedJwtSecret()
 }
 
 export interface ImpersonationTokenPayload {

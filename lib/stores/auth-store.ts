@@ -1,4 +1,4 @@
-﻿import { create } from "zustand"
+import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 import { clearAuthTokenCookie, setAuthTokenCookie } from "@/lib/auth/token-cookie"
 
@@ -15,6 +15,7 @@ export interface AuthUser {
   rol: string
   empresaId: number
   empresaNombre?: string
+  avatarUrl?: string | null
 }
 
 interface AuthState {

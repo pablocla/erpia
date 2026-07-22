@@ -7,6 +7,7 @@ import { ENGANCHES } from "@/lib/marketplace/enganche-catalog"
 import { MARKETPLACE_BUNDLES } from "@/lib/marketplace/bundles"
 import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
+import { MICRO_SAAS_PORTFOLIO } from "@/lib/comercial/micro-saas-portfolio"
 
 export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios"
 
@@ -94,6 +95,24 @@ export const PACKS_CALLE: PackCalle[] = [
   },
 ].filter(Boolean) as PackCalle[]
 
+// Portfolio freemium 11 — solo SKUs aún no listados (evita duplicar fiado/cobrá)
+const _packCalleIds = new Set(PACKS_CALLE.map((p) => p.id))
+for (const p of MICRO_SAAS_PORTFOLIO.filter((x) => x.vendibleCalle)) {
+  if (_packCalleIds.has(p.sku)) continue
+  PACKS_CALLE.push({
+    id: p.sku,
+    nombre: p.marca,
+    lema: p.lema,
+    precioArs: p.precioArs,
+    modoLite: p.modoLite,
+    tipo: "sku",
+    skus: [p.sku, ...(p.skusAdicionales ?? [])],
+    landingPath: p.dashboardPath,
+    vendibleHoy: p.estado === "disponible" || p.estado === "beta",
+  })
+  _packCalleIds.add(p.sku)
+}
+
 const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   "pos.fiado_barrio": "fiado",
   "intang.cobranzas_wa": "cobranza",
@@ -116,6 +135,7 @@ const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   ...Object.fromEntries(
     NICHE_APPS.map((a) => [a.sku, (a.engine === "libreta" ? "fiado" : "niche") as ModoLite]),
   ),
+  ...Object.fromEntries(MICRO_SAAS_PORTFOLIO.map((p) => [p.sku, p.modoLite])),
 }
 
 const MODO_POR_DOLOR: Record<string, ModoLite> = {

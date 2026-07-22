@@ -1,40 +1,38 @@
-import { NextRequest, NextResponse } from "next/server"
-import { procesarWebhookMP } from "@/lib/mercadopago/mercadopago-service"
-import { prisma } from "@/lib/prisma"
+import { type NextRequest, NextResponse } from "next/server"
+import { validarFirmaWebhook } from "@/lib/auth/webhook-guard"
+import { handleMercadoPagoWebhook } from "@/lib/billing/mercadopago-subscription"
+import { recordPlatformEvent } from "@/lib/ops/platform-events"
 
 /**
- * Webhook de MercadoPago — NO requiere auth JWT (viene de MP servers).
- * Verifica por empresaId derivado del config vinculado al payment.
+ * Legacy alias de webhook MP.
+ * YA NO procesa sin firma. Delega al mismo flujo que /api/webhooks/mercadopago.
+ * Configurar en panel MP: https://TU_DOMINIO/api/webhooks/mercadopago
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-
-    // MP envía notificaciones tipo "payment" con data.id
-    if (body.type !== "payment" || !body.data?.id) {
-      return NextResponse.json({ ok: true }) // Ack silencioso
+    const rawBody = await request.text()
+    let payload: unknown
+    try {
+      payload = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const paymentId = String(body.data.id)
-
-    // Buscar config asociada (por ahora procesamos para todas las empresas con MP activo)
-    const configs = await prisma.mercadoPagoConfig.findMany({
-      where: { activo: true },
-    })
-
-    for (const config of configs) {
-      try {
-        await procesarWebhookMP(config.empresaId, paymentId)
-        break // Si procesó OK, salir
-      } catch {
-        // Intentar con siguiente config
-        continue
-      }
+    if (!validarFirmaWebhook(request, rawBody)) {
+      void recordPlatformEvent({
+        severity: "sev2",
+        source: "webhook",
+        code: "WEBHOOK_SIG_INVALID",
+        message: "Firma inválida en /api/mercadopago/webhook (legacy)",
+        meta: { path: "/api/mercadopago/webhook" },
+      })
+      return NextResponse.json({ error: "Firma inválida o faltante" }, { status: 401 })
     }
 
-    return NextResponse.json({ ok: true })
-  } catch (err) {
-    console.error("Error webhook MP:", err)
-    return NextResponse.json({ ok: true }) // Siempre 200 para MP
+    await handleMercadoPagoWebhook(payload as Parameters<typeof handleMercadoPagoWebhook>[0])
+    return NextResponse.json({ success: true, legacy: true })
+  } catch (error) {
+    console.error("Error webhook MP legacy:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }

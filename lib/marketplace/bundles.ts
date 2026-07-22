@@ -218,7 +218,7 @@ export const MARKETPLACE_BUNDLES: MarketplaceBundle[] = [
     nombre: "Kiosco de Barrio",
     lema: "Escaneá, cobrá y cerrá caja sin vueltas.",
     descripcion: "Control de caja + Libreta Fiado + Arqueo ciego + escáner HID.",
-    skus: ["pos.fiado_barrio", "pos.arqueo_ciego", "pos.margen_guard"],
+    skus: ["core.claver", "pos.fiado_barrio", "pos.arqueo_ciego", "pos.margen_guard"],
     precioPackArs: 24900,
     ahorroPct: 15,
     tipoCobro: "mensual",
@@ -262,6 +262,7 @@ export const MARKETPLACE_BUNDLES: MarketplaceBundle[] = [
     descripcion:
       "18 módulos retail visibles: margen, merma, envases, vales, recargas, balanza, promos 2×1, pedido distribuidora, arqueo ciego + fiado y guardián POS.",
     skus: [
+      "core.claver",
       "pos.margen_guard",
       "pos.zero_waste",
       "pos.stock_cero_alert",

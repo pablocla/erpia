@@ -1,35 +1,65 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { recordPlatformEvent } from "@/lib/ops/platform-events"
 
 const START_TIME = Date.now()
 
 /**
- * B7 — Health check endpoint.
- * Usado por Railway/Docker para liveness probes y por el equipo de oncall.
- * No requiere autenticación.
+ * Liveness público mínimo.
+ * Detalles extendidos (afip, env) solo con header Authorization: Bearer $CRON_SECRET
+ * o query no usado en prod — ver /api/claver/platform-health para analistas.
  */
-export async function GET() {
-  const checks = await Promise.allSettled([checkDatabase(), checkAfip()])
+export async function GET(request: Request) {
+  let dbOk = false
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    dbOk = true
+  } catch {
+    dbOk = false
+    void recordPlatformEvent({
+      severity: "sev1",
+      source: "health",
+      code: "DB_DOWN",
+      message: "Health check: base de datos no responde",
+    })
+  }
 
-  const dbStatus = checks[0].status === "fulfilled" ? "ok" : "error"
-  const afipStatus = checks[1].status === "fulfilled" ? "ok" : "degraded"
+  const auth = request.headers.get("authorization")
+  const secret = process.env.CRON_SECRET?.trim()
+  const extended =
+    Boolean(secret && auth === `Bearer ${secret}`) ||
+    (process.env.NODE_ENV !== "production" &&
+      new URL(request.url).searchParams.get("detail") === "1")
 
-  const status = dbStatus === "ok" ? 200 : 503
+  if (!extended) {
+    return NextResponse.json(
+      {
+        ok: dbOk,
+        db: dbOk ? "ok" : "error",
+        timestamp: new Date().toISOString(),
+      },
+      { status: dbOk ? 200 : 503 },
+    )
+  }
+
+  let afipStatus: "ok" | "degraded" = "ok"
+  try {
+    await checkAfip()
+  } catch {
+    afipStatus = "degraded"
+  }
 
   return NextResponse.json(
     {
-      db: dbStatus,
+      ok: dbOk,
+      db: dbOk ? "ok" : "error",
       afip: afipStatus,
       uptime: Math.floor((Date.now() - START_TIME) / 1000),
       env: process.env.NODE_ENV ?? "unknown",
       timestamp: new Date().toISOString(),
     },
-    { status }
+    { status: dbOk ? 200 : 503 },
   )
-}
-
-async function checkDatabase(): Promise<void> {
-  await prisma.$queryRaw`SELECT 1`
 }
 
 async function checkAfip(): Promise<void> {
@@ -43,7 +73,6 @@ async function checkAfip(): Promise<void> {
 
   try {
     const res = await fetch(afipUrl, { method: "HEAD", signal: controller.signal })
-    // AFIP devuelve 200 o 405 (no acepta HEAD pero está reachable)
     if (!res.ok && res.status !== 405) {
       throw new Error(`AFIP respondió ${res.status}`)
     }

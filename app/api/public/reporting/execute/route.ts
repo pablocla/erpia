@@ -3,10 +3,10 @@ import { jwtVerify } from "jose"
 import { executeReport } from "@/lib/reporting/engine/query-engine"
 import { getDashboard } from "@/lib/reporting/dashboards-service"
 import { getReportDefinition } from "@/lib/reporting/definitions-service"
+import { getEncodedJwtSecret } from "@/lib/auth/jwt-secret"
 
 function getEncodedSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET || "dev-pos-system-argentina-2025-unsafe"
-  return new TextEncoder().encode(secret)
+  return getEncodedJwtSecret()
 }
 
 export async function POST(request: NextRequest) {

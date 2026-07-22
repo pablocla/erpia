@@ -1,17 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { SignJWT, jwtVerify } from "jose"
+import { getEncodedJwtSecret } from "@/lib/auth/jwt-secret"
 
 // Lazy getter — evaluated at request time, not at module load time.
-// This prevents build failures when JWT_SECRET is only available at runtime (e.g. Vercel).
 function getEncodedSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET no está configurado. Defínelo en las variables de entorno.")
-  }
-  // In dev, fall back to a fixed secret so tokens survive HMR / hot-reload.
-  // NEVER use this in production — JWT_SECRET env var is enforced above.
-  return new TextEncoder().encode(secret || "dev-pos-system-argentina-2025-unsafe")
+  return getEncodedJwtSecret()
 }
 
 export interface TokenPayload {
@@ -30,6 +24,7 @@ export interface AuthResponse {
     email: string
     rol: string
     empresaId: number
+    avatarUrl?: string | null
   }
   error?: string
 }
@@ -45,7 +40,7 @@ export class AuthService {
     try {
       // Verificar si el email ya existe
       const usuarioExistente = await prisma.usuario.findUnique({
-        where: { email },
+        where: { email: email.toLowerCase().trim() },
       })
 
       if (usuarioExistente) {
@@ -74,8 +69,9 @@ export class AuthService {
       const usuario = await prisma.usuario.create({
         data: {
           nombre,
-          email,
+          email: email.toLowerCase().trim(),
           password: hashedPassword,
+          authProvider: "credentials",
           rol,
           empresaId,
         },
@@ -98,6 +94,7 @@ export class AuthService {
           email: usuario.email,
           rol: usuario.rol,
           empresaId: usuario.empresaId,
+          avatarUrl: usuario.avatarUrl,
         },
       }
     } catch (error) {
@@ -113,7 +110,7 @@ export class AuthService {
     try {
       // Buscar el usuario
       const usuario = await prisma.usuario.findUnique({
-        where: { email },
+        where: { email: email.toLowerCase().trim() },
       })
 
       if (!usuario) {
@@ -128,6 +125,16 @@ export class AuthService {
         return {
           success: false,
           error: "Usuario inactivo. Contacte al administrador",
+        }
+      }
+
+      // Usuarios de Google sin password no pueden hacer login con credenciales
+      if (!usuario.password) {
+        return {
+          success: false,
+          error: usuario.authProvider === "google"
+            ? "Esta cuenta usa Google para iniciar sesión. Usá el botón \"Continuar con Google\"."
+            : "Credenciales inválidas",
         }
       }
 
@@ -158,6 +165,7 @@ export class AuthService {
           email: usuario.email,
           rol: usuario.rol,
           empresaId: usuario.empresaId,
+          avatarUrl: usuario.avatarUrl,
         },
       }
     } catch (error) {
@@ -200,7 +208,21 @@ export class AuthService {
         }
       }
 
+      // Cuentas de Google sin password no pueden cambiar contraseña
+      if (usuario.authProvider === "google" && !usuario.password) {
+        return {
+          success: false,
+          error: "Esta cuenta usa Google para iniciar sesión. No se puede cambiar la contraseña.",
+        }
+      }
+
       // Verificar password actual
+      if (!usuario.password) {
+        return {
+          success: false,
+          error: "No hay contraseña configurada para esta cuenta",
+        }
+      }
       const passwordValida = await bcrypt.compare(passwordActual, usuario.password)
 
       if (!passwordValida) {
@@ -248,7 +270,12 @@ export class AuthService {
       nombre: usuario.nombre,
       email: usuario.email,
       rol: usuario.rol,
+      avatarUrl: usuario.avatarUrl,
+      authProvider: usuario.authProvider,
+      hasGoogle: !!usuario.googleId,
+      hasPassword: !!usuario.password,
       activo: usuario.activo,
+      empresaId: usuario.empresaId,
       empresa: {
         id: usuario.empresa.id,
         nombre: usuario.empresa.nombre,

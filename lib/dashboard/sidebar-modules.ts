@@ -101,6 +101,8 @@ export interface DashboardMenuItem {
   /** SKU horizontal — oculta si el producto no está activo */
   skuKey?: string
   requiredCountryFeature?: string
+  /** Profundidad go-live (inyectado en shell) */
+  goLiveTier?: "prd" | "piloto" | "demo" | "no_vender"
 }
 
 export interface DashboardModuloSection {
@@ -120,9 +122,18 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     items: [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", translationKey: "items.dashboard" },
       { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas", translationKey: "items.myTasks" },
-      { href: "/dashboard/partner-portal", icon: Users, label: "Portal Partner" },
-      { href: "/dashboard/contador", icon: Calculator, label: "Pack Contador" },
-      { href: "/dashboard/cobranza-aas", icon: Wallet, label: "Cobranza as a Service" },
+      { href: "/dashboard/empleados-digitales", icon: Bot, label: "Empleados digitales" },
+    ],
+  },
+  {
+    label: "Claver Platform",
+    color: "text-slate-400",
+    items: [
+      { href: "/dashboard/apps", icon: Store, label: "App Store" },
+      { href: "/dashboard/nicho", icon: Sparkles, label: "Apps de nicho LATAM" },
+      { href: "/dashboard/partner-portal", icon: Users, label: "Portal Partner", claverAnalystOnly: true },
+      { href: "/dashboard/contador", icon: Calculator, label: "Pack Contador", skuKey: "core.claver" },
+      { href: "/dashboard/cobranza-aas", icon: Wallet, label: "Cobranza as a Service", skuKey: "intang.cobranzas_wa" },
       { href: "/dashboard/hardware-setup", icon: Package, label: "Hardware POS" },
     ],
   },
@@ -130,8 +141,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     label: "Claver Nicho",
     color: "text-violet-500",
     items: [
-      { href: "/dashboard/nicho", icon: Sparkles, label: "Apps de nicho LATAM" },
-      { href: "/dashboard/apps", icon: Store, label: "App Store" },
+      // Ítems de apps de nicho activas se inyectan en use-dashboard-shell
     ],
   },
   {
@@ -174,9 +184,20 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     moduloKey: "ventas",
     items: [
       { href: "/dashboard/pos", icon: Store, label: "Punto de Venta (POS)", permisoModulo: "pos", featureKey: "pos" },
-      { href: "/dashboard/almacen", icon: Warehouse, label: "Almacén Rosario", permisoModulo: "pos" },
-      { href: "/dashboard/almacen/guia", icon: BookOpen, label: "Guía Almacén", permisoModulo: "pos" },
-      { href: "/dashboard/apps", icon: Sparkles, label: "App Store" },
+      {
+        href: "/dashboard/almacen",
+        icon: Warehouse,
+        label: "Almacén Rosario",
+        permisoModulo: "pos",
+        allowedRubros: ["ferreteria", "distribuidora", "supermercado", "kiosco"],
+      },
+      {
+        href: "/dashboard/almacen/guia",
+        icon: BookOpen,
+        label: "Guía Almacén",
+        permisoModulo: "pos",
+        allowedRubros: ["ferreteria", "distribuidora", "supermercado", "kiosco"],
+      },
       { href: "/dashboard/pos/cierre", icon: BarChart3, label: "Cierre X / Z", permisoModulo: "pos" },
       { href: "/dashboard/ventas", icon: Receipt, label: "Facturación", permisoModulo: "ventas" },
       { href: "/dashboard/ventas/pedidos", icon: ClipboardList, label: "Pedidos de Venta", permisoModulo: "pedidos_venta" },
@@ -422,6 +443,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/configuracion", icon: Settings, label: "Parámetros", permisoModulo: "configuracion" },
       { href: "/dashboard/configuracion/apariencia", icon: Sparkles, label: "Apariencia", permisoModulo: "configuracion" },
       { href: "/dashboard/automatizacion", icon: Bot, label: "Automatización NOP", permisoModulo: "configuracion", featureKey: "automation_n8n" },
+      { href: "/dashboard/empleados-digitales", icon: Bot, label: "Empleados digitales", permisoModulo: "configuracion" },
       { href: "/dashboard/cotizaciones", icon: DollarSign, label: "Cotizaciones", permisoModulo: "configuracion" },
       { href: "/dashboard/soporte", icon: Bug, label: "Soporte / Tickets", permisoModulo: "configuracion" },
       { href: "/dashboard/usuarios", icon: Shield, label: "Usuarios y Permisos", permisoModulo: "usuarios" },

@@ -66,7 +66,7 @@ describe("go-to-market-vitrine", () => {
   it("mensaje de WhatsApp de ventas menciona el producto del dolor", () => {
     expect(ventasWhatsappMessage("fiado")).toMatch(/Fiado|fiado/i)
     expect(ventasWhatsappMessage("cobra")).toMatch(/Cobrá|cobranza|WhatsApp/i)
-    expect(ventasWhatsappMessage("turnos")).toMatch(/Turnos|turno/i)
+    expect(ventasWhatsappMessage("turnos")).toMatch(/Turnos|turno|turnero/i)
   })
 
   it("strip de packs en home tiene 3–4 packs con precio", () => {

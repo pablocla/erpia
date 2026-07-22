@@ -19,7 +19,7 @@ export const RETAIL_EXTENSION_CATALOG = RETAIL_EXTENSION_SKUS.map((sku) => {
     },
     segmentoAds: ["almacen", "kiosco", "retail"],
     playbookId: `playbook.${sku}`,
-    dependeDe: ["core.pos"],
+    dependeDe: ["core.claver"],
     status: "disponible",
     trialDias: 7,
   }

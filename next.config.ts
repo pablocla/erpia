@@ -24,12 +24,13 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod)
-      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://accounts.google.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://va.vercel-scripts.com",
+      "img-src 'self' data: blob: https://va.vercel-scripts.com https://lh3.googleusercontent.com",
       "font-src 'self'",
       // Analytics beacons + Supabase + Vercel insights
       "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com",
+      "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

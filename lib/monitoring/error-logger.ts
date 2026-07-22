@@ -133,6 +133,21 @@ export function logError(context: string, error: unknown, request?: NextRequest)
   logFn(JSON.stringify(entry))
   forwardToSentry(entry)
 
+  if (severity === "fatal") {
+    void import("@/lib/ops/platform-events")
+      .then(({ recordPlatformEvent }) =>
+        recordPlatformEvent({
+          severity: "sev1",
+          source: "api",
+          code: "FATAL_ERROR",
+          message: `${context}: ${entry.message}`,
+          empresaId: entry.empresaId ? Number(entry.empresaId) : undefined,
+          meta: { path: entry.path, method: entry.method },
+        }),
+      )
+      .catch(() => {})
+  }
+
   void import("@/lib/ops/sistema-log")
     .then(({ persistSistemaLog }) =>
       persistSistemaLog({

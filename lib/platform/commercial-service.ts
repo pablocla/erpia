@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { AUTOMATION_SKU, SHEETS_LITE_SKU, SHEETS_PRO_SKU } from "./sku-catalog"
 import { seedMarketplaceCatalog } from "@/lib/marketplace/seed-marketplace"
+import { microSaasSeedRows } from "@/lib/comercial/micro-saas-portfolio"
 
 export function currentUsageMonth(date = new Date()): string {
   const y = date.getUTCFullYear()
@@ -10,6 +11,13 @@ export function currentUsageMonth(date = new Date()): string {
 
 export async function seedCommercialCatalog() {
   const products = [
+    {
+      sku: "core.claver",
+      nombre: "Claver POS",
+      descripcion: "ERP Base",
+      precioArs: 0,
+      limiteEventosMes: null,
+    },
     {
       sku: AUTOMATION_SKU,
       nombre: "NOP Automation Hub",
@@ -78,6 +86,27 @@ export async function seedCommercialCatalog() {
         precioArs: p.precioArs,
         limiteEventosMes: p.limiteEventosMes,
         activo: true,
+      },
+    })
+  }
+
+  // 11 micro-SaaS freemium (FK suscripcionModulo + checkout)
+  for (const p of microSaasSeedRows()) {
+    await prisma.productoComercial.upsert({
+      where: { sku: p.sku },
+      create: {
+        sku: p.sku,
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        precioArs: p.precioArs,
+        limiteEventosMes: null,
+        activo: p.activo,
+      },
+      update: {
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        precioArs: p.precioArs,
+        activo: p.activo,
       },
     })
   }
@@ -178,7 +207,7 @@ export async function resolveEventLimit(
 ): Promise<number | null> {
   const sub = await getActiveSubscription(empresaId, sku)
   if (sub?.limiteEventosMes != null) return sub.limiteEventosMes
-  if (sub?.producto.limiteEventosMes != null) return sub.producto.limiteEventosMes
+  if (sub?.producto?.limiteEventosMes != null) return sub.producto.limiteEventosMes
   return null
 }
 

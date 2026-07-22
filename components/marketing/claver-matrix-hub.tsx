@@ -10,6 +10,8 @@ import {
   CombateHomeSection,
   PacksHomeStripSection,
 } from "@/components/marketing/commercial-catalog-sections"
+import { MicroSaasColectivosSection } from "@/components/marketing/micro-saas-colectivos-section"
+import { colectivoFromHomeDolor } from "@/lib/comercial/micro-saas-portfolio"
 import {
   CommercialTrustBar,
   EcosistemaCollapsibleSection,
@@ -106,6 +108,9 @@ function MatrixHubInner() {
       <ProductAppPreviewSection entry={entry} />
       <ProductStepsSection entry={entry} />
       <ProductSocialProofSection entry={entry} />
+
+      {/* 4 colectivos freemium (11 apps agrupadas) — no satura el hero */}
+      <MicroSaasColectivosSection highlightColectivo={colectivoFromHomeDolor(dolor)} />
 
       <EcosistemaExpansionSection subtitle={entry.ecosistemaSubtitle} />
       <PacksHomeStripSection />

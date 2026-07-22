@@ -57,12 +57,24 @@ Opcional:
 
 ---
 
-## Partners / ops
+## Partners / ops / seguridad
 
 | Variable | Notas |
 |----------|--------|
 | `CLAVER_ANALYST_EMAILS` | emails con acceso Cloud, coma-separados |
-| `CRON_SECRET` | proteger `/api/cron/*` (Vercel Cron manda header) |
+| `CRON_SECRET` | **Obligatorio en prod.** Solo `Authorization: Bearer $CRON_SECRET` (no `?secret=` en prod) |
+| `OPS_WORKER_SECRET` | Worker ops `/api/ops/worker/execute` — fail-closed en prod |
+| `WEBHOOK_SECRET` | HMAC Meta/n8n/WhatsApp Cloud |
+| `TWILIO_AUTH_TOKEN` | Validación real `X-Twilio-Signature` |
+| `MP_WEBHOOK_SECRET` | Firma webhook MP (canónico + legacy) |
+| `SENTRY_DSN` | Errores fatales (recomendado) |
+| `ALLOW_DEMO` | Solo `1` si querés `/api/auth/demo` en production (default: bloqueado) |
+| `ALLOW_INSECURE_WEBHOOKS` | Solo non-prod `1` para bypassear firmas en local |
+
+**Webhook MP canónico:** `https://TU_DOMINIO/api/webhooks/mercadopago`  
+(La ruta legacy `/api/mercadopago/webhook` también exige firma; preferí la canónica.)
+
+**Panel analistas:** `/claver-cloud/platform-health` · API `GET /api/claver/platform-health`
 
 Crons en `vercel.json` (trial-dunning). Plan Pro para crons + `maxDuration` altos (demo 60s).
 

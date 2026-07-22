@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { evaluateClienteCompleteness } from "@/lib/maestros/data-quality-profiles"
 
 const clienteSchema = z.object({
   // ─── Datos generales ──────────────────────────────────────────────────
@@ -133,6 +134,16 @@ export async function POST(request: NextRequest) {
     const { vigenciaCertificadoExclusion, fechaNacimiento, limiteCredito, descuentoPct, ...rest } = validacion.data
 
     const db = prisma as any
+
+    // Obtener modoLite y rubro para validación de calidad
+    const empresa = await db.empresa.findUnique({ where: { id: ctx.auth.empresaId }, select: { modoLite: true, rubro: true } })
+    const evalCtx = { modoLite: empresa?.modoLite || "pos", rubro: empresa?.rubro || "kiosco" }
+    const completeness = evaluateClienteCompleteness(validacion.data, evalCtx)
+
+    if (!completeness.ok && completeness.missingRequired.some(r => r.field === "nombre")) {
+      return NextResponse.json({ error: "Datos faltantes requeridos", warnings: completeness.missingRequired }, { status: 400 })
+    }
+
     const cliente = await db.cliente.create({
       data: {
         ...rest,
@@ -146,7 +157,7 @@ export async function POST(request: NextRequest) {
       include: CLIENTE_INCLUDES,
     })
 
-    return NextResponse.json(cliente, { status: 201 })
+    return NextResponse.json({ ...cliente, _warnings: completeness.ok ? undefined : completeness.missingRequired.concat(completeness.missingRecommended) }, { status: 201 })
   } catch (error) {
     console.error("Error al crear cliente:", error)
     return NextResponse.json({ error: "Error al crear cliente" }, { status: 500 })

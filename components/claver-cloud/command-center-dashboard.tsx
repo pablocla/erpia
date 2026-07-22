@@ -185,6 +185,7 @@ const quickActions = [
   { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map, primary: true },
   { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare },
   { href: "/claver-cloud/superadmin", label: "Super Admin", icon: Shield },
+  { href: "/claver-cloud/platform-health", label: "Salud y seguridad", icon: Shield },
   { href: "/claver-cloud/billing", label: "Facturación MRR", icon: CreditCard },
   { href: "/claver-cloud/marketplace", label: "Marketplace", icon: Store },
   { href: "/claver-cloud/implementation", label: "Implementación", icon: Target },

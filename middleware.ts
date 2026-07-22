@@ -7,6 +7,7 @@ const RUTAS_PUBLICAS = [
   "/api/auth/login",
   "/api/auth/demo",
   "/api/auth/signup",
+  "/api/auth/google",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/auth/refresh",

@@ -1,6 +1,10 @@
 import { activarLibretaFiado } from "@/lib/fiado/fiado-provision"
 import { activarSecretariaCobranzas } from "@/lib/marketplace/cobranzas-wa-service"
 import {
+  activarLeoCobranza,
+  desactivarLeoCobranza,
+} from "@/lib/empleados-digitales/activate"
+import {
   activarGuardianPos,
   activarLiquidacionPagos,
   activarReponedorJit,
@@ -48,13 +52,22 @@ const REGLA_COBRANZAS = "Secretaria Cobranzas WA (AutoPool)"
 const HOOKS: Record<string, { onActivate?: ProductHook; onDeactivate?: ProductHook }> = {
   "pos.fiado_barrio": { onActivate: activarLibretaFiado },
   "intang.cobranzas_wa": {
-    onActivate: activarSecretariaCobranzas,
+    onActivate: async (empresaId) => {
+      await activarSecretariaCobranzas(empresaId)
+      // Unifica producto: secretaria WA + Empleado Digital Leo
+      await activarLeoCobranza(empresaId)
+    },
     onDeactivate: async (empresaId) => {
       await prisma.reglaAlerta.updateMany({
         where: { empresaId, nombre: REGLA_COBRANZAS },
         data: { activo: false },
       })
+      await desactivarLeoCobranza(empresaId)
     },
+  },
+  "empleado.leo_cobranza": {
+    onActivate: (empresaId) => activarLeoCobranza(empresaId),
+    onDeactivate: (empresaId) => desactivarLeoCobranza(empresaId),
   },
   "intang.guardian_pos": {
     onActivate: activarGuardianPos,

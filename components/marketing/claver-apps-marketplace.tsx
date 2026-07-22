@@ -147,12 +147,19 @@ export function ClaverAppsMarketplace() {
         </div>
       </section>
 
-      <div id="entrada" className="scroll-mt-24">
+      {/* Secciones claras: forzar texto oscuro (dark mode + Card usa text-card-foreground blanco) */}
+      <div
+        id="entrada"
+        className="scroll-mt-24 text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900"
+      >
         <ProductosEntradaSection className="border-b border-slate-200/80 bg-[#f8fafc] py-14" />
       </div>
 
       {/* Apps — activas primero, coherente con producto real */}
-      <div id="subsaas" className="scroll-mt-24 border-b border-slate-200/80 bg-white py-14">
+      <div
+        id="subsaas"
+        className="scroll-mt-24 border-b border-slate-200/80 bg-white py-14 text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <Tabs defaultValue="activas" className="w-full">
             <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -164,29 +171,29 @@ export function ClaverAppsMarketplace() {
                   Orden comercial: primero lo que ya resuelve un problema de punta a punta.
                 </p>
               </div>
-              <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-slate-100/80 p-1 sm:w-auto border border-slate-200/80">
+              <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-slate-100/80 p-1 sm:w-auto border border-slate-200/80 text-slate-700">
                 <TabsTrigger
                   value="activas"
                   id="activas"
-                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+                  className="text-slate-700 data-[state=active]:bg-emerald-600 data-[state=active]:text-white dark:text-slate-700 dark:data-[state=active]:text-white"
                 >
                   Activas ({activasCount})
                 </TabsTrigger>
                 <TabsTrigger
                   value="combate"
-                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+                  className="text-slate-700 data-[state=active]:bg-emerald-600 data-[state=active]:text-white dark:text-slate-700 dark:data-[state=active]:text-white"
                 >
                   Combate (8)
                 </TabsTrigger>
                 <TabsTrigger
                   value="beta"
-                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                  className="text-slate-700 data-[state=active]:bg-blue-600 data-[state=active]:text-white dark:text-slate-700 dark:data-[state=active]:text-white"
                 >
                   Beta ({betaCount})
                 </TabsTrigger>
                 <TabsTrigger
                   value="todas"
-                  className="data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  className="text-slate-700 data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:text-slate-700 dark:data-[state=active]:text-white"
                 >
                   Todas
                 </TabsTrigger>
@@ -209,11 +216,14 @@ export function ClaverAppsMarketplace() {
         </div>
       </div>
 
-      <div id="packs" className="scroll-mt-24">
+      <div
+        id="packs"
+        className="scroll-mt-24 text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900"
+      >
         <PacksRubroSection className="border-b border-slate-200/80 bg-[#f8fafc] py-14" />
       </div>
 
-      <section className="border-b border-slate-200/80 bg-white py-14">
+      <section className="border-b border-slate-200/80 bg-white py-14 text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <AlmacenRosarioVitrine variant="compact" ctaMode="public" />
           <p className="mt-4 text-center text-xs text-slate-500">
@@ -224,7 +234,7 @@ export function ClaverAppsMarketplace() {
         </div>
       </section>
 
-      <section className="border-b border-slate-200/80 bg-[#f8fafc] py-14">
+      <section className="border-b border-slate-200/80 bg-[#f8fafc] py-14 text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <Collapsible open={autoOpen} onOpenChange={setAutoOpen}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -350,9 +360,9 @@ export function ClaverAppsMarketplace() {
                     {INTANGIBLE_PREMIUM_7.map((svc) => {
                       const provisionable = isSkuProvisionable(svc.sku)
                       return (
-                        <Card key={svc.sku} className="border-slate-200/80 bg-[#f8fafc]/50">
+                        <Card key={svc.sku} className="border-slate-200/80 bg-[#f8fafc] text-slate-900">
                           <CardHeader className="pb-2">
-                            <CardTitle className="text-base text-slate-900">{svc.nombre}</CardTitle>
+                            <CardTitle className="text-base font-semibold text-slate-900">{svc.nombre}</CardTitle>
                             <p className="text-xs text-slate-600">{svc.lema}</p>
                           </CardHeader>
                           <CardContent>
@@ -394,7 +404,7 @@ export function ClaverAppsMarketplace() {
                     <MotionListItem key={entry.sku}>
                       <Card
                         className={cn(
-                          "relative flex h-full flex-col border-slate-200/80 bg-white transition hover:border-emerald-200 hover:shadow-md",
+                          "relative flex h-full flex-col border-slate-200/80 bg-white text-slate-900 transition hover:border-emerald-200 hover:shadow-md",
                           entry.destacado && "border-emerald-300 ring-1 ring-emerald-100",
                         )}
                       >
@@ -418,7 +428,7 @@ export function ClaverAppsMarketplace() {
                               </Badge>
                             )}
                           </div>
-                          <CardTitle className="text-lg text-slate-900">{entry.nombre}</CardTitle>
+                          <CardTitle className="text-lg font-semibold text-slate-900">{entry.nombre}</CardTitle>
                           <p className="text-sm text-slate-600">{entry.lema}</p>
                         </CardHeader>
                         <CardContent className="flex-1">
@@ -484,7 +494,9 @@ export function ClaverAppsMarketplace() {
         </div>
       </section>
 
-      <PlataformasSection className="border-t border-slate-200/80 bg-white py-14" />
+      <div className="text-slate-900 [&_[data-slot=card]]:bg-white [&_[data-slot=card]]:text-slate-900 [&_[data-slot=card-title]]:text-slate-900">
+        <PlataformasSection className="border-t border-slate-200/80 bg-white py-14" />
+      </div>
 
       {/* CTA final — misma pieza que landings */}
       <section className="bg-gradient-to-br from-slate-950 via-[#0B1220] to-blue-950 px-4 py-16 text-white sm:px-6">

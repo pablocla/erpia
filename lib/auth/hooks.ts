@@ -172,6 +172,61 @@ export function useAuth() {
     setCargando(false)
   }
 
+  const loginConGoogle = async (
+    idToken: string,
+    opts?: { empresaNombre?: string },
+  ): Promise<{
+    success: boolean
+    error?: string
+    needsEmpresa?: boolean
+    activatedInvite?: boolean
+    googleUser?: { email: string; nombre: string; avatarUrl?: string }
+    usuario?: Usuario
+    token?: string
+  }> => {
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idToken,
+          // Never send empresaId — free join is disabled server-side
+          empresaNombre: opts?.empresaNombre,
+        }),
+      })
+      const data = await res.json()
+
+      if (data.error === "EMPRESA_REQUIRED") {
+        return {
+          success: false,
+          needsEmpresa: true,
+          googleUser: data.googleUser,
+        }
+      }
+
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error ?? "Error al iniciar sesión con Google" }
+      }
+
+      sessionGenRef.current += 1
+      localStorage.setItem("token", data.token)
+      setAuthTokenCookie(data.token)
+      setToken(data.token)
+      setUsuario(data.usuario)
+      useAuthStore.getState().login(data.token, toAuthUser(data.usuario))
+      setCargando(false)
+
+      return {
+        success: true,
+        usuario: data.usuario,
+        token: data.token,
+        activatedInvite: data.activatedInvite === true,
+      }
+    } catch {
+      return { success: false, error: "Error de conexión con Google" }
+    }
+  }
+
   return {
     usuario,
     token,
@@ -179,6 +234,8 @@ export function useAuth() {
     autenticado: !!usuario && !!token,
     login,
     loginConToken,
+    loginConGoogle,
     logout,
   }
 }
+

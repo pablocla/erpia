@@ -18,6 +18,7 @@ import { resolvePostLoginPathAsync } from "@/lib/auth/home-redirect"
 import { activarRegisterHref, mensajeActivarTrial, resolveActivarIntent } from "@/lib/comercial/activar-intent"
 import { activarProductoDesdeIntent } from "@/lib/comercial/activar-intent-client"
 import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
 
 function LoginPageContent() {
   const router = useRouter()
@@ -25,13 +26,14 @@ function LoginPageContent() {
   const activarParam = searchParams.get("activar")
   const activarIntent = resolveActivarIntent(activarParam)
   const nextPath = activarIntent?.landingPath ?? searchParams.get("next")
-  const { login, loginConToken, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
+  const { login, loginConToken, loginConGoogle, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [enviandoLogin, setEnviandoLogin] = useState(false)
+  const [enviandoGoogle, setEnviandoGoogle] = useState(false)
 
   useEffect(() => {
     if (cargandoSesion || !autenticado || !token || !usuario) return
@@ -102,6 +104,30 @@ function LoginPageContent() {
     }
   }
 
+  const handleGoogleLogin = async (idToken: string) => {
+    setError("")
+    setEnviandoGoogle(true)
+    try {
+      const result = await loginConGoogle(idToken)
+      if (result.success && result.usuario && result.token) {
+        await redirectAfterLogin(result.token, result.usuario.rol)
+      } else if (result.needsEmpresa) {
+        // Solo alta de dueño (empresa nueva). Subusuarios deben estar invitados.
+        const params = new URLSearchParams()
+        params.set("google", idToken)
+        if (activarParam) params.set("activar", activarParam)
+        router.push(`/login/register?${params.toString()}`)
+      } else {
+        setError(
+          result.error ||
+            "Error al iniciar sesión con Google. Si te invitaron, usá el mismo email de la invitación.",
+        )
+      }
+    } finally {
+      setEnviandoGoogle(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
       <div className="absolute top-4 right-4">
@@ -137,6 +163,20 @@ function LoginPageContent() {
           <p className="text-center text-xs text-muted-foreground -mt-1">
             Elegís el rubro, se crea una empresa de prueba y entrás logueado al panel.
           </p>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">o con Google</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton
+            onCredential={handleGoogleLogin}
+            disabled={enviandoGoogle}
+          />
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">

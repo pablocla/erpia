@@ -45,30 +45,69 @@ export async function POST(request: NextRequest) {
     const fakeCuit = `20-${demoHash}-0`
     const demoEmail = `demo-${demoHash}@claver.com.ar`
 
-    const empresa = await prisma.empresa.create({
-      data: {
-        nombre: `Empresa Demo ${demoHash}`,
-        razonSocial: `Empresa Demostración SRL (${demoHash})`,
-        cuit: fakeCuit,
-        direccion: "Av. Corrientes 1234, CABA",
-        telefono: "011-4567-8900",
-        email: demoEmail,
-        puntoVenta: 1,
-        entorno: "homologacion",
-        rubro: "otro",
+    // Intentar reclamar una empresa pre-calentada
+    let provisionResult: any = null
+    const prewarmed = await prisma.empresa.findFirst({
+      where: {
+        isPrewarmedDemo: true,
+        prewarmedIndustryId: industryId,
       },
+      orderBy: { createdAt: "asc" },
     })
-    empresaIdCreada = empresa.id
 
-    const provision = await provisionIndustryDemo(empresa.id, industryId)
+    if (prewarmed) {
+      // Reclamamos la pre-calentada
+      const updated = await prisma.empresa.update({
+        where: { id: prewarmed.id },
+        data: {
+          isPrewarmedDemo: false,
+          prewarmedIndustryId: null,
+          nombre: `Empresa Demo ${demoHash}`,
+          razonSocial: `Empresa Demostración SRL (${demoHash})`,
+          cuit: fakeCuit,
+          email: demoEmail,
+        },
+      })
+      empresaIdCreada = updated.id
+      
+      const industryConfig = resolveIndustryId(industryId)
+      provisionResult = {
+        status: "success_prewarmed",
+        industryId,
+        rubro: industryConfig?.baseRubro || "otro",
+        goldenPath: industryConfig?.goldenPath || "/dashboard",
+      }
+      console.log(`[industry-demo] Reclamada empresa pre-calentada ${updated.id} en ${Date.now() - t0}ms`)
+    } else {
+      // Fallback: creación on-demand síncrona
+      const empresa = await prisma.empresa.create({
+        data: {
+          nombre: `Empresa Demo ${demoHash}`,
+          razonSocial: `Empresa Demostración SRL (${demoHash})`,
+          cuit: fakeCuit,
+          direccion: "Av. Corrientes 1234, CABA",
+          telefono: "011-4567-8900",
+          email: demoEmail,
+          puntoVenta: 1,
+          entorno: "homologacion",
+          rubro: "otro",
+        },
+      })
+      empresaIdCreada = empresa.id
 
-    if (activar) {
-      const { persistDemoActivarIntent } = await import("@/lib/comercial/ofertas-comerciales")
-      await persistDemoActivarIntent(empresa.id, activar)
+      provisionResult = await provisionIndustryDemo(empresaIdCreada, industryId)
+      console.log(`[industry-demo] Generada empresa on-demand ${empresaIdCreada} en ${Date.now() - t0}ms`)
     }
 
+    if (activar && empresaIdCreada) {
+      const { persistDemoActivarIntent } = await import("@/lib/comercial/ofertas-comerciales")
+      await persistDemoActivarIntent(empresaIdCreada, activar)
+    }
+
+    if (!empresaIdCreada) throw new Error("Fallo la creación de empresa demo")
+
     await setSignupOrigen(
-      empresa.id,
+      empresaIdCreada,
       "industry_demo",
       `${industryId}@${new Date().toISOString()}`,
     )
@@ -82,7 +121,7 @@ export async function POST(request: NextRequest) {
         email: demoEmail,
         password: hashedPassword,
         rol: "administrador",
-        empresaId: empresa.id,
+        empresaId: empresaIdCreada,
         activo: true,
       },
     })
@@ -90,13 +129,13 @@ export async function POST(request: NextRequest) {
     void syncPipelineFromEvent({
       nombre: `Visitante demo ${industryId}`,
       email: demoEmail,
-      negocio: empresa.nombre,
-      rubro: provision.rubro,
+      negocio: `Empresa Demo ${demoHash}`,
+      rubro: provisionResult.rubro,
       origen: "industry_demo",
       etapa: "trial",
-      empresaId: empresa.id,
-      notas: `Demo rubro: ${industryId} · hash ${demoHash}`,
-      proximaAccion: "Ver si convierte a trial propio — ofrecer registro",
+      empresaId: empresaIdCreada,
+      notas: `Demo rubro: ${industryId} - hash ${demoHash}`,
+      proximaAccion: "Ver si convierte a trial propio - ofrecer registro",
       creadoPor: "demo@claver.com.ar",
       notify: "demo_rubro",
     }).catch((err) => console.error("Error sync pipeline demo:", err))
@@ -110,16 +149,16 @@ export async function POST(request: NextRequest) {
     })
 
     console.log(
-      `[industry-demo] OK empresa=${empresa.id} industry=${industryId} en ${Date.now() - t0}ms`,
+      `[industry-demo] OK empresa=${empresaIdCreada} industry=${industryId} en ${Date.now() - t0}ms`,
     )
 
     return NextResponse.json({
       success: true,
       token,
-      goldenPath: provision.goldenPath,
-      industryId: provision.industryId,
-      rubro: provision.rubro,
-      provision,
+      goldenPath: provisionResult.goldenPath,
+      industryId: provisionResult.industryId,
+      rubro: provisionResult.rubro,
+      provision: provisionResult,
       activar: activar || null,
       durationMs: Date.now() - t0,
       usuario: {

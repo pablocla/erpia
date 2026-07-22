@@ -151,7 +151,7 @@ export function CombateHomeSection({
                       <p className="mt-1 text-xs text-slate-500">✓ {app.outcomes[1]}</p>
                     )}
                   </CardContent>
-                  <CardFooter className="flex flex-col gap-2 sm:flex-row">
+                  <CardFooter className="flex flex-col gap-2">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-500" asChild>
                       <Link href={registerHref}>
                         {isFree ? "Empezar gratis" : GTM_VITRINE_COPY.ctaProbar}

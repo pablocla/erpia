@@ -152,7 +152,7 @@ gantt
 
 | ID | Estado | Evidencia |
 |----|--------|-----------|
-| **GAP-01** Cron AFIP | **DONE** 2026-07-22 | `app/api/cron/sync-afip/route.ts`, `app/api/cron/dispatch/route.ts`, `vercel.json` (sync-afip `0 * * * *`, dispatch `*/5 * * * *`) |
+| **GAP-01** Cron AFIP | **DONE** 2026-07-22 | `app/api/cron/sync-afip/route.ts`, `app/api/cron/dispatch/route.ts`; `vercel.json` solo crons diarios/horarios (Hobby). Cada 5 min: GH Actions `cron-dispatcher.yml` → `/api/cron/dispatch` |
 | **GAP-02** Webhook ML | **DONE** 2026-07-22 | `validarWebhookMercadoLibre` en `lib/auth/webhook-guard.ts`; route `app/api/webhooks/mercadolibre/[empresaId]/route.ts`; tests en `__tests__/auth/webhook-guard.test.ts` |
 
 **Cómo probar GAP-01**

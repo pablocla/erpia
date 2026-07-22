@@ -81,14 +81,20 @@ Auth: `Authorization: Bearer $ML_WEBHOOK_SECRET` o header `x-webhook-secret`.
 
 **Panel analistas:** `/claver-cloud/platform-health` · API `GET /api/claver/platform-health`
 
-**Crons en `vercel.json`:**
+**Crons en `vercel.json` (Hobby-safe):**
 | Path | Schedule | Notas |
 |------|----------|--------|
 | `/api/cron/trial-dunning` | `0 12 * * *` | Diario |
-| `/api/cron/sync-afip` | `0 * * * *` | CAE pendiente (horario) |
-| `/api/cron/dispatch` | `*/5 * * * *` | Scheduler (sync-afip + jobs free). Requiere plan que permita cron cada 5 min; si no, usá GitHub Actions → `dispatch` |
+| `/api/cron/sync-afip` | `0 * * * *` | CAE pendiente (horario). Si el plan Hobby solo permite 1 cron/día, dejá solo trial-dunning y usá GH Actions. |
 
-Todos los crons: `Authorization: Bearer $CRON_SECRET` en prod.
+**Cada 5 min (dispatcher completo):** NO va en `vercel.json` en Hobby — usa  
+`.github/workflows/cron-dispatcher.yml` → `POST /api/cron/dispatch`  
+Secrets repo: `NOP_BASE_URL` (ej. `https://erpia.vercel.app`) + `CRON_SECRET`.
+
+> **Importante:** un `*/5 * * * *` en `vercel.json` puede hacer **fallar el deploy** en plan Hobby.  
+> Git push “funciona”, pero el deployment queda en Error.
+
+Todos los crons Vercel: `Authorization: Bearer $CRON_SECRET` en prod.
 
 ---
 

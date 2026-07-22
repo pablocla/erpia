@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const sinCuitValido = await prisma.proveedor.count({
       where: {
         ...whereEmpresa(empresaId),
-        OR: [{ cuit: null }, { cuit: "" }]
+        OR: [{ cuit: null as any }, { cuit: "" }]
       }
     }).catch(() => 0)
 

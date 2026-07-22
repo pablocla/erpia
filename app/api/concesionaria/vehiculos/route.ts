@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const limitResponse = checkRateLimit(request, `vehiculos-post-${auth.auth.empresaId}`, 20, 60000)

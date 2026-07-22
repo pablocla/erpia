@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       provisionResult = {
         status: "success_prewarmed",
         industryId,
-        rubro: industryConfig?.baseRubro || "otro",
+        rubro: (industryConfig as any)?.baseRubro || "otro",
         goldenPath: industryConfig?.goldenPath || "/dashboard",
       }
       console.log(`[industry-demo] Reclamada empresa pre-calentada ${updated.id} en ${Date.now() - t0}ms`)

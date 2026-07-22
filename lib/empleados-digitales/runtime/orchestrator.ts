@@ -204,7 +204,7 @@ export async function runLeoCobranza(input: {
         status: drafts > 0 || deudas.length === 0 ? "success" : "partial",
         pathUsado: result.pathUsado,
         resumen: result.resumen,
-        detalles: result.detalles,
+        detalles: result.detalles as any,
         durationMs: Date.now() - start,
         tokensIn,
         tokensOut,

@@ -340,8 +340,6 @@ export async function authenticateWithGoogle(input: {
       rol: "dueno",
       empresaId: nuevaEmpresa.id,
       activo: true,
-      // Persistir que aceptaron los términos si el flag venía en true, o por defecto asumiendo que el login de Google requiere aceptar los términos en el frontend.
-      tosAcceptedAt: new Date(),
     },
   })
 

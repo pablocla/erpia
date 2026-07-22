@@ -9,7 +9,7 @@ export async function emitirFacturaExportacion(empresaId: number, clienteId: num
     where: { id: empresaId }
   })
 
-  if (!empresa.certificadoCRT || !empresa.clavePrivada) {
+  if (!empresa || !empresa.certificadoCRT || !(empresa as any).clavePrivada) {
     throw new Error("La empresa no posee certificados AFIP cargados para Facturación de Exportación (WSFEX)")
   }
 

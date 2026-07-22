@@ -46,15 +46,15 @@ export async function POST(request: NextRequest) {
           {
             success: false,
             error: "EMPRESA_REQUIRED",
-            message: result.message,
-            googleUser: result.googleUser,
+            message: (result as any).message,
+            googleUser: (result as any).googleUser,
           },
           { status: 422 },
         )
       }
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.status },
+        { status: (result as any).status || 400 },
       )
     }
 

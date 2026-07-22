@@ -42,7 +42,7 @@ export async function recordUsage(input: {
       tokensIn,
       tokensOut,
       tool: input.tool,
-      metadata: input.metadata ?? undefined,
+      metadata: (input.metadata as any) ?? undefined,
       periodMonth: month,
     },
   })

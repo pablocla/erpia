@@ -81,7 +81,7 @@ const ventaPosSchema = z.object({
 // Helpers
 // ──────────────────────────────────────────────────────────────
 
-export function calcularLinea(
+function calcularLinea(
   precioUnitario: number,
   cantidad: number,
   porcentajeIva: number,
@@ -94,7 +94,7 @@ export function calcularLinea(
   return { neto, iva, total }
 }
 
-export function tipoCbteDesde(tipo: string): number {
+function tipoCbteDesde(tipo: string): number {
   return { A: 1, B: 6, C: 11, ticket: 6 }[tipo] ?? 6
 }
 

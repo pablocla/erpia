@@ -359,7 +359,7 @@ export function useDashboardShell() {
                 ? getMenuLabelForRubro(item.href, item.label, effectiveRubro, demoIndustryId)
                 : item.label,
               // badge explícito del ítem gana; si no, profundidad go-live
-              badge: item.badge ?? goLive?.label,
+              badge: (item as any).badge ?? goLive?.label,
               goLiveTier: goLive?.tier,
             }
           }),

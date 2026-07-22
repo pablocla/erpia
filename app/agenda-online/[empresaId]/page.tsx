@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
 
+import { useParams } from "next/navigation"
+
 interface Profesional {
   id: number
   nombre: string
@@ -24,14 +26,11 @@ interface EmpresaPublicaResponse {
   disponibilidad?: Array<{ profesionalId: number; horarios: string[] }>
 }
 
-interface PageProps {
-  params: { empresaId: string }
-}
-
 const FECHA_FORMATO = new Intl.DateTimeFormat("es-AR", { year: "numeric", month: "2-digit", day: "2-digit" })
 
-export default function AgendaOnlinePage({ params }: PageProps) {
-  const empresaId = params.empresaId
+export default function AgendaOnlinePage() {
+  const routeParams = useParams()
+  const empresaId = String(routeParams?.empresaId ?? "")
   const [empresaName, setEmpresaName] = useState<string>("")
   const [profesionales, setProfesionales] = useState<Profesional[]>([])
   const [servicios, setServicios] = useState<Array<{ id: number; nombre: string; duracionMinutos: number }>>([])

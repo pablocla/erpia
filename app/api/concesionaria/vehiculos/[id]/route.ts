@@ -3,7 +3,7 @@ import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const id = Number((await params).id)
   if (!id) return NextResponse.json({ error: "ID inválido" }, { status: 400 })
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const id = Number((await params).id)
   if (!id) return NextResponse.json({ error: "ID inválido" }, { status: 400 })

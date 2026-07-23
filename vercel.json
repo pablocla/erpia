@@ -1,12 +1,2 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/trial-dunning",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/sync-afip",
-      "schedule": "0 3 * * *"
-    }
-  ]
-}
+{}
+

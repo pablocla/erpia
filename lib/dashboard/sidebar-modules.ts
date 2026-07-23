@@ -128,7 +128,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", translationKey: "items.dashboard" },
       { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas", translationKey: "items.myTasks" },
       { href: "/dashboard/empleados-digitales", icon: Bot, label: "Empleados digitales" },
-      { href: "/dashboard/lab", icon: Compass, label: "Claver Lab (CEO)", permisoModulo: "configuracion" },
+      { href: "/dashboard/lab", icon: Compass, label: "Claver Lab", badge: "CEO", permisoModulo: "configuracion" },
       {
         href: "/dashboard/engineering/backlog",
         icon: ListTodo,

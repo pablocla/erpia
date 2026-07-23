@@ -1,85 +1,18 @@
 ---
-title: "Claver Docs — Room"
-description: "Sala central de documentación del Grupo Claver: flujos, requisitos y wiki técnica."
+title: "Claver Docs"
+description: "Sala central de documentación del Grupo Claver: simple, visual y por roles."
 sidebar_position: 0
-tags: ["wiki", "hub", "claver-docs", "room"]
+tags: ["wiki", "hub", "claver-docs"]
 audience: all
 product_line: grupo
 layer: 1-config
 last_verified: 2026-07-23
 status: completo
-owner: grok
+plain_summary: "Punto de entrada amigable a toda la documentación."
 ---
 
-# Claver Docs · Claver Room
+# Claver Docs
 
-**Un solo lugar** para entender cómo funciona Claver y el Grupo: diagramas de flujo, requisitos de marcha, implementación, desarrollo y packs vendibles.
+La documentación del producto, pensada para **entenderse en minutos**, no para impresionar con jerga.
 
-> No es un dump de archivos. Es la **sala de control del conocimiento**.
-
----
-
-## Entrá por acá (Room)
-
-| Prioridad | Página | Para qué |
-|-----------|--------|----------|
-| 1 | [Mapa del Grupo Claver](/dashboard/documentacion/room/mapa-grupo) | ERP · Cloud · Leo · Grow · Partners |
-| 2 | [Cómo funciona todo](/dashboard/documentacion/room/como-funciona-todo) | Runtime completo con diagramas |
-| 3 | [Requisitos de funcionamiento](/dashboard/documentacion/room/requisitos-funcionamiento) | Env, jobs, hardware, go-live |
-| 4 | [Auth + multi-tenant](/dashboard/documentacion/room/flujo-auth-multitenant) | JWT, empresaId, roles |
-| 5 | [POS → caja → stock](/dashboard/documentacion/room/flujo-pos-caja) | Mostrador |
-| 6 | [Fiado → Leo → WhatsApp](/dashboard/documentacion/room/flujo-fiado-leo) | Ancla de calle |
-| 7 | [Billing y SKUs](/dashboard/documentacion/room/flujo-billing-skus) | Trial, ancla, MP, partners |
-| 8 | [AFIP](/dashboard/documentacion/room/flujo-afip) | CAE y fiscal |
-| 9 | [Go-live Cloud](/dashboard/documentacion/room/flujo-go-live-cloud) | Venta → operación |
-
-```mermaid
-flowchart TB
-  ROOM[Claver Room] --> G[Mapa Grupo]
-  ROOM --> M[Cómo funciona todo]
-  ROOM --> REQ[Requisitos]
-  M --> F1[Auth]
-  M --> F2[POS/Caja]
-  M --> F3[Fiado/Leo]
-  M --> F4[Billing]
-  M --> F5[AFIP]
-  M --> F6[Cloud go-live]
-```
-
----
-
-## Audiencias
-
-### Analista / implementador
-[Guía del analista](/dashboard/documentacion/analista/guia-implementacion) · [Checklist go-live](/dashboard/documentacion/analista/checklist-go-live) · [Proceso Cloud](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion)
-
-### Desarrollador
-[Getting started](/dashboard/documentacion/developer/getting-started) · [Arquitectura](/dashboard/documentacion/developer/arquitectura) · [Multi-tenant](/dashboard/documentacion/developer/multi-tenant) · [API overview](/dashboard/documentacion/developer/api-overview)
-
-### Operaciones
-[Deploy](/dashboard/documentacion/operaciones/deploy-runbook) · [Health](/dashboard/documentacion/operaciones/health-check) · [Troubleshooting](/dashboard/documentacion/operaciones/troubleshooting)
-
-### Comercial / partner
-[Roadmap vendedor](/dashboard/documentacion/comercial/roadmap-venta-vendedor) · Flujos Room de fiado/Leo y billing · Packs en `docs/GO_LIVE_PRD.md`
-
-### Usuario final (manuales)
-No confundir con esta wiki técnica: usá [Capacitación / manual](/dashboard/capacitacion/manual-usuario).
-
----
-
-## Funcional y automation
-
-- [POS](/dashboard/documentacion/funcional/sistema-pos) · [Tesorería](/dashboard/documentacion/funcional/tesoreria) · [AFIP](/dashboard/documentacion/funcional/afip-integracion)
-- [Automation Hub](/dashboard/documentacion/funcional/automation-hub) · [Workers](/dashboard/documentacion/funcional/automation-workers)
-
----
-
-## Convención
-
-| Ubicación | Uso |
-|-----------|-----|
-| **`content/docs/`** (esta wiki) | Canónico, diagramas, verificado |
-| **`docs/`** en el repo | Laboratorio, auditorías, drafts |
-| **Claver Room** (`room/*`) | Flujos de funcionamiento del sistema y del Grupo |
-
-Toda página Room debe tener **al menos un diagrama Mermaid** y una sección de enlaces a código/API cuando aplique.
+Empezá por la [sala de flujos](/dashboard/documentacion/room/como-funciona-todo) o elegí tu rol en el inicio de Claver Docs.

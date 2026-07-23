@@ -38,30 +38,20 @@ export default function DocClient({ sidebarItems, currentSlug }: DocClientProps)
     const initMermaid = async () => {
       try {
         const mermaid = (await import("mermaid")).default
+        const isDark =
+          typeof document !== "undefined" &&
+          (document.documentElement.classList.contains("dark") ||
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+
         mermaid.initialize({
           startOnLoad: false,
-          theme: "neutral",
+          theme: isDark ? "dark" : "neutral",
           securityLevel: "loose",
           fontFamily: "Manrope, system-ui, sans-serif",
-          flowchart: { curve: "basis", padding: 12 },
-          themeVariables: {
-            primaryColor: "oklch(0.7 0.12 250 / 0.25)",
-            primaryTextColor: "#0f172a",
-            primaryBorderColor: "oklch(0.55 0.14 250)",
-            lineColor: "#64748b",
-            secondaryColor: "oklch(0.92 0.03 250)",
-            tertiaryColor: "#f8fafc",
-            background: "transparent",
-            mainBkg: "#f8fafc",
-            nodeBorder: "#94a3b8",
-            clusterBkg: "oklch(0.96 0.02 250)",
-            titleColor: "#0f172a",
-            edgeLabelBackground: "#ffffff",
-          },
+          flowchart: { curve: "basis", padding: 14 },
         })
         await new Promise((r) => requestAnimationFrame(() => r(null)))
         if (cancelled) return
-        // Reset processed flag so re-navigation re-renders
         document.querySelectorAll<HTMLElement>("pre.mermaid").forEach((el) => {
           el.removeAttribute("data-processed")
           if (el.getAttribute("data-original")) {

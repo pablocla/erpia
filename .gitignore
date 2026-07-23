@@ -30,3 +30,6 @@ next-env.d.ts
 
 # large archives
 *.rar
+
+# Claver Lab local state (per-tenant JSON)
+/data/claver-lab/

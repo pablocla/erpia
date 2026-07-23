@@ -143,7 +143,8 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/agro/lotes", label: "Lotes y Mapas", icon: Leaf, section: "Clavergrow", keywords: ["lote", "ndvi", "campo", "mapa"] },
   { href: "/dashboard/agro/cannabis", label: "Cultivo regulado", icon: Leaf, section: "Clavergrow", keywords: ["cannabis", "reprocann", "cultivo", "regulado"] },
   { href: "/claver/clavergrow", label: "Landing Clavergrow", icon: Sprout, section: "Marketing", keywords: ["clavergrow", "agro", "landing", "producto"] },
-  // Claver Docs · Room
+  // Claver Lab + Docs
+  { href: "/dashboard/lab", label: "Claver Lab", icon: BookOpen, section: "Claver Docs", keywords: ["lab", "ceo", "pipeline", "leads", "rosario", "misiones", "fundador"] },
   { href: "/dashboard/documentacion", label: "Claver Docs · Room", icon: BookOpen, section: "Claver Docs", keywords: ["docs", "documentación", "wiki", "room", "flujos", "diagramas"] },
   { href: "/dashboard/documentacion/room/como-funciona-todo", label: "Cómo funciona todo", icon: BookOpen, section: "Claver Docs", keywords: ["arquitectura", "flujo", "runtime", "mermaid"] },
   { href: "/dashboard/documentacion/room/requisitos-funcionamiento", label: "Requisitos de marcha", icon: BookOpen, section: "Claver Docs", keywords: ["env", "deploy", "requisitos", "go-live"] },

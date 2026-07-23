@@ -1,67 +1,84 @@
 ---
-title: "Flujo: Go-live Claver Cloud"
-description: "De la venta a la operación: relevamiento, demo, provision, implementación y soporte."
+title: "Poner un cliente en marcha"
+description: "Del 'me interesa' al primer día real: el camino de Claver Cloud, contado simple."
 sidebar_position: 15
-tags: ["room", "cloud", "go-live", "implementacion"]
+tags: ["room", "go-live", "cloud"]
 audience: analista
 product_line: claver-cloud
 layer: 4-workflow
-related_code: ["docs/claver-cloud/runbooks"]
 last_verified: 2026-07-23
 status: completo
+plain_summary: "Seis pasos de implementación sin teatro."
 ---
 
-# Flujo: Go-live Claver Cloud
+# Poner un cliente en marcha
 
-## Pipeline comercial → operación
+Esto es para quien **implementa**: analista, partner o vos mismo con un piloto.
+
+> **Regla de oro:** solo prometé como “listo” lo que está en packs PRD. El resto es piloto por escrito.
+
+## Los 6 pasos
 
 ```mermaid
 flowchart LR
-  R1[01 Relevamiento] --> R2[02 Demo]
-  R2 --> R3[03 Provisioning]
-  R3 --> R4[04 Implementación]
-  R4 --> R5[05 Go-live]
-  R5 --> R6[06 Soporte]
+  A[1 Relevamiento] --> B[2 Demo]
+  B --> C[3 Alta del sistema]
+  C --> D[4 Carga y config]
+  D --> E[5 Día 1 real]
+  E --> F[6 Soporte]
 ```
 
-## Detalle por etapa
+## Qué pasa en cada paso
+
+| Paso | En criollo | Resultado |
+|------|------------|-----------|
+| **1 Relevamiento** | ¿Qué rubro? ¿Cuántas cajas? ¿AFIP? ¿Fiado? | Alcance claro |
+| **2 Demo** | 15 minutos en *su* dolor | “Ah, esto me sirve” |
+| **3 Alta** | Empresa, usuarios, pack | Entran con usuario propio |
+| **4 Config** | Productos, clientes, formas de pago | Pueden operar |
+| **5 Go-live** | Primer turno acompañado | Confianza |
+| **6 Soporte** | Dudas y ajustes | No se sienten solos |
+
+## Secuencia típica
 
 ```mermaid
 sequenceDiagram
-  participant C as Comercial / Partner
-  participant A as Analista Cloud
-  participant T as Tenant
-  participant S as Sistema
+  participant C as Comercial
+  participant A as Implementador
+  participant L as Local
+  participant S as Claver
 
-  C->>A: Lead + rubro + pack PRD
-  A->>T: Relevamiento (CUIT, cajas, AFIP, HW)
-  A->>S: Demo industry / trial
-  T->>S: Prueba fiado/POS/agenda
-  A->>S: Provision SKUs + usuarios
-  A->>T: Carga maestros / import CSV
-  A->>T: Capacitación 1 turno
-  T->>S: Día 1 real supervisado
-  T->>A: Incidencias → soporte L1
+  C->>A: “Este kiosco quiere fiado”
+  A->>L: Preguntas de relevamiento
+  A->>S: Demo o trial del pack
+  L->>S: Prueba anotar deudas
+  A->>S: Usuarios + productos
+  A->>L: Capacitación corta
+  L->>S: Vende el primer día de verdad
 ```
 
-## Solo packs PRD en promesa de venta
+## Qué vender y qué no
 
 ```mermaid
 flowchart TB
-  P{¿Pack en GO_LIVE_PRD §3.1?}
-  P -->|sí| V[Vender como PRD]
-  P -->|no| PI[Piloto acotado<br/>por escrito]
-  PI --> N[No ads masivos]
+  P{¿Está en el listado PRD?}
+  P -->|Sí| V[Se vende con confianza]
+  P -->|No| I[Piloto acotado y por escrito]
 ```
 
-## Health del tenant
+Ejemplos de promesa limpia:
 
-```mermaid
-flowchart LR
-  H[go-live / health] --> AFIP_S[AFIP cert]
-  H --> MP_S[MP token]
-  H --> CAJA_S[Caja estado]
-  H --> SKU_S[SKUs activos]
-```
+- Sí: libreta fiado + POS de kiosco  
+- Sí con setup: AFIP producción  
+- No como “listo total”: telemetría de surtidores, 40 verticales mágicas  
 
-Runbooks: `docs/claver-cloud/runbooks/01` … `06` · [Proceso CCA](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion).
+## Salud del cliente (cuando algo “no anda”)
+
+Revisá en este orden:
+
+1. ¿Está logueado el usuario correcto?  
+2. ¿El pack / llave está activa?  
+3. ¿Caja abierta (si vende)?  
+4. ¿AFIP / MP / WhatsApp configurados si ese flujo los usa?  
+
+Runbooks detallados viven en `docs/claver-cloud/runbooks/`.

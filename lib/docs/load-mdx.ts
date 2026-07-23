@@ -59,13 +59,12 @@ const renderer = {
   list(body: string, ordered: boolean) {
     const tag = ordered ? "ol" : "ul"
     const listCls = ordered
-      ? "list-decimal pl-5 space-y-2 mb-5 text-[15px] text-foreground/85"
-      : "list-none pl-0 space-y-2.5 mb-5"
+      ? "list-decimal pl-5 space-y-2.5 mb-5 text-[15px] text-foreground/85 marker:text-primary marker:font-semibold"
+      : "list-disc pl-5 space-y-2.5 mb-5 text-[15px] text-foreground/85 marker:text-primary"
     return `<${tag} class="${listCls}">${body}</${tag}>`
   },
   listitem(text: string) {
-    // Unordered items get a soft bullet card look when short
-    return `<li class="text-[15px] leading-relaxed text-foreground/85 pl-1 marker:text-primary"><span class="inline-flex gap-2"><span class="text-primary font-bold select-none" aria-hidden="true">·</span><span>${text}</span></span></li>`
+    return `<li class="leading-relaxed pl-1">${text}</li>`
   },
   blockquote(quote: string) {
     return `<aside class="my-6 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 md:px-5 md:py-4 text-[15px] leading-relaxed text-foreground shadow-sm [&>p]:mb-0 [&>p]:text-foreground/90">${quote}</aside>`

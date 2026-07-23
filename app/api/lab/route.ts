@@ -2,112 +2,123 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { aiService } from "@/lib/ai/ai-service"
 import {
-  INITIAL_LAB_LEADS,
-  INITIAL_LAB_MISSIONS,
-  LAB_REGULATIONS,
-  LAB_MILESTONES,
-  calcularMetricasLab,
-  type LabLeadItem,
-  type LabMissionItem,
+  getLabDashboard,
+  labToggleMission,
+  labUpdateLeadStatus,
+  labAddLead,
+  labLogWaClick,
+  labTrackCopy,
+  labResetDemoData,
+  buildRuleBasedInsight,
+  type LabLeadEstado,
 } from "@/lib/lab/lab-service"
-
-// In-memory lab state per session / tenant fallback
-let leadsState: LabLeadItem[] = [...INITIAL_LAB_LEADS]
-let missionsState: LabMissionItem[] = [...INITIAL_LAB_MISSIONS]
 
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
-  const metricas = calcularMetricasLab(leadsState)
-
-  return NextResponse.json({
-    ok: true,
-    metricas,
-    leads: leadsState,
-    misiones: missionsState,
-    regulaciones: LAB_REGULATIONS,
-    hitoss: LAB_MILESTONES,
-  })
+  try {
+    const payload = await getLabDashboard(auth.auth.empresaId)
+    return NextResponse.json(payload)
+  } catch (error) {
+    console.error("[API Claver Lab GET]", error)
+    return NextResponse.json({ error: "Error al cargar Claver Lab" }, { status: 500 })
+  }
 }
 
 export async function POST(request: NextRequest) {
   const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
+  const empresaId = auth.auth.empresaId
+
   try {
     const body = await request.json()
     const { action } = body
 
     if (action === "toggle_mission") {
-      const { missionId } = body
-      missionsState = missionsState.map((m) =>
-        m.id === missionId ? { ...m, completada: !m.completada } : m
-      )
-      return NextResponse.json({ ok: true, misiones: missionsState })
+      const payload = await labToggleMission(empresaId, String(body.missionId))
+      return NextResponse.json(payload)
     }
 
     if (action === "update_lead_status") {
-      const { leadId, estado } = body
-      leadsState = leadsState.map((l) =>
-        l.id === leadId ? { ...l, estado, ultimoContacto: new Date().toISOString().slice(0, 10) } : l
+      const payload = await labUpdateLeadStatus(
+        empresaId,
+        String(body.leadId),
+        body.estado as LabLeadEstado,
       )
-      const metricas = calcularMetricasLab(leadsState)
-      return NextResponse.json({ ok: true, leads: leadsState, metricas })
+      return NextResponse.json(payload)
     }
 
     if (action === "add_lead") {
-      const { lead } = body
-      const newLead: LabLeadItem = {
-        id: `lead-${Date.now()}`,
-        nombre: lead.nombre,
-        direccion: lead.direccion || "Rosario",
-        zona: lead.zona || "Echesortu",
-        rubro: lead.rubro || "Almacén",
-        estado: "frio",
-        productoTarget: lead.productoTarget || "Fiado + Leo Cobranza",
-        mrrEstimado: Number(lead.mrrEstimado) || 19900,
-        ultimoContacto: new Date().toISOString().slice(0, 10),
-        telefono: lead.telefono || "",
+      if (!body.lead?.nombre) {
+        return NextResponse.json({ error: "nombre requerido" }, { status: 400 })
       }
-      leadsState = [newLead, ...leadsState]
-      const metricas = calcularMetricasLab(leadsState)
-      return NextResponse.json({ ok: true, leads: leadsState, metricas })
+      const payload = await labAddLead(empresaId, body.lead)
+      return NextResponse.json(payload)
+    }
+
+    if (action === "log_wa_click") {
+      const payload = await labLogWaClick(
+        empresaId,
+        String(body.leadId),
+        body.variant === "B" ? "B" : body.variant === "custom" ? "custom" : "A",
+      )
+      return NextResponse.json(payload)
+    }
+
+    if (action === "track_copy") {
+      const payload = await labTrackCopy(
+        empresaId,
+        String(body.packId),
+        body.variant === "B" ? "B" : "A",
+      )
+      return NextResponse.json(payload)
+    }
+
+    if (action === "reset_demo") {
+      const payload = await labResetDemoData(empresaId)
+      return NextResponse.json(payload)
     }
 
     if (action === "generate_ai_insight") {
-      const prompt = `Sos el Cerebro Operativo Gemini de Claver ERP (fundador Pablo en Rosario).
-Analizá este estado del negocio y devolvé en es-AR un análisis ultra-conciso (máx 3 viñetas breves):
-- Leads totales: ${leadsState.length}
-- Demos activas: ${leadsState.filter((l) => l.estado === "demo_agendada" || l.estado === "trial_activo").length}
-- Pipeline ARS: $${leadsState.reduce((s, l) => s + l.mrrEstimado, 0)}
-- Misiones hechas: ${missionsState.filter((m) => m.completada).length}/${missionsState.length}
+      const dash = await getLabDashboard(empresaId)
+      const fallback = buildRuleBasedInsight(
+        dash.leads,
+        dash.misiones,
+        dash.productSignals,
+      )
 
-Brindá 1 recomendación prioritaria para hoy, 1 zona de Rosario sugerida y 1 argumento comercial.`
+      let insightText = fallback
+      try {
+        const available = await aiService.isAvailable()
+        if (available.available) {
+          const prompt = `Sos el coach comercial de Claver (ERP Argentina, ventas en Rosario).
+Datos:
+- Leads: ${dash.leads.length}, demos/trials: ${dash.metricas.demosActivas}
+- MRR: ${dash.metricas.mrrActual}, pipeline: ${dash.metricas.pipelinePotencial}
+- Next action: ${dash.nextAction.title}
+- Fiado deudores en tenant: ${dash.productSignals.deudoresFiado}, Leo: ${dash.productSignals.leoActivo}
+- Top lead: ${dash.leads[0]?.nombre ?? "n/a"} score ${dash.leads[0]?.score ?? 0}
 
-      let insightText = ""
-      const available = await aiService.isAvailable()
-      if (available.available) {
-        try {
+Devolvé en es-AR máximo 4 viñetas cortas: 1 acción hoy, 1 zona, 1 argumento, 1 riesgo. Sin inventar leads.`
           const res = await aiService.chat(
             [{ role: "user", content: prompt }],
             "batch",
-            { maxTokens: 250, temperature: 0.3 }
+            { maxTokens: 280, temperature: 0.3 },
           )
-          insightText = res.content
-        } catch {
-          insightText = "🎯 Recomendación Gemini: Focalizá prospección en Echesortu y Pellegrini. 2 leads en demo están a 1 clic de convertir esta semana. Usa el argumento de Factura Electrónica AFIP + Fiado por WhatsApp."
+          if (res.content?.trim()) insightText = res.content.trim()
         }
-      } else {
-        insightText = "🎯 Recomendación Gemini (Reglas Local): Priorizá cerrar la demo con Autoservicio Don Pedro en Echesortu ($19.900/mes) y enviá 3 WhatsApps a comercios de Peatonal Córdoba."
+      } catch {
+        insightText = fallback
       }
 
-      return NextResponse.json({ ok: true, insight: insightText })
+      return NextResponse.json({ ok: true, insight: insightText, nextAction: dash.nextAction })
     }
 
     return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 })
   } catch (error) {
-    console.error("[API Claver Lab]", error)
+    console.error("[API Claver Lab POST]", error)
     return NextResponse.json({ error: "Error interno en Claver Lab" }, { status: 500 })
   }
 }

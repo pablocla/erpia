@@ -657,21 +657,24 @@ export default function ClaverLabPage() {
         </div>
       )}
 
+      {/* Cerebro Gemini Banner si hay respuesta */}
       <AnimatePresence>
         {aiInsight && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="rounded-2xl border border-violet-500/25 bg-violet-500/5 p-4"
+            exit={{ opacity: 0, y: -10 }}
+            className="rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-transparent p-4"
           >
             <div className="flex items-start gap-3">
-              <Bot className="h-5 w-5 text-violet-500 mt-0.5 shrink-0" />
+              <Bot className="h-5 w-5 text-violet-400 mt-0.5 shrink-0" />
               <div className="flex-1 text-sm space-y-1">
-                <h4 className="font-semibold text-violet-700 dark:text-violet-300">Insight del día</h4>
+                <h4 className="font-semibold text-violet-300 flex items-center gap-2">
+                  Recomendación Inteligente — Cerebro Gemini
+                </h4>
                 <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{aiInsight}</p>
               </div>
-              <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => setAiInsight("")}>
+              <Button variant="ghost" size="sm" onClick={() => setAiInsight("")} className="text-xs">
                 Cerrar
               </Button>
             </div>
@@ -680,17 +683,17 @@ export default function ClaverLabPage() {
       </AnimatePresence>
 
       <Tabs defaultValue="hoy" className="space-y-4">
-        <TabsList className="rounded-xl h-auto flex flex-wrap gap-1 p-1 bg-muted/50">
-          <TabsTrigger value="hoy" className="rounded-lg text-xs sm:text-sm">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-muted/60 rounded-xl w-full h-auto">
+          <TabsTrigger value="hoy" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Hoy
           </TabsTrigger>
-          <TabsTrigger value="pipeline" className="rounded-lg text-xs sm:text-sm">
+          <TabsTrigger value="pipeline" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Pipeline
           </TabsTrigger>
-          <TabsTrigger value="argumentos" className="rounded-lg text-xs sm:text-sm">
+          <TabsTrigger value="argumentos" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Argumentos
           </TabsTrigger>
-          <TabsTrigger value="escala" className="rounded-lg text-xs sm:text-sm">
+          <TabsTrigger value="escala" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Roadmap & equipo
           </TabsTrigger>
         </TabsList>

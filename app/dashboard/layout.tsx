@@ -209,7 +209,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {!isPosShell && (
               <div className="mx-auto w-full max-w-[1400px] mb-3">
                 <DashboardAlertsHub />
-                <ProductUpsellPanel className="mt-3" />
               </div>
             )}
             {!isPosShell && modoLite === "completo" && <Breadcrumbs className="mb-4 max-lg:mb-3" />}

@@ -27,8 +27,8 @@ export function AppChecklistWidget({ appId, guide }: AppChecklistWidgetProps) {
           variant="outline"
           size="sm"
           className={cn(
-            "fixed bottom-20 right-5 z-50 h-auto gap-3 rounded-full border-slate-200 bg-white p-3 pr-4 shadow-lg transition-all hover:bg-slate-50",
-            isFinished && "border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+            "fixed bottom-[5.25rem] right-5 z-40 h-auto gap-3 rounded-full border-slate-200 bg-white p-2.5 pr-4 shadow-lg transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 max-lg:bottom-[calc(8.5rem+env(safe-area-inset-bottom))]",
+            isFinished && "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40"
           )}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-lg">

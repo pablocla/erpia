@@ -25,6 +25,16 @@ export function isPathInAnclaFiadoAllowlist(pathname: string): boolean {
 }
 
 export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
+  /** ED-17: shell mínimo para vender Leo standalone */
+  leo: [
+    "/dashboard",
+    "/dashboard/empleados-digitales",
+    "/dashboard/clientes",
+    "/dashboard/cuentas-cobrar",
+    "/dashboard/fiado",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
   fiado: [
     "/dashboard",
     "/dashboard/fiado",
@@ -33,6 +43,7 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/productos",
     "/dashboard/clientes",
     "/dashboard/cuentas-cobrar",
+    "/dashboard/empleados-digitales",
     "/dashboard/configuracion",
     ...LITE_SHARED,
   ],
@@ -41,6 +52,7 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/cuentas-cobrar",
     "/dashboard/clientes",
     "/dashboard/fiado",
+    "/dashboard/empleados-digitales",
     "/dashboard/facturacion-recurrente",
     "/dashboard/configuracion",
     ...LITE_SHARED,

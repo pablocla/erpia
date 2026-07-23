@@ -2,6 +2,7 @@ import type { ElementType } from "react"
 import type { Rubro } from "@/lib/onboarding/onboarding-ia"
 import {
   LayoutDashboard,
+  Compass,
   ShoppingCart,
   Receipt,
   Package,
@@ -66,6 +67,8 @@ import {
   Network,
   GraduationCap,
   Target,
+  Workflow,
+  Rocket,
   Calculator,
   Wallet2,
   ClipboardCheck,
@@ -125,6 +128,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", translationKey: "items.dashboard" },
       { href: "/dashboard/mis-tareas", icon: CheckSquare, label: "Mis Tareas", translationKey: "items.myTasks" },
       { href: "/dashboard/empleados-digitales", icon: Bot, label: "Empleados digitales" },
+      { href: "/dashboard/lab", icon: Compass, label: "Claver Lab (CEO)", permisoModulo: "configuracion" },
       {
         href: "/dashboard/engineering/backlog",
         icon: ListTodo,
@@ -424,14 +428,17 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     ],
   },
   {
-    label: "Capacitación",
+    label: "Claver Docs",
     color: "text-indigo-500",
     items: [
+      { href: "/dashboard/documentacion", icon: BookOpen, label: "Claver Docs · Room", badge: "Wiki" },
+      { href: "/dashboard/documentacion/room/como-funciona-todo", icon: Workflow, label: "Cómo funciona todo" },
+      { href: "/dashboard/documentacion/room/requisitos-funcionamiento", icon: Rocket, label: "Requisitos de marcha" },
+      { href: "/dashboard/documentacion/room/mapa-grupo", icon: Layers, label: "Mapa del Grupo" },
       { href: "/dashboard/capacitacion", icon: GraduationCap, label: "Centro de Capacitación" },
       { href: "/dashboard/capacitacion/parametrizacion", icon: Settings, label: "Parametrización" },
       { href: "/dashboard/capacitacion/manual-usuario", icon: BookOpen, label: "Manual de Usuario" },
       { href: "/dashboard/capacitacion/diagnostico", icon: Target, label: "Diagnóstico Gaps" },
-      { href: "/dashboard/documentacion", icon: BookOpen, label: "Documentación Técnica" },
     ],
   },
   {

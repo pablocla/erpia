@@ -1,0 +1,71 @@
+---
+title: "Fiado y cobrar con Leo"
+description: "La libreta digital del barrio y el empleado que prepara los WhatsApp de cobro."
+sidebar_position: 12
+tags: ["room", "fiado", "leo"]
+audience: comercial
+product_line: leo
+layer: 4-workflow
+last_verified: 2026-07-23
+status: completo
+plain_summary: "Anotar quién debe, cobrar, y dejar que Leo arme los recordatorios."
+---
+
+# Fiado y cobrar con Leo
+
+El dolor de siempre: *“Me deben y no quiero pelearme por mensaje.”*
+
+Claver tapa eso en dos capas:
+
+1. **Libreta digital** — anotar y ver saldos.  
+2. **Leo** — prepara mensajes de cobro; **vos aprobás** antes de mandar.
+
+> Leo no es un robot suelto que escupe spam. Es un ayudante con freno de mano (aprobación humana).
+
+## 1. La libreta
+
+```mermaid
+sequenceDiagram
+  participant D as Dueño o cajero
+  participant A as App
+  participant B as Base
+
+  D->>A: Fía una venta o anota deuda
+  A->>B: Actualiza saldo del cliente
+  D->>A: El cliente paga algo
+  A->>B: Baja la deuda
+  opt Link de pago
+    A-->>D: Link de Mercado Pago para mandar
+  end
+```
+
+En la lista de deudores ves **quién debe y cuánto**, no un Excel eterno.
+
+## 2. Leo en acción
+
+```mermaid
+flowchart TB
+  A[Se despierta Leo] --> B{¿Está activo y en horario?}
+  B -->|No| Z[No hace nada]
+  B -->|Sí| C[Lee deudas]
+  C --> D[Arma borradores de mensaje]
+  D --> E[Vos mirás y aprobás]
+  E --> F[Se encola el WhatsApp]
+  F --> G[Sale al cliente]
+```
+
+## 3. Qué hace falta para que “sirva”
+
+| Pieza | Por qué |
+|-------|---------|
+| Deudas cargadas de verdad | Si la libreta está vacía, Leo no tiene con qué trabajar |
+| Leo activado | El pack / empleado digital tiene que estar on |
+| WhatsApp configurado | Si no, queda en modo simulado o cola |
+| Dueño que apruebe | Confianza y tono del barrio |
+| Un recordatorio del sistema (cron) | Para que corra solo cada tanto |
+
+## 4. Frase de venta (si lo explicás)
+
+> “Cargás el fiado en dos toques. Leo te arma el WhatsApp amable. Vos tocás aprobar. Si cobrás un solo fiado viejo, el mes se paga solo.”
+
+Más fondo: guía Leo en el repo (`docs/funcional/LEO_COBRANZA.md`) y canales WA/Telegram.

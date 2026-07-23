@@ -17,6 +17,8 @@ export const NAV_SHARED_PATHS = [
   "/dashboard/usuarios",
   "/dashboard/empleados-digitales",
   "/dashboard/apps",
+  "/dashboard/documentacion",
+  "/dashboard/capacitacion",
   "/dashboard/trial-vencido",
   "/dashboard/soporte",
   "/dashboard/alertas",

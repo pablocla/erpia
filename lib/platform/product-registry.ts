@@ -35,7 +35,7 @@ const PREMIUM_NAV: Record<string, string[]> = {
 function depsForSku(sku: string): string[] {
   const premium = INTANGIBLE_PREMIUM_7.find((s) => s.sku === sku)
   if (premium?.dependeDe?.length) return premium.dependeDe
-  if (sku === "intang.cobranzas_wa") return ["com.whatsapp"]
+  if (sku === "intang.cobranzas_wa" || sku === "empleado.leo_cobranza") return ["com.whatsapp"]
   return []
 }
 
@@ -84,6 +84,16 @@ const ENGANCHE_SKUS = new Set(ENGANCHES.map((e) => e.sku))
 export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
   fromEnganche(ENGANCHES.find((e) => e.sku === "pos.fiado_barrio")!, ["/dashboard/fiado", "/dashboard/pos"]),
   fromEnganche(ENGANCHES.find((e) => e.sku === "intang.cobranzas_wa")!, ["/dashboard/cuentas-cobrar"]),
+  {
+    sku: "empleado.leo_cobranza",
+    nombre: "Leo Cobranza",
+    lema: "Empleado digital de cobranza WhatsApp — vos aprobás.",
+    tier: "implementado",
+    horizontal: true,
+    precioArs: 19_900,
+    dependeDe: ["com.whatsapp"],
+    navPaths: ["/dashboard/empleados-digitales/leo_cobranza", "/dashboard/empleados-digitales"],
+  },
   fromEnganche(ENGANCHES.find((e) => e.sku === "com.whatsapp")!, []),
   fromEnganche(ENGANCHES.find((e) => e.sku === "fiscal.clavpay_link")!, ["/dashboard/mercadopago"]),
   {

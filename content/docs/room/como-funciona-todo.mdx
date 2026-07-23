@@ -1,0 +1,115 @@
+---
+title: "Cómo funciona todo"
+description: "Del dedo del cajero a la base de datos: el mapa completo, en lenguaje simple."
+sidebar_position: 2
+tags: ["room", "arquitectura", "flujo"]
+audience: all
+product_line: claver
+layer: 5-codigo
+related_code: ["Agents.md", "lib/auth/empresa-guard.ts", "middleware.ts"]
+last_verified: 2026-07-23
+status: completo
+plain_summary: "Una sola página para entender el sistema completo sin ahogarte en jerga."
+---
+
+# Cómo funciona todo
+
+Si solo tenés tiempo para **una** página técnica, es esta.
+
+> **Idea clave:** cada comercio es un “departamento” cerrado. El login te da un pase (JWT) con el número de empresa. Todo lo que pedís después se filtra por ese número.
+
+## 1. Las capas (como una hamburguesa)
+
+```mermaid
+flowchart TB
+  subgraph ARRIBA["Lo que ve la gente"]
+    WEB["Pantalla web / celular"]
+    WA["WhatsApp"]
+    TG["Telegram del dueño"]
+  end
+
+  subgraph MEDIO["La app Claver"]
+    MW["Portero: ¿tenés sesión?"]
+    API["Pedidos al servidor"]
+    SVC["Lógica de negocio"]
+  end
+
+  subgraph ABAJO["Datos y afuera"]
+    PG["Base PostgreSQL"]
+    AFIP["AFIP"]
+    MP["Mercado Pago"]
+    TW["WhatsApp API"]
+  end
+
+  WEB --> MW --> API --> SVC --> PG
+  WA --> API
+  TG --> API
+  SVC --> AFIP
+  SVC --> MP
+  SVC --> TW
+```
+
+## 2. Vida de un comercio nuevo
+
+```mermaid
+sequenceDiagram
+  participant U as Persona
+  participant S as Claver
+  participant B as Planes / cobro
+
+  U->>S: Se registra o pide demo
+  S->>S: Crea empresa + usuario
+  S->>B: Prueba gratis o pack ancla
+  U->>S: Usa POS, fiado, caja…
+  opt Cuando paga
+    U->>B: Mercado Pago
+    B->>S: Activa lo que compró
+  end
+```
+
+## 3. La regla de oro de seguridad
+
+```mermaid
+flowchart LR
+  A["Pedido con sesión"] --> B["¿Sesión válida?"]
+  B -->|No| C["Fuera: 401"]
+  B -->|Sí| D["Empresa = la del token"]
+  D --> E["Solo datos de ESA empresa"]
+```
+
+**Nunca** se devuelven datos de otro local. Si un desarrollador olvida filtrar por empresa, es un bug grave.
+
+## 4. Qué módulos se hablan entre sí
+
+```mermaid
+flowchart TB
+  POS[Mostrador POS] --> CAJA[Caja]
+  POS --> STOCK[Stock]
+  POS --> FIADO[Fiado]
+  FIADO --> LEO[Leo cobra]
+  VENTAS[Facturas] --> AFIP[AFIP]
+  AGENDA[Turnos] --> MEMB[Membresías / abonos]
+```
+
+## 5. Flujos para profundizar
+
+| Si querés entender… | Andá a |
+|---------------------|--------|
+| Login y permisos | [Login y datos seguros](/dashboard/documentacion/room/flujo-auth-multitenant) |
+| Vender en el local | [Mostrador](/dashboard/documentacion/room/flujo-pos-caja) |
+| Fiado y WhatsApp | [Fiado y Leo](/dashboard/documentacion/room/flujo-fiado-leo) |
+| Qué se paga | [Planes y SKUs](/dashboard/documentacion/room/flujo-billing-skus) |
+| Factura fiscal | [AFIP](/dashboard/documentacion/room/flujo-afip) |
+| Instalar un cliente | [Go-live](/dashboard/documentacion/room/flujo-go-live-cloud) |
+
+## 6. Stack (solo lo útil)
+
+| Capa | Tecnología | En criollo |
+|------|------------|------------|
+| Web | Next.js 15 | La app en el navegador |
+| UI | Tailwind + shadcn | Botones y pantallas |
+| Auth | JWT | Tu “pase” de sesión |
+| Datos | Prisma + PostgreSQL | Tablas del negocio |
+| País | es-AR, pesos, IVA | Hecho para Argentina |
+
+Más detalle de código: [Arquitectura](/dashboard/documentacion/developer/arquitectura).

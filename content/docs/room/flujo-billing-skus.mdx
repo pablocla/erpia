@@ -1,0 +1,74 @@
+---
+title: "Planes, trial y qué se activa"
+description: "Gratis, prueba y pago: cómo Claver enciende o apaga funciones sin magia."
+sidebar_position: 13
+tags: ["room", "billing", "sku"]
+audience: developer
+product_line: claver
+layer: 4-workflow
+last_verified: 2026-07-23
+status: completo
+plain_summary: "Anclas gratis, trials y Mercado Pago explicados con un dibujo."
+---
+
+# Planes, trial y qué se activa
+
+Pensalo como **llaves del tablero**:
+
+- Algunas llaves se regalan para enganchar (ejemplo: libreta fiado).  
+- Otras se prueban 7 o 14 días.  
+- Otras se abren cuando Mercado Pago confirma el pago.
+
+## Del click de “quiero probar” al uso
+
+```mermaid
+flowchart TB
+  A[Landing o link con pack] --> B[Registro del comercio]
+  B --> C[Se activan llaves del trial o ancla]
+  C --> D[El menú y las APIs respetan esas llaves]
+  D --> E{¿Paga después?}
+  E -->|Sí| F[Se mantienen / amplían]
+  E -->|No| G[Queda lo gratis; se corta lo de pago]
+```
+
+## Ancla gratis vs trial
+
+| Tipo | Ejemplo | Qué pasa al vencer el trial |
+|------|---------|------------------------------|
+| **Ancla gratis** | Fiado de barrio | La libreta **sigue** |
+| **Trial de pago** | POS completo 14 días | Se pide suscripción para seguir |
+
+> Si vendés “fiado gratis para siempre”, el sistema no debería castigar al comercio borrándole la libreta cuando vence el POS de prueba.
+
+## Pago de la suscripción Claver
+
+```mermaid
+sequenceDiagram
+  participant U as Admin del comercio
+  participant C as Claver
+  participant MP as Mercado Pago
+
+  U->>C: Quiero activar el plan
+  C->>MP: Checkout
+  U->>MP: Paga
+  MP->>C: Aviso de pago OK
+  C->>C: Enciende las llaves compradas
+```
+
+Importante de producto: al pagar, hay que **activar de verdad** el producto (no solo anotar “pagó” en una tabla).
+
+## Partners
+
+```mermaid
+flowchart LR
+  A[Link con código del partner] --> B[Se registra el comercio]
+  B --> C[El comercio paga]
+  C --> D[Se genera comisión]
+  D --> E[El partner pide el retiro]
+```
+
+Comisión **solo si hay pago real**. No es red de reclutamiento.
+
+## Si una API dice “no tenés el pack”
+
+Es normal: el endpoint de fiado, por ejemplo, exige la llave de fiado. El mensaje debería invitar a activar el plan, no solo fallar en silencio.

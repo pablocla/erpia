@@ -81,10 +81,12 @@ class AIServiceImpl {
   /**
    * Chat with the AI — picks best available provider
    * @param tier - "realtime" for fast response, "batch" for quality, "nightly" for deep analysis
+   * @param options.maxTokens — override max output (ej. Leo 120)
    */
   async chat(
     messages: AIMessage[],
-    tier: "realtime" | "batch" | "nightly" = "batch"
+    tier: "realtime" | "batch" | "nightly" = "batch",
+    options?: { maxTokens?: number; temperature?: number },
   ): Promise<AIResponse> {
     if (!this.config.enabled) {
       return { content: "", model: "disabled", provider: "none", durationMs: 0 }
@@ -92,18 +94,26 @@ class AIServiceImpl {
 
     const start = Date.now()
     const provider = await this.resolveProvider()
+    const prevMax = this.config.maxTokens
+    const prevTemp = this.config.temperature
+    if (options?.maxTokens != null) this.config.maxTokens = options.maxTokens
+    if (options?.temperature != null) this.config.temperature = options.temperature
 
-    if (provider === "ollama") {
-      return this.ollamaChat(messages, tier, start)
+    try {
+      if (provider === "ollama") {
+        return await this.ollamaChat(messages, tier, start)
+      }
+      if (provider === "gemini") {
+        return await this.geminiChat(messages, start)
+      }
+      if (provider === "anthropic") {
+        return await this.anthropicChat(messages, start)
+      }
+      return { content: "", model: "no_provider", provider: "none", durationMs: Date.now() - start }
+    } finally {
+      this.config.maxTokens = prevMax
+      this.config.temperature = prevTemp
     }
-    if (provider === "gemini") {
-      return this.geminiChat(messages, start)
-    }
-    if (provider === "anthropic") {
-      return this.anthropicChat(messages, start)
-    }
-
-    return { content: "", model: "no_provider", provider: "none", durationMs: Date.now() - start }
   }
 
   /**

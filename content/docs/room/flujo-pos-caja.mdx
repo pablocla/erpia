@@ -1,0 +1,71 @@
+---
+title: "Vender en el mostrador"
+description: "Producto, cobro, caja y stock: el corazón del local, contado paso a paso."
+sidebar_position: 11
+tags: ["room", "pos", "caja"]
+audience: analista
+product_line: claver
+layer: 4-workflow
+last_verified: 2026-07-23
+status: completo
+plain_summary: "El flujo que usa el cajero todo el día."
+---
+
+# Vender en el mostrador
+
+Esto es lo que pasa cuando alguien dice: *“cobrame esto”*.
+
+## El camino feliz
+
+```mermaid
+sequenceDiagram
+  participant C as Cajero
+  participant P as Pantalla POS
+  participant S as Servidor
+  participant B as Base
+
+  C->>P: Abre la caja del turno
+  C->>P: Busca o escanea producto
+  C->>P: Cobra (efectivo, QR, mixto o fiado)
+  P->>S: Confirma la venta
+  S->>B: Guarda venta y mueve caja
+  S->>B: Baja el stock
+  S-->>P: Listo · ticket
+```
+
+## Caja: abrir, vender, cerrar
+
+```mermaid
+flowchart TB
+  A[Abrís con un fondo] --> B[Van entrando ventas]
+  B --> C[Podés cargar gastos chicos]
+  C --> D[Cierre de turno]
+  D --> E[Contás billetes, QR, transferencias]
+  E --> F{¿Cierra con la cuenta?}
+  F -->|Sí| G[Día ordenado]
+  F -->|No| H[Anotás la diferencia]
+```
+
+> **Tip de implementación:** entrená el cierre el primer día. Si no cierran caja, el sistema “vende” pero el dueño no confía.
+
+## Si se corta internet
+
+```mermaid
+flowchart LR
+  A[Sin WiFi] --> B[La venta se guarda en el aparato]
+  B --> C[Vuelve la red]
+  C --> D[Se mandan solas al servidor]
+```
+
+Hay base para trabajar offline. En go-live serio hay que **probar** el escenario en ese local (no prometer magia sin prueba).
+
+## Fiado desde el mismo mostrador
+
+```mermaid
+flowchart LR
+  V[Venta] --> M{¿Cómo paga?}
+  M -->|Contado| C[Entra a caja]
+  M -->|Fiado| F[Suma a la libreta del cliente]
+```
+
+Seguí con: [Fiado y Leo](/dashboard/documentacion/room/flujo-fiado-leo) · detalle POS: [sistema-pos](/dashboard/documentacion/funcional/sistema-pos).

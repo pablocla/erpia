@@ -1,13 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { canManageUsers, isAdminRole } from "@/lib/auth/admin-roles"
-import { runLeoCobranza } from "@/lib/empleados-digitales/runtime/orchestrator"
-import { LEO_COBRANZA_CODE } from "@/lib/empleados-digitales/types"
+import { runEmpleado } from "@/lib/empleados-digitales/runtime/run-empleado"
 import { EmpleadoSecurityError } from "@/lib/empleados-digitales/security"
 
 type Params = { params: Promise<{ code: string }> }
 
-/** POST /api/empleados-digitales/leo_cobranza/run — corrida manual */
+/** POST /api/empleados-digitales/:code/run — corrida manual (ED-15) */
 export async function POST(req: NextRequest, { params }: Params) {
   const ctx = await getAuthContext(req)
   if (!ctx.ok) return ctx.response
@@ -16,15 +15,22 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const { code } = await params
-  if (code !== LEO_COBRANZA_CODE) {
-    return NextResponse.json({ error: "Solo Leo Cobranza soporta run por ahora" }, { status: 400 })
+
+  let dryRun = false
+  try {
+    const body = await req.json().catch(() => ({}))
+    dryRun = body?.dryRun === true
+  } catch {
+    dryRun = false
   }
 
   try {
-    const result = await runLeoCobranza({
+    const result = await runEmpleado({
       empresaId: ctx.auth.empresaId,
+      code,
       trigger: "manual",
       userId: ctx.auth.userId,
+      dryRun,
     })
     return NextResponse.json({ success: true, ...result })
   } catch (err) {

@@ -1,0 +1,69 @@
+---
+title: "Factura AFIP sin misterio"
+description: "De la venta al CAE: qué hace el sistema y qué tiene que tener el comercio."
+sidebar_position: 14
+tags: ["room", "afip", "factura"]
+audience: analista
+product_line: claver
+layer: 4-workflow
+last_verified: 2026-07-23
+status: completo
+plain_summary: "Factura electrónica explicada para humanos, no solo para contadores."
+---
+
+# Factura AFIP sin misterio
+
+No todo ticket es factura. En Argentina el comercio elige:
+
+- **Ticket interno** — control de caja, sin CAE.  
+- **Factura electrónica** — AFIP autoriza con un código (CAE).
+
+> En la demo casi siempre se usa homologación (ambiente de prueba). En producción va el certificado real del cliente.
+
+## Camino de una factura
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant C as Claver
+  participant A as AFIP
+
+  U->>C: Emite factura A, B o C
+  C->>C: Numera el comprobante
+  C->>A: Pide autorización
+  A-->>C: Devuelve CAE
+  C-->>U: Factura lista / PDF
+```
+
+## Homologación vs producción
+
+| Ambiente | Cuándo |
+|----------|--------|
+| **Homologación** | Demos, capacitación, pruebas |
+| **Producción** | Cliente real facturando |
+
+Para producción hace falta, entre otras cosas:
+
+- Certificado digital del contribuyente  
+- Punto de venta dado de alta  
+- Numeración prolija (sin pisarse entre cajas)
+
+## Si AFIP anda lento o caído
+
+```mermaid
+flowchart TB
+  A[AFIP no responde] --> B[Se puede entregar ticket provisorio]
+  B --> C[Queda en cola para reintentar]
+  C --> D[Cuando AFIP vuelve, se obtiene el CAE]
+```
+
+Ese diseño evita frenar la fila del local. Hay que validar el nivel de madurez en cada go-live.
+
+## Checklist corto con el cliente
+
+1. ¿Monotributo o responsable inscripto?  
+2. ¿Necesita factura siempre o solo a veces?  
+3. ¿Ya tiene certificado y punto de venta?  
+4. ¿Quién entrena al cajero en el botón correcto?
+
+Guía más larga: [AFIP en la wiki](/dashboard/documentacion/funcional/afip-integracion).

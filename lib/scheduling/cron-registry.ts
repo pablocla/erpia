@@ -8,6 +8,7 @@ import { runOpsAlertas } from "./jobs/ops-alertas"
 import { runRecordatoriosTurnos } from "./jobs/recordatorios"
 import { runWhatsAppOutbound } from "./jobs/whatsapp-outbound"
 import { runScheduledEmpleadosDigitales } from "./jobs/empleados-digitales"
+import { runEmpleadosDigitalesPurge } from "./jobs/empleados-purge"
 
 export type CronJobGranularity = "tick" | "hour" | "day"
 
@@ -70,6 +71,15 @@ export const CRON_JOBS: CronJobDefinition[] = [
     windowMinutes: 60,
     dedup: "hour",
     run: runScheduledEmpleadosDigitales,
+  },
+  {
+    id: "empleados-purge",
+    label: "Purge usage/runs empleados digitales (>90d)",
+    tier: "free",
+    schedule: "0 4 * * 0",
+    windowMinutes: 120,
+    dedup: "day",
+    run: runEmpleadosDigitalesPurge,
   },
   {
     id: "recordatorios",

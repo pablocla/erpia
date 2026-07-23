@@ -73,6 +73,13 @@ export async function aplicarPagoDeudorDesdeMp(input: {
         },
       })
 
+      // ED-30: recibo digital por WhatsApp (best-effort)
+      void enviarReciboWaDeudor({
+        empresaId: input.empresaId,
+        clienteId: ref.clienteId,
+        monto,
+      })
+
       return {
         ok: true,
         reciboId: result.reciboId,
@@ -144,6 +151,43 @@ export async function aplicarPagoDeudorDesdeMp(input: {
   }
 }
 
+async function enviarReciboWaDeudor(input: {
+  empresaId: number
+  clienteId: number
+  monto: number
+}) {
+  try {
+    const [cliente, empresa] = await Promise.all([
+      prisma.cliente.findFirst({
+        where: { id: input.clienteId, empresaId: input.empresaId },
+        select: {
+          nombre: true,
+          telefono: true,
+          telefonoAlternativo: true,
+          saldoCuentaCorriente: true,
+        },
+      }),
+      prisma.empresa.findUnique({
+        where: { id: input.empresaId },
+        select: { nombre: true },
+      }),
+    ])
+    if (!cliente) return
+    const { encolarReciboPagoFiado } = await import("@/lib/fiado/fiado-whatsapp")
+    const saldo = Number(cliente.saldoCuentaCorriente)
+    await encolarReciboPagoFiado({
+      empresaId: input.empresaId,
+      clienteNombre: cliente.nombre,
+      telefono: cliente.telefono || cliente.telefonoAlternativo,
+      monto: input.monto,
+      saldoRestante: saldo < 0 ? Math.abs(saldo) : 0,
+      almacenNombre: empresa?.nombre,
+    })
+  } catch (err) {
+    console.warn("[MP] recibo WA deudor:", err)
+  }
+}
+
 async function aplicarSobreCc(
   empresaId: number,
   cuentaCobrarId: number,
@@ -180,6 +224,11 @@ async function aplicarSobreCc(
       where: { id: transaccionId },
       data: { conciliado: true, cuentaCobrarId },
     })
+    void enviarReciboWaDeudor({
+      empresaId,
+      clienteId: cc.clienteId,
+      monto: aplica,
+    })
     return {
       ok: true,
       reciboId: viaFiado.reciboId,
@@ -198,6 +247,12 @@ async function aplicarSobreCc(
   await prisma.mercadoPagoTransaccion.update({
     where: { id: transaccionId },
     data: { conciliado: true, cuentaCobrarId },
+  })
+
+  void enviarReciboWaDeudor({
+    empresaId,
+    clienteId: cc.clienteId,
+    monto: aplica,
   })
 
   return {

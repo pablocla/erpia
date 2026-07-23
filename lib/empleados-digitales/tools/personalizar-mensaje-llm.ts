@@ -1,5 +1,6 @@
 /**
  * Path 20% — reescribe plantilla con LLM. No elige destinatarios ni montos.
+ * ED-10: prompt corto + maxOutput 120 · SEC-01: no inventa links/montos
  */
 
 import { aiService } from "@/lib/ai/ai-service"
@@ -7,12 +8,37 @@ import { assertToolScope } from "../security"
 import { checkLeoLimits, recordUsage } from "../metering"
 import type { DeudaItem, EmpleadoLeoCobranzaConfig, ToolContext } from "../types"
 
+function extractUrls(text: string): string[] {
+  return text.match(/https?:\/\/[^\s]+/gi) ?? []
+}
+
+function montoOk(mensaje: string, montoArs: number): boolean {
+  const montoStr = String(Math.round(montoArs))
+  const fmt = new Intl.NumberFormat("es-AR").format(montoArs)
+  const fmtCur = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(montoArs)
+  return (
+    mensaje.includes(montoStr) ||
+    mensaje.includes(fmt) ||
+    mensaje.includes(fmtCur) ||
+    mensaje.includes(fmtCur.replace(/\s/g, ""))
+  )
+}
+
 export async function personalizarMensajeLlm(
   ctx: ToolContext,
   config: EmpleadoLeoCobranzaConfig,
   input: { deuda: DeudaItem; plantillaBase: string },
 ): Promise<{ mensaje: string; tokensIn: number; tokensOut: number; usedLlm: boolean }> {
   assertToolScope(ctx, ctx.empresaId, "personalizar_mensaje_llm")
+
+  // Trial / límites
+  if (!config.llmEnabled) {
+    return { mensaje: input.plantillaBase, tokensIn: 0, tokensOut: 0, usedLlm: false }
+  }
 
   const limits = await checkLeoLimits(ctx.empresaId, ctx.empleadoId, config, "llm_call")
   if (!limits.ok) {
@@ -24,21 +50,23 @@ export async function personalizarMensajeLlm(
     return { mensaje: input.plantillaBase, tokensIn: 0, tokensOut: 0, usedLlm: false }
   }
 
-  const system = [
-    "Sos Leo, asistente de cobranza de un comercio argentino.",
-    "Reescribí el mensaje de WhatsApp manteniendo: monto exacto, días de atraso, nombre del cliente y del comercio.",
-    "No inventes links de pago, teléfonos, montos ni amenazas legales.",
-    "Máximo 400 caracteres. Tono profesional y cercano (es-AR).",
-    "Respondé SOLO el texto del mensaje, sin comillas ni explicación.",
-  ].join(" ")
+  // Prompt corto (ED-10)
+  const system =
+    "Sos Leo. Reescribí este WA de cobranza en es-AR. Conservá monto, días, nombres y link si hay. Sin amenazas ni URLs nuevas. Máx 350 caracteres. Solo el mensaje."
 
   const user = JSON.stringify({
-    plantilla: input.plantillaBase,
-    cliente: input.deuda.clienteNombre,
-    comercio: input.deuda.empresaNombre,
-    montoArs: input.deuda.montoArs,
-    diasVencido: input.deuda.diasVencido,
+    m: Math.round(input.deuda.montoArs),
+    d: input.deuda.diasVencido,
+    c: input.deuda.clienteNombre,
+    e: input.deuda.empresaNombre,
+    t: input.plantillaBase.slice(0, 400),
+    link: Boolean(input.deuda.linkPago),
   })
+
+  const allowedUrls = new Set([
+    ...extractUrls(input.plantillaBase),
+    ...(input.deuda.linkPago ? [input.deuda.linkPago.trim()] : []),
+  ])
 
   try {
     const res = await aiService.chat(
@@ -47,11 +75,12 @@ export async function personalizarMensajeLlm(
         { role: "user", content: user },
       ],
       "realtime",
+      { maxTokens: 120, temperature: 0.3 },
     )
 
-    const mensaje = (res.content || "").trim() || input.plantillaBase
-    const tokensIn = res.tokensUsed ? Math.floor(res.tokensUsed * 0.6) : 200
-    const tokensOut = res.tokensUsed ? Math.ceil(res.tokensUsed * 0.4) : 80
+    let mensaje = (res.content || "").trim() || input.plantillaBase
+    const tokensIn = res.tokensUsed ? Math.floor(res.tokensUsed * 0.6) : 80
+    const tokensOut = res.tokensUsed ? Math.ceil(res.tokensUsed * 0.4) : 40
 
     await recordUsage({
       empresaId: ctx.empresaId,
@@ -64,22 +93,28 @@ export async function personalizarMensajeLlm(
       metadata: { provider: res.provider, model: res.model },
     })
 
-    // Seguridad: si el modelo inventó un monto distinto, preferir plantilla
-    const montoStr = String(Math.round(input.deuda.montoArs))
-    if (mensaje.length > 600) {
+    if (mensaje.length > 500) {
       return { mensaje: input.plantillaBase, tokensIn, tokensOut, usedLlm: true }
     }
 
-    return {
-      mensaje: mensaje.includes(montoStr) || mensaje.includes(
-        new Intl.NumberFormat("es-AR").format(input.deuda.montoArs),
-      )
-        ? mensaje
-        : input.plantillaBase,
-      tokensIn,
-      tokensOut,
-      usedLlm: true,
+    // SEC-01: URLs no whitelist → plantilla
+    const urls = extractUrls(mensaje)
+    for (const u of urls) {
+      const ok = [...allowedUrls].some((a) => u.startsWith(a) || a.startsWith(u.replace(/[.,);]+$/, "")))
+      if (!ok && allowedUrls.size > 0) {
+        return { mensaje: input.plantillaBase, tokensIn, tokensOut, usedLlm: true }
+      }
+      if (!ok && allowedUrls.size === 0) {
+        // sin link permitido: strip urls inventadas
+        mensaje = mensaje.replace(u, "").replace(/\s{2,}/g, " ").trim()
+      }
     }
+
+    if (!montoOk(mensaje, input.deuda.montoArs)) {
+      return { mensaje: input.plantillaBase, tokensIn, tokensOut, usedLlm: true }
+    }
+
+    return { mensaje, tokensIn, tokensOut, usedLlm: true }
   } catch (err) {
     console.warn("[Leo] LLM fallback a plantilla:", err)
     return { mensaje: input.plantillaBase, tokensIn: 0, tokensOut: 0, usedLlm: false }

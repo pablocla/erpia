@@ -7,13 +7,28 @@ export async function runWhatsAppOutbound() {
   }
 
   const whatsappService = new WhatsappService()
+  // Incluye cobranza Leo (prioridad variable) y recibos fiado (prioridad 5–6)
   const mensajes = await prisma.mensajePendienteWhatsApp.findMany({
     where: {
       estado: "aprobado",
-      prioridad: { gte: 7 },
+      OR: [
+        { prioridad: { gte: 5 } },
+        {
+          tipo: {
+            in: [
+              "cobranza",
+              "fiado",
+              "fiado_recibo",
+              "fiado_ack",
+              "fiado_consulta",
+              "leo",
+            ],
+          },
+        },
+      ],
     },
     orderBy: [{ prioridad: "desc" }, { createdAt: "asc" }],
-    take: 20,
+    take: 40,
   })
 
   const resultados: Array<{ id: number; enviado: boolean; error?: string }> = []

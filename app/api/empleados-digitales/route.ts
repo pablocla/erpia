@@ -65,28 +65,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Empleado no soportado aún" }, { status: 400 })
   }
 
+  const trial = body.trial !== false // default trial para probar ya
+
   try {
-    // Suscripción + hooks (si SKU está en registry; si falla, activamos instancia igual)
+    // Suscripción + hooks (si falla, igual activamos instancia)
     try {
       await activarProducto(ctx.auth.empresaId, LEO_COBRANZA_SKU, body.origen || "manual")
     } catch {
-      // SKU puede no estar en product-registry aún — activamos instancia directa
-      await activarLeoCobranza(ctx.auth.empresaId, { trial: body.trial === true })
+      /* instancia abajo */
     }
 
-    // Asegurar instancia aunque el hook no haya corrido
-    const instancia = await activarLeoCobranza(ctx.auth.empresaId, {
-      trial: body.trial === true,
-    })
+    const instancia = await activarLeoCobranza(ctx.auth.empresaId, { trial })
 
     return NextResponse.json({
       success: true,
+      trial,
+      nextSteps: [
+        "1. Corré «Vista previa» para ver deudas sin enviar",
+        "2. Corré «Correr ahora» para generar borradores",
+        "3. Aprobá WhatsApp (o vinculá Telegram: /leo pendientes)",
+        "4. Configurá Twilio o TELEGRAM_BOT_TOKEN para envío real",
+      ],
       instancia: {
         id: instancia.id,
         code: instancia.template.code,
         estado: instancia.estado,
         sku: instancia.sku,
-        dashboardPath: `/dashboard/empleados-digitales/${instancia.template.code}`,
+        dashboardPath: `/dashboard/empleados-digitales/${instancia.template.code}?onboarding=1`,
       },
     })
   } catch (err) {

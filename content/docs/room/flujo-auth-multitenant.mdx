@@ -1,0 +1,74 @@
+---
+title: "Login y datos seguros"
+description: "Cómo entra la gente y por qué un kiosco nunca ve los datos del de al lado."
+sidebar_position: 10
+tags: ["room", "auth", "seguridad"]
+audience: developer
+product_line: claver
+layer: 5-codigo
+last_verified: 2026-07-23
+status: completo
+plain_summary: "Sesión JWT + empresaId: el candado de todo Claver."
+---
+
+# Login y datos seguros
+
+## En criollo
+
+1. La persona se loguea.  
+2. El sistema le da un **pase** (token) con su empresa y su rol.  
+3. Cada pedido al servidor revisa ese pase.  
+4. Solo se leen y escriben datos de **su** comercio.
+
+> Si fallara este candado, no hay producto. Por eso es la primera regla de desarrollo.
+
+## Cómo entra alguien
+
+```mermaid
+sequenceDiagram
+  participant U as Persona
+  participant P as Pantalla login
+  participant S as Servidor
+  participant B as Base
+
+  U->>P: Email y clave
+  P->>S: ¿Sos vos?
+  S->>B: Busca usuario
+  S-->>P: Pase JWT
+  P->>P: Guarda sesión
+  U->>S: Entra al panel con el pase
+```
+
+## Google (invitados)
+
+Útil cuando el dueño invita empleados con Gmail:
+
+```mermaid
+flowchart LR
+  A[Invitación Google] --> B[Usuario esperando]
+  B --> C[Primer login con Google]
+  C --> D[Queda atado a la empresa]
+```
+
+No se puede “colarse” a una empresa solo con un número mágico.
+
+## El filtro que no se negocia
+
+```mermaid
+flowchart TB
+  T["Pase dice: empresa 42"] --> G["El servidor lee empresa 42"]
+  G --> Q["Consulta a la base con filtro 42"]
+  Q --> R["Respuesta: solo del local 42"]
+```
+
+## Roles y menú
+
+| Rol típico | Ve sobre todo |
+|------------|----------------|
+| Dueño / admin | Todo el pack + usuarios |
+| Cajero | POS, caja, clientes básicos |
+| Contador (si aplica) | Impuestos / export |
+
+El **rubro** del comercio también achica el menú (un kiosco no necesita pantalla de veterinaria).
+
+Más técnico: [Multi-tenant](/dashboard/documentacion/developer/multi-tenant) · [Identidad](/dashboard/documentacion/developer/identity-and-access).

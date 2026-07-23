@@ -1,60 +1,85 @@
 ---
-title: "Inicio"
-description: "Wiki centralizada de implementación, desarrollo e integración del ERP Argentina."
-sidebar_position: 1
-tags: ["wiki", "hub", "docs"]
+title: "Claver Docs — Room"
+description: "Sala central de documentación del Grupo Claver: flujos, requisitos y wiki técnica."
+sidebar_position: 0
+tags: ["wiki", "hub", "claver-docs", "room"]
 audience: all
+product_line: grupo
 layer: 1-config
-last_verified: 2026-06-19
+last_verified: 2026-07-23
 status: completo
+owner: grok
 ---
 
-# Centro de Documentación Técnica — ERP Argentina
+# Claver Docs · Claver Room
 
-Bienvenido a la documentación oficial y wiki técnica del ERP. Este espacio está diseñado para brindar a implementadores, desarrolladores y analistas la información clave para parametrizar, customizar y extender el sistema.
+**Un solo lugar** para entender cómo funciona Claver y el Grupo: diagramas de flujo, requisitos de marcha, implementación, desarrollo y packs vendibles.
 
----
-
-## 👥 Audiencias Clave
-
-### 🧑‍💼 Analistas Técnicos e Implementadores
-Aprende a mapear los requisitos del cliente utilizando el sistema de personalización de 5 capas (configuración básica hasta desarrollo de código). Entiende cómo se compara la flexibilidad de base de datos del ERP frente a paradigmas tradicionales como **TOTVS Protheus**.
-👉 [Guía del Analista](/dashboard/documentacion/analista/guia-implementacion) | [Protheus vs SaaS](/dashboard/documentacion/analista/protheus-vs-saas)
-
-### 💻 Desarrolladores
-Conoce la arquitectura técnica, las migraciones de base de datos con Prisma ORM, el control multi-tenant y cómo extender el API.
-👉 [Getting Started](/dashboard/documentacion/developer/getting-started) | [Arquitectura del Código](/dashboard/documentacion/developer/arquitectura) | [Identidad y cuentas](/dashboard/documentacion/developer/identity-and-access)
-
-### 📈 Operaciones & DevOps
-Runbooks de despliegue, scripts de chequeo de salud (Health Checks) y estrategias de actualización de software en producción.
-👉 [Runbook de Deploy](/dashboard/documentacion/operaciones/deploy-runbook) | [Health Checks](/dashboard/documentacion/operaciones/health-check)
-
-### 🛒 Comercial — Vendedor en calle
-Playbook de venta retail, speech por situación, enganches (fiado, cobranzas WA) y roadmap para arrancar como monotributista sin estructura legal.
-👉 [Roadmap venta vendedor](/dashboard/documentacion/comercial/roadmap-venta-vendedor) | Enganches en `docs/marketplace/12-enganches-comerciales.md`
-
-### ☁️ Claver Cloud — Activación de clientes
-Proceso funcional completo desde la venta hasta go-live (metodología CCA, equivalente TOTVS MIT + ONBOARD TCloud): datos críticos pre-deploy, pack de bienvenida con URL, y trazabilidad ISO.
-👉 [Proceso CCA (venta → puesta en marcha)](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion) | [Checklist Go-Live](/dashboard/documentacion/analista/checklist-go-live)
+> No es un dump de archivos. Es la **sala de control del conocimiento**.
 
 ---
 
-## 🎯 Mapa de Ruta (Roadmap)
-Descubre el estado del proyecto, el roadmap pre-venta y las métricas de cobertura de testing actuales.
-👉 [Roadmap y Vision](/dashboard/documentacion/roadmap/vision) | [Fases de Desarrollo](/dashboard/documentacion/roadmap/fases-f1-f4) | [Métricas / Score](/dashboard/documentacion/roadmap/score-85-68)
+## Entrá por acá (Room)
+
+| Prioridad | Página | Para qué |
+|-----------|--------|----------|
+| 1 | [Mapa del Grupo Claver](/dashboard/documentacion/room/mapa-grupo) | ERP · Cloud · Leo · Grow · Partners |
+| 2 | [Cómo funciona todo](/dashboard/documentacion/room/como-funciona-todo) | Runtime completo con diagramas |
+| 3 | [Requisitos de funcionamiento](/dashboard/documentacion/room/requisitos-funcionamiento) | Env, jobs, hardware, go-live |
+| 4 | [Auth + multi-tenant](/dashboard/documentacion/room/flujo-auth-multitenant) | JWT, empresaId, roles |
+| 5 | [POS → caja → stock](/dashboard/documentacion/room/flujo-pos-caja) | Mostrador |
+| 6 | [Fiado → Leo → WhatsApp](/dashboard/documentacion/room/flujo-fiado-leo) | Ancla de calle |
+| 7 | [Billing y SKUs](/dashboard/documentacion/room/flujo-billing-skus) | Trial, ancla, MP, partners |
+| 8 | [AFIP](/dashboard/documentacion/room/flujo-afip) | CAE y fiscal |
+| 9 | [Go-live Cloud](/dashboard/documentacion/room/flujo-go-live-cloud) | Venta → operación |
+
+```mermaid
+flowchart TB
+  ROOM[Claver Room] --> G[Mapa Grupo]
+  ROOM --> M[Cómo funciona todo]
+  ROOM --> REQ[Requisitos]
+  M --> F1[Auth]
+  M --> F2[POS/Caja]
+  M --> F3[Fiado/Leo]
+  M --> F4[Billing]
+  M --> F5[AFIP]
+  M --> F6[Cloud go-live]
+```
 
 ---
 
-## 🤖 NOP Automation Hub
-Integración n8n, empleados virtuales, API poll y entitlements comerciales.
-👉 [Automation Hub](/dashboard/documentacion/funcional/automation-hub) | [API Poll](/dashboard/documentacion/funcional/automation-api-poll) | [Entitlements](/dashboard/documentacion/developer/automation-entitlements)
+## Audiencias
+
+### Analista / implementador
+[Guía del analista](/dashboard/documentacion/analista/guia-implementacion) · [Checklist go-live](/dashboard/documentacion/analista/checklist-go-live) · [Proceso Cloud](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion)
+
+### Desarrollador
+[Getting started](/dashboard/documentacion/developer/getting-started) · [Arquitectura](/dashboard/documentacion/developer/arquitectura) · [Multi-tenant](/dashboard/documentacion/developer/multi-tenant) · [API overview](/dashboard/documentacion/developer/api-overview)
+
+### Operaciones
+[Deploy](/dashboard/documentacion/operaciones/deploy-runbook) · [Health](/dashboard/documentacion/operaciones/health-check) · [Troubleshooting](/dashboard/documentacion/operaciones/troubleshooting)
+
+### Comercial / partner
+[Roadmap vendedor](/dashboard/documentacion/comercial/roadmap-venta-vendedor) · Flujos Room de fiado/Leo y billing · Packs en `docs/GO_LIVE_PRD.md`
+
+### Usuario final (manuales)
+No confundir con esta wiki técnica: usá [Capacitación / manual](/dashboard/capacitacion/manual-usuario).
 
 ---
 
-## ℹ️ Información Adicional y Diagramas Interactivos
+## Funcional y automation
 
-Este portal está enfocado en la **implementación y desarrollo técnico**. Si necesitas ver guías operativas paso a paso y flujos de procesos visuales orientados al usuario final, visita el área de capacitación interactiva:
+- [POS](/dashboard/documentacion/funcional/sistema-pos) · [Tesorería](/dashboard/documentacion/funcional/tesoreria) · [AFIP](/dashboard/documentacion/funcional/afip-integracion)
+- [Automation Hub](/dashboard/documentacion/funcional/automation-hub) · [Workers](/dashboard/documentacion/funcional/automation-workers)
 
-- 📊 **Manual Interactivo del Usuario**: [Manual de Usuario](/dashboard/capacitacion/manual-usuario) (Ventas, compras, caja, rrhh).
-- ⚙️ **Cascada de Configuración**: [Parametrización de Features](/dashboard/capacitacion/parametrizacion) (Activación de rubros y railroad switches).
-- 🔍 **Estado del Sistema**: [Diagnóstico de Gaps](/dashboard/capacitacion/diagnostico) (Plan de prioridades críticas).
+---
+
+## Convención
+
+| Ubicación | Uso |
+|-----------|-----|
+| **`content/docs/`** (esta wiki) | Canónico, diagramas, verificado |
+| **`docs/`** en el repo | Laboratorio, auditorías, drafts |
+| **Claver Room** (`room/*`) | Flujos de funcionamiento del sistema y del Grupo |
+
+Toda página Room debe tener **al menos un diagrama Mermaid** y una sección de enlaces a código/API cuando aplique.

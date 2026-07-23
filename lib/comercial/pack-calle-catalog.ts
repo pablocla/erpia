@@ -9,7 +9,7 @@ import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MICRO_SAAS_PORTFOLIO } from "@/lib/comercial/micro-saas-portfolio"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo"
 
 export interface PackCalle {
   id: string
@@ -31,6 +31,7 @@ const LANDING: Record<ModoLite, string> = {
   completo: "/dashboard",
   niche: "/dashboard/nicho",
   servicios: "/dashboard/ventas/presupuestos",
+  leo: "/dashboard/empleados-digitales/leo_cobranza",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {
@@ -115,6 +116,7 @@ for (const p of MICRO_SAAS_PORTFOLIO.filter((x) => x.vendibleCalle)) {
 
 const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   "pos.fiado_barrio": "fiado",
+  "empleado.leo_cobranza": "leo",
   "intang.cobranzas_wa": "cobranza",
   "pool-almacen-barrio": "completo",
   "pool-almacen-rosario": "pos",

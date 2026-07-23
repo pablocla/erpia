@@ -86,7 +86,28 @@ class AgentRegistry {
   async executeAllForEmpresa(empresaId: number, triggeredBy: AgentRunContext["triggeredBy"] = "schedule"): Promise<AgentRunResult[]> {
     const results: AgentRunResult[] = []
 
+    // ED-28: cobranzas batch se saltea si Leo está activo (doble check además del agent)
+    let skipCobranzas = false
+    try {
+      const { isLeoActivo } = await import("@/lib/empleados-digitales/is-leo-activo")
+      skipCobranzas = await isLeoActivo(empresaId)
+    } catch {
+      skipCobranzas = false
+    }
+
     for (const agent of this.agents.values()) {
+      if (skipCobranzas && agent.config.id === "cobranzas") {
+        results.push({
+          agentId: agent.config.id,
+          empresaId,
+          success: true,
+          resumen: "Skip batch: Leo Cobranza activo (Empleados digitales)",
+          accionesEjecutadas: 0,
+          acciones: [],
+          durationMs: 0,
+        })
+        continue
+      }
       const ctx: AgentRunContext = { empresaId, triggeredBy }
       const result = await this.executeAgent(agent.config.id, ctx)
       results.push(result)

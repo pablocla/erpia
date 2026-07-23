@@ -77,7 +77,18 @@ export async function procesarMensajeTelegram(
       "/stock — productos bajo stock mínimo",
       "/ot — órdenes de producción en curso",
       "/ventas — resumen ventas de hoy",
+      "",
+      "<b>Leo Cobranza</b>",
+      "/leo — estado de Leo",
+      "/leo run — correr cobranzas (drafts)",
+      "/leo pendientes — borradores a aprobar",
+      "/leo aprobar &lt;id&gt; — aprobar un borrador",
     ].join("\n")
+  }
+
+  // ── Leo Cobranza (hablar con el agente por Telegram) ──
+  if (lower === "/leo" || lower.startsWith("/leo ")) {
+    return handleLeoTelegramCommand(empresaId, vinculo.usuarioId, trimmed)
   }
 
   if (lower === "/alertas") {
@@ -157,6 +168,131 @@ export async function procesarMensajeTelegram(
   }
 
   return "Comando no reconocido. Escribí /ayuda"
+}
+
+async function handleLeoTelegramCommand(
+  empresaId: number,
+  usuarioId: number,
+  trimmed: string,
+): Promise<string> {
+  const parts = trimmed.split(/\s+/).filter(Boolean)
+  const sub = (parts[1] ?? "").toLowerCase()
+
+  const emp = await prisma.empleadoDigital.findFirst({
+    where: {
+      empresaId,
+      estado: { in: ["activo", "trial"] },
+      template: { code: "leo_cobranza" },
+    },
+    include: { template: { select: { code: true, nombre: true } } },
+  })
+
+  if (!emp && sub !== "activar") {
+    return [
+      "Leo no está activado en esta empresa.",
+      "Activálo desde la app: Empleados digitales → Activar Leo",
+      "o escribí <code>/leo activar</code> (trial).",
+    ].join("\n")
+  }
+
+  if (!sub || sub === "status" || sub === "estado") {
+    if (!emp) return "Leo no activado."
+    const pend = await prisma.empleadoDigitalTarea.count({
+      where: { empresaId, empleadoDigitalId: emp.id, estado: "pendiente" },
+    })
+    return [
+      `🤖 <b>${emp.template.nombre}</b>`,
+      `Estado: <b>${emp.estado}</b>`,
+      `Corridas: ${emp.runsTotal}`,
+      `Borradores pendientes: <b>${pend}</b>`,
+      emp.lastRunAt
+        ? `Última corrida: ${emp.lastRunAt.toLocaleString("es-AR")}`
+        : "Sin corridas aún",
+      ``,
+      `/leo run · /leo pendientes · /leo aprobar ID`,
+    ].join("\n")
+  }
+
+  if (sub === "activar") {
+    const { activarLeoCobranza } = await import("@/lib/empleados-digitales/activate")
+    await activarLeoCobranza(empresaId, { trial: true })
+    return "✅ Leo activado en <b>trial</b>. Usá /leo run para generar borradores."
+  }
+
+  if (sub === "run" || sub === "correr") {
+    try {
+      const { runEmpleado } = await import("@/lib/empleados-digitales/runtime/run-empleado")
+      const r = await runEmpleado({
+        empresaId,
+        code: "leo_cobranza",
+        empleadoId: emp!.id,
+        trigger: "manual",
+        userId: usuarioId,
+      })
+      return `✅ ${r.resumen}\nDrafts: ${r.draftsCreados} · Omitidos: ${r.skipped}`
+    } catch (e) {
+      return `❌ ${e instanceof Error ? e.message : "Error al correr Leo"}`
+    }
+  }
+
+  if (sub === "pendientes" || sub === "drafts") {
+    const tareas = await prisma.empleadoDigitalTarea.findMany({
+      where: {
+        empresaId,
+        empleadoDigitalId: emp!.id,
+        estado: "pendiente",
+      },
+      orderBy: [{ prioridad: "desc" }, { createdAt: "asc" }],
+      take: 10,
+    })
+    if (!tareas.length) return "✅ Sin borradores pendientes. /leo run para generar."
+    return [
+      `<b>Pendientes (${tareas.length})</b>`,
+      ...tareas.map((t) => {
+        const mon =
+          t.montoArs != null
+            ? Number(t.montoArs).toLocaleString("es-AR", {
+                style: "currency",
+                currency: "ARS",
+                maximumFractionDigits: 0,
+              })
+            : "—"
+        return `• <code>${t.id}</code> cli#${t.clienteId ?? "?"} ${mon}\n  ${(t.mensaje ?? "").slice(0, 100)}…`
+      }),
+      ``,
+      `Aprobar: /leo aprobar ID`,
+    ].join("\n")
+  }
+
+  if (sub === "aprobar") {
+    const id = parts[2]
+    if (!id) return "Uso: /leo aprobar &lt;id&gt;"
+    try {
+      const { actualizarEstadoTarea } = await import(
+        "@/lib/empleados-digitales/tools/actualizar-estado"
+      )
+      const { DEFAULT_LEO_CONFIG } = await import("@/lib/empleados-digitales/types")
+      const config = {
+        ...DEFAULT_LEO_CONFIG,
+        ...((emp!.config as object) || {}),
+      }
+      await actualizarEstadoTarea(
+        {
+          empresaId,
+          empleadoId: emp!.id,
+          runId: BigInt(0),
+          userId: usuarioId,
+        },
+        config,
+        { tareaId: BigInt(id), estado: "aprobada" },
+      )
+      return `✅ Borrador <code>${id}</code> aprobado. Sale por la cola WhatsApp (Twilio) si está configurada.`
+    } catch (e) {
+      return `❌ ${e instanceof Error ? e.message : "No se pudo aprobar"}`
+    }
+  }
+
+  return "Subcomando Leo: status | activar | run | pendientes | aprobar ID"
 }
 
 export async function manejarUpdateTelegram(update: {

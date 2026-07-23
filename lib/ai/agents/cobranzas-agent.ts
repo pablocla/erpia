@@ -29,15 +29,16 @@ export class CobranzasAgent extends AgentBase {
 
     // ED-07: un solo motor de cobranza WA — Leo manda
     if (await isLeoActivo(ctx.empresaId)) {
+      const accionesSkip: AgentAction[] = [
+        {
+          tipo: "notificacion",
+          descripcion: "CobranzasAgent skip — Leo activo en empresa (evita WA duplicados)",
+        },
+      ]
       return {
         resumen:
           "Omitido: Leo Cobranza está activo (trial/activo). Los recordatorios salen por Empleados digitales para evitar WhatsApp duplicados.",
-        acciones: [
-          {
-            tipo: "skipped_leo_activo",
-            descripcion: "CobranzasAgent skip — Leo activo en empresa",
-          },
-        ],
+        acciones: accionesSkip,
       }
     }
 

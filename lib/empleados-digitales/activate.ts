@@ -40,10 +40,19 @@ async function ensureTemplateRow(code: string) {
   })
 }
 
-/** Activa instancia Leo para la empresa (idempotente) */
+/** Activa instancia Leo para la empresa (idempotente). Default trial para poder probar ya. */
 export async function activarLeoCobranza(empresaId: number, opts?: { trial?: boolean }) {
+  const trial = opts?.trial !== false // default true
   const template = await ensureTemplateRow(LEO_COBRANZA_CODE)
   const def = getTemplateByCode(LEO_COBRANZA_CODE)!
+
+  // Soft-deps: WhatsApp SKUs + flag notificaciones (no bloquea si falla)
+  try {
+    const { ensureLeoRuntimeDeps } = await import("./ensure-deps")
+    await ensureLeoRuntimeDeps(empresaId)
+  } catch (err) {
+    console.warn("[Leo] ensure deps:", err)
+  }
 
   const existing = await prisma.empleadoDigital.findUnique({
     where: {
@@ -52,23 +61,26 @@ export async function activarLeoCobranza(empresaId: number, opts?: { trial?: boo
   })
 
   if (existing) {
-    return prisma.empleadoDigital.update({
+    const updated = await prisma.empleadoDigital.update({
       where: { id: existing.id },
       data: {
-        estado: opts?.trial ? "trial" : "activo",
+        estado: trial ? "trial" : "activo",
         activatedAt: existing.activatedAt ?? new Date(),
         templateId: template.id,
       },
       include: { template: true },
     })
+    void seedScrumOnboardingLeo(empresaId).catch(() => {})
+    void maybeSetModoLiteLeo(empresaId).catch(() => {})
+    return updated
   }
 
-  return prisma.empleadoDigital.create({
+  const created = await prisma.empleadoDigital.create({
     data: {
       empresaId,
       templateId: template.id,
       nombre: def.nombre,
-      estado: opts?.trial ? "trial" : "activo",
+      estado: trial ? "trial" : "activo",
       sku: LEO_COBRANZA_SKU,
       cron: def.cronDefault,
       config: DEFAULT_LEO_CONFIG as object,
@@ -76,6 +88,56 @@ export async function activarLeoCobranza(empresaId: number, opts?: { trial?: boo
     },
     include: { template: true },
   })
+  void seedScrumOnboardingLeo(empresaId).catch(() => {})
+  void maybeSetModoLiteLeo(empresaId).catch(() => {})
+  return created
+}
+
+/** IMP-02: ítems scrum si hay proyecto de implementación Cloud */
+async function seedScrumOnboardingLeo(empresaId: number) {
+  try {
+    const { crearBacklogItem } = await import("@/lib/ops/scrum-service")
+    const items = [
+      { titulo: "Leo: configurar WhatsApp / Twilio", tipo: "marketplace_sku" as const },
+      { titulo: "Leo: cargar teléfonos de deudores", tipo: "marketplace_sku" as const },
+      { titulo: "Leo: prueba dry-run + 1 approve", tipo: "marketplace_sku" as const },
+      { titulo: "Leo: link Mercado Pago (opcional)", tipo: "marketplace_sku" as const },
+    ]
+    for (const it of items) {
+      await crearBacklogItem(
+        empresaId,
+        {
+          tipo: it.tipo,
+          titulo: it.titulo,
+          descripcion: "Checklist activación Leo Cobranza",
+          visibilidadCliente: true,
+          vinculoRef: "empleado.leo_cobranza",
+        },
+        "system-leo-activate",
+      )
+    }
+  } catch {
+    /* sin proyecto implementación = ok */
+  }
+}
+
+/** ED-17: si el comercio está en modo cobranza/fiado o vacío, empujar landing Leo */
+async function maybeSetModoLiteLeo(empresaId: number) {
+  try {
+    const e = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      select: { modoLite: true },
+    })
+    if (!e) return
+    if (e.modoLite === "completo" || e.modoLite === "pos" || e.modoLite === "niche") return
+    // cobranza / fiado / null → leo shell
+    await prisma.empresa.update({
+      where: { id: empresaId },
+      data: { modoLite: "leo" },
+    })
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function desactivarLeoCobranza(empresaId: number) {

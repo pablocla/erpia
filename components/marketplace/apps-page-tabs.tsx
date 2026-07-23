@@ -12,6 +12,8 @@ import {
   ArrowRight,
   MessageCircle,
   CalendarCheck,
+  Bot,
+  Banknote,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -36,14 +38,18 @@ export function AppsPageTabs() {
       </Suspense>
 
       <Tabs defaultValue="catalogo" className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-3 max-w-md bg-muted/60 p-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl bg-muted/60 p-1 rounded-xl">
           <TabsTrigger value="catalogo" className="rounded-lg gap-2 text-xs md:text-sm font-medium">
             <ShoppingBag className="h-4 w-4" />
-            Catálogo Apps
+            Catálogo
+          </TabsTrigger>
+          <TabsTrigger value="empleados" className="rounded-lg gap-2 text-xs md:text-sm font-medium">
+            <Bot className="h-4 w-4" />
+            Empleados
           </TabsTrigger>
           <TabsTrigger value="packs" className="rounded-lg gap-2 text-xs md:text-sm font-medium">
             <Layers className="h-4 w-4" />
-            Packs e Integraciones
+            Packs
           </TabsTrigger>
           <TabsTrigger value="mis-modulos" className="rounded-lg gap-2 text-xs md:text-sm font-medium">
             <Settings className="h-4 w-4" />
@@ -58,7 +64,82 @@ export function AppsPageTabs() {
           </Suspense>
         </TabsContent>
 
-        {/* Tab 2: Packs por Industria e Integraciones */}
+        {/* Tab Empleados digitales (MKT-01) */}
+        <TabsContent value="empleados" className="space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Empleados digitales</h2>
+            <p className="text-sm text-muted-foreground">
+              Equipo híbrido: reglas + WhatsApp. Activá en 1 clic y aprobá los mensajes.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="flex flex-col justify-between border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-transparent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-emerald-600 text-white">$19.900/mes · trial 7d</Badge>
+                  <Banknote className="h-5 w-5 text-emerald-600" />
+                </div>
+                <CardTitle className="mt-2 text-xl">Leo Cobranza</CardTitle>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Escanea deudas y fiados, arma WhatsApp con link Mercado Pago y te deja aprobar. 80% plantilla, casi
+                  0 tokens.
+                </p>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-500">
+                  <Link href="/dashboard/empleados-digitales/leo_cobranza?onboarding=1">
+                    Abrir Leo
+                    <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/dashboard/empleados-digitales">Ver equipo</Link>
+                </Button>
+                <Button asChild size="sm" variant="ghost" className="text-xs">
+                  <Link href="/dashboard/apps?sku=empleado.leo_cobranza">Activar SKU</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="flex flex-col justify-between border-sky-500/30 bg-gradient-to-br from-sky-500/5 to-transparent opacity-90">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline">Próximamente</Badge>
+                  <CalendarCheck className="h-5 w-5 text-sky-600" />
+                </div>
+                <CardTitle className="mt-2 text-xl">Sofía Confirmá</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Turnos que se confirman solos por WhatsApp. Menos ausencias.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button size="sm" variant="secondary" disabled>
+                  En roadmap
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="flex flex-col justify-between border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-transparent opacity-90">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline">Próximamente</Badge>
+                  <Store className="h-5 w-5 text-violet-600" />
+                </div>
+                <CardTitle className="mt-2 text-xl">Ramiro Stock</CardTitle>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Alertas de reposición e inflación en listas de precio.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button size="sm" variant="secondary" disabled>
+                  En roadmap
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Tab Packs */}
         <TabsContent value="packs" className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Soluciones Integradas & Packs por Rubro</h2>

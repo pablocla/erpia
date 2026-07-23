@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { loadEmpleadoByCodeScoped, EmpleadoSecurityError } from "@/lib/empleados-digitales/security"
 import { pausarOReanudar } from "@/lib/empleados-digitales/activate"
 import { usageResumenMes } from "@/lib/empleados-digitales/metering"
+import { getLeoKpis } from "@/lib/empleados-digitales/kpi-service"
 import { DEFAULT_LEO_CONFIG, type EmpleadoLeoCobranzaConfig } from "@/lib/empleados-digitales/types"
 import { getTemplateByCode } from "@/lib/empleados-digitales/catalog/templates"
 
@@ -17,15 +18,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   try {
     const emp = await loadEmpleadoByCodeScoped(ctx.auth.empresaId, code)
-    const [usage, tareasPendientes, lastRuns] = await Promise.all([
+    const [usage, lastRuns, kpis] = await Promise.all([
       usageResumenMes(ctx.auth.empresaId, emp.id),
-      prisma.empleadoDigitalTarea.count({
-        where: {
-          empresaId: ctx.auth.empresaId,
-          empleadoDigitalId: emp.id,
-          estado: "pendiente",
-        },
-      }),
       prisma.empleadoDigitalRun.findMany({
         where: { empresaId: ctx.auth.empresaId, empleadoDigitalId: emp.id },
         orderBy: { createdAt: "desc" },
@@ -43,11 +37,20 @@ export async function GET(req: NextRequest, { params }: Params) {
           durationMs: true,
         },
       }),
+      getLeoKpis({
+        empresaId: ctx.auth.empresaId,
+        empleadoId: emp.id,
+        estado: emp.estado,
+        config: emp.config,
+        tokensMes: emp.tokensMes,
+      }),
     ])
 
     const config = {
       ...DEFAULT_LEO_CONFIG,
       ...(emp.config as object),
+      // ED-11: trial no puede encender LLM
+      llmEnabled: emp.estado === "trial" ? false : (emp.config as EmpleadoLeoCobranzaConfig)?.llmEnabled,
     }
 
     return NextResponse.json({
@@ -66,9 +69,10 @@ export async function GET(req: NextRequest, { params }: Params) {
         runsTotal: emp.runsTotal,
         tokensMes: emp.tokensMes,
         accionesMes: emp.accionesMes,
-        valorEstimadoArs: Number(emp.valorEstimadoArs),
-        tareasPendientes,
+        valorEstimadoArs: Number(emp.valorEstimadoArs) || kpis.arsRecuperadosMes,
+        tareasPendientes: kpis.draftsPendientes,
         usage,
+        kpis,
         lastRuns: lastRuns.map((r) => ({ ...r, id: String(r.id) })),
       },
       template: getTemplateByCode(code) ?? null,
@@ -111,7 +115,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const data: Record<string, unknown> = {}
     if (body.config && typeof body.config === "object") {
       const prev = (emp.config as object) || {}
-      data.config = { ...prev, ...body.config } as EmpleadoLeoCobranzaConfig
+      const nextCfg = { ...prev, ...body.config } as EmpleadoLeoCobranzaConfig
+      // ED-11: trial no puede habilitar LLM
+      if (emp.estado === "trial") {
+        nextCfg.llmEnabled = false
+        nextCfg.limites = {
+          ...DEFAULT_LEO_CONFIG.limites,
+          ...nextCfg.limites,
+          maxLlmMes: 0,
+          maxDraftsMes: Math.min(nextCfg.limites?.maxDraftsMes ?? 30, 30),
+          maxWaSendMes: Math.min(nextCfg.limites?.maxWaSendMes ?? 20, 20),
+        }
+      }
+      data.config = nextCfg
     }
     if (typeof body.cron === "string") data.cron = body.cron
     if (typeof body.nombre === "string") data.nombre = body.nombre

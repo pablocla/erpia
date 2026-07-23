@@ -1,0 +1,67 @@
+---
+title: "Flujo: Go-live Claver Cloud"
+description: "De la venta a la operación: relevamiento, demo, provision, implementación y soporte."
+sidebar_position: 15
+tags: ["room", "cloud", "go-live", "implementacion"]
+audience: analista
+product_line: claver-cloud
+layer: 4-workflow
+related_code: ["docs/claver-cloud/runbooks"]
+last_verified: 2026-07-23
+status: completo
+---
+
+# Flujo: Go-live Claver Cloud
+
+## Pipeline comercial → operación
+
+```mermaid
+flowchart LR
+  R1[01 Relevamiento] --> R2[02 Demo]
+  R2 --> R3[03 Provisioning]
+  R3 --> R4[04 Implementación]
+  R4 --> R5[05 Go-live]
+  R5 --> R6[06 Soporte]
+```
+
+## Detalle por etapa
+
+```mermaid
+sequenceDiagram
+  participant C as Comercial / Partner
+  participant A as Analista Cloud
+  participant T as Tenant
+  participant S as Sistema
+
+  C->>A: Lead + rubro + pack PRD
+  A->>T: Relevamiento (CUIT, cajas, AFIP, HW)
+  A->>S: Demo industry / trial
+  T->>S: Prueba fiado/POS/agenda
+  A->>S: Provision SKUs + usuarios
+  A->>T: Carga maestros / import CSV
+  A->>T: Capacitación 1 turno
+  T->>S: Día 1 real supervisado
+  T->>A: Incidencias → soporte L1
+```
+
+## Solo packs PRD en promesa de venta
+
+```mermaid
+flowchart TB
+  P{¿Pack en GO_LIVE_PRD §3.1?}
+  P -->|sí| V[Vender como PRD]
+  P -->|no| PI[Piloto acotado<br/>por escrito]
+  PI --> N[No ads masivos]
+```
+
+## Health del tenant
+
+```mermaid
+flowchart LR
+  H[go-live / health] --> AFIP_S[AFIP cert]
+  H --> MP_S[MP token]
+  H --> CAJA_S[Caja estado]
+  H --> SKU_S[SKUs activos]
+```
+
+Runbooks: `docs/claver-cloud/runbooks/01` … `06` · [Proceso CCA](/dashboard/documentacion/operaciones/claver-cloud-proceso-implementacion).

@@ -23,13 +23,13 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod)
+      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod) + Google GSI
       "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://accounts.google.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://va.vercel-scripts.com https://lh3.googleusercontent.com",
-      "font-src 'self'",
-      // Analytics beacons + Supabase + Vercel insights
-      "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com",
+      "style-src 'self' 'unsafe-inline' https://accounts.google.com https://ssl.gstatic.com",
+      "img-src 'self' data: blob: https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      // Analytics beacons + Supabase + Vercel insights + Google Auth
+      "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com",
       "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",

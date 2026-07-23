@@ -22,6 +22,7 @@ declare global {
             callback: (response: { credential: string }) => void
             auto_select?: boolean
             context?: string
+            ux_mode?: "popup" | "redirect"
           }) => void
           renderButton: (
             element: HTMLElement,
@@ -63,22 +64,28 @@ export function GoogleSignInButton({
   const buttonRef = useRef<HTMLDivElement>(null)
   const callbackRef = useRef(onCredential)
   callbackRef.current = onCredential
+  const initializedRef = useRef(false)
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
   const initializeGSI = useCallback(() => {
     if (!window.google?.accounts?.id || !clientId || !buttonRef.current) return
 
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response) => {
-        if (response.credential) {
-          callbackRef.current(response.credential)
-        }
-      },
-      context: "signin",
-    })
+    if (!initializedRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => {
+          if (response.credential) {
+            callbackRef.current(response.credential)
+          }
+        },
+        context: "signin",
+        ux_mode: "popup",
+      })
+      initializedRef.current = true
+    }
 
+    buttonRef.current.innerHTML = ""
     window.google.accounts.id.renderButton(buttonRef.current, {
       type: "standard",
       theme: "outline",

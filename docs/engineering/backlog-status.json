@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-22T12:00:00.000Z",
+  "statuses": {
+    "AUD-01": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Webhook HMAC baseline" },
+    "AUD-02": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Cron AFIP" },
+    "AUD-03": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "CSVImport productos" },
+    "AUD-04": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "App Store tabs + labels" },
+    "AUD-05": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Portal contador IVA" },
+    "AUD-06": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Reexpresar precios" },
+    "AUD-07": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "POS offline" },
+    "AUD-08": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Presence multi-PC" },
+    "AUD-09": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Fiado WA + CTA MP" },
+    "ENG-00": { "status": "done", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Backlog cascade system" },
+    "AG-00": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Leo engine baseline" },
+    "ED-01": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "NEXT critical path — fiado saldo" },
+    "ED-02": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Blocked by ED-01" },
+    "ED-03": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "linkPago scan" },
+    "ED-04": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Blocked by ED-03" },
+    "ED-05": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Marketplace SKU Leo" },
+    "ED-07": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Anti-doble agent" },
+    "DOC-01": { "status": "done", "updatedAt": "2026-07-22T22:15:00.000Z", "updatedBy": "gemini", "note": "Lifecycle audit master document" },
+    "ED-12": { "status": "todo", "updatedAt": "2026-07-22T12:00:00.000Z", "updatedBy": "system", "note": "Security tests IDOR" }
+  }
+}

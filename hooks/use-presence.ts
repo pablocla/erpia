@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useAuthStore } from "@/lib/stores/auth-store"
+import { useAuthStore, getToken, authFetch } from "@/lib/stores"
 
 export interface ActiveUserPresence {
   userId: string
@@ -15,9 +15,11 @@ const HEARTBEAT_MS = 8_000
 const STALE_MS = 25_000
 
 /**
- * Presencia en tiempo real (Shopify-style) sobre un recurso (Pedido, OT, Cotización).
- * Canal: BroadcastChannel `presence:{type}:{id}` + heartbeat.
- * Soft lock: si otro usuario tiene isEditing, isLockedByOther = true.
+ * Presencia multi-dispositivo (Shopify-style) sobre un recurso.
+ *
+ * Capas:
+ *  1. API servidor `/api/presence` — multi-terminal / multi-PC (mismo tenant)
+ *  2. BroadcastChannel — pestañas locales (latencia baja)
  */
 export function usePresence(resourceType: string, resourceId?: string | null) {
   const user = useAuthStore((s) => s.user)
@@ -32,6 +34,21 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
     })
   }, [])
 
+  const mergePeers = useCallback(
+    (incoming: ActiveUserPresence[]) => {
+      setActiveUsers((prev) => {
+        const map = new Map<string, ActiveUserPresence>()
+        for (const u of prev) map.set(u.userId, u)
+        for (const u of incoming) {
+          if (u.userId === String(user?.id)) continue
+          map.set(u.userId, u)
+        }
+        return pruneStale([...map.values()])
+      })
+    },
+    [pruneStale, user?.id],
+  )
+
   useEffect(() => {
     if (!resourceId || !user?.id) return
 
@@ -39,15 +56,53 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
     let channel: BroadcastChannel | null = null
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null
     let pruneTimer: ReturnType<typeof setInterval> | null = null
+    let aborted = false
 
     const buildPresence = (): ActiveUserPresence => ({
-      userId: user.id,
+      userId: String(user.id),
       nombre: user.nombre ?? "Usuario",
       avatarUrl: user.avatarUrl ?? undefined,
       lastActive: new Date().toISOString(),
       isEditing,
     })
 
+    const postServer = async (action: "heartbeat" | "leave") => {
+      if (!getToken()) return
+      try {
+        if (action === "leave") {
+          await authFetch("/api/presence", {
+            method: "POST",
+            body: JSON.stringify({
+              action: "leave",
+              resourceType,
+              resourceId,
+            }),
+          })
+          return
+        }
+        const res = await authFetch("/api/presence", {
+          method: "POST",
+          body: JSON.stringify({
+            action: "heartbeat",
+            resourceType,
+            resourceId,
+            isEditing,
+            nombre: user.nombre ?? "Usuario",
+            avatarUrl: user.avatarUrl ?? null,
+          }),
+        })
+        if (res.ok && !aborted) {
+          const json = await res.json()
+          if (Array.isArray(json.peers)) {
+            mergePeers(json.peers as ActiveUserPresence[])
+          }
+        }
+      } catch {
+        /* red caída: BroadcastChannel local sigue activo */
+      }
+    }
+
+    // ── BroadcastChannel (misma máquina / pestañas) ──
     try {
       if (typeof window !== "undefined" && "BroadcastChannel" in window) {
         channel = new BroadcastChannel(channelName)
@@ -60,14 +115,17 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
 
         channel.onmessage = (event) => {
           const { type, presence } = event.data ?? {}
-          if (!presence?.userId || presence.userId === user.id) return
+          if (!presence?.userId || presence.userId === String(user.id)) return
 
-          if (type === "PRESENCE_JOIN" || type === "PRESENCE_HEARTBEAT" || type === "PRESENCE_EDITING") {
+          if (
+            type === "PRESENCE_JOIN" ||
+            type === "PRESENCE_HEARTBEAT" ||
+            type === "PRESENCE_EDITING"
+          ) {
             setActiveUsers((prev) => {
               const filtered = prev.filter((u) => u.userId !== presence.userId)
               return pruneStale([...filtered, presence as ActiveUserPresence])
             })
-            // Responder al join para que el recién llegado nos vea
             if (type === "PRESENCE_JOIN") {
               broadcast("PRESENCE_HEARTBEAT")
             }
@@ -76,23 +134,35 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
           }
         }
 
-        heartbeatTimer = setInterval(() => broadcast("PRESENCE_HEARTBEAT"), HEARTBEAT_MS)
+        heartbeatTimer = setInterval(() => {
+          broadcast("PRESENCE_HEARTBEAT")
+          void postServer("heartbeat")
+        }, HEARTBEAT_MS)
+
         pruneTimer = setInterval(() => {
           setActiveUsers((prev) => pruneStale(prev))
         }, HEARTBEAT_MS)
       }
     } catch {
-      /* Fallback en entornos donde BroadcastChannel no está disponible */
+      /* entornos sin BroadcastChannel */
+    }
+
+    // Heartbeat servidor inmediato + periódico si no hay BC
+    void postServer("heartbeat")
+    if (!heartbeatTimer) {
+      heartbeatTimer = setInterval(() => void postServer("heartbeat"), HEARTBEAT_MS)
     }
 
     return () => {
+      aborted = true
       if (heartbeatTimer) clearInterval(heartbeatTimer)
       if (pruneTimer) clearInterval(pruneTimer)
+      void postServer("leave")
       if (channel && user?.id) {
         try {
           channel.postMessage({
             type: "PRESENCE_LEAVE",
-            presence: { userId: user.id },
+            presence: { userId: String(user.id) },
           })
           channel.close()
         } catch {
@@ -100,9 +170,18 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
         }
       }
     }
-  }, [resourceType, resourceId, user?.id, user?.nombre, user?.avatarUrl, isEditing, pruneStale])
+  }, [
+    resourceType,
+    resourceId,
+    user?.id,
+    user?.nombre,
+    user?.avatarUrl,
+    isEditing,
+    pruneStale,
+    mergePeers,
+  ])
 
-  // Notificar cambio de modo edición
+  // Notificar cambio de modo edición en BroadcastChannel
   useEffect(() => {
     if (!resourceId || !user?.id) return
     if (typeof window === "undefined" || !("BroadcastChannel" in window)) return
@@ -111,7 +190,7 @@ export function usePresence(resourceType: string, resourceId?: string | null) {
       channel.postMessage({
         type: "PRESENCE_EDITING",
         presence: {
-          userId: user.id,
+          userId: String(user.id),
           nombre: user.nombre ?? "Usuario",
           avatarUrl: user.avatarUrl ?? undefined,
           lastActive: new Date().toISOString(),

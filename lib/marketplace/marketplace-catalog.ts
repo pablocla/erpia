@@ -690,18 +690,41 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
 
   // --- Servicios intangibles (Top 5 — bolsillo + ansiedad) ---
   {
-    sku: "intang.cobranzas_wa",
-    nombre: "Secretaria de Cobranzas WA",
-    categoria: "Intangibles",
-    precioArs: 20000,
+    sku: "empleado.leo_cobranza",
+    nombre: "Leo Cobranza",
+    categoria: "Empleados",
+    precioArs: 19900,
     tipoCobro: "recurrente",
     autoCertLevel: "REGION_AUTO",
     paisesHabilitados: ["AR", "MX", "UY"],
     i18n: {
       "es-AR": {
-        nombre: "Secretaria de Cobranzas WA",
-        descripcion: "WhatsApp automático a deudores con saldo del ERP y link de pago",
-        packOnboardSubject: "Tu secretaria de cobranzas ya está activa",
+        nombre: "Leo Cobranza",
+        descripcion:
+          "Empleado digital: prepara WhatsApp de cobranza con link Mercado Pago; vos solo aprobás. 80% plantilla, 0 tokens de más.",
+        packOnboardSubject: "Leo ya está en tu equipo — abrí Empleados digitales",
+      },
+    },
+    segmentoAds: ["kiosco", "almacen", "distribuidora", "pyme", "servicios"],
+    playbookId: "playbook.empleado.leo_cobranza",
+    dependeDe: ["com.whatsapp"],
+    status: "disponible",
+    trialDias: 7,
+  },
+  {
+    sku: "intang.cobranzas_wa",
+    nombre: "Leo Cobranza (alias Cobranzas WA)",
+    categoria: "Intangibles",
+    precioArs: 19900,
+    tipoCobro: "recurrente",
+    autoCertLevel: "REGION_AUTO",
+    paisesHabilitados: ["AR", "MX", "UY"],
+    i18n: {
+      "es-AR": {
+        nombre: "Leo Cobranza (Cobranzas WA)",
+        descripcion:
+          "Mismo producto que Leo: WhatsApp a deudores con saldo del ERP y link de pago. Activá desde Empleados digitales.",
+        packOnboardSubject: "Leo / cobranzas ya está activa",
       },
     },
     segmentoAds: ["distribuidora", "pyme", "servicios"],

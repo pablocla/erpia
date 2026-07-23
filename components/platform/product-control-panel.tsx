@@ -9,46 +9,19 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Package, RefreshCw } from "lucide-react"
-
-const FRIENDLY_SKU_NAMES: Record<string, string> = {
-  "sec.backup": "Respaldos Automáticos",
-  "sec.mfa": "Seguridad 2FA",
-  "data.reportes_prog": "Reportes Programados",
-  "com.whatsapp": "Avisos WhatsApp",
-  "pos.fiado_barrio": "Fiado Digital",
-  "intang.cobranzas_wa": "Cobranzas Automatizadas",
-  "niche.consordos": "Gestión Consorcios",
-  "niche.inmo_garantia": "Garantías Alquileres",
-  "niche.feria_puesto": "Feriantes y Puestos",
-  "niche.tintoreria": "Tintorerías",
-  "intang.liquidacion_pagos": "Liquidación Pagos MP",
-  "intang.recuperador_fiscal": "Recuperador Fiscal",
-  "intang.guardian_pos": "Guardián POS",
-  "intang.reactivador_clientes": "Reactivación Clientes",
-  "intang.reponedor_jit": "Reposición Inteligente",
-  "intang.ocr_compras": "Lector OCR Facturas",
-  "intang.ruteador_entregas": "Ruteador Entregas",
-  "bridge.opo_studio": "Puente OPO / SQL",
-  "impl.parametrizacion_remota": "Parametrización Remota",
-  "pos.margen_guard": "Protección de Margen",
-  "pos.zero_waste": "Control de Merma",
-  "pos.stock_cero_alert": "Alerta Stock Cero",
-  "pos.promos_pago": "Promos Medios de Pago",
-  "pos.lista_distribuidores": "Precios Distribuidor",
-  "pos.arqueo_ciego": "Arqueo Ciego de Caja",
-  "pos.vale_dinero": "Vales de Dinero",
-  "pos.envases_gaseosas": "Control Envases",
-  "pos.balanza_peso": "Balanza de Peso",
-  "pos.recargas_servicios": "Recargas y Servicios",
-}
+import {
+  friendlySkuLabel,
+  friendlySkuLabels,
+} from "@/lib/platform/sku-friendly-labels"
 
 function formatFriendlySkus(skus?: string[]) {
-  if (!skus?.length) return null
+  const labels = friendlySkuLabels(skus)
+  if (!labels.length) return null
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
-      {skus.map((s) => (
-        <Badge key={s} variant="secondary" className="text-[10px] font-normal bg-muted">
-          {FRIENDLY_SKU_NAMES[s] ?? s}
+      {labels.map((label) => (
+        <Badge key={label} variant="secondary" className="text-[10px] font-normal bg-muted">
+          {label}
         </Badge>
       ))}
     </div>
@@ -74,7 +47,7 @@ export function ProductControlPanel() {
       window.dispatchEvent(new Event("productos-updated"))
       toast({
         title: activo ? "Producto activado" : "Producto desactivado",
-        description: sku,
+        description: friendlySkuLabel(sku),
       })
     } catch (e) {
       toast({
@@ -99,7 +72,10 @@ export function ProductControlPanel() {
       if (!res.ok) throw new Error(json.error ?? "Error")
       await refresh()
       window.dispatchEvent(new Event("productos-updated"))
-      toast({ title: activo ? "Pack activado" : "Pack desactivado", description: packId })
+      toast({
+        title: activo ? "Pack activado" : "Pack desactivado",
+        description: friendlySkuLabel(packId),
+      })
     } catch (e) {
       toast({
         variant: "destructive",
@@ -114,7 +90,9 @@ export function ProductControlPanel() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground text-sm">Cargando productos…</CardContent>
+        <CardContent className="py-8 text-center text-muted-foreground text-sm">
+          Cargando productos…
+        </CardContent>
       </Card>
     )
   }
@@ -128,7 +106,8 @@ export function ProductControlPanel() {
             Control de Productos y Licencias Activas
           </h2>
           <p className="text-sm text-muted-foreground">
-            Activá o desactivá paquetes completos o módulos específicos para tu empresa.
+            Activá o desactivá paquetes completos o módulos específicos para tu empresa. Los nombres
+            se muestran en lenguaje comercial (sin jerga técnica).
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()}>
@@ -138,7 +117,9 @@ export function ProductControlPanel() {
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">Packs de Productos</h3>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">
+          Packs de Productos
+        </h3>
         <div className="grid gap-4 md:grid-cols-2">
           {packs.map((pack) => (
             <Card key={pack.id} className="border-border/60 hover:border-primary/40 transition-colors">
@@ -151,11 +132,9 @@ export function ProductControlPanel() {
                     onCheckedChange={(v) => void togglePack(pack.id, v)}
                   />
                 </CardTitle>
-                <p className="text-xs text-muted-foreground">{(pack as any).lema}</p>
+                <p className="text-xs text-muted-foreground">{(pack as { lema?: string }).lema}</p>
               </CardHeader>
-              <CardContent>
-                {formatFriendlySkus((pack as any).skus)}
-              </CardContent>
+              <CardContent>{formatFriendlySkus((pack as { skus?: string[] }).skus)}</CardContent>
             </Card>
           ))}
         </div>
@@ -166,11 +145,11 @@ export function ProductControlPanel() {
           {productos.map((p) => (
             <div key={p.sku} className="flex items-center gap-3 px-4 py-3">
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">{p.nombre}</p>
+                <p className="font-medium text-sm">{p.nombre || friendlySkuLabel(p.sku)}</p>
                 <p className="text-xs text-muted-foreground truncate">{p.lema}</p>
                 {!p.dependenciasOk && p.dependeDe.length > 0 && (
                   <p className="text-[10px] text-amber-600 mt-0.5">
-                    Requiere: {p.dependeDe.join(", ")}
+                    Requiere: {friendlySkuLabels(p.dependeDe).join(", ")}
                   </p>
                 )}
               </div>

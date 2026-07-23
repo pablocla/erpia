@@ -48,7 +48,7 @@ export const EMPLEADO_TEMPLATES: EmpleadoTemplateDef[] = [
     cronDefault: "0 10 * * 1-5",
     politicaDefault: DEFAULT_LEO_CONFIG,
     dashboardPath: "/dashboard/empleados-digitales/leo_cobranza",
-    precioArs: 15_000,
+    precioArs: 19_900,
   },
 ]
 

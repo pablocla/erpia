@@ -1,6 +1,7 @@
 export * from "./types"
 export * from "./ipc-store"
 export * from "./reexpresar"
+export * from "./reexpresar-precios"
 export * from "./policies"
 export * from "./billing-trigger"
 export * from "./tenant-trigger"

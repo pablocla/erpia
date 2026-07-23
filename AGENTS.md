@@ -116,3 +116,27 @@ App Vendedor en Ruta, Onboarding IA, Asistente IA, Soporte, Auditoría
 - **End-to-end vendible (commercial → support):** `docs/PRODUCTO_VENDIBLE_END_TO_END.md`
 - **Technical gaps by niche:** `docs/qa/FALTANTES_TECNICOS_NICHOS.md`
 - **Vercel env:** `docs/deploy/VERCEL_ENV.md` · health: `GET /api/go-live/status`
+
+## Product engineering backlog (Grok Build + Gemini)
+
+**Do not use the database as the product backlog.** Agents read files in the repo.
+
+| What | Path |
+|------|------|
+| Ticket definitions (+ assignee, lifecycle) | `lib/engineering/product-backlog-catalog.ts` |
+| Status | `docs/engineering/backlog-status.json` |
+| Who does what | `docs/engineering/ASSIGNMENT.md` |
+| Gemini-only queue | `docs/engineering/GEMINI_QUEUE.md` |
+| Mirror + prompts | `docs/engineering/PRODUCT_BACKLOG.md` |
+| UI | `/dashboard/engineering/backlog` |
+| API | `GET /api/engineering/backlog?format=agent&for=grok\|gemini` |
+
+### Assignees
+- **grok** — implement code (this agent)
+- **gemini** — docs, copy, playbooks, QA matrices, runbooks under `docs/`
+- **pair** — Gemini writes spec first, then Grok implements
+- **human** — pricing, pilot selection, legal
+
+When implementing: pick highest-priority unblocked ticket with `assignee` `grok` or `pair` (code phase), prefer wave `W1`, then mark `done` in `backlog-status.json`.
+
+**Not this backlog:** tenant `Ticket`, Cloud scrum, CEO roadmap, user `TareaPendiente`.

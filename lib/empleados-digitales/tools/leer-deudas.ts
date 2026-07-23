@@ -1,8 +1,11 @@
 /**
  * Tool: leer_deudas — 0 tokens, multi-tenant vía cliente.empresaId
+ * ED-01: fiado con saldoCuentaCorriente < 0 (deuda)
+ * ED-03: linkPago best-effort Mercado Pago
  */
 
 import { prisma } from "@/lib/prisma"
+import { resolverLinkPagoDeudor } from "@/lib/mercadopago/deudor-pago-link"
 import { assertToolScope } from "../security"
 import { scoreDeudas } from "../runtime/router"
 import type { DeudaItem, EmpleadoLeoCobranzaConfig, ToolContext } from "../types"
@@ -20,7 +23,7 @@ export async function leerDeudas(
   if (!empresa) return []
 
   const now = new Date()
-  const items: Omit<DeudaItem, "score">[] = []
+  const items: Array<Omit<DeudaItem, "score"> & { cuentaIds: number[] }> = []
 
   if (config.fuentes.includes("cxc")) {
     const cuentas = await prisma.cuentaCobrar.findMany({
@@ -41,6 +44,7 @@ export async function leerDeudas(
             nombre: true,
             telefono: true,
             telefonoAlternativo: true,
+            email: true,
           },
         },
       },
@@ -48,12 +52,12 @@ export async function leerDeudas(
       take: 200,
     })
 
-    // Agrupar por cliente
     const byCliente = new Map<
       number,
       {
         nombre: string
         telefono: string
+        email: string | null
         monto: number
         maxDias: number
         cuentaIds: number[]
@@ -73,6 +77,7 @@ export async function leerDeudas(
         byCliente.set(c.clienteId, {
           nombre: c.cliente.nombre,
           telefono: tel,
+          email: c.cliente.email,
           monto: saldo,
           maxDias: dias,
           cuentaIds: [c.id],
@@ -98,7 +103,7 @@ export async function leerDeudas(
     }
   }
 
-  // Fiado: saldo en cuenta corriente con fiado habilitado (si el flag está en fuentes)
+  // Fiado: convención ERP — saldoCuentaCorriente < 0 = deuda del cliente (ED-01)
   if (config.fuentes.includes("fiado")) {
     const clientesFiado = await prisma.cliente.findMany({
       where: {
@@ -106,13 +111,14 @@ export async function leerDeudas(
         activo: true,
         deletedAt: null,
         fiadoHabilitado: true,
-        saldoCuentaCorriente: { gt: 0 },
+        saldoCuentaCorriente: { lt: 0 },
       },
       select: {
         id: true,
         nombre: true,
         telefono: true,
         telefonoAlternativo: true,
+        email: true,
         saldoCuentaCorriente: true,
       },
       take: 100,
@@ -120,19 +126,42 @@ export async function leerDeudas(
 
     for (const cl of clientesFiado) {
       if (items.some((i) => i.clienteId === cl.id)) continue
-      const monto = Number(cl.saldoCuentaCorriente)
+      const monto = Math.abs(Number(cl.saldoCuentaCorriente))
       if (monto < config.montoMinArs) continue
       items.push({
         clienteId: cl.id,
         clienteNombre: cl.nombre,
         telefono: (cl.telefono || cl.telefonoAlternativo || "").trim(),
         montoArs: Math.round(monto * 100) / 100,
-        diasVencido: config.diasVencidoMin, // sin aging fino en fiado
+        diasVencido: config.diasVencidoMin,
         cuentaIds: [],
         empresaNombre: empresa.nombre,
       })
     }
   }
 
-  return scoreDeudas(items)
+  // ED-03: link de pago MP (best-effort, no rompe el run)
+  const scored = scoreDeudas(items)
+  const withLinks = await Promise.all(
+    scored.map(async (d) => {
+      try {
+        const cuentaCobrarId = d.cuentaIds[0]
+        const linkPago = await resolverLinkPagoDeudor({
+          empresaId: ctx.empresaId,
+          clienteId: d.clienteId,
+          clienteNombre: d.clienteNombre,
+          monto: d.montoArs,
+          titulo: `Cobranza ${d.clienteNombre}`.slice(0, 120),
+          facturaId: null,
+          cuentaCobrarId: cuentaCobrarId && cuentaCobrarId > 0 ? cuentaCobrarId : null,
+          emailPagador: null,
+        })
+        return { ...d, linkPago: linkPago ?? undefined }
+      } catch {
+        return d
+      }
+    }),
+  )
+
+  return withLinks
 }

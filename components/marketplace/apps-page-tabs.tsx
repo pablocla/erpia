@@ -2,7 +2,17 @@
 
 import Link from "next/link"
 import { Suspense } from "react"
-import { Network, Sparkles, Store, ShoppingBag, Layers, Settings, ArrowRight } from "lucide-react"
+import {
+  Network,
+  Sparkles,
+  Store,
+  ShoppingBag,
+  Layers,
+  Settings,
+  ArrowRight,
+  MessageCircle,
+  CalendarCheck,
+} from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -135,6 +145,64 @@ export function AppsPageTabs() {
                     <ArrowRight className="h-3.5 w-3.5 ml-1" />
                   </Link>
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Claver Cobrá */}
+            <Card className="flex flex-col justify-between border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 bg-emerald-500/10">
+                    Sub-SaaS · $20.000/mes
+                  </Badge>
+                  <MessageCircle className="h-5 w-5 text-emerald-600" />
+                </div>
+                <CardTitle className="text-xl mt-2">Claver Cobrá</CardTitle>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  Mensajes WhatsApp automatizados de cobro con botones de pago Mercado Pago y recibo digital.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2 flex-wrap">
+                  <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
+                    <Link href="/dashboard/fiado">
+                      Ir a Fiado / Cobranza
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/dashboard/apps?sku=intang.cobranzas_wa">Activar en catálogo</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Claver Confirmá */}
+            <Card className="flex flex-col justify-between border-sky-500/30 bg-gradient-to-br from-sky-500/5 to-transparent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="border-sky-500/40 text-sky-700 bg-sky-500/10">
+                    Sub-SaaS · $14.900/mes
+                  </Badge>
+                  <CalendarCheck className="h-5 w-5 text-sky-600" />
+                </div>
+                <CardTitle className="text-xl mt-2">Claver Confirmá</CardTitle>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  Turnos que se confirman solos por WhatsApp. Menos ausencias, agenda llena.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2 flex-wrap">
+                  <Button asChild size="sm" className="bg-sky-600 hover:bg-sky-500 text-white">
+                    <Link href="/dashboard/agenda">
+                      Abrir Agenda
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/dashboard/apps?sku=channel.whatsapp">Ver comunicaciones</Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

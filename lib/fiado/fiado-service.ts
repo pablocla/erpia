@@ -592,6 +592,8 @@ export async function enviarNotificacionFiado(input: {
     deudaTotal: deuda,
     linkPago,
     almacenNombre: empresa.nombre,
+    // Intenta envío inmediato con botón CTA de Mercado Pago (Cloud API / Twilio)
+    enviarAhora: Boolean(linkPago),
   })
 
   await persistSistemaLog({

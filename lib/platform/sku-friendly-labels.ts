@@ -15,7 +15,8 @@ export const FRIENDLY_SKU_NAMES: Record<string, string> = {
   // Comunicaciones & cobranzas
   "com.whatsapp": "Avisos WhatsApp",
   "channel.whatsapp": "WhatsApp Business",
-  "intang.cobranzas_wa": "Claver Cobrá — Cobranzas WhatsApp",
+  "intang.cobranzas_wa": "Leo Cobranza (Cobranzas WA)",
+  "empleado.leo_cobranza": "Leo Cobranza",
   "pos.fiado_barrio": "Fiado Digital + Avisos WhatsApp",
   "bundle.comunica": "Pack Comunicaciones",
 

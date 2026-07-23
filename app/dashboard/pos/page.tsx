@@ -48,6 +48,7 @@ import {
   Monitor, CheckCircle2, RefreshCw, X, ScanLine, Percent,
   ArrowLeft, Wallet, User, AlertTriangle, Printer, Settings,
   BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package, Scale,
+  WifiOff, CloudUpload, Wifi,
 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -88,6 +89,7 @@ import { productoRequiereCantidadVariable } from "@/lib/pos/producto-cantidad-va
 import { parseEAN13ScaleBarcode } from "@/lib/pos/ean13-scale-parser"
 import { useAuthStore } from "@/lib/stores"
 import { useTranslations } from "next-intl"
+import { useOfflineManager } from "@/hooks/use-offline-manager"
 
 const POS_DRAFT_KEY = "erp:pos:draft:v1"
 
@@ -189,8 +191,13 @@ export default function POSPage() {
   const [fiadoActivo, setFiadoActivo] = useState(false)
   const [envasesActivo, setEnvasesActivo] = useState(false)
   const [valesActivo, setValesActivo] = useState(false)
-  const [ventasOfflineCount, setVentasOfflineCount] = useState(0)
-  const [sincronizando, setSincronizando] = useState(false)
+  const {
+    isOnline,
+    offlineCount: ventasOfflineCount,
+    isSyncing: sincronizando,
+    addToQueue: addOfflineSale,
+    syncQueue: sincronizarOffline,
+  } = useOfflineManager()
   const [envasesDialogOpen, setEnvasesDialogOpen] = useState(false)
   const [valeInfo, setValeInfo] = useState<Record<number, { saldo: number; numero: string }>>({})
   const [afipStatus, setAfipStatus] = useState<PosAfipStatus | null>(null)
@@ -1173,11 +1180,7 @@ export default function POSPage() {
           return
         }
 
-        const queueStr = localStorage.getItem("claverp:offline:queue") || "[]"
-        const queue = JSON.parse(queueStr)
-        const offlineId = "OFF-" + Date.now()
-        const newOfflineSale = {
-          idLocal: offlineId,
+        const offlineId = await addOfflineSale({
           clienteId: clienteId ?? undefined,
           mesaId: indicesCobro ? undefined : (mesaId ?? undefined),
           tipoFactura: "ticket",
@@ -1192,15 +1195,13 @@ export default function POSPage() {
           pagos,
           descuentoGlobal,
           propina: indicesCobro ? 0 : propina,
-          createdAt: new Date().toISOString(),
-        }
-        queue.push(newOfflineSale)
-        localStorage.setItem("claverp:offline:queue", JSON.stringify(queue))
-        setVentasOfflineCount(queue.length)
+          total,
+          observaciones: "Venta POS offline-first",
+        })
 
         data = {
           facturaId: null,
-          numeroCompleto: `TK-OFFLINE-${offlineId.split("-")[1]}`,
+          numeroCompleto: `TK-OFFLINE-${String(offlineId).slice(0, 8)}`,
           total: total,
           vuelto: vuelto,
           cae: undefined,
@@ -1214,7 +1215,10 @@ export default function POSPage() {
           tipo: "TK",
         }
         beepEscaneoOk()
-        toast({ title: "Venta guardada localmente", description: "Modo contingencia offline activo." })
+        toast({
+          title: "Venta guardada offline",
+          description: "Quedó en IndexedDB. Se sincroniza al volver la conexión.",
+        })
       }
 
       // Computar desglose IVA desde el carrito para mostrar en ticket con precisión decimal
@@ -1636,6 +1640,34 @@ export default function POSPage() {
           {ventasHoy > 0 && (
             <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">
               {ventasHoy} venta{ventasHoy !== 1 ? "s" : ""} hoy
+            </Badge>
+          )}
+          {!isOnline && (
+            <Badge variant="destructive" className="text-xs gap-1">
+              <WifiOff className="h-3 w-3" />
+              Offline
+            </Badge>
+          )}
+          {isOnline && ventasOfflineCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1 border-amber-500/40 text-amber-700"
+              disabled={sincronizando}
+              onClick={() => void sincronizarOffline()}
+            >
+              {sincronizando ? (
+                <RefreshCw className="h-3 w-3 animate-spin" />
+              ) : (
+                <CloudUpload className="h-3 w-3" />
+              )}
+              Sync {ventasOfflineCount}
+            </Button>
+          )}
+          {isOnline && ventasOfflineCount === 0 && (
+            <Badge variant="outline" className="text-[10px] hidden lg:inline-flex gap-1 text-muted-foreground">
+              <Wifi className="h-3 w-3" />
+              Online
             </Badge>
           )}
           {cajaOk === null ? (

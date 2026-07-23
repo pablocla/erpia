@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma"
 import { AgentBase } from "./agent-base"
 import { analizarCobranza } from "../analyzers"
+import { isLeoActivo } from "@/lib/empleados-digitales/is-leo-activo"
 import type { AgentConfig, AgentRunContext, AgentAction } from "./agent-types"
 
 export class CobranzasAgent extends AgentBase {
@@ -25,6 +26,20 @@ export class CobranzasAgent extends AgentBase {
 
   protected async execute(ctx: AgentRunContext) {
     const acciones: AgentAction[] = []
+
+    // ED-07: un solo motor de cobranza WA — Leo manda
+    if (await isLeoActivo(ctx.empresaId)) {
+      return {
+        resumen:
+          "Omitido: Leo Cobranza está activo (trial/activo). Los recordatorios salen por Empleados digitales para evitar WhatsApp duplicados.",
+        acciones: [
+          {
+            tipo: "skipped_leo_activo",
+            descripcion: "CobranzasAgent skip — Leo activo en empresa",
+          },
+        ],
+      }
+    }
 
     const result = await analizarCobranza(ctx.empresaId)
 

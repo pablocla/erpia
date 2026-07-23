@@ -5,7 +5,15 @@ vi.mock("@/lib/alertas/whatsapp-regla-dispatcher", () => ({
   normalizarTelefono: vi.fn((t: string) => (t ? `+54${t.replace(/\D/g, "")}` : null)),
 }))
 
-import { encolarWhatsAppFiado } from "@/lib/fiado/fiado-whatsapp"
+vi.mock("@/lib/platform/entitlements", () => ({
+  canUseSku: vi.fn().mockResolvedValue({ ok: true, sku: "channel.whatsapp", source: "feature" }),
+}))
+
+vi.mock("@/lib/platform/commercial-service", () => ({
+  recordUsageEvent: vi.fn().mockResolvedValue(undefined),
+}))
+
+import { encolarWhatsAppFiado, buildMensajeFiado } from "@/lib/fiado/fiado-whatsapp"
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -57,6 +65,18 @@ describe("encolarWhatsAppFiado", () => {
         }),
       }),
     )
+  })
+
+  it("buildMensajeFiado incluye CTA Mercado Pago", () => {
+    const msg = buildMensajeFiado({
+      clienteNombre: "Ana",
+      almacenNombre: "Kiosco",
+      totalVenta: 1000,
+      deudaTotal: 5000,
+      linkPago: "https://mp.test/pay",
+    })
+    expect(msg).toContain("Mercado Pago")
+    expect(msg).toContain("https://mp.test/pay")
   })
 
   it("no encola si WhatsApp desactivado en config", async () => {

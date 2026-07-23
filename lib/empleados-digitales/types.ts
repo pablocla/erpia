@@ -61,7 +61,7 @@ export const DEFAULT_LEO_CONFIG: EmpleadoLeoCobranzaConfig = {
   waMode: "borrador",
   montoMinArs: 1000,
   excluirClienteIds: [],
-  fuentes: ["cxc"],
+  fuentes: ["cxc", "fiado"],
   llmEnabled: false,
   llmSoloSi: {
     diasVencidoMin: 30,

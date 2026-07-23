@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useProductEntitlements } from "@/hooks/use-product-entitlements"
@@ -9,6 +9,51 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Package, RefreshCw } from "lucide-react"
+
+const FRIENDLY_SKU_NAMES: Record<string, string> = {
+  "sec.backup": "Respaldos Automáticos",
+  "sec.mfa": "Seguridad 2FA",
+  "data.reportes_prog": "Reportes Programados",
+  "com.whatsapp": "Avisos WhatsApp",
+  "pos.fiado_barrio": "Fiado Digital",
+  "intang.cobranzas_wa": "Cobranzas Automatizadas",
+  "niche.consordos": "Gestión Consorcios",
+  "niche.inmo_garantia": "Garantías Alquileres",
+  "niche.feria_puesto": "Feriantes y Puestos",
+  "niche.tintoreria": "Tintorerías",
+  "intang.liquidacion_pagos": "Liquidación Pagos MP",
+  "intang.recuperador_fiscal": "Recuperador Fiscal",
+  "intang.guardian_pos": "Guardián POS",
+  "intang.reactivador_clientes": "Reactivación Clientes",
+  "intang.reponedor_jit": "Reposición Inteligente",
+  "intang.ocr_compras": "Lector OCR Facturas",
+  "intang.ruteador_entregas": "Ruteador Entregas",
+  "bridge.opo_studio": "Puente OPO / SQL",
+  "impl.parametrizacion_remota": "Parametrización Remota",
+  "pos.margen_guard": "Protección de Margen",
+  "pos.zero_waste": "Control de Merma",
+  "pos.stock_cero_alert": "Alerta Stock Cero",
+  "pos.promos_pago": "Promos Medios de Pago",
+  "pos.lista_distribuidores": "Precios Distribuidor",
+  "pos.arqueo_ciego": "Arqueo Ciego de Caja",
+  "pos.vale_dinero": "Vales de Dinero",
+  "pos.envases_gaseosas": "Control Envases",
+  "pos.balanza_peso": "Balanza de Peso",
+  "pos.recargas_servicios": "Recargas y Servicios",
+}
+
+function formatFriendlySkus(skus?: string[]) {
+  if (!skus?.length) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {skus.map((s) => (
+        <Badge key={s} variant="secondary" className="text-[10px] font-normal bg-muted">
+          {FRIENDLY_SKU_NAMES[s] ?? s}
+        </Badge>
+      ))}
+    </div>
+  )
+}
 
 export function ProductControlPanel() {
   const { productos, packs, isLoading, refresh } = useProductEntitlements()
@@ -75,15 +120,15 @@ export function ProductControlPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Productos horizontales
+            <Package className="h-5 w-5 text-primary" />
+            Control de Productos y Licencias Activas
           </h2>
           <p className="text-sm text-muted-foreground">
-            Activá o desactivá todo el producto: POS, fiado, cobranzas y nav se sincronizan solos.
+            Activá o desactivá paquetes completos o módulos específicos para tu empresa.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()}>
@@ -92,23 +137,28 @@ export function ProductControlPanel() {
         </Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {packs.map((pack) => (
-          <Card key={pack.id} className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center justify-between gap-2">
-                <span>{pack.nombre}</span>
-                <Switch
-                  checked={pack.todoActivo}
-                  disabled={busy === pack.id}
-                  onCheckedChange={(v) => void togglePack(pack.id, v)}
-                />
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">{(pack as any).lema}</p>
-            </CardHeader>
-            <CardContent className="text-[11px] text-muted-foreground">{(pack as any).skus?.join(" + ")}</CardContent>
-          </Card>
-        ))}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider text-xs">Packs de Productos</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          {packs.map((pack) => (
+            <Card key={pack.id} className="border-border/60 hover:border-primary/40 transition-colors">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center justify-between gap-2">
+                  <span>{pack.nombre}</span>
+                  <Switch
+                    checked={pack.todoActivo}
+                    disabled={busy === pack.id}
+                    onCheckedChange={(v) => void togglePack(pack.id, v)}
+                  />
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">{(pack as any).lema}</p>
+              </CardHeader>
+              <CardContent>
+                {formatFriendlySkus((pack as any).skus)}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <Card>

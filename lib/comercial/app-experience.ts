@@ -226,6 +226,86 @@ export function getFiadoExperience(industryId?: string | null): AppExperienceGui
   }
 }
 
+/** Empaque producto Claver Cobrá sobre cuentas a cobrar. */
+export function getCobraExperience(): AppExperienceGuide {
+  return {
+    emoji: "📲",
+    title: "Claver Cobrá",
+    subtitle: "El mensaje cobra. Vos seguís vendiendo.",
+    wowMoment: "Filtrá vencidos → abrí WhatsApp al cliente con el texto listo en 1 toque",
+    steps: [
+      "Revisá el aging y el total vencido",
+      "Filtrá morosos y cobrá de a uno o en lote",
+      "Tocá WhatsApp: se abre el chat con el mensaje armado",
+    ],
+    primaryAction: { label: "Ver solo vencidas", href: "#filtro-vencidas" },
+    secondaryActions: [
+      { label: "Clientes", href: "/dashboard/clientes" },
+      { label: "Configurar Cobrá", href: "#config-cobra" },
+    ],
+  }
+}
+
+/** Claver Confirmá — agenda + link público + menos no-shows. */
+export function getConfirmaExperience(): AppExperienceGuide {
+  return {
+    emoji: "📅",
+    title: "Claver Confirmá",
+    subtitle: "Menos no-shows. Más sillas ocupadas.",
+    wowMoment: "Compartí el link de reserva y confirmá turnos por WhatsApp la víspera",
+    steps: [
+      "Cargá profesionales y servicios",
+      "Compartí el link público de agenda",
+      "Confirmá pendientes por WhatsApp en 1 toque",
+    ],
+    primaryAction: { label: "Nuevo turno", href: "#nuevo-turno" },
+    secondaryActions: [
+      { label: "Copiar link público", href: "#link-agenda" },
+      { label: "Clientes", href: "/dashboard/clientes" },
+    ],
+  }
+}
+
+/** Claver Cuota — membresías / socios. */
+export function getCuotaExperience(): AppExperienceGuide {
+  return {
+    emoji: "🏋️",
+    title: "Claver Cuota",
+    subtitle: "Socios al día. Morosos a la vista.",
+    wowMoment: "Ves quién venció y le mandás WhatsApp de cuota en un toque",
+    steps: [
+      "Definí planes (mensual, trimestral…)",
+      "Registrá socios y fechas de vencimiento",
+      "Filtrá vencidos y avisá por WhatsApp",
+    ],
+    primaryAction: { label: "Nuevo plan", href: "#nuevo-plan" },
+    secondaryActions: [
+      { label: "Solo vencidos", href: "#filtro-vencidos" },
+      { label: "Cobros", href: "/dashboard/cuentas-cobrar" },
+    ],
+  }
+}
+
+/** Claver Abono — facturación recurrente. */
+export function getAbonoExperience(): AppExperienceGuide {
+  return {
+    emoji: "🔁",
+    title: "Claver Abono",
+    subtitle: "El abono del mes se emite solo.",
+    wowMoment: "Plantillas activas + emisión manual o cron; enganche a cobranzas",
+    steps: [
+      "Creá el abono (cliente, monto, día del mes)",
+      "Activá la plantilla",
+      "Emití ahora o dejá que corra el cron",
+    ],
+    primaryAction: { label: "Nuevo abono", href: "#nuevo-abono" },
+    secondaryActions: [
+      { label: "Cobros", href: "/dashboard/cuentas-cobrar" },
+      { label: "Clientes", href: "/dashboard/clientes" },
+    ],
+  }
+}
+
 function buildSecondaryFromMenu(
   template: IndustryTemplate,
   primaryHref: string,
@@ -237,6 +317,12 @@ function buildSecondaryFromMenu(
 }
 
 export function getSubSaasExperience(slug: string): AppExperienceGuide | null {
+  if (slug === "cobra") return getCobraExperience()
+  if (slug === "fiado") return getFiadoExperience()
+  if (slug === "turnos") return getConfirmaExperience()
+  if (slug === "puntos") return getCuotaExperience()
+  if (slug === "abono") return getAbonoExperience()
+
   const app = getSubSaasApp(slug)
   if (!app) return null
 
@@ -244,12 +330,31 @@ export function getSubSaasExperience(slug: string): AppExperienceGuide | null {
     NICHE_STEPS[app.slug] ??
     app.pasosActivacion
 
+  const emojiBySlug: Record<string, string> = {
+    turnos: "📅",
+    pos: "🛒",
+    tienda: "🏪",
+    monotributo: "🧾",
+    presupuestos: "📄",
+    puntos: "🏋️",
+    propiedad: "🏢",
+    expensas: "🏢",
+    stock: "📦",
+    abono: "🔁",
+    sena: "📝",
+    servicios: "🛠️",
+  }
+
   return {
-    emoji: "🚀",
+    emoji: emojiBySlug[app.slug] ?? "🚀",
     title: app.marca,
     subtitle: app.lema,
-    wowMoment: "Primer resultado rápido",
-    steps,
-    primaryAction: { label: "Ir al dashboard", href: app.dashboardPath || "/dashboard" },
+    wowMoment: app.reelHook || app.outcomes[0] || "Primer resultado rápido",
+    steps: steps.slice(0, 4),
+    primaryAction: {
+      label: "Ir al panel",
+      href: app.dashboardPath || "/dashboard",
+    },
+    secondaryActions: [{ label: "Más apps", href: "/dashboard/apps" }],
   }
 }

@@ -27,7 +27,7 @@ const BY_ROL: Record<string, SidebarEssential[]> = {
   ],
   deposito: [
     { href: "/dashboard/picking", icon: ScanLine, label: "Picking" },
-    { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+    { href: "/dashboard/productos", icon: Truck, label: "Stock" },
     { href: "/dashboard/productos", icon: Package, label: "Productos" },
     { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
   ],

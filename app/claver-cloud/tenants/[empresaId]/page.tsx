@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import {
+  Building2,
   CheckCircle2,
   CreditCard,
   ExternalLink,
@@ -36,6 +37,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { PageShell } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 
 type Overview = {
   empresa: {
@@ -234,41 +238,58 @@ export default function ClaverTenantSuperAdminPage() {
     return list
   }, [data, filtro, soloActivos])
 
+  const searchParams = useSearchParams()
+  const recienProvisionado = searchParams.get("provisioned") === "1"
+  const tabInicial = searchParams.get("tab") ?? "overview"
+
   if (!data) {
+    if (loading) {
+      return <PageSkeleton kpis={4} tableRows={6} tableCols={4} />
+    }
     return (
-      <p className="text-sm text-muted-foreground p-6">
-        {loading ? "Cargando recurso tenant…" : "No se pudo cargar el tenant"}
-      </p>
+      <PageShell className="max-w-6xl mx-auto">
+        <EmptyState
+          icon={Building2}
+          title="No se pudo cargar el tenant"
+          description="Revisá el ID, tu sesión de analista o reintentá. Si acabás de provisionar, esperá unos segundos."
+          actionLabel="Reintentar"
+          onAction={() => void cargar()}
+          secondaryActionLabel="Volver a Operations"
+          onSecondaryAction={() => {
+            window.location.href = "/claver-cloud/operations"
+          }}
+        />
+      </PageShell>
     )
   }
 
   const { empresa, readiness, proyecto } = data
-  const searchParams = useSearchParams()
-  const recienProvisionado = searchParams.get("provisioned") === "1"
-  const tabInicial = searchParams.get("tab") ?? "overview"
   const esRubroPropiedad =
     ["inmobiliaria", "consorcios", "administracion_consorcios"].includes(empresa.rubro) ||
     data.packs.some((p) => p.id === "pool-propiedad" && p.algunoActivo)
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <PageShell className="max-w-6xl mx-auto">
       {recienProvisionado && (
-        <Card className="border-emerald-500/40 bg-emerald-500/10">
+        <Card className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
           <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <div className="flex items-center gap-2 text-sm text-[var(--status-success-foreground)]">
+              <CheckCircle2 className="h-5 w-5 text-[var(--status-success)]" />
               <span>
-                <strong>Organización creada.</strong> Activá más servicios en Servicios o seguí el proyecto CCA.
+                <strong>Organización creada.</strong> Activá servicios, abrí el ERP o seguí el proyecto CCA.
               </span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {proyecto && (
-                <Button size="sm" variant="outline" asChild>
+                <Button size="sm" variant="outline" asChild className="min-h-[40px]">
                   <Link href={`/claver-cloud/implementation/${proyecto.id}`}>Ver implementación</Link>
                 </Button>
               )}
-              <Button size="sm" asChild>
-                <Link href="/claver-cloud/marketplace">Ir al marketplace</Link>
+              <Button size="sm" variant="outline" asChild className="min-h-[40px]">
+                <Link href={`/claver-cloud/go-live`}>Go-live checklist</Link>
+              </Button>
+              <Button size="sm" asChild className="min-h-[40px]">
+                <Link href="/claver-cloud/marketplace">Marketplace</Link>
               </Button>
             </div>
           </CardContent>
@@ -525,6 +546,6 @@ export default function ClaverTenantSuperAdminPage() {
           <TenantConfigPanel empresaId={Number(empresaId)} />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   )
 }

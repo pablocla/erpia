@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { cajaEstadoLabel, cajaEstadoVariant } from "@/lib/ui/status-map"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -20,6 +21,7 @@ import {
   ClipboardCheck, Calculator,
 } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
+import { EmptyState } from "@/components/ui/empty-state"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
 
@@ -269,18 +271,15 @@ export default function CajaPage() {
     : 0
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground">
-        Cargando estado de caja...
-      </div>
-    )
+    return <PageSkeleton kpis={4} tableRows={6} tableCols={5} />
   }
 
   return (
     <PageShell>
       <PageHeader
+        variant="surface"
         title="Caja"
-        description="Apertura, movimientos, arqueo y cierre diario"
+        description="Apertura, movimientos, arqueo y cierre del día. Sin caja abierta no se registran ingresos ni egresos."
         statusSlot={
           cajaActual ? (
             <div className="flex items-center gap-2">
@@ -292,19 +291,19 @@ export default function CajaPage() {
           )
         }
         actions={!cajaActual ? (
-          <Button onClick={() => setAbrirDialogOpen(true)}>
+          <Button onClick={() => setAbrirDialogOpen(true)} className="min-h-[40px]">
             <Unlock className="h-4 w-4 mr-2" />
-            Abrir Caja
+            Abrir caja
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setMovimientoDialogOpen(true)}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setMovimientoDialogOpen(true)} className="min-h-[40px]">
               <Plus className="h-4 w-4 mr-2" />
               Movimiento
             </Button>
-            <Button variant="destructive" onClick={iniciarArqueo} disabled={guardando}>
+            <Button variant="destructive" onClick={iniciarArqueo} disabled={guardando} className="min-h-[40px]">
               <ClipboardCheck className="h-4 w-4 mr-2" />
-              Arqueo y Cierre
+              Arqueo y cierre
             </Button>
           </div>
         )}
@@ -317,26 +316,20 @@ export default function CajaPage() {
       )}
 
       {cierreMensaje && (
-        <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800 dark:text-green-300">{cierreMensaje}</AlertDescription>
+        <Alert className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
+          <CheckCircle2 className="h-4 w-4 text-[var(--status-success)]" />
+          <AlertDescription className="text-[var(--status-success-foreground)]">{cierreMensaje}</AlertDescription>
         </Alert>
       )}
 
       {!cajaActual ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-4">
-            <Wallet className="h-16 w-16 text-muted-foreground opacity-30" />
-            <div>
-              <p className="text-lg font-medium">No hay caja abierta</p>
-              <p className="text-sm text-muted-foreground">Abrí la caja para registrar movimientos</p>
-            </div>
-            <Button onClick={() => setAbrirDialogOpen(true)}>
-              <Unlock className="h-4 w-4 mr-2" />
-              Abrir Caja Ahora
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Wallet}
+          title="No hay caja abierta"
+          description="Abrí la caja para registrar movimientos del turno. El saldo inicial y el arqueo se hacen desde acá."
+          actionLabel="Abrir caja ahora"
+          onAction={() => setAbrirDialogOpen(true)}
+        />
       ) : (
         <>
           {/* KPIs caja actual */}
@@ -413,6 +406,15 @@ export default function CajaPage() {
                 searchKeys={["concepto", "medioPago"]}
                 exportFilename="movimientos-caja"
                 emptyMessage="Sin movimientos aún"
+                emptyState={
+                  <EmptyState
+                    icon={Wallet}
+                    title="Sin movimientos todavía"
+                    description="Registrá un ingreso o egreso con el botón Movimiento. Las ventas del POS también pueden impactar acá según configuración."
+                    actionLabel="Nuevo movimiento"
+                    onAction={() => setMovimientoDialogOpen(true)}
+                  />
+                }
                 defaultPageSize={10}
                 compact
               />

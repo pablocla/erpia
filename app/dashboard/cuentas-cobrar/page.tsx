@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Search,
@@ -29,12 +30,22 @@ import {
   DollarSign,
   RefreshCw,
   Sparkles,
+  MessageCircle,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { getCobraExperience } from "@/lib/comercial/app-experience"
+import { isCobraProductShell } from "@/lib/comercial/product-shell"
+import { useDashboardShell } from "@/hooks/use-dashboard-shell"
+import { useToast } from "@/hooks/use-toast"
+import { buildWaMeUrl, messageCobroCliente } from "@/lib/comercial/whatsapp-copy"
 
 type CC = {
   id: number
@@ -48,7 +59,7 @@ type CC = {
   observaciones: string | null
   diasVencido: number
   factura?: { id: number; tipo: string; numero: number; puntoVenta: number }
-  cliente?: { id: number; nombre: string; cuit: string | null }
+  cliente?: { id: number; nombre: string; cuit: string | null; telefono?: string | null }
 }
 
 type Resumen = {
@@ -78,12 +89,20 @@ type RetencionesPreview = {
   aplicadas: boolean
 }
 
-const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  pendiente: { label: "Pendiente", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30" },
-  parcial: { label: "Cobro parcial", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
-  vencida: { label: "Vencida", color: "text-red-600", bg: "bg-red-50 dark:bg-red-950/30" },
-  pagada: { label: "Pagada", color: "text-green-600", bg: "bg-green-50 dark:bg-green-950/30" },
-  incobrable: { label: "Incobrable", color: "text-slate-600", bg: "bg-slate-50 dark:bg-slate-950/30" },
+const ESTADO_VARIANT: Record<string, "success" | "warning" | "error" | "info" | "neutral"> = {
+  pendiente: "info",
+  parcial: "warning",
+  vencida: "error",
+  pagada: "success",
+  incobrable: "neutral",
+}
+
+const ESTADO_LABEL: Record<string, string> = {
+  pendiente: "Pendiente",
+  parcial: "Cobro parcial",
+  vencida: "Vencida",
+  pagada: "Pagada",
+  incobrable: "Incobrable",
 }
 
 function formatCurrency(v: number) {
@@ -95,6 +114,11 @@ function formatPV(pv: number, n: number) {
 }
 
 export default function CuentasCobrarPage() {
+  const { modoLite, productosSku } = useDashboardShell()
+  const isCobra = isCobraProductShell(modoLite, productosSku)
+  const cobraGuide = getCobraExperience()
+  const { toast } = useToast()
+
   const [cuentas, setCuentas] = useState<CC[]>([])
   const [resumen, setResumen] = useState<Resumen | null>(null)
   const [loading, setLoading] = useState(false)
@@ -104,6 +128,13 @@ export default function CuentasCobrarPage() {
   const [clientes, setClientes] = useState<{ id: number; nombre: string }[]>([])
   const [recibos, setRecibos] = useState<Recibo[]>([])
   const [loadingRecibos, setLoadingRecibos] = useState(false)
+  const [configCobraOpen, setConfigCobraOpen] = useState(false)
+  const [cobraResumen, setCobraResumen] = useState<{
+    contactablesWhatsApp?: number
+    cuentasVencidas?: number
+    saldoTotal?: number
+  } | null>(null)
+  const [activandoCobra, setActivandoCobra] = useState(false)
 
   // Modal cobro
   const [modalCobro, setModalCobro] = useState<CC[]>([])
@@ -238,9 +269,85 @@ export default function CuentasCobrarPage() {
     return () => clearTimeout(timer)
   }, [montoCobro, modalCobro, authHeaders])
 
-  const copiarLinkPago = (cc: CC) => {
-    const texto = `Hola ${cc.cliente?.nombre}, te compartimos el link de pago por el saldo pendiente de ${formatCurrency(cc.saldo)} correspondiente a la ${cc.factura ? `Factura ${cc.factura.tipo} ${formatPV(cc.factura.puntoVenta, cc.factura.numero)}` : `CC #${cc.id}`}. \n\nPuedes abonarlo aquí: https://link.mercadopago.com.ar/tuempresa`
-    navigator.clipboard.writeText(texto)
+  const copiarLinkPago = async (cc: CC) => {
+    const ref = cc.factura
+      ? `Factura ${cc.factura.tipo} ${formatPV(cc.factura.puntoVenta, cc.factura.numero)}`
+      : `cuenta #${cc.id}`
+    const texto = messageCobroCliente({
+      nombre: cc.cliente?.nombre,
+      saldo: cc.saldo,
+      referencia: ref,
+    })
+    const wa = buildWaMeUrl(cc.cliente?.telefono, texto)
+    try {
+      await navigator.clipboard.writeText(texto)
+      if (wa) {
+        window.open(wa, "_blank", "noopener,noreferrer")
+        toast({
+          title: "WhatsApp abierto",
+          description: "Mensaje copiado y chat listo. Revisá y enviá.",
+        })
+      } else {
+        toast({
+          title: "Mensaje copiado",
+          description: "El cliente no tiene teléfono válido. Pegalo en WhatsApp a mano.",
+        })
+      }
+    } catch {
+      toast({
+        title: "No se pudo copiar",
+        description: texto,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const filtrarVencidas = () => {
+    setFiltroEstado("vencida")
+    document.getElementById("tabla-cxc")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const cargarCobraResumen = useCallback(async () => {
+    if (!isCobra) return
+    try {
+      const res = await fetch("/api/cobranza-aas", { headers: authHeaders() })
+      if (!res.ok) return
+      const data = await res.json()
+      setCobraResumen(data.pendientes ?? data)
+    } catch {
+      /* optional */
+    }
+  }, [isCobra, authHeaders])
+
+  useEffect(() => {
+    void cargarCobraResumen()
+  }, [cargarCobraResumen])
+
+  const activarCobraWa = async () => {
+    setActivandoCobra(true)
+    try {
+      const res = await fetch("/api/cobranza-aas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ action: "activar", autoAprobarWa: false }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || "No se pudo activar")
+      toast({
+        title: "Claver Cobrá listo",
+        description: "Recordatorios WA configurados. Revisá vencidos y copiá mensajes.",
+      })
+      await cargarCobraResumen()
+      setConfigCobraOpen(false)
+    } catch (e) {
+      toast({
+        title: "No se pudo activar Cobrá",
+        description: e instanceof Error ? e.message : "Reintentá",
+        variant: "destructive",
+      })
+    } finally {
+      setActivandoCobra(false)
+    }
   }
 
   const registrarCobro = async () => {
@@ -324,22 +431,102 @@ export default function CuentasCobrarPage() {
     }
   }
 
+  if (loading && cuentas.length === 0) {
+    return <PageSkeleton kpis={3} tableRows={8} tableCols={6} />
+  }
+
+  const hasFilters = filtroEstado !== "todos" || clienteFiltro !== "todos"
+
   return (
-    <div className="space-y-6">
-      <div className="dashboard-surface rounded-xl p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-2">
+    <PageShell>
+      {isCobra && (
+        <AppExperienceHeader
+          guide={cobraGuide}
+          onPrimaryClick={filtrarVencidas}
+        />
+      )}
+
+      <PageHeader
+        variant="surface"
+        title={isCobra ? "Cobros y morosos" : "Cuentas a cobrar"}
+        description={
+          isCobra
+            ? "Panel de deuda recuperable: filtrá vencidos, cobrá y copiá el WhatsApp con un toque."
+            : "Saldos pendientes, aging y cobranza. Cobrás de a una o en lote del mismo cliente."
+        }
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            Gestión financiera de cobranzas
+            {isCobra ? "Claver Cobrá" : "Cobranzas"}
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {isCobra && (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={filtrarVencidas}
+                  className="min-h-[40px]"
+                  id="filtro-vencidas"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Solo vencidas
+                </Button>
+                <Dialog open={configCobraOpen} onOpenChange={setConfigCobraOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="min-h-[40px]" id="config-cobra">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configurar Cobrá
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Claver Cobrá</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 text-sm">
+                      <p className="text-muted-foreground">
+                        Activá el motor de recordatorios. Después usá “Link / WhatsApp” en cada cuenta
+                        para copiar el mensaje al cliente.
+                      </p>
+                      {cobraResumen && (
+                        <ul className="rounded-lg border bg-muted/40 p-3 space-y-1 text-xs">
+                          <li>
+                            Cuentas vencidas (7+ días):{" "}
+                            <strong>{cobraResumen.cuentasVencidas ?? "—"}</strong>
+                          </li>
+                          <li>
+                            Contactables WA:{" "}
+                            <strong>{cobraResumen.contactablesWhatsApp ?? "—"}</strong>
+                          </li>
+                          <li>
+                            Saldo recuperable:{" "}
+                            <strong>
+                              {formatCurrency(Number(cobraResumen.saldoTotal ?? 0))}
+                            </strong>
+                          </li>
+                        </ul>
+                      )}
+                      <Button
+                        className="w-full min-h-[40px]"
+                        onClick={() => void activarCobraWa()}
+                        disabled={activandoCobra}
+                      >
+                        {activandoCobra ? "Activando…" : "Activar recordatorios Cobrá"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
+            <Button variant="outline" onClick={cargar} disabled={loading} className="min-h-[40px]">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Cuentas a Cobrar</h1>
-          <p className="text-muted-foreground text-sm mt-1">Saldos pendientes, aging y cobranza operativa</p>
-        </div>
-        <Button variant="outline" onClick={cargar} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
-        </Button>
-      </div>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -350,17 +537,27 @@ export default function CuentasCobrarPage() {
             <p className="text-xs text-muted-foreground mt-1">{resumen?.cuentas ?? 0} cuentas activas</p>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
+        <Card className="border-[var(--status-error-border)] bg-[var(--status-error-muted)]">
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5 text-red-500" />Total vencido</p>
-            <p className="text-2xl font-bold text-red-700">{formatCurrency(resumen?.totalVencido ?? 0)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Requiere acción inmediata</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-[var(--status-error)]" />
+              Total vencido
+            </p>
+            <p className="text-2xl font-bold text-[var(--status-error-foreground)]">
+              {formatCurrency(resumen?.totalVencido ?? 0)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Requiere acción</p>
           </CardContent>
         </Card>
-        <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
+        <Card className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
           <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5 text-green-500" />Corriente</p>
-            <p className="text-2xl font-bold text-green-700">{formatCurrency(resumen?.aging?.corriente ?? 0)}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-[var(--status-success)]" />
+              Corriente
+            </p>
+            <p className="text-2xl font-bold text-[var(--status-success-foreground)]">
+              {formatCurrency(resumen?.aging?.corriente ?? 0)}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">Al día / no vencido</p>
           </CardContent>
         </Card>
@@ -394,10 +591,12 @@ export default function CuentasCobrarPage() {
       )}
 
       {/* Table */}
-      <Card>
+      <Card id="tabla-cxc">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Comprobantes pendientes</CardTitle>
+            <CardTitle className="text-base">
+              {isCobra ? "Cuentas a recuperar" : "Comprobantes pendientes"}
+            </CardTitle>
             <div className="flex gap-2">
               <Select value={clienteFiltro} onValueChange={setClienteFiltro}>
                 <SelectTrigger className="h-9 w-52"><SelectValue placeholder="Cliente" /></SelectTrigger>
@@ -428,44 +627,138 @@ export default function CuentasCobrarPage() {
               { key: "cliente" as any, header: "Cliente", cell: (c) => (<div><p className="font-medium">{c.cliente?.nombre ?? "—"}</p>{c.cliente?.cuit && <p className="text-xs text-muted-foreground">{c.cliente.cuit}</p>}</div>), exportFn: (c) => c.cliente?.nombre ?? "" },
               { key: "factura" as any, header: "Comprobante", cell: (c) => <span className="font-mono text-xs">{c.factura ? `FAC ${c.factura.tipo} ${formatPV(c.factura.puntoVenta, c.factura.numero)}` : `CC #${c.id}`}</span> },
               { key: "fechaEmision", header: "Emisión", sortable: true, cell: (c) => <span className="text-muted-foreground">{new Date(c.fechaEmision).toLocaleDateString("es-AR")}</span> },
-              { key: "fechaVencimiento", header: "Vencimiento", sortable: true, cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <div className={cn("text-xs font-medium px-1.5 py-0.5 rounded inline-block", conf.bg, conf.color)}>{new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}{c.diasVencido > 0 && ` (${c.diasVencido}d)`}</div> } },
+              {
+                key: "fechaVencimiento",
+                header: "Vencimiento",
+                sortable: true,
+                cell: (c) => (
+                  <span className={cn("text-xs font-medium", c.diasVencido > 0 && "text-[var(--status-error-foreground)]")}>
+                    {new Date(c.fechaVencimiento).toLocaleDateString("es-AR")}
+                    {c.diasVencido > 0 && ` (${c.diasVencido}d)`}
+                  </span>
+                ),
+              },
               { key: "montoOriginal", header: "Total", align: "right", sortable: true, cell: (c) => <span className="font-medium">{formatCurrency(c.montoOriginal)}</span> },
               { key: "saldo", header: "Saldo", align: "right", sortable: true, cell: (c) => <span className="font-bold text-primary">{formatCurrency(c.saldo)}</span> },
-              { key: "estado", header: "Estado", cell: (c) => { const conf = ESTADO_CONFIG[c.estado] ?? ESTADO_CONFIG.pendiente; return <span className={cn("text-xs font-medium", conf.color)}>{conf.label}</span> } },
-              { key: "acciones" as any, header: "", cell: (c) => c.estado !== "pagada" && c.saldo > 0 ? (
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); abrirCobro([c]) }}>Cobrar</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs text-green-600 border-green-200 hover:bg-green-50" onClick={(e) => { e.stopPropagation(); copiarLinkPago(c) }}>
-                    Link Pago
-                  </Button>
-                </div>
-              ) : null },
+              {
+                key: "estado",
+                header: "Estado",
+                cell: (c) => (
+                  <StatusBadge
+                    variant={ESTADO_VARIANT[c.estado] ?? "neutral"}
+                    label={ESTADO_LABEL[c.estado] ?? c.estado}
+                  />
+                ),
+              },
+              {
+                key: "acciones" as any,
+                header: "",
+                cell: (c) =>
+                  c.estado !== "pagada" && c.saldo > 0 ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs min-h-[36px]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          abrirCobro([c])
+                        }}
+                      >
+                        Cobrar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs min-h-[36px] text-[var(--status-success-foreground)]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void copiarLinkPago(c)
+                        }}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                        {isCobra ? "WhatsApp" : "Link pago"}
+                      </Button>
+                    </div>
+                  ) : null,
+              },
             ] as DataTableColumn<CC>[]}
             rowKey="id"
             searchPlaceholder="Buscar cuenta..."
             searchKeys={["id"]}
             selectable
             bulkActions={(selected, clearSelection) => {
-              const allSameClient = selected.every(s => s.cliente?.id === selected[0].cliente?.id)
+              const allSameClient = selected.every((s) => s.cliente?.id === selected[0].cliente?.id)
               const total = selected.reduce((sum, s) => sum + s.saldo, 0)
               return (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm text-muted-foreground">{selected.length} seleccionadas</span>
                   {!allSameClient ? (
-                    <span className="text-sm text-red-500 font-medium">Debe ser el mismo cliente</span>
+                    <span className="text-sm text-[var(--status-error-foreground)] font-medium">
+                      Debe ser el mismo cliente
+                    </span>
                   ) : (
-                    <Button size="sm" onClick={() => abrirCobro(selected)}>
-                      Cobrar seleccionadas ({formatCurrency(total)})
-                    </Button>
+                    <>
+                      <Button size="sm" onClick={() => abrirCobro(selected)}>
+                        Cobrar seleccionadas ({formatCurrency(total)})
+                      </Button>
+                      {isCobra && selected.length === 1 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void copiarLinkPago(selected[0])}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                          WhatsApp
+                        </Button>
+                      )}
+                    </>
                   )}
-                  <Button size="sm" variant="ghost" onClick={clearSelection}>Cancelar</Button>
+                  <Button size="sm" variant="ghost" onClick={clearSelection}>
+                    Cancelar
+                  </Button>
                 </div>
               )
             }}
             exportFilename="cuentas-cobrar"
             loading={loading}
             emptyMessage="No hay cuentas para mostrar"
-            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin cuentas a cobrar" description="Las cuentas se generan al emitir facturas." />}
+            emptyState={
+              <EmptyState
+                icon={isCobra ? MessageCircle : DollarSign}
+                title={
+                  hasFilters
+                    ? "Ninguna cuenta coincide"
+                    : isCobra
+                      ? "Todavía no hay deuda para recuperar"
+                      : "Sin cuentas a cobrar"
+                }
+                description={
+                  hasFilters
+                    ? "Cambiá el filtro de estado o cliente para ver más resultados."
+                    : isCobra
+                      ? "Cuando emitas facturas a crédito o cargues saldos, vas a filtrar vencidos y avisar por WhatsApp desde acá."
+                      : "Las cuentas se generan al emitir facturas a crédito. Cuando haya saldos, cobrás desde acá o con link de pago."
+                }
+                actionLabel={
+                  hasFilters ? "Ver todas" : isCobra ? "Ver clientes" : "Actualizar"
+                }
+                onAction={
+                  hasFilters
+                    ? () => {
+                        setFiltroEstado("todos")
+                        setClienteFiltro("todos")
+                      }
+                    : isCobra
+                      ? () => {
+                          window.location.href = "/dashboard/clientes"
+                        }
+                      : () => void cargar()
+                }
+                secondaryActionLabel={hasFilters && isCobra ? "Solo vencidas" : undefined}
+                onSecondaryAction={hasFilters && isCobra ? filtrarVencidas : undefined}
+              />
+            }
             defaultPageSize={25}
             compact
           />
@@ -653,6 +946,6 @@ export default function CuentasCobrarPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

@@ -92,6 +92,12 @@ Never return data without filtering by `empresaId`.
 - User managers: `canManageUsers()` = `dueno` | `administrador` | `admin` | `propietario` (`lib/auth/admin-roles.ts`)
 - Docs: `docs/funcional/GOOGLE_AUTH_USUARIOS.md`
 
+### Design context (Impeccable / UI agents)
+- **`PRODUCT.md`** — audience, surfaces (ERP / Cloud / POS / brand), principles, anti-references
+- **`DESIGN.md`** — tokens OKLCH, typography, kit (`PageShell`, `StatusBadge`, …), do/don't
+- Operational page recipes: `docs/DESIGN-SYSTEM.md`
+- Prefer those files over generic “SaaS AI” taste when polishing UI
+
 ### Component Style
 - Use shadcn/ui primitives from `@/components/ui/`
 - Use `cn()` from `@/lib/utils` for conditional classes

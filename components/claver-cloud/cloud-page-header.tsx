@@ -33,7 +33,7 @@ export function CloudPageHeader({
     <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", className)}>
       <div className="space-y-1 min-w-0">
         {(Icon || eyebrow) && (
-          <div className="flex items-center gap-2 text-violet-400 mb-1">
+          <div className="flex items-center gap-2 text-primary mb-1">
             {Icon && <Icon className="h-5 w-5" />}
             {eyebrow && <span className="text-sm font-medium">{eyebrow}</span>}
           </div>
@@ -43,16 +43,20 @@ export function CloudPageHeader({
             {title}
           </h1>
           {badge && (
-            <Badge variant="outline" className="bg-violet-500/10 text-violet-300 border-violet-500/30">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
               {badge}
             </Badge>
           )}
         </div>
-        {description && <p className="text-muted-foreground text-sm sm:text-base">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground text-sm sm:text-base max-w-2xl leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         {onRefresh && (
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="min-h-[40px]">
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Actualizar
           </Button>

@@ -47,7 +47,7 @@ const MORE_ITEMS_DEFAULT = [
   { href: "/dashboard/productos", icon: Package, label: "Productos" },
   { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
   { href: "/dashboard/peluqueria", icon: Scissors, label: "Peluquería" },
-  { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+  { href: "/dashboard/productos", icon: Truck, label: "Stock" },
   { href: "/dashboard/facturas", icon: FileText, label: "Facturas" },
   { href: "/dashboard/kpis", icon: BarChart3, label: "KPIs" },
 ]
@@ -60,7 +60,7 @@ const MORE_ITEMS_CAJERO = [
 ]
 
 const MORE_ITEMS_DEPOSITO = [
-  { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+  { href: "/dashboard/productos", icon: Truck, label: "Stock" },
   { href: "/dashboard/productos", icon: Package, label: "Productos" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
 ]
@@ -74,7 +74,7 @@ const NAV_BY_ROL: Record<string, NavItem[]> = {
   ],
   deposito: [
     { href: "/dashboard/picking", icon: ScanLine, label: "Picking" },
-    { href: "/dashboard/stock", icon: Truck, label: "Stock" },
+    { href: "/dashboard/productos", icon: Truck, label: "Stock" },
     { href: "/dashboard/productos", icon: Package, label: "Productos" },
     { href: "#more", icon: MoreHorizontal, label: "Más" },
   ],

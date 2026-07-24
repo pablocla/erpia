@@ -14,7 +14,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import {
   Plus, Send, CheckCircle2, XCircle, Copy, FileText,
   ArrowRightCircle, Trash2, Filter,
@@ -22,6 +24,7 @@ import {
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
 import { getAuthHeaders } from "@/lib/stores/auth-store"
+import type { StatusVariant } from "@/lib/ui/status-map"
 
 interface Cliente { id: number; nombre: string; cuit?: string }
 interface Linea {
@@ -46,13 +49,22 @@ interface Presupuesto {
   lineas: (Linea & { id: number; subtotal: number })[]
 }
 
+const ESTADOS_VARIANT: Record<string, StatusVariant> = {
+  borrador: "neutral",
+  enviado: "info",
+  aceptado: "success",
+  rechazado: "error",
+  vencido: "warning",
+  facturado: "success",
+}
+
 const ESTADOS_COLOR: Record<string, string> = {
-  borrador: "bg-gray-500",
-  enviado: "bg-blue-500",
-  aceptado: "bg-green-600",
-  rechazado: "bg-red-500",
-  vencido: "bg-orange-500",
-  facturado: "bg-purple-600",
+  borrador: "bg-muted text-muted-foreground",
+  enviado: "bg-[var(--status-info-muted)] text-[var(--status-info-foreground)]",
+  aceptado: "bg-[var(--status-success-muted)] text-[var(--status-success-foreground)]",
+  rechazado: "bg-[var(--status-error-muted)] text-[var(--status-error-foreground)]",
+  vencido: "bg-[var(--status-warning-muted)] text-[var(--status-warning-foreground)]",
+  facturado: "bg-[var(--status-success-muted)] text-[var(--status-success-foreground)]",
 }
 
 export default function PresupuestosPage() {
@@ -199,20 +211,35 @@ export default function PresupuestosPage() {
     }
   }
 
+  if (loading && presupuestos.length === 0) {
+    return <PageSkeleton kpis={5} tableRows={8} tableCols={5} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Presupuestos</h1>
-          <p className="text-muted-foreground">Gestión de presupuestos y conversión a pedidos de venta</p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Nuevo Presupuesto
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Presupuestos"
+        description="Armá ofertas, enviá, aceptá y convertí a pedido de venta sin reingresar líneas."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <FileText className="h-3.5 w-3.5" />
+            Ciclo comercial
+          </span>
+        }
+        actions={
+          <Button onClick={() => setDialogOpen(true)} className="min-h-[40px]">
+            <Plus className="mr-2 h-4 w-4" /> Nuevo presupuesto
+          </Button>
+        }
+      />
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-      {success && <Alert><AlertDescription className="text-green-600">{success}</AlertDescription></Alert>}
+      {success && (
+        <Alert className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
+          <AlertDescription className="text-[var(--status-success-foreground)]">{success}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-5">
@@ -261,23 +288,48 @@ export default function PresupuestosPage() {
               { key: "fechaEmision", header: "Fecha", sortable: true, cell: (p) => new Date(p.fechaEmision).toLocaleDateString("es-AR") },
               { key: "fechaVencimiento" as any, header: "Vencimiento", cell: (p) => p.fechaVencimiento ? new Date(p.fechaVencimiento).toLocaleDateString("es-AR") : "—" },
               { key: "total", header: "Total", align: "right", sortable: true, cell: (p) => <span className="font-medium">${Number(p.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span> },
-              { key: "estado", header: "Estado", cell: (p) => <Badge className={ESTADOS_COLOR[p.estado]}>{p.estado}</Badge> },
+              {
+                key: "estado",
+                header: "Estado",
+                cell: (p) => (
+                  <StatusBadge
+                    variant={ESTADOS_VARIANT[p.estado] ?? "neutral"}
+                    label={p.estado}
+                  />
+                ),
+              },
               { key: "acciones" as any, header: "Acciones", cell: (p) => (
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                   {p.estado === "borrador" && <Button size="sm" variant="outline" onClick={() => ejecutarAccion("enviar", p.id)}><Send className="h-3 w-3 mr-1" /> Enviar</Button>}
-                  {(p.estado === "enviado" || p.estado === "borrador") && <><Button size="sm" variant="outline" className="text-green-600" onClick={() => ejecutarAccion("aceptar", p.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar</Button><Button size="sm" variant="outline" className="text-red-600" onClick={() => ejecutarAccion("rechazar", p.id)}><XCircle className="h-3 w-3 mr-1" /> Rechazar</Button></>}
+                  {(p.estado === "enviado" || p.estado === "borrador") && <><Button size="sm" variant="outline" className="text-[var(--status-success-foreground)]" onClick={() => ejecutarAccion("aceptar", p.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar</Button><Button size="sm" variant="outline" className="text-[var(--status-error-foreground)]" onClick={() => ejecutarAccion("rechazar", p.id)}><XCircle className="h-3 w-3 mr-1" /> Rechazar</Button></>}
                   {p.estado === "aceptado" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="default"><ArrowRightCircle className="h-3 w-3 mr-1" /> Convertir a Pedido</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Convertir presupuesto {p.numero}</AlertDialogTitle><AlertDialogDescription>Se creará un Pedido de Venta con las mismas líneas y condiciones. El presupuesto pasará a estado &quot;facturado&quot;.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => ejecutarAccion("convertir", p.id)}>Convertir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
                   <Button size="sm" variant="ghost" onClick={() => ejecutarAccion("duplicar", p.id)}><Copy className="h-3 w-3" /></Button>
                 </div>
               ) },
             ] as DataTableColumn<Presupuesto>[]}
             rowKey="id"
-            searchPlaceholder="Buscar presupuesto..."
+            searchPlaceholder="Buscar por número…"
             searchKeys={["numero", "estado"]}
             exportFilename="presupuestos"
             loading={loading}
             emptyMessage="Sin presupuestos"
-            emptyIcon={<EmptyStateIllustration type="ventas" compact title="Sin presupuestos" description="Creá tu primer presupuesto." />}
+            emptyState={
+              <EmptyState
+                icon={FileText}
+                title={filtroEstado !== "todos" ? "Ningún presupuesto en este estado" : "Todavía no hay presupuestos"}
+                description={
+                  filtroEstado !== "todos"
+                    ? "Cambiá el filtro a “Todos” o creá uno nuevo."
+                    : "Creá el primero para cotizar al cliente y, si acepta, convertirlo a pedido."
+                }
+                actionLabel={filtroEstado !== "todos" ? "Ver todos" : "Nuevo presupuesto"}
+                onAction={
+                  filtroEstado !== "todos"
+                    ? () => setFiltroEstado("todos")
+                    : () => setDialogOpen(true)
+                }
+              />
+            }
             onRowClick={(p) => setDetalle(p)}
             defaultPageSize={25}
             compact
@@ -433,6 +485,6 @@ export default function PresupuestosPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

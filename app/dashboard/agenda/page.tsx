@@ -2,22 +2,39 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, ChevronLeft, ChevronRight, User, Clock, Phone } from "lucide-react"
-import { getIndustryExperience, getNicheExperience } from "@/lib/comercial/app-experience"
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  MessageCircle,
+  Phone,
+  Plus,
+  User,
+} from "lucide-react"
+import {
+  getIndustryExperience,
+  getNicheExperience,
+  getConfirmaExperience,
+} from "@/lib/comercial/app-experience"
 import { Button } from "@/components/ui/button"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { turnoEstadoLabel, turnoEstadoVariant, type StatusVariant } from "@/lib/ui/status-map"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Spinner } from "@/components/ui/spinner"
 import { useToast } from "@/hooks/use-toast"
 import { authFetch } from "@/lib/stores"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
 import { AgendaPublicLinkCard } from "@/components/app-experience/agenda-public-link-card"
+import { isConfirmaProductShell } from "@/lib/comercial/product-shell"
+import { useDashboardShell } from "@/hooks/use-dashboard-shell"
+import { buildWaMeUrl, messageConfirmarTurno } from "@/lib/comercial/whatsapp-copy"
 
 type EstadoTurno = "confirmado" | "pendiente" | "cancelado" | "completado"
 
@@ -295,11 +312,36 @@ export default function AgendaPage() {
     }
   }
 
-  const experience =
-    (demoIndustryId ? (getIndustryExperience(demoIndustryId) ?? getNicheExperience(demoIndustryId)) : null) ??
-    getIndustryExperience("salon_belleza")
+  const { modoLite, productosSku } = useDashboardShell()
+  const isConfirma = isConfirmaProductShell(modoLite, productosSku)
 
-  if (loading) return <div className="flex items-center justify-center h-96"><Spinner className="h-8 w-8" /></div>
+  const experience = isConfirma
+    ? getConfirmaExperience()
+    : (demoIndustryId
+        ? (getIndustryExperience(demoIndustryId) ?? getNicheExperience(demoIndustryId))
+        : null) ?? getConfirmaExperience()
+
+  const avisarWhatsAppTurno = (t: Turno) => {
+    const texto = messageConfirmarTurno({
+      nombre: t.cliente?.nombre,
+      fecha: t.fecha,
+      hora: t.horaInicio,
+      motivo: t.motivo,
+    })
+    const wa = buildWaMeUrl(t.cliente?.telefono, texto)
+    void navigator.clipboard.writeText(texto).catch(() => {})
+    if (wa) {
+      window.open(wa, "_blank", "noopener,noreferrer")
+      toast({ title: "WhatsApp abierto", description: "Pedile que confirme con SI o NO." })
+    } else {
+      toast({
+        title: "Mensaje copiado",
+        description: "El cliente no tiene teléfono. Pegalo en WhatsApp a mano.",
+      })
+    }
+  }
+
+  if (loading) return <PageSkeleton kpis={4} tableRows={8} tableCols={4} />
 
   return (
     <PageShell>
@@ -310,24 +352,59 @@ export default function AgendaPage() {
           className="mb-4"
         />
       )}
-      <AgendaPublicLinkCard />
+      <div id="link-agenda">
+        <AgendaPublicLinkCard />
+      </div>
       <PageHeader
-        title="Agenda de Turnos"
-        description="Turnos, reservas y seguimiento de pacientes/clientes"
+        variant="surface"
+        title={isConfirma ? "Agenda Confirmá" : "Agenda de turnos"}
+        description={
+          isConfirma
+            ? "Reservas online, grilla del día y confirmación por WhatsApp para bajar no-shows."
+            : "Turnos, reservas y seguimiento de pacientes/clientes"
+        }
+        badge={
+          isConfirma ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              <Calendar className="h-3.5 w-3.5" />
+              Claver Confirmá
+            </span>
+          ) : undefined
+        }
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => setDialogOpen(true)} className="min-h-[40px]" id="nuevo-turno">
             <Plus className="h-4 w-4 mr-2" />
-            Nuevo Turno
+            Nuevo turno
           </Button>
         }
       />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card><CardContent className="pt-3"><p className="text-xs text-muted-foreground">Hoy</p><p className="text-2xl font-bold">{resumen.totalHoy}</p></CardContent></Card>
-        <Card className="border-green-200"><CardContent className="pt-3"><p className="text-xs text-green-700">Confirmados</p><p className="text-2xl font-bold text-green-700">{resumen.confirmados}</p></CardContent></Card>
-        <Card className="border-yellow-200"><CardContent className="pt-3"><p className="text-xs text-yellow-700">Pendientes</p><p className="text-2xl font-bold text-yellow-700">{resumen.pendientes}</p></CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="pt-3"><p className="text-xs text-slate-700">Completados</p><p className="text-2xl font-bold text-slate-700">{resumen.completados}</p></CardContent></Card>
+        <Card>
+          <CardContent className="pt-3">
+            <p className="text-xs text-muted-foreground">Hoy</p>
+            <p className="text-2xl font-bold">{resumen.totalHoy}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
+          <CardContent className="pt-3">
+            <p className="text-xs text-[var(--status-success-foreground)]">Confirmados</p>
+            <p className="text-2xl font-bold text-[var(--status-success-foreground)]">{resumen.confirmados}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-[var(--status-warning-border)] bg-[var(--status-warning-muted)]">
+          <CardContent className="pt-3">
+            <p className="text-xs text-[var(--status-warning-foreground)]">Pendientes</p>
+            <p className="text-2xl font-bold text-[var(--status-warning-foreground)]">{resumen.pendientes}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-3">
+            <p className="text-xs text-muted-foreground">Completados</p>
+            <p className="text-2xl font-bold">{resumen.completados}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Semana */}
@@ -353,6 +430,22 @@ export default function AgendaPage() {
       </Card>
 
       {/* Filtro profesional */}
+      {profesionales.length === 0 ? (
+        <EmptyState
+          icon={Calendar}
+          title="Cargá al menos un profesional"
+          description={
+            isConfirma
+              ? "Sin profesional no se puede compartir el link de reserva ni agendar turnos."
+              : "Necesitás profesionales para ver la grilla de turnos."
+          }
+          actionLabel="Ir a configuración de agenda"
+          onAction={() => {
+            window.location.href = "/dashboard/configuracion"
+          }}
+        />
+      ) : (
+      <>
       <div className="flex gap-3 items-center flex-wrap">
         <Button size="sm" variant={profesionalFiltro === "todos" ? "default" : "outline"} onClick={() => setProfesionalFiltro("todos")}>Todos</Button>
         {profesionales.map((p, idx) => (
@@ -408,6 +501,8 @@ export default function AgendaPage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Dialog nuevo turno */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -505,6 +600,44 @@ export default function AgendaPage() {
                   )}
                   {turnoSeleccionado.notas && (
                     <div className="col-span-2"><span className="font-medium">Notas:</span> {turnoSeleccionado.notas}</div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    className="min-h-[40px]"
+                    onClick={() => avisarWhatsAppTurno(turnoSeleccionado)}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Confirmar por WhatsApp
+                  </Button>
+                  {turnoSeleccionado.estado === "pendiente" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-[40px]"
+                      disabled={actualizandoTurno}
+                      onClick={async () => {
+                        setActualizandoTurno(true)
+                        try {
+                          const res = await fetch(`/api/agenda/${turnoSeleccionado.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ estado: "confirmado" }),
+                          })
+                          if (res.ok) {
+                            toast({ title: "Turno confirmado" })
+                            setVistaDetalle(false)
+                            cargarDatos()
+                          }
+                        } finally {
+                          setActualizandoTurno(false)
+                        }
+                      }}
+                    >
+                      Marcar confirmado
+                    </Button>
                   )}
                 </div>
 

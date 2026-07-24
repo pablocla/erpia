@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: parseInt(id), factura: { empresaId: ctx.auth.empresaId } },
       include: {
         factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true, total: true } },
-        cliente: { select: { id: true, nombre: true, cuit: true } },
+        cliente: { select: { id: true, nombre: true, cuit: true, telefono: true } },
         itemsRecibo: {
           include: {
             recibo: { select: { id: true, numero: true, fecha: true } },

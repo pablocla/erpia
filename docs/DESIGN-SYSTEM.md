@@ -2,6 +2,11 @@
 
 Esta guía establece las directrices estéticas y los componentes comunes del ERP ClavERP para asegurar consistencia visual y un aspecto premium en todas las pantallas.
 
+> **Contexto para agentes (Impeccable):** la fuente canónica de producto y design system portable está en la raíz del repo:
+> - [`PRODUCT.md`](../PRODUCT.md) — audiencia, surfaces, principios
+> - [`DESIGN.md`](../DESIGN.md) — tokens, tipografía, kit, do/don't  
+> Este archivo sigue siendo la receta operativa de páginas (shell, badges, listados).
+
 ---
 
 ## 1. Estructura de Páginas (`PageShell` y `PageHeader`)

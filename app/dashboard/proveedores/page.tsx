@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Search, Edit2, Phone, Mail, Building2, RefreshCw, Download } from "lucide-react"
+import { Plus, Edit2, Phone, Mail, Building2, Download } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { PageShell, PageHeader } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
 import { CuitPadronLookup } from "@/components/fiscal/cuit-padron-lookup"
@@ -219,18 +221,29 @@ export default function ProveedoresPage() {
       p.cuit.includes(search)
   )
 
+  if (loading && proveedores.length === 0) {
+    return <PageSkeleton kpis={0} tableRows={8} tableCols={5} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Proveedores</h1>
-          <p className="text-muted-foreground">Gestión de proveedores y condiciones comerciales</p>
-        </div>
-        <Button onClick={abrirNuevo}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Proveedor
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Proveedores"
+        description="Maestro de proveedores: CUIT, condiciones de IVA/pago y contacto para compras."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Building2 className="h-3.5 w-3.5" />
+            Compras
+          </span>
+        }
+        actions={
+          <Button onClick={abrirNuevo} className="min-h-[40px]">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo proveedor
+          </Button>
+        }
+      />
 
       {/* DataTable */}
       <Card>
@@ -259,7 +272,7 @@ export default function ProveedoresPage() {
               { key: "acciones" as any, header: "Acciones", align: "right", cell: (p) => <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); abrirEditar(p) }}><Edit2 className="h-4 w-4" /></Button> },
             ] as DataTableColumn<Proveedor>[]}
             rowKey="id"
-            searchPlaceholder="Buscar por nombre o CUIT..."
+            searchPlaceholder="Buscar por nombre o CUIT…"
             searchKeys={["nombre", "cuit"]}
             selectable
             bulkActions={(selected, clear) => (
@@ -276,7 +289,19 @@ export default function ProveedoresPage() {
             exportFilename="proveedores"
             loading={loading}
             emptyMessage="No hay proveedores"
-            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin proveedores" description="Cargá tu primer proveedor para gestionar compras." actionLabel="Nuevo Proveedor" onAction={abrirNuevo} />}
+            emptyState={
+              <EmptyState
+                icon={Building2}
+                title={search ? "Ningún proveedor coincide" : "Todavía no hay proveedores"}
+                description={
+                  search
+                    ? "Probá otro nombre o CUIT."
+                    : "Cargá el primero para emitir órdenes de compra y facturas de proveedor."
+                }
+                actionLabel={search ? "Limpiar búsqueda" : "Nuevo proveedor"}
+                onAction={search ? () => setSearch("") : abrirNuevo}
+              />
+            }
             defaultPageSize={25}
             compact
             onRowClick={abrirEditar}
@@ -451,6 +476,6 @@ export default function ProveedoresPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   )
 }

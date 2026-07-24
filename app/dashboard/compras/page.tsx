@@ -17,10 +17,11 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Loader2, Eye, Sparkles,
 } from "lucide-react"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { ordenCompraEstadoLabel, ordenCompraEstadoVariant } from "@/lib/ui/status-map"
 import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 
@@ -61,7 +62,7 @@ export default function ComprasPage() {
   const [filters, setFilters] = useState<FilterValues>({})
   const [ordenes, setOrdenes] = useState<OrdenCompra[]>([])
   const [totalOC, setTotalOC] = useState(0)
-  const [loadingOC, setLoadingOC] = useState(false)
+  const [loadingOC, setLoadingOC] = useState(true)
   const [crearOcOpen, setCrearOcOpen] = useState(false)
   const [recepcionOpen, setRecepcionOpen] = useState(false)
   const [ocSeleccionada, setOcSeleccionada] = useState<OrdenCompra | null>(null)
@@ -278,6 +279,12 @@ export default function ComprasPage() {
     })
   }, [ordenes, filters])
 
+  const hasOcFilters = Boolean(filters.estado || filters.proveedor)
+
+  if (loadingOC && ordenes.length === 0 && tab === "ordenes") {
+    return <PageSkeleton kpis={0} tableRows={8} tableCols={6} />
+  }
+
   return (
     <PageShell>
       <PageHeader
@@ -292,7 +299,7 @@ export default function ComprasPage() {
           </span>
         }
         actions={
-          <Button onClick={() => setCrearOcOpen(true)}>
+          <Button onClick={() => setCrearOcOpen(true)} className="min-h-[40px]">
             <Plus className="h-4 w-4 mr-2" />
             Nueva OC
           </Button>
@@ -350,7 +357,23 @@ export default function ComprasPage() {
                 exportFilename="ordenes-compra"
                 loading={loadingOC}
                 emptyMessage="Sin órdenes de compra"
-                emptyIcon={<EmptyStateIllustration type="compras" compact actionLabel="Nueva OC" onAction={() => setCrearOcOpen(true)} />}
+                emptyState={
+                  <EmptyState
+                    icon={ShoppingCart}
+                    title={hasOcFilters ? "Ninguna OC coincide" : "Todavía no hay órdenes de compra"}
+                    description={
+                      hasOcFilters
+                        ? "Cambiá o limpiá los filtros para ver más resultados."
+                        : "Creá una OC para pedir mercadería, recibir y luego facturar al proveedor."
+                    }
+                    actionLabel={hasOcFilters ? "Limpiar filtros" : "Nueva OC"}
+                    onAction={
+                      hasOcFilters
+                        ? () => setFilters({})
+                        : () => setCrearOcOpen(true)
+                    }
+                  />
+                }
                 defaultPageSize={25}
                 compact
               />

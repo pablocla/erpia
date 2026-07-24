@@ -12,7 +12,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react"
-import { type SubSaasSlug, SUB_SAAS_APPS } from "./sub-saas-catalog"
+import { type SubSaasSlug, SUB_SAAS_APPS, SUB_SAAS_DESTACADOS } from "./sub-saas-catalog"
 import type { ModoLite } from "./pack-calle-catalog"
 import { getMicroSaasBySlug } from "./micro-saas-portfolio"
 
@@ -399,7 +399,7 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
     marca: "Claver Abono",
     icono: Calendar,
     tabs: [
-      { href: "/dashboard/ventas", icon: BookOpen, label: "Abonos" },
+      { href: "/dashboard/facturacion-recurrente", icon: BookOpen, label: "Abonos" },
       { href: "/dashboard/cuentas-cobrar", icon: CreditCard, label: "Cobros" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       DEFAULT_MORE_TAB,
@@ -410,7 +410,7 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       { id: "cobrar", label: "Por cobrar", icon: Wallet, format: "currency" },
       { id: "mes", label: "Emitidos mes", icon: CreditCard, format: "number" },
     ],
-    primaryAction: { label: "Ver abonos", href: "/dashboard/ventas" },
+    primaryAction: { label: "Ver abonos", href: "/dashboard/facturacion-recurrente" },
   },
   reactiva: {
     slug: "reactiva",
@@ -485,9 +485,56 @@ function shellBySlug(slug: string): ProductShellConfig | null {
   return PRODUCT_SHELLS[slug as SubSaasSlug] ?? null
 }
 
+/** Orden comercial para desempate (freemium + packs). Menor índice = más prioritario. */
+const SHELL_SKU_PRIORITY = [
+  "pos.fiado_barrio",
+  "intang.cobranzas_wa",
+  "micro.confirma_turnos",
+  "pos.caja",
+  "pool-propiedad",
+  "pool-monotributo",
+  "micro.abono_recurrente",
+  "niche.gimnasio_barrio",
+  "niche.consorcios",
+] as const
+
+function appIsActive(
+  app: (typeof SUB_SAAS_APPS)[number],
+  productosSku: Record<string, boolean>,
+): boolean {
+  if (productosSku[app.sku] === true) return true
+  return app.skusAdicionales?.some((sku) => productosSku[sku] === true) ?? false
+}
+
 /**
- * Determina la Product Shell activa según modoLite y SKUs activos.
- * Si productosSku aún no cargó, usa modoLite como fallback.
+ * Score del producto activo: prioriza SKU primario (exact match), listoPct y orden comercial.
+ * modoLite es bonus, no el único criterio — evita que "niche" muestre siempre Confirmá.
+ */
+function scoreActiveApp(
+  app: (typeof SUB_SAAS_APPS)[number],
+  productosSku: Record<string, boolean>,
+  modoLite: string,
+): number {
+  let score = 0
+  if (productosSku[app.sku] === true) score += 10_000
+  if (app.skusAdicionales?.some((sku) => productosSku[sku] === true)) score += 2_000
+  if (app.modoLite === modoLite) score += 500
+  score += Math.min(app.listoPct, 100)
+  if (app.estado === "disponible") score += 50
+  else if (app.estado === "beta") score += 10
+
+  const skuIdx = SHELL_SKU_PRIORITY.indexOf(app.sku as (typeof SHELL_SKU_PRIORITY)[number])
+  if (skuIdx >= 0) score += (SHELL_SKU_PRIORITY.length - skuIdx) * 20
+
+  const destIdx = (SUB_SAAS_DESTACADOS as readonly string[]).indexOf(app.slug)
+  if (destIdx >= 0) score += (SUB_SAAS_DESTACADOS.length - destIdx) * 5
+
+  return score
+}
+
+/**
+ * Determina la Product Shell activa según SKUs activos (primario) y modoLite (fallback).
+ * Si productosSku aún no cargó, usa modoLite.
  */
 export function getActiveProductShell(
   modoLite: ModoLite | string,
@@ -496,21 +543,17 @@ export function getActiveProductShell(
   if (modoLite === "completo") return null
 
   if (productosSku) {
-    const activeApps = SUB_SAAS_APPS.filter(
-      (app) =>
-        productosSku[app.sku] === true ||
-        (app.skusAdicionales?.some((sku) => productosSku[sku] === true) ?? false),
-    )
-
-    const matchingByModo = activeApps.find((app) => app.modoLite === modoLite)
-    if (matchingByModo) {
-      const shell = shellBySlug(matchingByModo.slug)
-      if (shell) return shell
-    }
-
-    for (const app of activeApps) {
-      const shell = shellBySlug(app.slug)
-      if (shell) return shell
+    const activeApps = SUB_SAAS_APPS.filter((app) => appIsActive(app, productosSku))
+    if (activeApps.length > 0) {
+      const ranked = [...activeApps].sort(
+        (a, b) =>
+          scoreActiveApp(b, productosSku, String(modoLite)) -
+          scoreActiveApp(a, productosSku, String(modoLite)),
+      )
+      for (const app of ranked) {
+        const shell = shellBySlug(app.slug)
+        if (shell) return shell
+      }
     }
   }
 
@@ -522,4 +565,46 @@ export function getActiveProductShell(
 
 export function productShellHomePath(shell: ProductShellConfig): string {
   return shell.tabs[0]?.href ?? "/dashboard"
+}
+
+/** True si la shell activa es Cobrá (modo cobranza o SKU intang.cobranzas_wa). */
+export function isCobraProductShell(
+  modoLite: ModoLite | string,
+  productosSku: Record<string, boolean> | null,
+): boolean {
+  const shell = getActiveProductShell(modoLite, productosSku)
+  if (shell?.slug === "cobra") return true
+  if (modoLite === "cobranza") return true
+  if (productosSku?.["intang.cobranzas_wa"] === true && modoLite !== "completo") return true
+  return false
+}
+
+export function isConfirmaProductShell(
+  modoLite: ModoLite | string,
+  productosSku: Record<string, boolean> | null,
+): boolean {
+  const shell = getActiveProductShell(modoLite, productosSku)
+  if (shell?.slug === "turnos") return true
+  if (productosSku?.["micro.confirma_turnos"] === true && modoLite !== "completo") return true
+  return false
+}
+
+export function isCuotaProductShell(
+  modoLite: ModoLite | string,
+  productosSku: Record<string, boolean> | null,
+): boolean {
+  const shell = getActiveProductShell(modoLite, productosSku)
+  if (shell?.slug === "puntos") return true
+  if (productosSku?.["niche.gimnasio_barrio"] === true && modoLite !== "completo") return true
+  return false
+}
+
+export function isAbonoProductShell(
+  modoLite: ModoLite | string,
+  productosSku: Record<string, boolean> | null,
+): boolean {
+  const shell = getActiveProductShell(modoLite, productosSku)
+  if (shell?.slug === "abono") return true
+  if (productosSku?.["micro.abono_recurrente"] === true && modoLite !== "completo") return true
+  return false
 }

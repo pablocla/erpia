@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Search, Edit2, PackageX, AlertTriangle, RefreshCw, TrendingUp, TrendingDown, SlidersHorizontal, Download, ToggleRight, Sparkles, Package, Upload, Tag } from "lucide-react"
-import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { EmptyState } from "@/components/ui/empty-state"
+import { activoVariant, activoLabel } from "@/lib/ui/status-map"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
@@ -334,6 +335,24 @@ export default function ProductosPage() {
     })
   }, [productosFiltrados, filters])
 
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      search.trim() ||
+      filtroCategoria ||
+      soloStockBajo ||
+      filters.stockBajo === true ||
+      filters.activo !== undefined ||
+      filters.porcentajeIva,
+    )
+  }, [search, filtroCategoria, soloStockBajo, filters])
+
+  const clearProductFilters = () => {
+    setSearch("")
+    setFiltroCategoria("")
+    setSoloStockBajo(false)
+    setFilters({})
+  }
+
   if (loading && productos.length === 0) {
     return <PageSkeleton kpis={3} tableRows={10} tableCols={6} />
   }
@@ -343,7 +362,7 @@ export default function ProductosPage() {
       <PageHeader
         variant="surface"
         title="Productos"
-        description="Gestión de inventario y precios"
+        description="Catálogo, precios, IVA y stock. Creá uno a uno o importá desde CSV."
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
@@ -351,7 +370,7 @@ export default function ProductosPage() {
           </span>
         }
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <CSVImport
               columns={PRODUCTO_IMPORT_COLUMNS}
               onImport={handleImportarCSV}
@@ -360,7 +379,7 @@ export default function ProductosPage() {
               templateFilename="plantilla_productos.csv"
               templateCSV="codigo,nombre,precioVenta,precioCompra,stock,porcentajeIva&#10;PROD-001,Producto Ejemplo,1500.00,1000.00,50,21"
             />
-            <Button onClick={abrirNuevo}>
+            <Button onClick={abrirNuevo} className="min-h-[40px]">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Producto
             </Button>
@@ -369,16 +388,16 @@ export default function ProductosPage() {
       />
 
       {stockBajoCount > 0 && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
+        <Alert className="border-[var(--status-warning-border)] bg-[var(--status-warning-muted)]">
+          <AlertTriangle className="h-4 w-4 text-[var(--status-warning-foreground)]" />
+          <AlertDescription className="text-[var(--status-warning-foreground)]">
             <strong>{stockBajoCount} producto(s)</strong> con stock bajo o agotado.
             <Button
               variant="link"
-              className="text-orange-700 p-0 h-auto ml-2"
+              className="text-[var(--status-warning-foreground)] p-0 h-auto ml-2 underline-offset-2"
               onClick={() => setSoloStockBajo(true)}
             >
-              Ver
+              Ver solo stock bajo
             </Button>
           </AlertDescription>
         </Alert>
@@ -515,10 +534,11 @@ export default function ProductosPage() {
               {
                 key: "activo",
                 header: "Estado",
-                cell: (p) => p.activo ? (
-                  <Badge className="bg-green-100 text-green-800">Activo</Badge>
-                ) : (
-                  <Badge variant="secondary">Inactivo</Badge>
+                cell: (p) => (
+                  <StatusBadge
+                    variant={activoVariant(p.activo)}
+                    label={activoLabel(p.activo)}
+                  />
                 ),
                 exportFn: (p) => p.activo ? "Activo" : "Inactivo",
               },
@@ -542,17 +562,13 @@ export default function ProductosPage() {
                             body: JSON.stringify({ productoId: p.id, cantidad: 1 }),
                           })
                           const data = await res.json().catch(() => ({}))
-                          if (!res.ok) {
-                            toast({
-                              title: "Etiqueta",
-                              description: data.error ?? "Configurá impresora Hasar/Epson",
-                              variant: "destructive",
-                            })
-                            return
+                          if (res.ok && data.printableUrl) {
+                            window.open(data.printableUrl, "_blank")
+                          } else {
+                            toast({ title: "Etiqueta", description: data.error || "Etiqueta generada" })
                           }
-                          toast({ title: "Etiqueta enviada", description: p.nombre })
                         } catch {
-                          toast({ title: "Error de conexión", variant: "destructive" })
+                          toast({ title: "Etiqueta", description: "No se pudo generar la etiqueta", variant: "destructive" })
                         }
                       }}
                     >
@@ -587,6 +603,21 @@ export default function ProductosPage() {
             searchPlaceholder="Buscar productos..."
             searchKeys={["codigo", "nombre"]}
             selectable
+            emptyState={
+              <EmptyState
+                icon={Package}
+                title={hasActiveFilters ? "Ningún producto coincide" : "Todavía no hay productos"}
+                description={
+                  hasActiveFilters
+                    ? "Probá con otra búsqueda, categoría o quitá el filtro de stock bajo."
+                    : "Cargá el primer producto o importá el catálogo desde CSV para vender y controlar stock."
+                }
+                actionLabel="Nuevo Producto"
+                onAction={abrirNuevo}
+                secondaryActionLabel={hasActiveFilters ? "Limpiar filtros" : undefined}
+                onSecondaryAction={hasActiveFilters ? clearProductFilters : undefined}
+              />
+            }
             bulkActions={(selected, clear) => (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground mr-2">{selected.length} ítems</span>
@@ -619,7 +650,6 @@ export default function ProductosPage() {
             exportFilename="productos"
             loading={loading}
             emptyMessage="No hay productos"
-            emptyIcon={<EmptyStateIllustration type="productos" compact actionLabel="Nuevo Producto" onAction={abrirNuevo} />}
             defaultPageSize={25}
             compact
             onRowClick={abrirEditar}

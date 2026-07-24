@@ -34,6 +34,10 @@ import { authFetch } from "@/lib/stores"
 import { PageShell, PageHeader, KpiStrip } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { ClienteSearchSelect } from "@/components/forms/cliente-search-select"
+import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
+import { getAbonoExperience } from "@/lib/comercial/app-experience"
+import { isAbonoProductShell } from "@/lib/comercial/product-shell"
+import { useDashboardShell } from "@/hooks/use-dashboard-shell"
 
 interface FacturaRecurrente {
   id: number
@@ -72,6 +76,8 @@ interface ResultadoEmision {
 }
 
 export default function FacturacionRecurrentePage() {
+  const { modoLite, productosSku } = useDashboardShell()
+  const isAbono = isAbonoProductShell(modoLite, productosSku)
   const [facturas, setFacturas] = useState<FacturaRecurrente[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -213,25 +219,34 @@ export default function FacturacionRecurrentePage() {
 
   return (
     <PageShell>
+      <AppExperienceHeader
+        guide={getAbonoExperience()}
+        onPrimaryClick={() => setDialogOpen(true)}
+        className="mb-2"
+      />
       <PageHeader
         variant="surface"
-        title="Facturación Recurrente"
-        description="Suscripciones, alquileres y servicios con emisión AFIP programada"
+        title={isAbono ? "Abonos recurrentes" : "Facturación recurrente"}
+        description={
+          isAbono
+            ? "Plantillas mensuales: emití ahora o dejá que el sistema corra el día programado."
+            : "Suscripciones, alquileres y servicios con emisión AFIP programada"
+        }
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            Facturación automática
+            {isAbono ? "Claver Abono" : "Facturación automática"}
           </span>
         }
         statusSlot={afipStatus ? <AfipStatusBadge status={afipStatus} /> : undefined}
         actions={
           <>
-          <Button variant="outline" size="sm" onClick={handleProcesar} disabled={procesando}>
+          <Button variant="outline" size="sm" onClick={handleProcesar} disabled={procesando} className="min-h-[40px]">
             <Repeat className="mr-2 h-4 w-4" /> {procesando ? "Procesando..." : "Ejecutar emisión"}
           </Button>
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setClienteIdNuevo(null) }}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="mr-2 h-4 w-4" /> Nueva recurrente</Button>
+              <Button size="sm" className="min-h-[40px]" id="nuevo-abono"><Plus className="mr-2 h-4 w-4" /> Nuevo abono</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Nueva Factura Recurrente</DialogTitle></DialogHeader>

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         where: { plan: { empresaId: usuario.empresaId } },
         include: {
           plan: { select: { id: true, nombre: true, precio: true, periodicidad: true } },
-          cliente: { select: { id: true, nombre: true, email: true } },
+          cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
         },
         orderBy: { fechaInicio: "desc" },
       }),

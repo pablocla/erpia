@@ -26,6 +26,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CCA_FASES } from "@/lib/ops/implementacion-types"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import type { StatusVariant } from "@/lib/ui/status-map"
 
 type ProyectoRow = {
   id: number
@@ -58,22 +62,30 @@ function faseLabel(codigo: string) {
   return CCA_FASES.find((f) => f.codigo === codigo)?.nombre ?? codigo
 }
 
-function faseColor(codigo: string) {
-  if (codigo === "CCA-070" || codigo === "CCA-080") return "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-  if (codigo === "CCA-030" || codigo === "CCA-040") return "bg-blue-500/10 text-blue-700 border-blue-300"
-  return "bg-amber-500/10 text-amber-800 border-amber-300"
+function faseVariant(codigo: string): StatusVariant {
+  if (codigo === "CCA-070" || codigo === "CCA-080") return "success"
+  if (codigo === "CCA-030" || codigo === "CCA-040") return "info"
+  return "warning"
+}
+
+const FILTRO_LABEL: Record<string, string> = {
+  activo: "Activos",
+  pausado: "Pausados",
+  completado: "Completados",
+  todos: "Todos",
 }
 
 export default function ClaverImplementationPage() {
   const [proyectos, setProyectos] = useState<ProyectoRow[]>([])
   const [metricas, setMetricas] = useState<Metricas | null>(null)
   const [empresas, setEmpresas] = useState<EmpresaFlota[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState("activo")
   const [open, setOpen] = useState(false)
   const [empresaId, setEmpresaId] = useState("")
   const [plan, setPlan] = useState("Pro")
   const [goLive, setGoLive] = useState("")
+  const [q, setQ] = useState("")
 
   const cargar = async () => {
     setLoading(true)
@@ -133,195 +145,227 @@ export default function ClaverImplementationPage() {
     }
   }
 
+  const proyectosFiltrados = proyectos.filter((p) => {
+    const term = q.trim().toLowerCase()
+    if (!term) return true
+    const hay = [p.empresa.nombre, p.empresa.razonSocial, p.empresa.rubro, p.codigo, p.planComercial]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+    return hay.includes(term)
+  })
+
+  if (loading && proyectos.length === 0) {
+    return <PageSkeleton kpis={4} tableRows={6} tableCols={3} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Implementation Hub</h1>
-          <p className="text-muted-foreground flex items-center gap-2 mt-1">
-            Professional Services & CCA Tracking
-            <Badge variant="outline" className="bg-violet-500/10 text-violet-800 border-violet-300">
-              CCA Methodology
-            </Badge>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Iniciar implementación (CCA-010)</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCrear} className="space-y-4">
-                <div>
-                  <Label>Cliente</Label>
-                  <Select value={empresaId} onValueChange={setEmpresaId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {empresas.map((e) => (
-                        <SelectItem key={e.id} value={String(e.id)}>
-                          {e.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Plan comercial</Label>
-                  <Select value={plan} onValueChange={setPlan}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Starter">Starter</SelectItem>
-                      <SelectItem value="Pro">Pro</SelectItem>
-                      <SelectItem value="Enterprise">Enterprise</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Fecha objetivo go-live</Label>
-                  <Input type="date" value={goLive} onChange={(e) => setGoLive(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full">Crear proyecto</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" onClick={cargar} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Implementaciones CCA"
+        description="Seguimiento de proyectos de implementación: fases, avance, go-live y pack ONBOARD."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <ClipboardList className="h-3.5 w-3.5" />
+            Professional Services
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="min-h-[40px]">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo proyecto
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Iniciar implementación (CCA-010)</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCrear} className="space-y-4">
+                  <div>
+                    <Label>Cliente</Label>
+                    <Select value={empresaId} onValueChange={setEmpresaId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar empresa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {empresas.map((e) => (
+                          <SelectItem key={e.id} value={String(e.id)}>
+                            {e.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Plan comercial</Label>
+                    <Select value={plan} onValueChange={setPlan}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Starter">Starter</SelectItem>
+                        <SelectItem value="Pro">Pro</SelectItem>
+                        <SelectItem value="Enterprise">Enterprise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Fecha objetivo go-live</Label>
+                    <Input type="date" value={goLive} onChange={(e) => setGoLive(e.target.value)} />
+                  </div>
+                  <Button type="submit" className="w-full min-h-[40px]">
+                    Crear proyecto
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={() => void cargar()} disabled={loading} className="min-h-[40px]">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          </div>
+        }
+      />
 
       {metricas && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metricas.activos}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Delayed</CardTitle>
-              <CalendarClock className="h-4 w-4 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-500">{metricas.atrasados}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Missing ONBOARD</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metricas.sinPackOnboard}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Progress</CardTitle>
-              <Target className="h-4 w-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metricas.avancePromedio}%</div>
-            </CardContent>
-          </Card>
+        <KpiStrip
+          columns={4}
+          items={[
+            { label: "Proyectos activos", value: metricas.activos, icon: ClipboardList },
+            {
+              label: "Atrasados",
+              value: (
+                <span className={metricas.atrasados > 0 ? "text-[var(--status-warning-foreground)]" : undefined}>
+                  {metricas.atrasados}
+                </span>
+              ),
+              icon: CalendarClock,
+              iconClassName: metricas.atrasados > 0 ? "text-[var(--status-warning)]" : undefined,
+            },
+            { label: "Sin pack ONBOARD", value: metricas.sinPackOnboard, icon: Building2 },
+            {
+              label: "Avance promedio",
+              value: `${metricas.avancePromedio}%`,
+              icon: Target,
+              iconClassName: "text-[var(--status-success)]",
+            },
+          ]}
+        />
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+        <div className="flex flex-wrap gap-2">
+          {(["activo", "pausado", "completado", "todos"] as const).map((e) => (
+            <Button
+              key={e}
+              size="sm"
+              variant={filtroEstado === e ? "default" : "outline"}
+              onClick={() => setFiltroEstado(e)}
+              className="min-h-[36px]"
+            >
+              {FILTRO_LABEL[e]}
+            </Button>
+          ))}
+        </div>
+        <Input
+          className="sm:max-w-xs min-h-[40px]"
+          placeholder="Buscar cliente, código o plan…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          aria-label="Buscar implementaciones"
+        />
+      </div>
+
+      {proyectosFiltrados.length === 0 && !loading ? (
+        <EmptyState
+          icon={ClipboardList}
+          title={proyectos.length === 0 ? "Sin proyectos de implementación" : "Ningún proyecto coincide"}
+          description={
+            proyectos.length === 0
+              ? "Creá un proyecto CCA para un tenant de la flota o abrí la ficha del tenant y seguí el onboarding."
+              : "Probá otro filtro o limpiá la búsqueda."
+          }
+          actionLabel={proyectos.length === 0 ? "Nuevo proyecto" : "Limpiar búsqueda"}
+          onAction={
+            proyectos.length === 0
+              ? () => setOpen(true)
+              : () => {
+                  setQ("")
+                  setFiltroEstado("todos")
+                }
+          }
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {proyectosFiltrados.map((p) => {
+            const atrasado = Boolean(
+              p.fechaObjetivoGoLive &&
+                new Date(p.fechaObjetivoGoLive) < new Date() &&
+                p.estado === "activo" &&
+                p.faseActual !== "CCA-080",
+            )
+
+            return (
+              <Card
+                key={p.id}
+                className={atrasado ? "border-[var(--status-warning-border)]" : ""}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base">{p.empresa.nombre}</CardTitle>
+                    <Badge variant="outline" className="text-[10px] shrink-0 font-mono">
+                      {p.codigo}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {p.empresa.razonSocial} · {p.empresa.rubro}
+                    {p.planComercial ? ` · ${p.planComercial}` : ""}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    <StatusBadge
+                      variant={faseVariant(p.faseActual)}
+                      label={`${p.faseActual}: ${faseLabel(p.faseActual)}`}
+                    />
+                    {atrasado && <StatusBadge variant="error" label="Atrasado" />}
+                    {!p.packOnboardEntregado && (
+                      <StatusBadge variant="neutral" label="Sin ONBOARD" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">Avance</span>
+                      <span className="font-medium">{p.porcentajeAvance}%</span>
+                    </div>
+                    <Progress value={p.porcentajeAvance} className="h-2" />
+                  </div>
+                  {p.fechaObjetivoGoLive && (
+                    <p className="text-xs text-muted-foreground">
+                      Go-live objetivo:{" "}
+                      {new Date(p.fechaObjetivoGoLive).toLocaleDateString("es-AR")}
+                    </p>
+                  )}
+                  {p.analistaEmail && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      Analista: {p.analistaEmail}
+                    </p>
+                  )}
+                  <Button asChild className="w-full min-h-[40px]" size="sm">
+                    <Link href={`/claver-cloud/implementation/${p.id}`}>
+                      Ver seguimiento CCA
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
-
-      <div className="flex gap-2">
-        {["activo", "pausado", "completado", "todos"].map((e) => (
-          <Button
-            key={e}
-            size="sm"
-            variant={filtroEstado === e ? "default" : "outline"}
-            onClick={() => setFiltroEstado(e)}
-          >
-            {e.charAt(0).toUpperCase() + e.slice(1)}
-          </Button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {proyectos.map((p) => {
-          const atrasado =
-            p.fechaObjetivoGoLive &&
-            new Date(p.fechaObjetivoGoLive) < new Date() &&
-            p.estado === "activo" &&
-            p.faseActual !== "CCA-080"
-
-          return (
-            <Card key={p.id} className={atrasado ? "border-amber-400/60" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base">{p.empresa.nombre}</CardTitle>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {p.codigo}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {p.empresa.razonSocial} · {p.empresa.rubro}
-                  {p.planComercial ? ` · ${p.planComercial}` : ""}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-1">
-                  <Badge variant="outline" className={faseColor(p.faseActual)}>
-                    {p.faseActual}: {faseLabel(p.faseActual)}
-                  </Badge>
-                  {atrasado && (
-                    <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-300">
-                      Atrasado
-                    </Badge>
-                  )}
-                  {!p.packOnboardEntregado && (
-                    <Badge variant="outline" className="text-[10px]">
-                      Sin ONBOARD
-                    </Badge>
-                  )}
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">Avance</span>
-                    <span className="font-medium">{p.porcentajeAvance}%</span>
-                  </div>
-                  <Progress value={p.porcentajeAvance} className="h-2" />
-                </div>
-                {p.fechaObjetivoGoLive && (
-                  <p className="text-xs text-muted-foreground">
-                    Go-live objetivo:{" "}
-                    {new Date(p.fechaObjetivoGoLive).toLocaleDateString("es-AR")}
-                  </p>
-                )}
-                <Button asChild className="w-full" size="sm">
-                  <Link href={`/claver-cloud/implementation/${p.id}`}>
-                    Ver seguimiento CCA
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {proyectos.length === 0 && !loading && (
-        <p className="text-sm text-muted-foreground text-center py-12">
-          No projects found. Create one from a tenant in your fleet.
-        </p>
-      )}
-    </div>
+    </PageShell>
   )
 }

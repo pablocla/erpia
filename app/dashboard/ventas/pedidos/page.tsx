@@ -8,11 +8,13 @@ import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { DataTable } from "@/components/data-table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, Package, Truck, FileText, RefreshCw, Copy } from "lucide-react"
+import { CheckCircle2, Package, Truck, FileText, RefreshCw, Copy, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
 import { authFetch } from "@/lib/stores"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
 import { pedidoEstadoLabel, pedidoEstadoVariant } from "@/lib/ui/status-map"
 import { Sparkles } from "lucide-react"
 
@@ -115,12 +117,16 @@ export default function PedidosPage() {
     }
   }
 
+  if (loading && pedidos.length === 0) {
+    return <PageSkeleton kpis={0} tableRows={8} tableCols={6} />
+  }
+
   return (
     <PageShell>
       <PageHeader
         variant="surface"
-        title="Pedidos de Venta"
-        description="Control de pedidos, picking, remito y facturación."
+        title="Pedidos de venta"
+        description="Confirmá, hacé picking, remito y facturá. Filtrá por estado para ver solo lo pendiente."
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
@@ -128,8 +134,8 @@ export default function PedidosPage() {
           </span>
         }
         actions={
-          <Button variant="outline" size="sm" onClick={cargarPedidos}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
+          <Button variant="outline" size="sm" onClick={cargarPedidos} disabled={loading} className="min-h-[40px]">
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Actualizar
           </Button>
         }
       />
@@ -177,9 +183,26 @@ export default function PedidosPage() {
           <DataTable
             data={pedidos}
             rowKey="id"
-            searchPlaceholder="Buscar pedido o estado..."
+            searchPlaceholder="Buscar por número de pedido…"
             searchKeys={["numero", "estado"]}
             loading={loading}
+            emptyState={
+              <EmptyState
+                icon={ShoppingCart}
+                title={estadoFiltro !== "todos" ? "Ningún pedido en este estado" : "Todavía no hay pedidos"}
+                description={
+                  estadoFiltro !== "todos"
+                    ? "Cambiá el filtro a “Todos” o esperá a que haya pedidos en este estado."
+                    : "Los pedidos aparecen cuando se cargan desde ventas, portal o integraciones."
+                }
+                actionLabel={estadoFiltro !== "todos" ? "Ver todos" : "Actualizar"}
+                onAction={
+                  estadoFiltro !== "todos"
+                    ? () => setEstadoFiltro("todos")
+                    : () => void cargarPedidos()
+                }
+              />
+            }
             columns={[
               { key: "numero", header: "Pedido", sortable: true, cell: (pedido) => <span className="font-mono">{pedido.numero}</span> },
               { key: "cliente", header: "Cliente", cell: (pedido) => pedido.cliente?.nombre ?? "—" },

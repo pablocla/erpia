@@ -58,6 +58,10 @@ import type {
   LabNextAction,
 } from "@/lib/lab/lab-types"
 import { buildWaMessage } from "@/lib/lab/lab-messages"
+import {
+  DEPARTMENT_LEADERS,
+  type DepartmentLeader,
+} from "@/lib/lab/department-leaders-catalog"
 
 const ZONAS = [
   "todas",
@@ -139,6 +143,18 @@ export default function ClaverLabPage() {
   const [loadingAi, setLoadingAi] = useState(false)
   const [dialogAddLeadOpen, setDialogAddLeadOpen] = useState(false)
   const [busyMission, setBusyMission] = useState<string | null>(null)
+  const [lideresState, setLideresState] = useState<DepartmentLeader[]>(DEPARTMENT_LEADERS)
+
+  const handleAprobarRequerimiento = (leaderId: string) => {
+    setLideresState((prev) =>
+      prev.map((l) => (l.id === leaderId ? { ...l, solicitudAprobada: true } : l))
+    )
+    const lider = lideresState.find((l) => l.id === leaderId)
+    toast({
+      title: "Requerimiento Aprobado",
+      description: `Se aprobó el pedido de ${lider?.nombre || "Líder"}: "${lider?.requerimientoExito.titulo}"`,
+    })
+  }
 
   const { data, mutate, isLoading, error } = useAuthFetch<LabDashboardPayload>("/api/lab")
   const [waVariant, setWaVariant] = useState<"A" | "B">("A")
@@ -683,9 +699,13 @@ export default function ClaverLabPage() {
       </AnimatePresence>
 
       <Tabs defaultValue="hoy" className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-muted/60 rounded-xl w-full h-auto">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-muted/60 rounded-xl w-full h-auto">
           <TabsTrigger value="hoy" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Hoy
+          </TabsTrigger>
+          <TabsTrigger value="departamentos" className="rounded-lg text-xs sm:text-sm font-medium py-2 flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" />
+            <span>Departamentos & Líderes</span>
           </TabsTrigger>
           <TabsTrigger value="pipeline" className="rounded-lg text-xs sm:text-sm font-medium py-2">
             Pipeline
@@ -1253,6 +1273,178 @@ export default function ClaverLabPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        {/* ——— DEPARTAMENTOS & LÍDERES ——— */}
+        <TabsContent value="departamentos" className="space-y-6 mt-0">
+          <div className="bg-muted/30 p-4 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-base flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Líderes de Departamento & Requerimientos de Bloque
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Representación de los 6 departamentos clave de ClavERP. Cada líder expone sus métricas y lo que necesita para alcanzar el éxito.
+              </p>
+            </div>
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 w-fit">
+              6 Departamentos Activos
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {lideresState.map((lider) => {
+              const Icono =
+                lider.iconoNombre === "Target"
+                  ? Target
+                  : lider.iconoNombre === "Layers"
+                    ? Layers
+                    : lider.iconoNombre === "Rocket"
+                      ? Rocket
+                      : lider.iconoNombre === "Sparkles"
+                        ? Sparkles
+                        : lider.iconoNombre === "Bot"
+                          ? Bot
+                          : Shield
+
+              return (
+                <Card
+                  key={lider.id}
+                  className="glass-panel border-border/60 hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("p-2.5 rounded-xl border shrink-0", lider.avatarColor)}>
+                          <Icono className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base font-bold leading-tight">{lider.nombre}</CardTitle>
+                          <CardDescription className="text-xs">{lider.rol}</CardDescription>
+                        </div>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-[10px] shrink-0 font-medium",
+                          lider.saludBloquePct >= 90
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                        )}
+                      >
+                        {lider.saludBloquePct}% Salud
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 space-y-1">
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
+                        <span>Completitud del Área ({lider.departamentoNombre}):</span>
+                        <span className="font-semibold">{lider.saludBloquePct}%</span>
+                      </div>
+                      <Progress value={lider.saludBloquePct} className="h-1.5" />
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4 text-sm flex-1">
+                    {/* Requerimiento para el Éxito */}
+                    <div
+                      className={cn(
+                        "p-3.5 rounded-xl border space-y-2",
+                        lider.requerimientoExito.urgencia === "critica"
+                          ? "bg-red-500/5 border-red-500/20"
+                          : lider.requerimientoExito.urgencia === "alta"
+                            ? "bg-amber-500/5 border-amber-500/20"
+                            : "bg-blue-500/5 border-blue-500/20"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                          <Flame className="h-3.5 w-3.5 text-primary" />
+                          Lo que pido para el éxito:
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] uppercase px-1.5 py-0.2 font-bold",
+                            lider.requerimientoExito.urgencia === "critica"
+                              ? "text-red-600 border-red-500/40"
+                              : "text-amber-600 border-amber-500/40"
+                          )}
+                        >
+                          Urgencia {lider.requerimientoExito.urgencia}
+                        </Badge>
+                      </div>
+
+                      <p className="font-semibold text-xs text-foreground">
+                        {lider.requerimientoExito.titulo}
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {lider.requerimientoExito.descripcion}
+                      </p>
+
+                      <div className="text-[11px] font-medium text-emerald-600 pt-1 border-t border-border/40">
+                        🎯 <strong>Impacto:</strong> {lider.requerimientoExito.impactoEsperado}
+                      </div>
+                    </div>
+
+                    {/* KPIs del Área */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Métricas Clave (KPIs):
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        {lider.kpis.map((kpi, i) => (
+                          <div key={i} className="bg-card p-2 rounded-lg border text-center">
+                            <span className="text-[10px] text-muted-foreground block truncate">
+                              {kpi.nombre}
+                            </span>
+                            <span className="font-bold text-foreground text-xs">{kpi.valorActual}</span>
+                            <span className="text-[9px] text-muted-foreground block">meta {kpi.meta}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <div className="p-4 pt-0 border-t flex items-center justify-between gap-2 mt-3">
+                    {lider.requerimientoExito.linkInterno ? (
+                      <Button variant="ghost" size="sm" className="text-xs h-8 gap-1 text-muted-foreground hover:text-foreground" asChild>
+                        <Link href={lider.requerimientoExito.linkInterno}>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Ver Módulo
+                        </Link>
+                      </Button>
+                    ) : (
+                      <span />
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant={lider.solicitudAprobada ? "outline" : "default"}
+                      className={cn(
+                        "text-xs h-8 gap-1.5",
+                        lider.solicitudAprobada && "text-emerald-600 border-emerald-500/40 bg-emerald-500/10"
+                      )}
+                      onClick={() => handleAprobarRequerimiento(lider.id)}
+                      disabled={lider.solicitudAprobada}
+                    >
+                      {lider.solicitudAprobada ? (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Aprobado
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Aprobar Pedido
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         </TabsContent>
       </Tabs>

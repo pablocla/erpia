@@ -105,6 +105,8 @@ export interface DataTableProps<T> {
   emptyMessage?: string
   /** Empty state icon */
   emptyIcon?: React.ReactNode
+  /** Custom empty state (preferred over emptyMessage/emptyIcon when set) */
+  emptyState?: React.ReactNode
   /** Loading state */
   loading?: boolean
   /** Additional toolbar actions (rendered after built-in buttons) */
@@ -174,6 +176,7 @@ export function DataTable<T>({
   exportFilename,
   emptyMessage = "No hay datos para mostrar",
   emptyIcon,
+  emptyState,
   loading = false,
   toolbarActions,
   stickyHeader = false,
@@ -407,12 +410,16 @@ export function DataTable<T>({
               </div>
             ))
           ) : pagedData.length === 0 ? (
-            <div className="rounded-lg border bg-card py-12 text-center">
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                {emptyIcon}
-                <p>{emptyMessage}</p>
+            emptyState ? (
+              <div className="py-2">{emptyState}</div>
+            ) : (
+              <div className="rounded-lg border bg-card py-12 text-center">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  {emptyIcon}
+                  <p>{emptyMessage}</p>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             pagedData.map((row, i) => {
               const key = getKey(row)
@@ -528,12 +535,16 @@ export function DataTable<T>({
               <TableRow>
                 <TableCell
                   colSpan={visibleColumns.length + (selectable ? 1 : 0)}
-                  className="text-center py-12"
+                  className={emptyState ? "p-2 sm:p-4" : "text-center py-12"}
                 >
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    {emptyIcon}
-                    <p>{emptyMessage}</p>
-                  </div>
+                  {emptyState ? (
+                    emptyState
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      {emptyIcon}
+                      <p>{emptyMessage}</p>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

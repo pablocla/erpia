@@ -7,6 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, PlayCircle, Sparkles, ShieldCheck } from "lucide-react"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import type { StatusVariant } from "@/lib/ui/status-map"
 
 type FeaturedRow = {
   industryId: string
@@ -110,25 +114,40 @@ export default function DemoHealthPage() {
     }
   }
 
-  function verdictBadge(v: string) {
-    if (v === "auto") return <Badge className="bg-emerald-600">auto</Badge>
-    if (v === "needs_analyst") return <Badge variant="secondary">analista</Badge>
-    return <Badge variant="destructive">failed</Badge>
+  function verdictVariant(v: string): StatusVariant {
+    if (v === "auto") return "success"
+    if (v === "needs_analyst") return "warning"
+    return "error"
+  }
+
+  function verdictLabel(v: string) {
+    if (v === "auto") return "Auto"
+    if (v === "needs_analyst") return "Analista"
+    return "Falló"
+  }
+
+  if (loadingCatalog && featured.length === 0) {
+    return <PageSkeleton kpis={0} tableRows={6} tableCols={3} />
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-emerald-600" />
-          Salud de demos + auto-suscripción
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Valida el sensor comercial de punta a punta. Los productos ancla/trial se activan solos;
-          el pago va por Mercado Pago; setup/hardware/planned quedan para vos o un analista.
-          Gemini resume solo cuando hay problemas (o si lo forzás).
-        </p>
-      </div>
+    <PageShell className="max-w-5xl">
+      <PageHeader
+        variant="surface"
+        title="Salud de demos"
+        description="Valida demos de punta a punta: SKUs, seeds y auto-suscripción. Gemini resume solo si hay problemas (o si lo forzás)."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Sensor comercial
+          </span>
+        }
+        actions={
+          <Button variant="outline" size="sm" disabled={running} onClick={() => void loadCatalog()} className="min-h-[40px]">
+            Refrescar catálogo
+          </Button>
+        }
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -144,7 +163,7 @@ export default function DemoHealthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm min-h-[40px]">
             <input
               type="checkbox"
               checked={withGemini}
@@ -153,7 +172,7 @@ export default function DemoHealthPage() {
             />
             Incluir Gemini
           </label>
-          <Button disabled={running} onClick={() => void runValidation("featured")}>
+          <Button disabled={running} onClick={() => void runValidation("featured")} className="min-h-[40px]">
             {running ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
@@ -161,12 +180,19 @@ export default function DemoHealthPage() {
             )}
             Validar demos featured
           </Button>
-          <Button variant="outline" disabled={running} onClick={() => void loadCatalog()}>
-            Refrescar catálogo
-          </Button>
           {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
         </CardContent>
       </Card>
+
+      {!loadingCatalog && featured.length === 0 && !error && (
+        <EmptyState
+          icon={ShieldCheck}
+          title="Sin demos en el catálogo featured"
+          description="No hay industrias featured para validar. Revisá el catálogo de demos o reintentá."
+          actionLabel="Reintentar"
+          onAction={() => void loadCatalog()}
+        />
+      )}
 
       {audit && (
         <Card className="border-emerald-500/30">
@@ -219,7 +245,7 @@ export default function DemoHealthPage() {
                     </span>
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {verdictBadge(r.verdict)}
+                    <StatusBadge variant={verdictVariant(r.verdict)} label={verdictLabel(r.verdict)} />
                     <span className="text-xs text-muted-foreground">{r.durationMs}ms</span>
                   </div>
                 </div>
@@ -280,11 +306,11 @@ export default function DemoHealthPage() {
                     </Button>
                   </div>
                   <p className="text-xs">
-                    <span className="text-emerald-600">auto:</span>{" "}
+                    <span className="text-[var(--status-success-foreground)]">auto:</span>{" "}
                     {f.autoSubscribe.auto.join(", ") || "—"}
                   </p>
                   {(f.autoSubscribe.analyst.length > 0 || f.autoSubscribe.blocked.length > 0) && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                    <p className="text-xs text-[var(--status-warning-foreground)]">
                       manual: {[...f.autoSubscribe.analyst, ...f.autoSubscribe.blocked].join(", ")}
                     </p>
                   )}
@@ -294,6 +320,6 @@ export default function DemoHealthPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

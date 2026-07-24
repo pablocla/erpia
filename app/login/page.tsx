@@ -51,10 +51,15 @@ function LoginPageContent() {
   if (cargandoSesion || (autenticado && token)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <BrandLogo size="md" variant="group-full" className="mb-4" />
-            <CardDescription>Redirigiendo…</CardDescription>
+        <Card className="w-full max-w-md border-border/80 shadow-sm">
+          <CardHeader className="space-y-3">
+            <BrandLogo size="md" variant="group-full" className="mb-1" />
+            <CardDescription className="text-sm">
+              Validando sesión y abriendo tu panel…
+            </CardDescription>
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden" aria-hidden>
+              <div className="h-full w-1/3 rounded-full bg-primary/70 animate-pulse" />
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -130,21 +135,24 @@ function LoginPageContent() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 z-10">
         <LocaleFlagToggle />
       </div>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <BrandLogo size="md" variant="group-full" className="mb-2" />
-          <CardDescription>
+      <Card className="w-full max-w-md border-border/80 shadow-sm">
+        <CardHeader className="space-y-2 pb-2">
+          <BrandLogo size="md" variant="group-full" className="mb-1" />
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
+            Ingresá a Claver
+          </h1>
+          <CardDescription className="text-sm leading-relaxed">
             {activarIntent
               ? mensajeActivarTrial(activarParam)
-              : `by ${CLAVER_GROUP.name} — Ingresá tus credenciales para acceder`}
+              : `ERP y POS para PyMEs argentinas · ${CLAVER_GROUP.name}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {activarIntent && (
-            <Alert className="border-emerald-500/30 bg-emerald-500/5">
+            <Alert className="border-[var(--status-success-border)] bg-[var(--status-success-muted)]">
               <AlertDescription className="text-sm">
                 <span className="font-medium text-foreground">{activarIntent.productName}</span>
                 {activarIntent.lema ? (
@@ -154,14 +162,14 @@ function LoginPageContent() {
             </Alert>
           )}
 
-          <Button asChild variant="outline" className="w-full h-11 gap-2">
+          <Button asChild variant="outline" className="w-full h-11 min-h-[44px] gap-2">
             <Link href={activarParam ? `/demo?activar=${encodeURIComponent(activarParam)}` : "/demo"}>
               <PlayCircle className="h-4 w-4" />
-              Probar demo interactiva por rubro
+              Probar demo por rubro
             </Link>
           </Button>
           <p className="text-center text-xs text-muted-foreground -mt-1">
-            Elegís el rubro, se crea una empresa de prueba y entrás logueado al panel.
+            Elegís el rubro, se crea una empresa de prueba y entrás al panel.
           </p>
 
           {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
@@ -237,20 +245,20 @@ function LoginPageContent() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={enviandoLogin}>
-              {enviandoLogin ? "Iniciando sesión..." : "Iniciar Sesión"}
+            <Button type="submit" className="w-full min-h-[44px]" disabled={enviandoLogin || enviandoGoogle}>
+              {enviandoLogin ? "Ingresando…" : "Iniciar sesión"}
             </Button>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm gap-3">
               <Link
                 href={activarRegisterHref(activarParam)}
-                className="text-primary hover:underline"
+                className="text-primary hover:underline font-medium"
               >
                 Crear cuenta
               </Link>
-              <a href="/login/forgot-password" className="text-muted-foreground hover:underline">
-                ¿Olvidaste tu contraseña?
-              </a>
+              <Link href="/login/forgot-password" className="text-muted-foreground hover:underline">
+                ¿Olvidaste la contraseña?
+              </Link>
             </div>
           </form>
         </CardContent>

@@ -41,14 +41,27 @@ async function fetchKpiValues(
   }
 
   if (slug === "cobra") {
-    const res = await fetch("/api/marketplace/intangibles/cobranzas/resumen", { headers })
+    // Prefer Cobrá AAAS (pendientes WA); fallback a cuentas-cobrar resumen
+    const aas = await fetch("/api/cobranza-aas", { headers })
+    if (aas.ok) {
+      const data = await aas.json()
+      const p = data.pendientes ?? data
+      return {
+        recuperable: p.saldoTotal ?? data.saldoTotal ?? 0,
+        morosos: p.cuentasVencidas ?? data.cuentasVencidas ?? 0,
+        contactables: p.contactablesWhatsApp ?? data.contactablesWhatsApp ?? 0,
+        clientes: p.clientesUnicos ?? data.clientesUnicos ?? 0,
+      }
+    }
+    const res = await fetch("/api/cuentas-cobrar?take=1", { headers })
     if (!res.ok) return {}
     const data = await res.json()
+    const r = data.resumen ?? {}
     return {
-      recuperable: data.saldoTotal ?? 0,
-      morosos: data.cuentasVencidas ?? 0,
-      contactables: data.contactablesWhatsApp ?? 0,
-      clientes: data.clientesUnicos ?? 0,
+      recuperable: r.totalPendiente ?? 0,
+      morosos: r.totalVencido != null ? 1 : 0,
+      contactables: 0,
+      clientes: r.cuentas ?? 0,
     }
   }
 
@@ -71,14 +84,99 @@ async function fetchKpiValues(
   }
 
   if (slug === "tienda") {
-    const res = await fetch("/api/productos?activo=true", { headers })
-    const productos = res.ok ? ((await res.json()) as unknown[]) : []
-    const count = Array.isArray(productos) ? productos.length : 0
+    const [prodRes, cfgRes] = await Promise.all([
+      fetch("/api/productos?activo=true", { headers }),
+      fetch("/api/ecommerce/config", { headers }),
+    ])
+    const productos = prodRes.ok ? ((await prodRes.json()) as unknown[]) : []
+    const count = Array.isArray(productos) ? productos.length : (productos as { data?: unknown[] })?.data?.length ?? 0
+    let link = "Configurá tu slug"
+    if (cfgRes.ok) {
+      const cfg = await cfgRes.json()
+      const slugTienda = cfg.config?.slug
+      if (slugTienda) link = `/tienda/${slugTienda}`
+    }
     return {
       productos: count,
-      link_tienda: "Configurá tu slug",
+      link_tienda: link,
       pedidos: 0,
       stock: count,
+    }
+  }
+
+  if (slug === "puntos") {
+    const res = await fetch("/api/membresias", { headers })
+    if (!res.ok) return {}
+    const data = await res.json()
+    const r = data.resumen ?? {}
+    return {
+      socios: r.totalMembresias ?? 0,
+      vencidas: r.vencidas ?? 0,
+      cobradas: r.activas ?? 0,
+      planes: r.totalPlanes ?? 0,
+    }
+  }
+
+  if (slug === "abono") {
+    const res = await fetch("/api/facturacion-recurrente", { headers })
+    if (!res.ok) return {}
+    const data = await res.json()
+    const list = Array.isArray(data) ? data : data.data ?? data.facturas ?? []
+    const activos = list.filter((f: { activo?: boolean }) => f.activo).length
+    return {
+      activos,
+      emitir: list.length,
+      cobrar: 0,
+      mes: list.reduce((s: number, f: { facturasEmitidas?: number }) => s + (f.facturasEmitidas ?? 0), 0),
+    }
+  }
+
+  if (slug === "presupuestos" || slug === "monotributo" || slug === "sena") {
+    const res = await fetch("/api/ventas/presupuestos", { headers })
+    if (!res.ok) return {}
+    const data = await res.json()
+    const list = Array.isArray(data) ? data : data.data ?? []
+    const by = (est: string) => list.filter((p: { estado?: string }) => p.estado === est).length
+    return {
+      borradores: by("borrador"),
+      enviados: by("enviado"),
+      aceptados: by("aceptado"),
+      mes: list.length,
+      abiertos: by("borrador") + by("enviado"),
+      pendiente: 0,
+      facturas: 0,
+      avisos: 0,
+    }
+  }
+
+  if (slug === "caja" || slug === "pos") {
+    const res = await fetch("/api/caja", { headers })
+    if (!res.ok) return { caja: "—", tickets: 0, ventas_hoy: 0, stock_bajo: 0 }
+    const data = await res.json()
+    const abierta = data.cajaActual || data.abierta || data.caja
+    return {
+      caja: abierta ? "Abierta" : "Cerrada",
+      tickets: data.movimientosHoy ?? 0,
+      ventas_hoy: data.ingresos ?? data.totalIngresos ?? 0,
+      stock_bajo: 0,
+    }
+  }
+
+  if (slug === "stock") {
+    const res = await fetch("/api/productos", { headers })
+    if (!res.ok) return {}
+    const raw = await res.json()
+    const list = Array.isArray(raw) ? raw : raw.data ?? []
+    const bajo = list.filter(
+      (p: { stock?: number; stockMinimo?: number }) =>
+        Number(p.stock ?? 0) <= Number(p.stockMinimo ?? 0),
+    ).length
+    const sin = list.filter((p: { stock?: number }) => Number(p.stock ?? 0) <= 0).length
+    return {
+      productos: list.length,
+      bajo_stock: bajo,
+      sin_stock: sin,
+      valor: 0,
     }
   }
 

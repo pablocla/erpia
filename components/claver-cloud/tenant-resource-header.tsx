@@ -99,6 +99,18 @@ export function TenantResourceHeader({
           </Link>
         </Button>
         <Button variant="ghost" size="sm" asChild>
+          <Link href="/claver-cloud/operations">
+            <Server className="h-4 w-4 mr-1" />
+            Operations
+          </Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/claver-cloud/go-live">
+            <PlayCircle className="h-4 w-4 mr-1" />
+            Go-live
+          </Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
           <Link href="/claver-cloud/registros">
             <Link2 className="h-4 w-4 mr-1" />
             Registros web
@@ -108,7 +120,7 @@ export function TenantResourceHeader({
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 text-violet-400">
+          <div className="flex flex-wrap items-center gap-2 text-primary">
             <Building2 className="h-5 w-5 shrink-0" />
             <span className="text-sm font-medium">Tenant · #{empresa.id}</span>
           </div>
@@ -135,7 +147,7 @@ export function TenantResourceHeader({
         </div>
 
         <div className="flex flex-wrap gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={onRefresh} disabled={loading} className="min-h-[40px]">
             <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
             Actualizar
           </Button>
@@ -144,6 +156,7 @@ export function TenantResourceHeader({
             variant="default"
             onClick={onImpersonate}
             disabled={!!actionLoading || lifecycle.estado === "suspendido"}
+            className="min-h-[40px]"
           >
             <UserCog className="h-4 w-4 mr-2" />
             Impersonar ERP
@@ -153,6 +166,7 @@ export function TenantResourceHeader({
             variant="outline"
             onClick={onDiagnosticar}
             disabled={actionLoading === "diagnosticar"}
+            className="min-h-[40px]"
           >
             <Stethoscope className="h-4 w-4 mr-2" />
             Diagnosticar
@@ -161,7 +175,7 @@ export function TenantResourceHeader({
             <Button
               size="sm"
               variant="outline"
-              className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+              className="border-[var(--status-error-border)] text-[var(--status-error-foreground)] hover:bg-[var(--status-error-muted)] min-h-[40px]"
               onClick={() => onLifecycle("suspend")}
               disabled={actionLoading === "suspend"}
             >
@@ -173,7 +187,7 @@ export function TenantResourceHeader({
             <Button
               size="sm"
               variant="outline"
-              className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+              className="border-[var(--status-success-border)] text-[var(--status-success-foreground)] hover:bg-[var(--status-success-muted)] min-h-[40px]"
               onClick={() => onLifecycle("reactivate")}
               disabled={actionLoading === "reactivate"}
             >
@@ -181,10 +195,15 @@ export function TenantResourceHeader({
               Reactivar
             </Button>
           )}
-          <Button size="sm" variant="outline" asChild>
+          <Button size="sm" variant="outline" asChild className="min-h-[40px]">
             <Link href={`/claver-cloud/operations/${empresa.id}`}>
               <Server className="h-4 w-4 mr-2" />
-              Ops
+              Ops tenant
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" asChild className="min-h-[40px]">
+            <Link href={`/claver-cloud/implementation`}>
+              Implementación
             </Link>
           </Button>
         </div>

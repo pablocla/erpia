@@ -1,13 +1,17 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { authFetch } from "@/lib/stores/auth-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, CheckCircle2, Circle, Rocket, RefreshCw, ExternalLink } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Loader2, CheckCircle2, Circle, Rocket, RefreshCw, ExternalLink, Search, Building2 } from "lucide-react"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { EmptyState } from "@/components/ui/empty-state"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
 
 type CatalogItem = {
   id: string
@@ -118,25 +122,49 @@ export default function ClaverGoLivePage() {
   }
 
   const groups = ["plataforma", "comercial", "fiscal", "comms", "smoke", "handoff"] as const
+  const [queueQ, setQueueQ] = useState("")
+
+  const tenantsFiltrados = useMemo(() => {
+    const term = queueQ.trim().toLowerCase()
+    if (!term) return tenants
+    return tenants.filter((t) => {
+      const hay = [t.nombre, t.email, t.cuit, t.rubro, String(t.empresaId)]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+      return hay.includes(term)
+    })
+  }, [tenants, queueQ])
+
+  if (loading && tenants.length === 0) {
+    return <PageSkeleton kpis={4} tableRows={6} tableCols={2} />
+  }
 
   return (
-    <div className="space-y-6 p-4 md:p-6 max-w-6xl">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <Rocket className="h-6 w-6 text-emerald-600" />
-            Go-live comercial (Oleada 0)
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Cola de tenants y checklist §6. Solo packs PRD. Sin checklist cerrado = sigue siendo
-            piloto aunque la demo se vea bien.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => void loadQueue()} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Actualizar
-        </Button>
-      </div>
+    <PageShell className="max-w-6xl">
+      <PageHeader
+        variant="surface"
+        title="Go-live comercial"
+        description="Cola de tenants y checklist de salida a producción. Sin checklist cerrado sigue siendo piloto, aunque la demo se vea bien."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Rocket className="h-3.5 w-3.5" />
+            Oleada 0 · PRD packs
+          </span>
+        }
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadQueue()}
+            disabled={loading}
+            className="min-h-[40px]"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Actualizar
+          </Button>
+        }
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -151,9 +179,9 @@ export default function ClaverGoLivePage() {
               <CardDescription>Env cobro (MP+JWT+DB)</CardDescription>
               <CardTitle className="text-lg">
                 {platform.envOk ? (
-                  <span className="text-emerald-600">OK</span>
+                  <StatusBadge variant="success" label="OK" />
                 ) : (
-                  <span className="text-amber-600">Revisar</span>
+                  <StatusBadge variant="warning" label="Revisar" />
                 )}
               </CardTitle>
             </CardHeader>
@@ -163,9 +191,9 @@ export default function ClaverGoLivePage() {
               <CardDescription>Mercado Pago</CardDescription>
               <CardTitle className="text-lg">
                 {platform.mpMock ? (
-                  <span className="text-amber-600">Mock</span>
+                  <StatusBadge variant="warning" label="Mock" />
                 ) : (
-                  <span className="text-emerald-600">Real</span>
+                  <StatusBadge variant="success" label="Real" />
                 )}
               </CardTitle>
             </CardHeader>
@@ -192,40 +220,65 @@ export default function ClaverGoLivePage() {
 
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Cola de go-live</CardTitle>
-            <CardDescription>Prioridad: checklist incompleto primero</CardDescription>
+          <CardHeader className="space-y-3">
+            <div>
+              <CardTitle className="text-base">Cola de go-live</CardTitle>
+              <CardDescription>Prioridad: checklist incompleto primero</CardDescription>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9 min-h-[40px]"
+                placeholder="Buscar tenant, CUIT o email…"
+                value={queueQ}
+                onChange={(e) => setQueueQ(e.target.value)}
+                aria-label="Buscar en cola de go-live"
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-2 max-h-[70vh] overflow-y-auto">
-            {loading && tenants.length === 0 ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : tenants.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">Sin tenants recientes.</p>
+            {tenantsFiltrados.length === 0 ? (
+              <EmptyState
+                icon={Building2}
+                title={tenants.length === 0 ? "Sin tenants en cola" : "Ningún match"}
+                description={
+                  tenants.length === 0
+                    ? "Cuando haya altas recientes van a aparecer acá para el checklist."
+                    : "Probá otro término o limpiá la búsqueda."
+                }
+                actionLabel={tenants.length === 0 ? "Ir a Provisioning" : "Limpiar"}
+                onAction={
+                  tenants.length === 0
+                    ? () => {
+                        window.location.href = "/claver-cloud/provisioning"
+                      }
+                    : () => setQueueQ("")
+                }
+              />
             ) : (
-              tenants.map((t) => (
+              tenantsFiltrados.map((t) => (
                 <button
                   key={t.empresaId}
                   type="button"
                   onClick={() => void loadDetail(t.empresaId)}
-                  className={`w-full rounded-lg border p-3 text-left text-sm transition hover:bg-muted/50 ${
-                    selectedId === t.empresaId ? "ring-2 ring-emerald-500/50" : ""
+                  className={`w-full rounded-lg border p-3 text-left text-sm transition hover:bg-muted/50 min-h-[40px] ${
+                    selectedId === t.empresaId ? "ring-2 ring-primary/40 border-primary/30" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium truncate">{t.nombre}</span>
                     {t.checklistProgress.closed ? (
-                      <Badge className="bg-emerald-600 shrink-0">Cerrado</Badge>
+                      <StatusBadge variant="success" label="Cerrado" />
                     ) : (
-                      <Badge variant="secondary" className="shrink-0">
-                        {t.checklistProgress.done}/{t.checklistProgress.required}
-                      </Badge>
+                      <StatusBadge
+                        variant="warning"
+                        label={`${t.checklistProgress.done}/${t.checklistProgress.required}`}
+                      />
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">
                     {t.cuit ?? "sin CUIT"} · score {t.readinessScore}%
-                    {t.tosAccepted ? " · ToS ✓" : " · ToS ✗"}
+                    {t.tosAccepted ? " · ToS OK" : " · ToS pendiente"}
                   </p>
                 </button>
               ))
@@ -246,9 +299,11 @@ export default function ClaverGoLivePage() {
           </CardHeader>
           <CardContent>
             {!detail ? (
-              <p className="text-sm text-muted-foreground py-12 text-center">
-                Elegí un tenant de la cola para marcar el checklist de go-live.
-              </p>
+              <EmptyState
+                icon={Rocket}
+                title="Elegí un tenant de la cola"
+                description="Marcá el checklist de go-live, abrí la ficha del tenant y cerrá cuando el pack esté listo para producción."
+              />
             ) : (
               <div className="space-y-6">
                 <div className="flex flex-wrap gap-2">
@@ -287,7 +342,7 @@ export default function ClaverGoLivePage() {
                                 type="button"
                                 disabled={busy}
                                 onClick={() => void toggle(item.id, !done)}
-                                className="mt-0.5 text-emerald-600"
+                                className="mt-0.5 text-[var(--status-success)] min-h-[40px] min-w-[40px] flex items-center justify-center"
                                 aria-label={done ? "Desmarcar" : "Marcar"}
                               >
                                 {done ? (
@@ -349,6 +404,6 @@ export default function ClaverGoLivePage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           factura: { select: { id: true, tipo: true, numero: true, puntoVenta: true } },
-          cliente: { select: { id: true, nombre: true, cuit: true } },
+          cliente: { select: { id: true, nombre: true, cuit: true, telefono: true } },
         },
         orderBy: { fechaVencimiento: "asc" },
         skip,

@@ -78,7 +78,7 @@ export function RubroSetupChecklist({ rubro }: RubroSetupChecklistProps) {
     if (tabla.includes("producto") || tabla.includes("lista")) return "/dashboard/productos"
     if (tabla.includes("cliente")) return "/dashboard/clientes"
     if (tabla.includes("proveedor")) return "/dashboard/proveedores"
-    if (tabla.includes("deposito")) return "/dashboard/stock"
+    if (tabla.includes("deposito")) return "/dashboard/productos"
     if (tabla.includes("medida") || tabla.includes("marca")) return "/dashboard/maestros"
     return "/dashboard/configuracion"
   }

@@ -31,6 +31,7 @@ import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { isPathInAnclaFiadoAllowlist } from "@/lib/comercial/lite-sidebar"
 import { AppChecklistWidget } from "@/components/marketing/app-checklist-widget"
 import { ProductUpsellPanel } from "@/components/comercial/product-upsell-panel"
+import { ProductContextBanner } from "@/components/comercial/product-context-banner"
 import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
 import { getSubSaasExperience } from "@/lib/comercial/app-experience"
 
@@ -226,6 +227,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isPosShell && "h-full",
               )}
             >
+              {isLiteShell && !isPosShell && (
+                <ProductContextBanner modoLite={modoLite} productosSku={productosSku} className="mb-4" />
+              )}
               {operationalRoute ? (
                 <MotionPresenceLite>
                   <MotionPage

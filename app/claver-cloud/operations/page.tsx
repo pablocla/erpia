@@ -1,12 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Building2, RefreshCw, Server, ArrowRight, BarChart3 } from "lucide-react"
+import {
+  Building2,
+  RefreshCw,
+  Server,
+  ArrowRight,
+  BarChart3,
+  Search,
+  Activity,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CLAVER_GROUP } from "@/lib/brand"
+import { Input } from "@/components/ui/input"
+import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
+import { EmptyState } from "@/components/ui/empty-state"
+import type { StatusVariant } from "@/lib/ui/status-map"
 
 type ClienteCard = {
   id: number
@@ -31,13 +43,24 @@ type OpsKpis = {
   tenantsEnRiesgo: number
 }
 
+function entornoVariant(estado: string): StatusVariant {
+  const e = (estado || "").toLowerCase()
+  if (e === "activo" || e === "ok" || e === "healthy") return "success"
+  if (e === "error" || e === "down" || e === "failed") return "error"
+  if (e === "degraded" || e === "warning" || e === "pendiente") return "warning"
+  return "neutral"
+}
+
 export default function ClaverOperationsSelectorPage() {
   const [clientes, setClientes] = useState<ClienteCard[]>([])
   const [kpis, setKpis] = useState<OpsKpis | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState("")
+  const [loadError, setLoadError] = useState("")
 
   const cargar = async () => {
     setLoading(true)
+    setLoadError("")
     try {
       const [clientesRes, metricasRes, fleetRes] = await Promise.all([
         fetch("/api/claver/ops/clientes", { headers: authHeaders() }),
@@ -47,6 +70,8 @@ export default function ClaverOperationsSelectorPage() {
       if (clientesRes.ok) {
         const data = await clientesRes.json()
         setClientes(Array.isArray(data.data) ? data.data : [])
+      } else {
+        setLoadError("No se pudo cargar la lista de tenants.")
       }
       if (metricasRes.ok && fleetRes.ok) {
         const metricas = await metricasRes.json()
@@ -61,6 +86,8 @@ export default function ClaverOperationsSelectorPage() {
           ).length,
         })
       }
+    } catch {
+      setLoadError("Error de conexión al cargar operaciones.")
     } finally {
       setLoading(false)
     }
@@ -70,104 +97,220 @@ export default function ClaverOperationsSelectorPage() {
     void cargar()
   }, [])
 
+  const filtrados = useMemo(() => {
+    const term = q.trim().toLowerCase()
+    if (!term) return clientes
+    return clientes.filter((c) => {
+      const haystack = [c.nombre, c.razonSocial, c.rubro, String(c.id), c.planHosting ?? ""]
+        .join(" ")
+        .toLowerCase()
+      return haystack.includes(term)
+    })
+  }, [clientes, q])
+
+  if (loading && clientes.length === 0) {
+    return <PageSkeleton kpis={4} tableRows={6} tableCols={3} />
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Operations Console</h1>
-          <p className="text-muted-foreground flex items-center gap-2 mt-1">
-            Seleccioná un tenant para administrar su pipeline y logs operativos.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/claver-cloud/operations/reports">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Ver Reports Globales
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={cargar} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-      
-      {/* Resumen Health */}
-      <div className="grid gap-3 sm:grid-cols-4 mb-4">
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Entornos en error</p>
-            <p className="text-2xl font-bold text-red-600">{kpis?.entornosEnError ?? "—"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">SLA vencidos</p>
-            <p className="text-2xl font-bold text-amber-600">{kpis?.slaVencidos ?? "—"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Readiness promedio</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {kpis != null ? `${kpis.readinessPromedio}%` : "—"}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Tenants en riesgo</p>
-            <p className="text-2xl font-bold text-amber-600">{kpis?.tenantsEnRiesgo ?? "—"}</p>
-          </CardContent>
-        </Card>
+    <PageShell>
+      <PageHeader
+        variant="surface"
+        title="Operations"
+        description="Seleccioná un tenant para pipeline, logs y salud operativa. Priorizá los que están en riesgo."
+        badge={
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <Activity className="h-3.5 w-3.5" />
+            Torre analista
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" asChild className="min-h-[40px]">
+              <Link href="/claver-cloud/operations/reports">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Reports globales
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void cargar()} disabled={loading} className="min-h-[40px]">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Actualizar
+            </Button>
+          </div>
+        }
+      />
+
+      <KpiStrip
+        columns={4}
+        items={[
+          {
+            label: "Entornos en error",
+            value: (
+              <span
+                className={
+                  (kpis?.entornosEnError ?? 0) > 0
+                    ? "text-[var(--status-error-foreground)]"
+                    : undefined
+                }
+              >
+                {kpis?.entornosEnError ?? "—"}
+              </span>
+            ),
+            hint: (kpis?.entornosEnError ?? 0) > 0 ? "Requiere atención" : undefined,
+          },
+          {
+            label: "SLA vencidos",
+            value: (
+              <span
+                className={
+                  (kpis?.slaVencidos ?? 0) > 0
+                    ? "text-[var(--status-warning-foreground)]"
+                    : undefined
+                }
+              >
+                {kpis?.slaVencidos ?? "—"}
+              </span>
+            ),
+          },
+          {
+            label: "Readiness promedio",
+            value: kpis != null ? `${kpis.readinessPromedio}%` : "—",
+          },
+          {
+            label: "Tenants en riesgo",
+            value: (
+              <span
+                className={
+                  (kpis?.tenantsEnRiesgo ?? 0) > 0
+                    ? "text-[var(--status-warning-foreground)]"
+                    : undefined
+                }
+              >
+                {kpis?.tenantsEnRiesgo ?? "—"}
+              </span>
+            ),
+          },
+        ]}
+      />
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          className="pl-9 min-h-[40px]"
+          placeholder="Buscar por nombre, razón social, rubro o ID…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          aria-label="Buscar tenants"
+        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {clientes.map((c) => (
-          <Card key={c.id} className="hover:border-primary/40 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  {c.nombre}
-                </span>
-                <Badge variant="outline" className="text-[10px]">
-                  ID: {c.id}
-                </Badge>
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {c.razonSocial} · {c.rubro}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-1">
-                {c.entornos.map((e) => (
-                  <Badge
-                    key={e.codigo}
-                    variant="outline"
-                    className={
-                      e.estado === "activo"
-                        ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-                        : "bg-amber-500/10 text-amber-800 border-amber-300"
-                    }
-                  >
-                    <Server className="h-3 w-3 mr-1" />
-                    {e.codigo}: {e.estado}
-                  </Badge>
-                ))}
-              </div>
-              
-              <Button asChild className="w-full">
-                <Link href={`/claver-cloud/operations/${c.id}`} className="flex items-center justify-center gap-2">
-                  Administrar Operaciones
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+      {loadError && (
+        <EmptyState
+          icon={Server}
+          title="No se pudo cargar Operations"
+          description={loadError}
+          actionLabel="Reintentar"
+          onAction={() => void cargar()}
+        />
+      )}
+
+      {!loadError && filtrados.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title={clientes.length === 0 ? "Sin tenants en la consola" : "Ningún tenant coincide"}
+          description={
+            clientes.length === 0
+              ? "Cuando haya organizaciones provisionadas van a aparecer acá para operar."
+              : "Probá otro término o limpiá la búsqueda."
+          }
+          actionLabel={clientes.length === 0 ? "Ir a Provisioning" : "Limpiar búsqueda"}
+          onAction={
+            clientes.length === 0
+              ? () => {
+                  window.location.href = "/claver-cloud/provisioning"
+                }
+              : () => setQ("")
+          }
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtrados.map((c) => {
+            const hasErrorEnv = c.entornos.some((e) => entornoVariant(e.estado) === "error")
+            const openTickets = c.metricas?.ticketsAbiertos ?? 0
+            return (
+              <Card
+                key={c.id}
+                className={`hover:border-primary/40 transition-colors ${
+                  hasErrorEnv ? "border-[var(--status-error-border)]" : ""
+                }`}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="truncate">{c.nombre}</span>
+                    </span>
+                    <Badge variant="outline" className="text-[10px] font-mono shrink-0">
+                      ID {c.id}
+                    </Badge>
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {c.razonSocial}
+                    {c.rubro ? ` · ${c.rubro}` : ""}
+                    {c.planHosting ? ` · ${c.planHosting}` : ""}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.entornos.length === 0 ? (
+                      <StatusBadge variant="neutral" label="Sin entornos" />
+                    ) : (
+                      c.entornos.map((e) => (
+                        <StatusBadge
+                          key={e.codigo}
+                          variant={entornoVariant(e.estado)}
+                          label={`${e.codigo}: ${e.estado}`}
+                        />
+                      ))
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <span>
+                      Tickets: <strong className="text-foreground">{openTickets}</strong>
+                    </span>
+                    <span>
+                      Jobs: <strong className="text-foreground">{c.metricas?.jobsActivos ?? 0}</strong>
+                    </span>
+                    <span>
+                      Logs error:{" "}
+                      <strong
+                        className={
+                          (c.metricas?.logsError ?? 0) > 0
+                            ? "text-[var(--status-error-foreground)]"
+                            : "text-foreground"
+                        }
+                      >
+                        {c.metricas?.logsError ?? 0}
+                      </strong>
+                    </span>
+                  </div>
+
+                  <Button asChild className="w-full min-h-[40px]">
+                    <Link
+                      href={`/claver-cloud/operations/${c.id}`}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      Administrar operaciones
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+    </PageShell>
   )
 }

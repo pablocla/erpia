@@ -24,10 +24,12 @@ import {
   Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight,
   Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight, Sparkles,
 } from "lucide-react"
-import { PageShell, PageHeader } from "@/components/layout"
+import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
+import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { parseApiList } from "@/lib/api/parse-list-response"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
-import { EmptyStateIllustration } from "@/components/empty-state-illustration"
+import { EmptyState } from "@/components/ui/empty-state"
+import { activoVariant, activoLabel } from "@/lib/ui/status-map"
 import { CSVImport } from "@/components/csv-import"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useConfirm } from "@/hooks/use-confirm"
@@ -183,6 +185,7 @@ export default function ClientesPage() {
   const [clienteEditando, setClienteEditando] = useState<any>(null)
   const [formData, setFormData] = useState<Record<string, any>>({ ...EMPTY_FORM })
   const [guardando, setGuardando] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<FilterValues>({})
   const { toast } = useToast()
 
@@ -190,6 +193,7 @@ export default function ClientesPage() {
 
   /* ---------- CRUD ---------- */
   const cargarClientes = useCallback(async () => {
+    setLoading(true)
     try {
       const qs = new URLSearchParams({ skip: String(page * PAGE_SIZE), take: String(PAGE_SIZE) })
       if (busqueda) qs.set("q", busqueda)
@@ -199,7 +203,16 @@ export default function ClientesPage() {
       setTotal(data.total ?? 0)
     } catch (error) {
       console.error("Error al cargar clientes:", error)
+      toast({
+        title: "No se pudieron cargar los clientes",
+        description: "Revisá tu conexión e intentá de nuevo.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+    // toast is stable (module-level store); omit from deps to avoid refetch loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, busqueda])
 
   useEffect(() => { cargarClientes() }, [cargarClientes])
@@ -310,6 +323,15 @@ export default function ClientesPage() {
     { key: "activo", label: "Activo", type: "boolean" },
   ]
 
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      filters.condicionIva ||
+      filters.tipoPersona ||
+      filters.activo !== undefined ||
+      busqueda.trim(),
+    )
+  }, [filters, busqueda])
+
   const clientesFiltrados = useMemo(() => {
     return clientes.filter((c: any) => {
       if (filters.condicionIva && c.condicionIva !== filters.condicionIva) return false
@@ -319,13 +341,23 @@ export default function ClientesPage() {
     })
   }, [clientes, filters])
 
+  const clearClientFilters = () => {
+    setFilters({})
+    setBusqueda("")
+    setPage(0)
+  }
+
   /* ---------- RENDER ---------- */
+  if (loading && clientes.length === 0) {
+    return <PageSkeleton kpis={0} tableRows={10} tableCols={6} />
+  }
+
   return (
     <PageShell>
       <PageHeader
         variant="surface"
         title="Clientes"
-        description="Maestro de clientes — Fiscal, Financiero, Comercial"
+        description="Base de clientes con datos fiscales, crédito y comercial. Buscá por CUIT, razón social o código."
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
@@ -368,7 +400,10 @@ export default function ClientesPage() {
             }}
             title="Importar Clientes desde CSV"
           />
-          <Button onClick={nuevoCliente}><Plus className="h-4 w-4 mr-2" />Nuevo Cliente</Button>
+          <Button onClick={nuevoCliente} className="min-h-[40px]">
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
           </>
         }
       />
@@ -402,7 +437,7 @@ export default function ClientesPage() {
               { key: "condicionIva", header: "Cond. IVA", cell: (c: any) => <span className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</span> },
               { key: "provincia", header: "Provincia", cell: (c: any) => <span className="text-xs">{c.provincia?.nombre || "-"}</span>, exportFn: (c: any) => c.provincia?.nombre ?? "" },
               { key: "limiteCredito", header: "Lím. Crédito", align: "right" as const, sortable: true, cell: (c: any) => c.limiteCredito != null ? Number(c.limiteCredito).toLocaleString("es-AR", { style: "currency", currency: "ARS" }) : "-" },
-              { key: "activo", header: "Estado", cell: (c: any) => c.activo !== false ? <Badge variant="default">Activo</Badge> : <Badge variant="secondary">Inactivo</Badge>, exportFn: (c: any) => c.activo ? "Activo" : "Inactivo" },
+              { key: "activo", header: "Estado", cell: (c: any) => <StatusBadge variant={activoVariant(c.activo !== false)} label={activoLabel(c.activo !== false)} />, exportFn: (c: any) => c.activo ? "Activo" : "Inactivo" },
               {
                 key: "acciones" as any, header: "Acciones", align: "right" as const,
                 cell: (c: any) => (
@@ -415,7 +450,7 @@ export default function ClientesPage() {
               },
             ] as DataTableColumn<any>[]}
             rowKey="id"
-            searchPlaceholder="Buscar por nombre, CUIT, código..."
+            searchPlaceholder="Buscar por nombre, CUIT o código…"
             searchKeys={["nombre", "cuit", "codigo"]}
             selectable
             bulkActions={(selected, clear) => (
@@ -440,9 +475,23 @@ export default function ClientesPage() {
               </>
             )}
             exportFilename="clientes"
-            loading={false}
+            loading={loading}
+            emptyState={
+              <EmptyState
+                icon={Building2}
+                title={hasActiveFilters ? "Ningún cliente coincide" : "Todavía no hay clientes"}
+                description={
+                  hasActiveFilters
+                    ? "Probá con otros filtros o limpiá la búsqueda. También podés crear un cliente nuevo."
+                    : "Cargá el primer cliente manualmente o importá un CSV. Con CUIT podés completar datos fiscales al crear."
+                }
+                actionLabel="Nuevo Cliente"
+                onAction={nuevoCliente}
+                secondaryActionLabel={hasActiveFilters ? "Limpiar filtros" : undefined}
+                onSecondaryAction={hasActiveFilters ? clearClientFilters : undefined}
+              />
+            }
             emptyMessage="No se encontraron clientes"
-            emptyIcon={<EmptyStateIllustration type="clientes" compact actionLabel="Nuevo Cliente" onAction={nuevoCliente} />}
             defaultPageSize={25}
             compact
             onRowClick={verDetalle}

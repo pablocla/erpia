@@ -19,18 +19,18 @@ export const PARTNER_PROGRAM = {
   },
   roles: [
     {
-      id: "seller",
-      title: "Líder de Red (Vendedor / Afiliado)",
-      forWho: "Comerciales independientes, influencers, y emprendedores de calle.",
-      earns: `${Math.round(AFILIADO_RATES.sellerNivel1 * 100)}% mensual recurrente de por vida por cada comercio que traigas (Nivel 1).`,
-      n2: `${Math.round(AFILIADO_RATES.sellerNivel2 * 100)}% mensual de toda la facturación de los sub-partners que sumes a tu red (Nivel 2).`,
+      id: "vendedor_campo",
+      title: "🔥 Vendedor de Campo (Directo en Calle)",
+      forWho: "Pibes de 18 a 30 años, comerciales de calle y vendedores independientes.",
+      earns: "100% del primer cobro por Mercado Pago en la mano + 30% recurrente de por vida por cada comercio que sumes (Nivel 1). Entrás 100% GRATIS bajo la línea directa de Claver.",
+      n2: "Tu foco es patear la calle, cerrar negocios (kioscos, almacenes, talleres) y cobrar al instante. Sin jefes ni inversión inicial.",
     },
     {
-      id: "implementer",
-      title: "Socio Tecnológico (Implementador / Contador)",
-      forWho: "Técnicos de PC, instaladores, y estudios contables.",
-      earns: `100% de la tasa de configuración inicial ($50.000 de Setup) + 15% del abono mensual del cliente.`,
-      n2: `5% en Nivel 2. Contadores: Traé 3 clientes activos y tu Pack Contador de Claver es GRATIS de por vida.`,
+      id: "coordinador_celula",
+      title: "👑 Coordinador de Célula (Líder de Equipo)",
+      forWho: "Vendedores estrella con experiencia, dueños de agencias o líderes de equipo.",
+      earns: "5% pasivo de todo lo que vendan los vendedores de tu célula (Nivel 2) + tus comisiones directas.",
+      n2: "No podés ser coordinador 'cómodo': Para armar tu Célula tenés que demostrar mérito (20 comercios activos vendidos por vos) o abonar el Canon de Franquicia ($500.000 ARS). Tu trabajo es capacitar, bancar a tu equipo y hacer crecer la empresa de verdad.",
     },
   ],
   rules: [

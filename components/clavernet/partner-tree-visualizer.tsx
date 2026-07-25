@@ -169,27 +169,22 @@ export function PartnerTreeVisualizer({ partner, empresas, subAfiliados, comisio
         </div>
 
         {/* LEYENDA Y EXPLICACIÓN DE REPARTO PIRAMIDAL */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-xs text-slate-300 grid sm:grid-cols-3 gap-4">
-          <div className="flex items-start gap-2">
-            <div className="h-6 w-6 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">1</div>
-            <div>
-              <p className="font-bold text-amber-300">Entrada 100% GRATIS</p>
-              <p className="text-slate-400 text-[11px]">Cualquier persona se suma sin pagar nada bajo la línea directa Claver. Vende y se queda el 100% del primer mes + 30% mensual de por vida.</p>
-            </div>
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-xs text-slate-300 grid sm:grid-cols-2 gap-4">
+          <div className="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5 space-y-1.5">
+            <p className="font-bold text-emerald-400 flex items-center gap-1.5 text-sm">
+              🔥 CAMINO A: Vendedor de Campo (Línea Directa Claver)
+            </p>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              **Entrada 100% GRATIS.** Salís a la calle, cerrás comercios (kioscos, almacenes, talleres) y te quedás con el **100% del primer cobro por Mercado Pago en tu mano + el 30% recurrente de por vida**. Tu único trabajo es hacer crecer la empresa cerrando negocios reales.
+            </p>
           </div>
-          <div className="flex items-start gap-2">
-            <div className="h-6 w-6 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">2</div>
-            <div>
-              <p className="font-bold text-emerald-300">Comercios N1 (Directos)</p>
-              <p className="text-slate-400 text-[11px]">Ganás el 100% del primer cobro por Mercado Pago en la mano + 30% recurrente de cada abono cobrado.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <div className="h-6 w-6 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">3</div>
-            <div>
-              <p className="font-bold text-purple-300">Líder de Célula / Canon o Mérito</p>
-              <p className="text-slate-400 text-[11px]">Para liderar equipos y ganar el 5% de tu red N2: Podés pagar el Canon de Franquicia ($500.000 ARS) o **desbloquearlo 100% GRATIS vendiendo 20 comercios activos** por tu propio mérito.</p>
-            </div>
+          <div className="bg-slate-950 border border-purple-500/30 rounded-xl p-3.5 space-y-1.5">
+            <p className="font-bold text-purple-400 flex items-center gap-1.5 text-sm">
+              👑 CAMINO B: Coordinador de Célula (Líder de Equipo)
+            </p>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              **Acá no hay lugar para 'coordinadores cómodos'.** Para armar tu equipo y ganar el **5% pasivo de tu Red N2**: abonás el Canon de Franquicia ($500.000 ARS) o lo **desbloqueás 100% GRATIS vendiendo 20 comercios activos por tu propio mérito**. Tenés que capacitar y bancar a tu equipo.
+            </p>
           </div>
         </div>
       </CardContent>

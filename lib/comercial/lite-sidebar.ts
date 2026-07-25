@@ -4,7 +4,7 @@
 
 import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
 
-const LITE_SHARED = ["/dashboard/mi-plan", "/dashboard/apps", "/dashboard/trial-vencido"]
+const LITE_SHARED = ["/dashboard/mi-plan", "/dashboard/apps", "/dashboard/trial-vencido", "/dashboard/cerebro"]
 
 /** Rutas permitidas con ancla fiado gratis aunque el trial de pago haya vencido */
 export const ANCLA_FIADO_ALLOWLIST = [
@@ -16,6 +16,7 @@ export const ANCLA_FIADO_ALLOWLIST = [
   "/dashboard/mi-plan",
   "/dashboard/apps",
   "/dashboard/trial-vencido",
+  "/dashboard/cerebro",
 ] as const
 
 export function isPathInAnclaFiadoAllowlist(pathname: string): boolean {

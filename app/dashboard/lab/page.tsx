@@ -23,6 +23,7 @@ import {
   Building2,
   Phone,
   ArrowRight,
+  Shield,
   Award,
   Layers,
   BookOpen,

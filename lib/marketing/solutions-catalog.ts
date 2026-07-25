@@ -27,6 +27,10 @@ export const SOLUTION_SLUGS = [
   "contadores",
   "precios",
   "marca",
+  "libreta-fiado",
+  "portal-b2b",
+  "gimnasios",
+  "talleres",
 ] as const
 
 export type SolutionSlug = (typeof SOLUTION_SLUGS)[number]
@@ -348,6 +352,145 @@ export const SOLUTIONS: Record<string, SolutionPage> = {
     faq: [
       { q: "¿Marca del cliente?", a: "White-label por empresa en configuración → apariencia." },
       { q: "¿ClavERP vs Claver?", a: "Claver vende; ClavERP es el ERP. Otros productos suman después." },
+    ],
+  },
+  "libreta-fiado": {
+    slug: "libreta-fiado",
+    icon: "CreditCard",
+    emoji: "📕",
+    headline: "Libreta de Fiado digital con ajuste por inflación",
+    subheadline:
+      "Anotá compras en 1-Click, enviá recordatorios de cobro por WhatsApp y blindá tu capital de trabajo con tasa o ajuste IPC.",
+    heroGradient: "from-amber-600 to-orange-800",
+    accentColor: "text-amber-600",
+    icp: "Kioscos, almacenes de barrio, autoservicios y comercios de cercanía.",
+    pains: [
+      "Perdés plata fiando en libreta de papel mientras la inflación te devora",
+      "Vergüenza o conflicto al cobrarle a los clientes conocidos del barrio",
+      "Olvidos de anotación y falta de saldo límite por cliente",
+      "No sabés exactamente cuánto dinero tenés en la calle hoy",
+    ],
+    solutions: [
+      { title: "1-Click WhatsApp Checkout", desc: "Envío instantáneo de comprobante y resumen de cuenta por WA." },
+      { title: "Protección Inflación (IPC)", desc: "Ajuste automático de cuentas a cobrar para no perder liquidez." },
+      { title: "Límites de Crédito", desc: "Semáforo visual de morosidad antes de autorizar nueva entrega." },
+      { title: "Mostrador Ágil", desc: "Integración nativa con caja y POS sin configurar nada técnico." },
+    ],
+    modules: ["Fiado Protegido", "Cuentas por Cobrar", "WhatsApp", "POS Mostrador", "Caja"],
+    metrics: [
+      { value: "< 10s", label: "Para anotar y avisar por WhatsApp" },
+      { value: "100%", label: "Capital resguardado del IPC" },
+      { value: "0", label: "Hojas de papel perdidas" },
+    ],
+    cta: "Probar Libreta Digital",
+    demoLink: "/login",
+    planFrom: 19900,
+    faq: [
+      { q: "¿Cómo se avisa al cliente?", a: "Se genera una plantilla automática para enviar por WhatsApp Web o Twilio." },
+      { q: "¿Necesito internet siempre?", a: "Podés registrar compras offline y sincronizar al volver la señal." },
+    ],
+  },
+  "portal-b2b": {
+    slug: "portal-b2b",
+    icon: "Globe",
+    emoji: "🏢",
+    headline: "Portal de Autogestión Mayorista B2B",
+    subheadline:
+      "Tus clientes ingresan con CUIT, consultan su saldo en cuenta corriente, ven su catálogo personalizado y hacen pedidos 24/7 sin intermediarios.",
+    heroGradient: "from-blue-700 to-indigo-900",
+    accentColor: "text-blue-600",
+    icp: "Distribuidoras, fraccionadoras, mayoristas de bebidas, alimentos y mercados concentradores.",
+    pains: [
+      "Mensajes infinitos por WhatsApp para pedir lista de precios actualizada",
+      "Clientes llamando constantemente para preguntar cuánto deben",
+      "Errores de carga manual desde mensajes de audio a la planilla del ERP",
+      "Pérdida de ventas fuera del horario comercial de la oficina",
+    ],
+    solutions: [
+      { title: "Acceso CUIT Frictionless", desc: "Login seguro sin contraseñas difíciles para el cliente." },
+      { title: "Estado Financiero Vivo", desc: "Muestra saldo de cuenta corriente, vencimientos y límite de crédito." },
+      { title: "Catálogo de Alta Densidad", desc: "Pedidos rápidos por bulto, cajón, kg o unidad con stock real." },
+      { title: "Inyección a Picking", desc: "El pedido entra directo a preparación de depósito y facturación." },
+    ],
+    modules: ["Portal B2B", "Cuenta Corriente", "Catálogo Denso", "Picking", "Ventas B2B"],
+    metrics: [
+      { value: "24/7", label: "Recepción de pedidos sin pausar" },
+      { value: "0%", label: "Errores de transcripción" },
+      { value: "100%", label: "Sincronizado con el ERP" },
+    ],
+    cta: "Probar Portal B2B Demo",
+    demoLink: "/portal?empresa=1",
+    planFrom: 49900,
+    faq: [
+      { q: "¿El cliente ve precios generales o los suyos?", a: "Ve su lista de precios asignada en el ERP y su descuento pactado." },
+      { q: "¿Se conecta con Mercado Pago?", a: "Sí, pueden pagar saldo pendiente o pedidos al contado con Mercado Pago." },
+    ],
+  },
+  gimnasios: {
+    slug: "gimnasios",
+    icon: "Store",
+    emoji: "🏋️‍♂️",
+    headline: "Gestión de Membresías, Cuotas y Accesos",
+    subheadline:
+      "Control de socios, cobro automatizado de cuotas vencidas y recepción en mostrador para gimnasios y clubes.",
+    heroGradient: "from-emerald-600 to-teal-800",
+    accentColor: "text-emerald-600",
+    icp: "Gimnasios, boxes de CrossFit, academias de danza, centros deportivos y clubes de barrio.",
+    pains: [
+      "Morosidad en cuotas mensuales y falta de seguimiento",
+      "Planillas de Excel caóticas para saber quién está al día",
+      "Falta de control de ingresos en recepción durante las horas pico",
+    ],
+    solutions: [
+      { title: "Ficha de Socio", desc: "Historial de pagos, vencimientos de planes y apto médico." },
+      { title: "Aviso de Cobro WA", desc: "Notificaciones automáticas antes del vencimiento de la cuota." },
+      { title: "Recepción Rápida", desc: "Verificación de estado de cuenta al ingresar por DNI o código." },
+      { title: "Caja Integrada", desc: "Cobros en efectivo, transferencia o QR al instante." },
+    ],
+    modules: ["Membresías", "Socios", "Cobranza", "Caja", "Planes"],
+    metrics: [
+      { value: "-50%", label: "Reducción de morosidad" },
+      { value: "< 3s", label: "Check-in de socio" },
+      { value: "100%", label: "Visibilidad de caja" },
+    ],
+    cta: "Demo Gimnasios",
+    demoLink: "/login",
+    planFrom: 34900,
+    faq: [
+      { q: "¿Soporta pases por clase o libres?", a: "Podés configurar planes diarios, pases por clases o abonos mensuales." },
+    ],
+  },
+  talleres: {
+    slug: "talleres",
+    icon: "Factory",
+    emoji: "🔧",
+    headline: "Órdenes de Trabajo y Repuestos para Talleres",
+    subheadline:
+      "Seguimiento de vehículos/equipos desde el presupuesto hasta la entrega, con asignación de repuestos y mano de obra.",
+    heroGradient: "from-slate-700 to-zinc-900",
+    accentColor: "text-slate-700",
+    icp: "Talleres mecánicos, service de climatización, electrónica y reparaciones en general.",
+    pains: [
+      "No sabés el estado de cada trabajo ni qué repuestos se consumieron",
+      "Clientes llamando para saber si su equipo o vehículo está listo",
+      "Pérdida de margen por no cotizar la mano de obra correctamente",
+    ],
+    solutions: [
+      { title: "Tablero Kanban de OT", desc: "Visualizá equipos en Diagnóstico, En Repuesto y Listo." },
+      { title: "Descuento de Insumos", desc: "Asigná repuestos de stock directo a la Orden de Trabajo." },
+      { title: "Aviso 'Listo para Retirar'", desc: "Notificación directa por WhatsApp al finalizar el trabajo." },
+      { title: "Presupuesto → Factura", desc: "Convertí la cotización aprobada en factura en 1 click." },
+    ],
+    modules: ["Órdenes de Trabajo", "Stock Repuestos", "Presupuestos", "Facturación", "WhatsApp"],
+    metrics: [
+      { value: "100%", label: "Trazabilidad de la orden" },
+      { value: "0", label: "Repuestos sin registrar" },
+    ],
+    cta: "Demo Taller Meca",
+    demoLink: "/login",
+    planFrom: 39900,
+    faq: [
+      { q: "¿Se puede imprimir ficha de ingreso?", a: "Sí, emite la constancia de recepción para el cliente." },
     ],
   },
 }

@@ -13,7 +13,7 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   HeartPulse, Search, Plus, ChevronRight, Dog, Cat, Bird,
   Stethoscope, FileText, AlertCircle, Calendar, User, Phone,
-  Weight, ClipboardList, Sparkles
+  Weight, ClipboardList, Sparkles, MessageSquare, ShieldCheck
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
@@ -21,6 +21,7 @@ import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { activoVariant, activoLabel } from "@/lib/ui/status-map"
 import { AppExperienceHeader } from "@/components/app-experience/app-experience-header"
 import { getIndustryExperience, getNicheExperience } from "@/lib/comercial/app-experience"
+import { getWhatsAppShareUrl } from "@/lib/utils/formatters-ar"
 
 interface Consulta {
   id: number

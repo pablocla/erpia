@@ -27,3 +27,30 @@ export function calcularPrecioPorPeso(input: {
 export function etiquetaBalanza(nombre: string, pesoKg: number, total: number) {
   return `${nombre} — ${pesoKg.toFixed(3)} kg — $${total.toLocaleString("es-AR")}`
 }
+
+/**
+ * Parser EAN-13 de balanzas para puestos de frutas, verduras y carnicerías.
+ * Estándar AR: 20 + PLU(4d) + Monto/Peso(5d) + Checksum(1d)
+ */
+export function parseEanBalanza(barcode: string, precioPorKgBase?: number) {
+  const clean = barcode.trim()
+  if (clean.length !== 13 || (!clean.startsWith("20") && !clean.startsWith("28"))) {
+    return { esBalanza: false }
+  }
+
+  const plu = clean.substring(2, 6)
+  const valorRaw = parseInt(clean.substring(6, 11), 10)
+  const valorDecimal = valorRaw / 100 // Convertir centavos a pesos ARS
+
+  let pesoEstimadoKg: number | undefined = undefined
+  if (precioPorKgBase && precioPorKgBase > 0) {
+    pesoEstimadoKg = Math.round((valorDecimal / precioPorKgBase) * 1000) / 1000
+  }
+
+  return {
+    esBalanza: true,
+    plu,
+    montoPesos: valorDecimal,
+    pesoEstimadoKg,
+  }
+}

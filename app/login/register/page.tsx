@@ -223,6 +223,7 @@ function RegisterPageContent() {
                 onChange={handleChange}
                 required
                 placeholder="Mi Empresa SRL"
+                autoComplete="organization"
               />
             </div>
 
@@ -237,6 +238,7 @@ function RegisterPageContent() {
                 placeholder="Juan Pérez"
                 readOnly={!!googleUser}
                 className={googleUser ? "bg-muted" : ""}
+                autoComplete="name"
               />
             </div>
 
@@ -252,6 +254,7 @@ function RegisterPageContent() {
                 placeholder="juan@miempresa.com"
                 readOnly={!!googleUser}
                 className={googleUser ? "bg-muted" : ""}
+                autoComplete="email"
               />
             </div>
 
@@ -267,6 +270,7 @@ function RegisterPageContent() {
                     onChange={handleChange}
                     required
                     placeholder="Mínimo 8 caracteres"
+                    autoComplete="new-password"
                   />
                 </div>
 
@@ -280,6 +284,7 @@ function RegisterPageContent() {
                     onChange={handleChange}
                     required
                     placeholder="Repetí la contraseña"
+                    autoComplete="new-password"
                   />
                 </div>
               </>

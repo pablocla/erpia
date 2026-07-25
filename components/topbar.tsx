@@ -122,12 +122,12 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
   const topHints = (() => {
     const m = modoLite || "completo"
     if (m === "cobranza") return { posCaja: false, afip: false }
-    if (m === "niche" || m === "servicios") return { posCaja: Boolean(productosSku?.["core.pos"]), afip: true }
+    if (m === "niche" || m === "servicios") return { posCaja: Boolean(productosSku?.["core.pos"]), afip: Boolean(productosSku?.["core.facturacion"]) }
     if (m === "fiado") return { posCaja: true, afip: false }
     if (m === "pos") return { posCaja: true, afip: Boolean(productosSku?.["core.facturacion"]) }
     return {
-      posCaja: true,
-      afip: true,
+      posCaja: Boolean(productosSku?.["core.pos"] || productosSku?.["core.caja"]),
+      afip: Boolean(productosSku?.["core.facturacion"]),
     }
   })()
 

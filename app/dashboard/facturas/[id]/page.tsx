@@ -15,10 +15,14 @@ import {
   Loader2,
   Printer,
   RefreshCw,
+  Send,
+  MessageSquare,
+  ShieldAlert,
 } from "lucide-react"
 import { FiscalEmissionResult } from "@/components/fiscal/fiscal-emission-result"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { facturaEstadoLabel, facturaEstadoVariant } from "@/lib/ui/status-map"
+import { formatCuit, getWhatsAppShareUrl, generateAfipQrUrl } from "@/lib/utils/formatters-ar"
 
 interface LineaFactura {
   id: number
@@ -130,21 +134,40 @@ export default function FacturaDetallePage({
           <StatusBadge variant={facturaEstadoVariant(data.estado)} label={facturaEstadoLabel(data.estado)} />
         }
         actions={
-          (data.estado === "pendiente_cae" || data.estado === "error_cae") ? (
+          <div className="flex items-center gap-2">
+            {(data.estado === "pendiente_cae" || data.estado === "error_cae") && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void reintentarCae()}
+                disabled={reintentando}
+              >
+                {reintentando ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                )}
+                Reintentar CAE
+              </Button>
+            )}
             <Button
               size="sm"
-              variant="secondary"
-              onClick={() => void reintentarCae()}
-              disabled={reintentando}
+              variant="outline"
+              className="bg-green-600 hover:bg-green-700 text-white border-green-700 font-medium"
+              onClick={() => {
+                const text = `Hola ${data.cliente?.nombre ?? "Cliente"}, te enviamos el comprobante fiscal ${comprobante} por un total de ${fmt(Number(data.total))}. CAE: ${data.cae ?? "En proceso"}.`
+                const url = getWhatsAppShareUrl("5491100000000", text)
+                window.open(url, "_blank")
+              }}
             >
-              {reintentando ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-1" />
-              )}
-              Reintentar CAE
+              <MessageSquare className="h-4 w-4 mr-1.5" />
+              Enviar por WhatsApp (1-click)
             </Button>
-          ) : undefined
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="h-4 w-4 mr-1.5" />
+              Imprimir
+            </Button>
+          </div>
         }
       />
 
@@ -160,33 +183,25 @@ export default function FacturaDetallePage({
             pendienteCae: data.estado === "pendiente_cae",
             error: data.estado === "error_cae" ? "Error al obtener CAE — revisá certificado AFIP" : undefined,
           }}
-          title={data.estado === "emitida" ? "Comprobante fiscal" : "Estado fiscal"}
+          title={data.estado === "emitida" ? "Comprobante fiscal AFIP" : "Estado fiscal AFIP"}
           onRetry={
             data.estado === "pendiente_cae" || data.estado === "error_cae"
               ? () => void reintentarCae()
               : undefined
           }
           retrying={reintentando}
-          actions={
-            data.qrBase64 ? (
-              <Button variant="outline" size="sm" onClick={() => window.print()}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir
-              </Button>
-            ) : undefined
-          }
         />
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Datos fiscales</CardTitle>
+            <CardTitle className="text-sm">Datos fiscales & AFIP</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">CAE</span>
-              <span className="font-mono text-xs">{data.cae ?? "—"}</span>
+              <span className="font-mono text-xs font-semibold text-primary">{data.cae ?? "— (Contingencia)"}</span>
             </div>
             {data.vencimientoCAE && (
               <div className="flex justify-between">
@@ -196,12 +211,12 @@ export default function FacturaDetallePage({
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tipo AFIP</span>
-              <span>{data.tipoCbte}</span>
+              <span>Comprobante {data.tipoCbte} ({data.tipo})</span>
             </div>
             {data.cliente?.cuit && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">CUIT cliente</span>
-                <span className="font-mono text-xs">{data.cliente.cuit}</span>
+                <span className="text-muted-foreground">CUIT Receptor</span>
+                <span className="font-mono text-xs font-semibold">{formatCuit(data.cliente.cuit)}</span>
               </div>
             )}
           </CardContent>

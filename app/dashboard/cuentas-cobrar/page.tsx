@@ -46,6 +46,7 @@ import { isCobraProductShell } from "@/lib/comercial/product-shell"
 import { useDashboardShell } from "@/hooks/use-dashboard-shell"
 import { useToast } from "@/hooks/use-toast"
 import { buildWaMeUrl, messageCobroCliente } from "@/lib/comercial/whatsapp-copy"
+import { formatCuit, getWhatsAppShareUrl } from "@/lib/utils/formatters-ar"
 
 type CC = {
   id: number
@@ -448,11 +449,11 @@ export default function CuentasCobrarPage() {
 
       <PageHeader
         variant="surface"
-        title={isCobra ? "Cobros y morosos" : "Cuentas a cobrar"}
+        title={isCobra ? "Cobros y morosos" : "Plata que te deben"}
         description={
           isCobra
             ? "Panel de deuda recuperable: filtrá vencidos, cobrá y copiá el WhatsApp con un toque."
-            : "Saldos pendientes, aging y cobranza. Cobrás de a una o en lote del mismo cliente."
+            : "Cobros pendientes y fiados de clientes. Envia recordatorios por WhatsApp y cobrá en 1 clic."
         }
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
@@ -670,14 +671,14 @@ export default function CuentasCobrarPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs min-h-[36px] text-[var(--status-success-foreground)]"
+                        className="h-7 text-xs min-h-[36px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium"
                         onClick={(e) => {
                           e.stopPropagation()
                           void copiarLinkPago(c)
                         }}
                       >
-                        <MessageCircle className="h-3.5 w-3.5 mr-1" />
-                        {isCobra ? "WhatsApp" : "Link pago"}
+                        <MessageCircle className="h-3.5 w-3.5 mr-1 fill-emerald-600/20" />
+                        {isCobra ? "WhatsApp" : "Cobrar por WA"}
                       </Button>
                     </div>
                   ) : null,

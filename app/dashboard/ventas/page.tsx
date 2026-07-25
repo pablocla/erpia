@@ -494,7 +494,34 @@ export default function VentasPage() {
           </>
         }
       />
-      <p className="text-xs text-muted-foreground -mt-2 hidden sm:block">F1 ayuda · F2 cliente · F3 ítem manual · F4 producto · F9 emitir</p>
+      {/* Banner de Contingencia CAEA ante caídas de AFIP */}
+      {afipStatus && (afipStatus.comprobantesSinCae > 0 || afipStatus.semaforo !== "ok" || !afipStatus.certificadosConfigurados) && (
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-200 shadow-sm mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                ⚡ Servidores de ARCA/AFIP con demoras.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                El sistema emite en <strong>Contingencia CAEA Automática</strong>. Tus ventas continúan normalmente sin demoras.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={reintentarCae}
+            disabled={reintentando}
+            className="border-amber-400 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 text-xs font-semibold shrink-0"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${reintentando ? "animate-spin" : ""}`} />
+            {reintentando ? "Sincronizando..." : "Sincronizar AFIP"}
+          </Button>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">

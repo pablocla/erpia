@@ -243,7 +243,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/caja", icon: Wallet, label: "Caja", permisoModulo: "caja" },
       { href: "/dashboard/banco", icon: Landmark, label: "Banco", permisoModulo: "cuentas_cobrar" },
       { href: "/dashboard/cuenta-partida", icon: Scale, label: "Cuenta Partida (Socios)", permisoModulo: "caja" },
-      { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Cuentas a Cobrar", permisoModulo: "cuentas_cobrar" },
+      { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Plata que te deben", permisoModulo: "cuentas_cobrar" },
       { href: "/dashboard/cuentas-pagar", icon: FileMinus, label: "Cuentas a Pagar", permisoModulo: "cuentas_pagar" },
       { href: "/dashboard/cheques", icon: Banknote, label: "Cheques", permisoModulo: "cheques" },
       { href: "/dashboard/cashflow", icon: Wallet2, label: "Flujo de Fondos", permisoModulo: "caja" },
@@ -320,6 +320,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     moduloKey: "ia",
     items: [
       { href: "/dashboard/ia", icon: Bot, label: "Asistente IA", featureKey: "ia" },
+      { href: "/dashboard/cerebro", icon: Network, label: "Cerebro Visual", featureKey: "ia" },
       { href: "/dashboard/apps/opo", icon: Network, label: "OPO Studio", skuKey: "bridge.opo_studio" },
     ],
   },

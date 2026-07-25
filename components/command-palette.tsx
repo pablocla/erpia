@@ -28,6 +28,7 @@ import {
   Landmark,
   CalendarDays,
   Bot,
+  Network,
   Moon,
   Sun,
   Monitor,
@@ -132,6 +133,7 @@ const ROUTES: RouteItem[] = [
   })),
   // IA
   { href: "/dashboard/ia", label: "Asistente IA", icon: Bot, section: "Inteligencia", keywords: ["ia", "ai", "chat", "asistente"] },
+  { href: "/dashboard/cerebro", label: "Cerebro Visual & Graphify", icon: Network, section: "Inteligencia", keywords: ["cerebro", "graphify", "graphrag", "grafo", "nodos", "ia"] },
   { href: "/dashboard/centro-alertas", label: "Centro de Alertas", icon: Bell, section: "Inteligencia", keywords: ["alerta", "alertas", "telegram", "whatsapp", "notificación"] },
   { href: "/dashboard/conexiones", label: "Centro de Conexiones", icon: Globe, section: "Configuración", keywords: ["integración", "shopify", "mercado pago", "stripe", "conectar"] },
   { href: "/dashboard/onboarding", label: "Onboarding IA", icon: Sparkles, section: "Inteligencia", keywords: ["onboarding", "setup"] },

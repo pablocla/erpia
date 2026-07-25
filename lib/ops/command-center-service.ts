@@ -30,12 +30,48 @@ export async function getCommandCenter(analystEmail: string) {
   const scope = await getAnalystEmpresaScope(analystEmail)
   const empresaIds = scope.mode === "assigned" ? scope.empresaIds : undefined
 
-  const [metricas, fleet, billing, implementacion, pipelineResumen, leads, altasWeb, consultasWeb7d, consultasWeb, propiedadKpis] =
-    await Promise.all([
-    getPlataformaMetricas(analystEmail),
-    getSuperAdminFleetDashboard(analystEmail),
-    getFleetBilling(analystEmail),
-    getMetricasTorreImplementacion(empresaIds),
+  // Batch 1: Métricas de plataforma y fleet
+  const [metricas, fleet, billing] = await Promise.all([
+    getPlataformaMetricas(analystEmail).catch(() => ({
+      scope: "all" as const,
+      clientes: 0,
+      entornosEnError: 0,
+      jobs30d: { porEstado: {}, porTipo: {} },
+      pipelines30d: {},
+      tickets: {},
+      mttrHoras: 0,
+      slaVencidos: 0,
+      generadoAt: new Date().toISOString(),
+    })),
+    getSuperAdminFleetDashboard(analystEmail).catch(() => ({
+      scope: "all" as const,
+      totales: {
+        tenants: 0,
+        readinessPromedio: 0,
+        listosGoLive: 0,
+        tareasPendientes: 0,
+        entornosEnError: 0,
+        skusActivosTotal: 0,
+      },
+      tenants: [],
+      playbooks: [],
+      servicios: [],
+    })),
+    getFleetBilling(analystEmail).catch(() => ({
+      rows: [],
+      totales: { mrrTotalArs: 0, totalPisos: 0, faltanReglasPiso: 0, cobrosPendientes: 0 },
+    })),
+  ])
+
+  // Batch 2: Torre de implementación y pipeline comercial
+  const [implementacion, pipelineResumen, leads] = await Promise.all([
+    getMetricasTorreImplementacion(empresaIds).catch(() => ({
+      activos: 0,
+      atrasados: 0,
+      sinPackOnboard: 0,
+      avancePromedio: 0,
+      porFase: {},
+    })),
     getPipelineResumen().catch(() => ({
       activos: 0,
       valorPipelineArs: 0,
@@ -50,6 +86,10 @@ export async function getCommandCenter(analystEmail: string) {
       }[],
     })),
     listComercialLeads().catch(() => []),
+  ])
+
+  // Batch 3: Registros web y consultas comerciales
+  const [altasWeb, consultasWeb7d, consultasWeb, propiedadKpis] = await Promise.all([
     listWebRegistrations(analystEmail, { take: 12 }).catch(() => ({
       rows: [],
       resumen: {
@@ -157,7 +197,7 @@ export async function getCommandCenter(analystEmail: string) {
     scope: scope.mode,
     kpis: {
       mrrTotalArs: billing.totales.mrrTotalArs,
-      tenants: billing.totales.tenants,
+      tenants: fleet.totales.tenants,
       clientesPagos,
       entornosEnError: metricas.entornosEnError,
       slaVencidos: metricas.slaVencidos,

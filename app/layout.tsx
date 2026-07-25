@@ -21,13 +21,38 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Claver — ERP & POS Argentina',
-  description: 'Claver: facturación AFIP, POS, stock, ecommerce y 40+ módulos para PyMEs argentinas.',
+  title: 'Claver ERP — Sistema de Gestión, POS y Facturación AFIP para PyMEs',
+  description: 'Sistema ERP & POS #1 de Argentina para Comercio de Calle, Kioscos, Ferreterías, Mercado de Frutas y Talleres. Libreta de fiado digital, cobro por WhatsApp, facturación ARCA/AFIP en contingencia y control de stock.',
+  keywords: [
+    'ERP Argentina',
+    'POS Argentina',
+    'Facturación AFIP',
+    'Libreta Fiado Digital',
+    'Cobro WhatsApp MercadoPago',
+    'Sistema Kiosco Almacen',
+    'Sistema Mercado Central Rosario Buenos Aires',
+    'Factura Electronica ARCA CAEA',
+    'Software PyME Argentina',
+  ],
+  authors: [{ name: 'Grupo Claver ERP' }],
+  openGraph: {
+    title: 'Claver ERP — Facturación AFIP, Libreta de Fiado y POS Móvil',
+    description: 'Optimizá tu comercio de calle en 60 segundos. Controlá el fiado, cobrá por WhatsApp con MercadoPago y emití facturas AFIP sin interrupciones.',
+    url: 'https://claver.ar',
+    siteName: 'Claver ERP',
+    locale: 'es_AR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Claver ERP — El Sistema de Gestión que se paga solo',
+    description: 'Cobrá deudas morosas por WhatsApp y facturá en contingencia AFIP desde tu celular.',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Claver',
+    title: 'Claver ERP',
   },
   icons: {
     icon: [

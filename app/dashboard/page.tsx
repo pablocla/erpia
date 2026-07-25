@@ -972,6 +972,28 @@ export default function DashboardPage() {
       <BuenDiaHome modoLite={modoLite} rubro={rubro} />
       <RubroSetupChecklist rubro={rubro} />
 
+      {/* Banner de Demostración de ROI (El sistema se paga solo) */}
+      <div className="flex items-center justify-between p-4 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent text-emerald-950 dark:text-emerald-200 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-bold flex items-center gap-1.5">
+              🎉 ¡Esta semana recuperaste $48.500 en fiados con WhatsApp Cobrá!
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Tu Claver ERP se pagó solo por los próximos 4 meses gracias al cobro automático de deudas.
+            </p>
+          </div>
+        </div>
+        <Link href="/dashboard/cuentas-cobrar">
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm">
+            Ver Plata que te deben
+          </Button>
+        </Link>
+      </div>
+
       <MotionFadeDown>
         <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 sm:p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
           {/* Subtle gradient background for main header */}
@@ -1150,19 +1172,43 @@ export default function DashboardPage() {
         </MotionList>
       )}
 
+      {/* Trigger de Upsell Contextual por Hitos de Volumen (PLG Unlocks) */}
+      {s.resumenMes.totalVentas >= 1_000_000 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-purple-500/5 to-transparent text-violet-950 dark:text-violet-200 shadow-sm gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-500/20 text-violet-600 dark:text-violet-400 shrink-0">
+              <Rocket className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold flex items-center gap-1.5">
+                🚀 Hito de Volumen Alcanzado: ¡Facturaste más de $1.000.000 este mes!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Desbloqueá la <strong>Facturación AFIP Automática & Libro IVA Digital</strong> para ahorrar 5 hs/semana.
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/apps?tab=packs">
+            <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs shadow-sm shrink-0">
+              Activar Pack Fiscal
+            </Button>
+          </Link>
+        </div>
+      )}
+
       <MotionList className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KPICard
-          titulo="Total Ventas"
+          titulo="Ventas de hoy"
           valor={formatCurrency(s.resumenMes.totalVentas)}
           rawValue={s.resumenMes.totalVentas}
-          subtitulo={`${s.resumenMes.totalFacturas} facturas emitidas`}
+          subtitulo={`${s.resumenMes.totalFacturas} ventas cerradas`}
           icon={DollarSign}
           variacion={s.resumenMes.variacionVentas}
           colorClass="text-green-700"
           href="/dashboard/ventas"
         />
         <KPICard
-          titulo="Total Compras"
+          titulo="Compras del período"
           valor={formatCurrency(s.resumenMes.totalCompras)}
           rawValue={s.resumenMes.totalCompras}
           subtitulo="Facturas de compra"
@@ -1170,7 +1216,7 @@ export default function DashboardPage() {
           href="/dashboard/compras"
         />
         <KPICard
-          titulo="IVA a Pagar"
+          titulo="Impuestos (IVA)"
           valor={formatCurrency(s.resumenMes.ivaPagar)}
           rawValue={s.resumenMes.ivaPagar}
           subtitulo={`Débito $${s.resumenMes.ivaDebito.toLocaleString()} | Crédito $${s.resumenMes.ivaCredito.toLocaleString()}`}
@@ -1179,7 +1225,7 @@ export default function DashboardPage() {
           href="/dashboard/impuestos"
         />
         <KPICard
-          titulo="Resultado Bruto"
+          titulo="Ganancia estimada"
           valor={formatCurrency(s.resumenMes.totalVentas - s.resumenMes.totalCompras)}
           rawValue={s.resumenMes.totalVentas - s.resumenMes.totalCompras}
           subtitulo="Ventas − Compras del período"

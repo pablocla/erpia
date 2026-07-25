@@ -109,6 +109,8 @@ export function useDashboardShell() {
   useEffect(() => {
     if (!mounted || !isClaverAnalyst) return
     if (isImpersonatingSession()) return
+    // Solo redirigir al analista si está en la raíz /dashboard, no en sub-rutas como /dashboard/cerebro
+    if (pathname !== "/dashboard") return
     if (
       !shouldRedirectAnalystToCloud({
         email: user?.email,
@@ -119,7 +121,7 @@ export function useDashboardShell() {
       return
     }
     router.replace("/claver-cloud")
-  }, [mounted, isClaverAnalyst, user?.email, role, router])
+  }, [mounted, isClaverAnalyst, user?.email, role, router, pathname])
 
   useEffect(() => {
     if (!compactShell) setMobileSidebarOpen(false)

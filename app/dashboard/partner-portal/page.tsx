@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { PartnerTreeVisualizer } from "@/components/clavernet/partner-tree-visualizer"
 
 interface PartnerMeResponse {
   partner: {
@@ -292,6 +293,14 @@ export default function PartnerPortalPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Visualizador de Esquema Piramidal */}
+      <PartnerTreeVisualizer
+        partner={data.partner}
+        empresas={data.empresas}
+        subAfiliados={data.subAfiliados}
+        comisiones={data.comisiones}
+      />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>

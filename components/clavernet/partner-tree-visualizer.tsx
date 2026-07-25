@@ -173,22 +173,22 @@ export function PartnerTreeVisualizer({ partner, empresas, subAfiliados, comisio
           <div className="flex items-start gap-2">
             <div className="h-6 w-6 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">1</div>
             <div>
-              <p className="font-bold text-amber-300">Cúspside (Vos)</p>
-              <p className="text-slate-400 text-[11px]">Cobrás el 30% directo de tu Piso 2 y el 5% pasivo de tu Base Piso 3.</p>
+              <p className="font-bold text-amber-300">Entrada 100% GRATIS</p>
+              <p className="text-slate-400 text-[11px]">Cualquier persona se suma sin pagar nada bajo la línea directa Claver. Vende y se queda el 100% del primer mes + 30% mensual de por vida.</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
             <div className="h-6 w-6 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">2</div>
             <div>
-              <p className="font-bold text-emerald-300">Piso 2 (Directos)</p>
-              <p className="text-slate-400 text-[11px]">Comercios ingresados con tu link directo de afiliado.</p>
+              <p className="font-bold text-emerald-300">Comercios N1 (Directos)</p>
+              <p className="text-slate-400 text-[11px]">Ganás el 100% del primer cobro por Mercado Pago en la mano + 30% recurrente de cada abono cobrado.</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
             <div className="h-6 w-6 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">3</div>
             <div>
-              <p className="font-bold text-purple-300">Piso 3 (Red N2)</p>
-              <p className="text-slate-400 text-[11px]">Partners que reclutaste y las ventas que ellos generan.</p>
+              <p className="font-bold text-purple-300">Licencia Célula ($49.900 ARS)</p>
+              <p className="text-slate-400 text-[11px]">Upgrade opcional para armar tu propia Célula de Vendedores, recibir el Kit Físico impreso A4 y cobrar el 5% pasivo de toda tu red N2.</p>
             </div>
           </div>
         </div>

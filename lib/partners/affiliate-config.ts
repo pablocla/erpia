@@ -11,6 +11,11 @@ export const AFILIADO_RATES = {
   /** Implementador — comisión directa */
   implementerNivel1: 0.2,
   implementerNivel2: 0.05,
+  /** Bounty especial: 100% del primer pago de suscripción para el vendedor */
+  bountyPrimerMes: 1.0,
+  /** Licencia de Célula de Ventas (Upgrade a Líder de Célula) */
+  precioLicenciaCelulaArs: 49900,
+  skuLicenciaCelula: "partner.licencia_celula",
 } as const
 
 export type PartnerTipo = "dev" | "seller" | "implementer" | "hybrid"

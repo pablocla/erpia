@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { PartnerTreeVisualizer } from "@/components/clavernet/partner-tree-visualizer"
+import { PartnerRewardsCatalog } from "@/components/clavernet/partner-rewards-catalog"
 
 interface PartnerMeResponse {
   partner: {
@@ -300,6 +301,12 @@ export default function PartnerPortalPage() {
         empresas={data.empresas}
         subAfiliados={data.subAfiliados}
         comisiones={data.comisiones}
+      />
+
+      {/* Catálogo de Premios & Viajes de Incentivo */}
+      <PartnerRewardsCatalog
+        activeReferralsCount={data.empresas.length}
+        currentCommissionsMonthly={data.comisiones.reduce((acc, c) => acc + c.monto, 0)}
       />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

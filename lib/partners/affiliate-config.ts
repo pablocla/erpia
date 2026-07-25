@@ -13,8 +13,10 @@ export const AFILIADO_RATES = {
   implementerNivel2: 0.05,
   /** Bounty especial: 100% del primer pago de suscripción para el vendedor */
   bountyPrimerMes: 1.0,
-  /** Licencia de Célula de Ventas (Upgrade a Líder de Célula) */
-  precioLicenciaCelulaArs: 49900,
+  /** Canon de Franquicia / Licencia de Célula de Ventas (Opción Inversor) */
+  precioLicenciaCelulaArs: 500000,
+  /** Meta meritocrática: 20 comercios activos otorgados por mérito sin pagar canon */
+  clientesRequeridosParaCelulaGratis: 20,
   skuLicenciaCelula: "partner.licencia_celula",
 } as const
 

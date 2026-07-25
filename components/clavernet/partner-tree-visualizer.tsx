@@ -187,8 +187,8 @@ export function PartnerTreeVisualizer({ partner, empresas, subAfiliados, comisio
           <div className="flex items-start gap-2">
             <div className="h-6 w-6 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">3</div>
             <div>
-              <p className="font-bold text-purple-300">Licencia Célula ($49.900 ARS)</p>
-              <p className="text-slate-400 text-[11px]">Upgrade opcional para armar tu propia Célula de Vendedores, recibir el Kit Físico impreso A4 y cobrar el 5% pasivo de toda tu red N2.</p>
+              <p className="font-bold text-purple-300">Líder de Célula / Canon o Mérito</p>
+              <p className="text-slate-400 text-[11px]">Para liderar equipos y ganar el 5% de tu red N2: Podés pagar el Canon de Franquicia ($500.000 ARS) o **desbloquearlo 100% GRATIS vendiendo 20 comercios activos** por tu propio mérito.</p>
             </div>
           </div>
         </div>

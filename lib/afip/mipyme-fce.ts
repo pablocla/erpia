@@ -26,6 +26,10 @@ export function isFceNotaCreditoDebito(tipoCbte: number): boolean {
   return [202, 203, 207, 208, 212, 213].includes(tipoCbte)
 }
 
+export function isFceFactura(tipoCbte: number): boolean {
+  return [201, 206, 211].includes(tipoCbte)
+}
+
 export function mapBaseTipoToFce(baseTipoCbte: number): number | null {
   return BASE_TO_FCE[baseTipoCbte] ?? null
 }
@@ -40,19 +44,43 @@ export function validateCbu(cbu: string): boolean {
 
 export function buildFceOpcionales(
   cbu: string,
-  tipoTransferencia: TipoTransferenciaFce = "SCA"
+  tipoTransferencia: TipoTransferenciaFce = "SCA",
+  extras?: {
+    /** Id 27 — referencia comercial / orden de compra */
+    referenciaComercial?: string
+    /** Id 22 — anulación (solo cuando aplica) */
+    anulacion?: string
+  },
 ): { Opcional: Array<{ Id: number; Valor: string }> } {
   const cbuNorm = normalizeCbu(cbu)
   if (!validateCbu(cbuNorm)) {
     throw new Error("CBU FCE inválido: debe tener 22 dígitos numéricos")
   }
   const tipo = tipoTransferencia === "ADC" ? "ADC" : "SCA"
-  return {
-    Opcional: [
-      { Id: 2101, Valor: cbuNorm },
-      { Id: 2102, Valor: tipo },
-    ],
+  const Opcional: Array<{ Id: number; Valor: string }> = [
+    { Id: 2101, Valor: cbuNorm },
+    { Id: 2102, Valor: tipo },
+  ]
+  if (extras?.referenciaComercial) {
+    Opcional.push({ Id: 23, Valor: extras.referenciaComercial.slice(0, 100) })
   }
+  if (extras?.anulacion) {
+    Opcional.push({ Id: 22, Valor: extras.anulacion })
+  }
+  return { Opcional }
+}
+
+/**
+ * Fecha de vencimiento de pago para FCE.
+ * Si no se informa, default: emisión + plazoDias (default 30).
+ */
+export function resolveFceFchVtoPago(
+  fechaEmision: Date,
+  fechaVtoPago?: Date | null,
+  plazoDias = 30,
+): string {
+  const base = fechaVtoPago ?? new Date(fechaEmision.getTime() + plazoDias * 86400000)
+  return formatFechaAfip(base)
 }
 
 export interface CbteAsociadoFce {

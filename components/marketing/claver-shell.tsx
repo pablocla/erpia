@@ -15,12 +15,14 @@ import {
   isHomeDolorSlug,
   type HomeDolorSlug,
 } from "@/lib/comercial/go-to-market-vitrine"
+import { MarketSwitcher } from "@/components/marketing/market-switcher"
 
 interface ClaverShellProps {
   children: React.ReactNode
   /** Matriz Claver, Claver o Clavergrow */
   context?: "matrix" | "claverp" | "clavergrow"
   theme?: "dark-hero" | "light"
+  isUs?: boolean
 }
 
 const LOGO_HREF = {
@@ -35,7 +37,7 @@ const LOGO_VARIANT = {
   clavergrow: "clavergrow-full",
 } as const
 
-export function ClaverShell({ children, context = "matrix", theme = "dark-hero" }: ClaverShellProps) {
+export function ClaverShell({ children, context = "matrix", theme = "dark-hero", isUs = false }: ClaverShellProps) {
   const [navOpen, setNavOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [registerHref, setRegisterHref] = useState("/login/register?trial=14")
@@ -133,8 +135,9 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
           </nav>
 
           <div className="hidden shrink-0 items-center gap-1 sm:flex">
+            <MarketSwitcher />
             <Button variant="ghost" size="sm" className={ghostActionClass} asChild>
-              <Link href="/login">Iniciar sesión</Link>
+              <Link href="/login">{isUs ? "Log in" : "Iniciar sesión"}</Link>
             </Button>
             <Button
               size="sm"
@@ -142,7 +145,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
               asChild
             >
               <Link href={registerHref}>
-                Probar 14 días
+                {isUs ? "14-Day Free Trial" : "Probar 14 días"}
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -205,18 +208,21 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
                 navDark ? "border-white/10" : "border-slate-200",
               )}
             >
+              <div className="mb-2">
+                <MarketSwitcher />
+              </div>
               <Button
                 variant="outline"
                 className={navDark ? "border-white/20 text-slate-200" : ""}
                 asChild
               >
                 <Link href="/login" onClick={() => setNavOpen(false)}>
-                  Iniciar sesión
+                  {isUs ? "Log in" : "Iniciar sesión"}
                 </Link>
               </Button>
               <Button className="bg-emerald-600 hover:bg-emerald-500" asChild>
                 <Link href={registerHref} onClick={() => setNavOpen(false)}>
-                  Probar 14 días
+                  {isUs ? "14-Day Free Trial" : "Probar 14 días"}
                 </Link>
               </Button>
             </div>
@@ -231,7 +237,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
           <div className="md:col-span-2 space-y-4">
             <BrandLogo size="md" theme="dark" variant="group-full" />
             <p className="max-w-sm text-sm">
-              {CLAVER_GROUP.descriptor}. Claver para comercio, Clavergrow para producción agrícola.
+              {isUs ? "Business apps for local commerce." : CLAVER_GROUP.descriptor + ". Claver para comercio, Clavergrow para producción agrícola."}
             </p>
             <div className="flex flex-wrap gap-4">
               <BrandLogo size="sm" theme="dark" variant="claverp-full" />
@@ -239,31 +245,31 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero" 
             </div>
           </div>
           <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Productos</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {isUs ? "Products" : "Productos"}
+            </p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/claver/apps" className="hover:text-white">Apps para vender hoy</Link></li>
-              <li><Link href="/claver/claverp" className="hover:text-white">Claver — ERP & POS</Link></li>
-              <li><Link href="/claver/claverp/modulos" className="hover:text-white">Módulos Claver</Link></li>
-              <li><Link href="/claver/claverp/precios" className="hover:text-white">Precios Claver</Link></li>
-              <li><Link href="/claver/clavergrow" className="hover:text-white">Clavergrow — Agro</Link></li>
-              <li><Link href="/demo" className="hover:text-white">Demos por rubro</Link></li>
-              <li><Link href="/claver/ecommerce" className="hover:text-white">Ecommerce</Link></li>
+              <li><Link href="/claver/apps" className="hover:text-white">{isUs ? "Business Apps" : "Apps para vender hoy"}</Link></li>
+              <li><Link href="/claver/claverp" className="hover:text-white">{isUs ? "Claver — ERP & POS" : "Claver — ERP & POS"}</Link></li>
+              <li><Link href="/claver/claverp/modulos" className="hover:text-white">{isUs ? "Features" : "Módulos Claver"}</Link></li>
+              <li><Link href="/claver/claverp/precios" className="hover:text-white">{isUs ? "Pricing" : "Precios Claver"}</Link></li>
+              {!isUs && <li><Link href="/claver/clavergrow" className="hover:text-white">Clavergrow — Agro</Link></li>}
+              <li><Link href="/demo" className="hover:text-white">{isUs ? "Live Demos" : "Demos por rubro"}</Link></li>
             </ul>
           </div>
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Claver</p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/" className="hover:text-white">Inicio</Link></li>
-              <li><Link href={registerHref} className="hover:text-white">Registro gratis</Link></li>
-              <li><Link href="/claver/contacto" className="hover:text-white">Contacto / ventas</Link></li>
+              <li><Link href="/" className="hover:text-white">{isUs ? "Home" : "Inicio"}</Link></li>
+              <li><Link href={registerHref} className="hover:text-white">{isUs ? "Start Free Trial" : "Registro gratis"}</Link></li>
+              <li><Link href="/claver/contacto" className="hover:text-white">{isUs ? "Contact Sales" : "Contacto / ventas"}</Link></li>
               <li><Link href="/claver-cloud" className="hover:text-white">Claver Cloud</Link></li>
-              <li><Link href="/claver/marca" className="hover:text-white">Identidad</Link></li>
-              <li><Link href="/login" className="hover:text-white">Iniciar sesión</Link></li>
+              <li><Link href="/login" className="hover:text-white">{isUs ? "Log in" : "Iniciar sesión"}</Link></li>
             </ul>
           </div>
         </div>
         <p className="mx-auto mt-10 max-w-7xl text-center text-xs text-slate-600">
-          © {new Date().getFullYear()} {CLAVER_GROUP.name} · Claver · Clavergrow. Argentina.
+          © {new Date().getFullYear()} {CLAVER_GROUP.name} · {isUs ? "Business Software" : "Claver · Clavergrow. Argentina."}
         </p>
       </footer>
     </div>

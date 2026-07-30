@@ -25,16 +25,18 @@ import {
 import { ScrollReveal } from "@/components/ui/motion"
 import {
   GTM_VITRINE_COPY,
+  GTM_VITRINE_COPY_US,
   HOME_DOLOR_EVENT,
   HOME_DOLOR_STORAGE_KEY,
   PRODUCT_ENTRIES,
+  PRODUCT_ENTRIES_US,
   resolveHomeDolor,
   ventasWhatsappMessage,
   type HomeDolorSlug,
 } from "@/lib/comercial/go-to-market-vitrine"
 import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 
-function MatrixHubInner() {
+function MatrixHubInner({ isUs = false }: { isUs?: boolean }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -89,32 +91,33 @@ function MatrixHubInner() {
     [pathname, router, searchParams],
   )
 
-  const entry = PRODUCT_ENTRIES[dolor]
+  const entries = isUs ? PRODUCT_ENTRIES_US : PRODUCT_ENTRIES
+  const entry = entries[dolor]
   const waMessage = ventasWhatsappMessage(dolor)
   const registerHref = activarRegisterHref(entry.ctaPrimaryActivar)
 
   return (
-    <ClaverShell context="matrix">
+    <ClaverShell context="matrix" isUs={isUs}>
       <ProductHeroSection
         entry={entry}
         secondaryCtaHref={`#${GTM_VITRINE_COPY.combateHeadingId}`}
         chips={<HeroDolorChips active={dolor} onChange={onDolorChange} />}
       />
 
-      <CommercialTrustBar />
+      <CommercialTrustBar isUs={isUs} />
 
-      <CombateHomeSection highlightSlug={dolor} />
+      <CombateHomeSection highlightSlug={dolor} isUs={isUs} />
 
-      <ProductAppPreviewSection entry={entry} />
-      <ProductStepsSection entry={entry} />
-      <ProductSocialProofSection entry={entry} />
+      <ProductAppPreviewSection entry={entry} isUs={isUs} />
+      <ProductStepsSection entry={entry} isUs={isUs} />
+      <ProductSocialProofSection entry={entry} isUs={isUs} />
 
       {/* 4 colectivos freemium (11 apps agrupadas) — no satura el hero */}
-      <MicroSaasColectivosSection highlightColectivo={colectivoFromHomeDolor(dolor)} />
+      <MicroSaasColectivosSection highlightColectivo={colectivoFromHomeDolor(dolor)} isUs={isUs} />
 
-      <EcosistemaExpansionSection subtitle={entry.ecosistemaSubtitle} />
-      <PacksHomeStripSection />
-      <EcosistemaCollapsibleSection />
+      <EcosistemaExpansionSection subtitle={entry.ecosistemaSubtitle} isUs={isUs} />
+      <PacksHomeStripSection isUs={isUs} />
+      <EcosistemaCollapsibleSection isUs={isUs} />
 
       <section aria-labelledby="faq-heading" className="bg-white px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-3xl">
@@ -135,7 +138,8 @@ function MatrixHubInner() {
       <ProductFinalCtaSection
         entry={entry}
         secondaryHref="/claver/contacto"
-        secondaryLabel="Hablar con ventas"
+        secondaryLabel={isUs ? "Talk to Sales" : "Hablar con ventas"}
+        isUs={isUs}
       />
 
       <ClaverVentasContacto
@@ -143,39 +147,42 @@ function MatrixHubInner() {
         variant="dark"
         waMessage={waMessage}
         registerHref={registerHref}
+        isUs={isUs}
       />
     </ClaverShell>
   )
 }
 
-function MatrixHubFallback() {
-  const entry = PRODUCT_ENTRIES.fiado
+function MatrixHubFallback({ isUs = false }: { isUs?: boolean }) {
+  const entries = isUs ? PRODUCT_ENTRIES_US : PRODUCT_ENTRIES
+  const entry = entries.fiado
   return (
-    <ClaverShell context="matrix">
+    <ClaverShell context="matrix" isUs={isUs}>
       <ProductHeroSection entry={entry} secondaryCtaHref={`#${GTM_VITRINE_COPY.combateHeadingId}`} />
-      <CommercialTrustBar />
-      <CombateHomeSection highlightSlug="fiado" />
-      <ProductAppPreviewSection entry={entry} />
-      <ProductStepsSection entry={entry} />
-      <ProductSocialProofSection entry={entry} />
-      <EcosistemaExpansionSection />
-      <PacksHomeStripSection />
-      <EcosistemaCollapsibleSection />
+      <CommercialTrustBar isUs={isUs} />
+      <CombateHomeSection highlightSlug="fiado" isUs={isUs} />
+      <ProductAppPreviewSection entry={entry} isUs={isUs} />
+      <ProductStepsSection entry={entry} isUs={isUs} />
+      <ProductSocialProofSection entry={entry} isUs={isUs} />
+      <EcosistemaExpansionSection isUs={isUs} />
+      <PacksHomeStripSection isUs={isUs} />
+      <EcosistemaCollapsibleSection isUs={isUs} />
       <ProductFinalCtaSection
         entry={entry}
         secondaryHref="/claver/contacto"
-        secondaryLabel="Hablar con ventas"
+        secondaryLabel={isUs ? "Talk to Sales" : "Hablar con ventas"}
+        isUs={isUs}
       />
-      <ClaverVentasContacto pagina="/" variant="dark" />
+      <ClaverVentasContacto pagina="/" variant="dark" isUs={isUs} />
     </ClaverShell>
   )
 }
 
 /** Home Grupo Claver — un dolor primero, ecosistema después (GTM S1–S3 / S6). */
-export function ClaverMatrixHub() {
+export function ClaverMatrixHub({ isUs = false }: { isUs?: boolean }) {
   return (
-    <Suspense fallback={<MatrixHubFallback />}>
-      <MatrixHubInner />
+    <Suspense fallback={<MatrixHubFallback isUs={isUs} />}>
+      <MatrixHubInner isUs={isUs} />
     </Suspense>
   )
 }

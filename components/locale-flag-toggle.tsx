@@ -27,11 +27,20 @@ export function LocaleFlagToggle() {
     setLocale(newLocale)
     // Update the cookie so the server knows the preference on next reload
     document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000`
-    
-    // We optionally could update EmpresaTemaConfig via API if the user is admin,
-    // but the local override works immediately.
-    
-    // Hard refresh to apply translations everywhere
+
+    // Multinational market lock — IP geo will not override user choice
+    const market =
+      newLocale === "en-US"
+        ? "us"
+        : newLocale === "es-MX"
+          ? "mx"
+          : newLocale === "pt-BR"
+            ? "br"
+            : "ar"
+    document.cookie = `CLAVER_MARKET=${market}; path=/; max-age=31536000`
+    document.cookie = `CLAVER_MARKET_LOCKED=1; path=/; max-age=31536000`
+
+    // Hard refresh to apply translations + market catalog everywhere
     router.refresh()
   }
 

@@ -218,6 +218,23 @@ export const NICHE_APPS: NicheAppDefinition[] = [
     plantillaWhatsApp: "Hola {{nombre}}, su vehículo {{concepto}} está listo. Total {{monto}}.",
   },
   {
+    appId: "fumigacion",
+    sku: "niche.fumigacion",
+    nombre: "Claver Fumigación",
+    emoji: "🪲",
+    lema: "Ruta del día y abonos sin Excel.",
+    dolorResuelve: "Visitas en papel, sin mapa y sin seguimiento de la próxima fumigación",
+    wowMoment: "Mapa gratis de visitas + orden tratada + cobro del abono",
+    engine: "movimientos",
+    goldenPath: "/dashboard/fumigacion",
+    redirectPath: "/dashboard/fumigacion",
+    precioArs: 19900,
+    categorias: ["orden", "visita", "mantenimiento", "tratamiento"],
+    accionPrincipal: "Ver ruta del día",
+    plantillaWhatsApp:
+      "Hola {{nombre}}, visitamos {{concepto}}. Próximo mantenimiento o saldo: {{monto}}. Gracias.",
+  },
+  {
     appId: "delivery",
     sku: "niche.delivery_barrio",
     nombre: "Claver Delivery",

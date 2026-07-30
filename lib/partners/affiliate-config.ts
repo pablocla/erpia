@@ -15,6 +15,8 @@ export const AFILIADO_RATES = {
   bountyPrimerMes: 1.0,
   /** Canon de Franquicia / Licencia de Célula de Ventas (Opción Inversor) */
   precioLicenciaCelulaArs: 500000,
+  /** Cell license USD para mercado yankee */
+  precioLicenciaCelulaUsd: 799,
   /** Meta meritocrática: 20 comercios activos otorgados por mérito sin pagar canon */
   clientesRequeridosParaCelulaGratis: 20,
   skuLicenciaCelula: "partner.licencia_celula",

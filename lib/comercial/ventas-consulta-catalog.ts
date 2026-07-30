@@ -8,6 +8,12 @@ export const VENTAS_CONSULTA_TIPO_LABELS: Record<VentasConsultaTipo, string> = {
   reunion: "Agendar reunión",
 }
 
+export const VENTAS_CONSULTA_TIPO_LABELS_US: Record<VentasConsultaTipo, string> = {
+  contacto: "Sales Inquiry",
+  demo: "Request Demo",
+  reunion: "Schedule Meeting",
+}
+
 export const VENTAS_CONSULTA_ORIGENES = [
   "web",
   "web_contacto",

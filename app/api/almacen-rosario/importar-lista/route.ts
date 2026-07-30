@@ -7,9 +7,15 @@ import {
   generarPropuestasLista,
   aplicarPropuestasLista,
 } from "@/lib/almacen-rosario/lista-distribuidora-service"
+import { startImportJob } from "@/lib/almacen-rosario/import-worker"
 
 const previewSchema = z.object({
   accion: z.literal("preview"),
+  contenido: z.string().min(10),
+})
+
+const asyncImportSchema = z.object({
+  accion: z.literal("async_import"),
   contenido: z.string().min(10),
 })
 
@@ -48,5 +54,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(r)
   }
 
-  return NextResponse.json({ error: "accion inválida (preview|aplicar)" }, { status: 400 })
+  const asyncImport = asyncImportSchema.safeParse(body)
+  if (asyncImport.success) {
+    const jobId = await startImportJob(ctx.auth.empresaId, asyncImport.data.contenido)
+    return NextResponse.json({ jobId, message: "Importación iniciada en segundo plano" })
+  }
+
+  return NextResponse.json({ error: "accion inválida (preview|aplicar|async_import)" }, { status: 400 })
 }

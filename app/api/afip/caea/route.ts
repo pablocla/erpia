@@ -93,7 +93,12 @@ export async function POST(request: NextRequest) {
     const caeaService = new CAEAService(entorno)
 
     // Autenticar con AFIP
-    const auth = await soapClient.authenticate(empresa.cuit, empresa.certificadoCRT, empresa.certificadoKEY)
+    const auth = await soapClient.authenticate(
+      empresa.cuit,
+      empresa.certificadoCRT,
+      empresa.certificadoKEY,
+      "wsfe",
+    )
 
     // Solicitar CAEA
     const caeaData = await caeaService.solicitarCAEA(auth, empresa.cuit, parsed.data.puntoVenta)

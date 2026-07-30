@@ -1,10 +1,20 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MotionCard, MotionNumber } from "@/components/ui/motion"
-import { ArrowDownRight, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
-import React from "react"
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  Sparkles,
+  TrendingUp,
+  Plus,
+  ExternalLink,
+  BookOpen,
+  type LucideIcon,
+} from "lucide-react"
+import type { ProductShellConfig } from "@/lib/comercial/product-shell"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 export interface ProductHomeKPI {
   id: string
@@ -12,113 +22,176 @@ export interface ProductHomeKPI {
   valor: string
   rawValue?: number
   format?: "currency" | "number" | "text"
-  subtitulo?: string
-  icon: React.ElementType
+  icon: LucideIcon
   colorClass?: string
   href?: string
-  variacion?: number
 }
 
 export interface ProductHomeAction {
   label: string
-  description: string
+  description?: string
   href: string
 }
 
 interface ProductHomeProps {
-  marca: string
-  kpis: ProductHomeKPI[]
-  actions: ProductHomeAction[]
-  chart?: React.ReactNode
+  shell?: ProductShellConfig
+  marca?: string
+  kpis?: ProductHomeKPI[]
+  actions?: ProductHomeAction[]
 }
 
-function KPICard({ kpi }: { kpi: ProductHomeKPI }) {
-  const Icon = kpi.icon
-  const card = (
-    <MotionCard hover={!!kpi.href}>
-      <Card className={`glass-panel border-border/50 relative overflow-hidden group ${kpi.href ? "cursor-pointer hover:shadow-lg transition-all" : ""}`}>
-        <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors pointer-events-none" />
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{kpi.titulo}</CardTitle>
-          <Icon className={`h-4 w-4 ${kpi.colorClass || "text-muted-foreground"}`} />
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${kpi.colorClass || ""}`}>
-            {kpi.rawValue !== undefined && kpi.format !== "text" ? (
-              <MotionNumber
-                value={kpi.rawValue}
-                format={(n) =>
-                  kpi.format === "number"
-                    ? n.toLocaleString("es-AR")
-                    : new Intl.NumberFormat("es-AR", {
-                        style: "currency",
-                        currency: "ARS",
-                        maximumFractionDigits: 0,
-                      }).format(n)
-                }
-              />
-            ) : (
-              kpi.valor
-            )}
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            {kpi.subtitulo && <p className="text-xs text-muted-foreground">{kpi.subtitulo}</p>}
-            {kpi.variacion !== undefined && (
-              <span className={`text-xs flex items-center gap-0.5 ${kpi.variacion >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {kpi.variacion >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                {Math.abs(kpi.variacion)}% vs mes ant.
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </MotionCard>
-  )
+export function ProductHome({ shell, marca, kpis, actions }: ProductHomeProps) {
+  const displayMarca = shell?.marca ?? marca ?? "Claver Sub-SaaS"
+  const IconoMarca = shell?.icono ?? BookOpen
 
-  return kpi.href ? <Link href={kpi.href}>{card}</Link> : card
-}
+  const displayKpis =
+    kpis ??
+    shell?.kpis.map((k) => ({
+      id: k.id,
+      titulo: k.label,
+      valor: k.format === "currency" ? "$0" : k.format === "number" ? "0" : "Al día",
+      icon: k.icon,
+      href: k.href,
+    })) ??
+    []
 
-export function ProductHome({ marca, kpis, actions, chart }: ProductHomeProps) {
+  const primaryAction = shell?.primaryAction ?? actions?.[0] ?? { label: "Ir a sección", href: "/dashboard" }
+  const secondaryActions = actions
+    ? actions.slice(1)
+    : shell?.tabs
+        .filter((t) => t.href !== "#more" && t.href !== primaryAction.href)
+        .slice(0, 3)
+        .map((t) => ({ label: t.label, href: t.href })) ?? []
+
   return (
-    <div className="space-y-6">
-      <div className="mb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gradient">Bienvenido a {marca}</h1>
-        <p className="text-muted-foreground mt-1">Tu resumen de hoy.</p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {kpis.map(kpi => (
-          <KPICard key={kpi.id} kpi={kpi} />
-        ))}
-      </div>
-
-      {chart && (
-        <div className="mt-6">
-          {chart}
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      {/* Header del Sub-SaaS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-card border rounded-2xl shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
+            <IconoMarca className="h-7 w-7" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">{displayMarca}</h1>
+              <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20 font-semibold">
+                Sub-SaaS Activo
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Panel simplificado de operaciones · Modo autónomo
+            </p>
+          </div>
         </div>
-      )}
-      {actions.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Acciones rápidas</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {actions.map((action, idx) => (
-              <Link 
-                key={idx} 
-                href={action.href} 
-                className="group relative flex flex-col items-start justify-between rounded-xl border bg-white p-5 shadow-sm transition-all hover:border-primary hover:shadow-md hover:ring-1 hover:ring-primary/20"
+
+        <div className="flex items-center gap-2">
+          <Button asChild size="lg" className="rounded-xl shadow-md gap-2 font-semibold">
+            <Link href={primaryAction.href}>
+              <Plus className="h-5 w-5" />
+              {primaryAction.label}
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* 4 KPIs del Dolor del Rubro */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {displayKpis.map((kpi) => {
+          const KpiIcon = kpi.icon || BookOpen
+          const isLink = Boolean(kpi.href)
+          const CardContentInner = (
+            <Card className="h-full border-muted/80 hover:shadow-md hover:border-primary/50 transition-all">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                  {kpi.titulo}
+                </CardTitle>
+                <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                  <KpiIcon className="h-4 w-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold tracking-tight">{kpi.valor}</div>
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-emerald-500" />
+                  Actualizado en vivo
+                </p>
+              </CardContent>
+            </Card>
+          )
+
+          return isLink ? (
+            <Link key={kpi.id} href={kpi.href!} className="block group">
+              {CardContentInner}
+            </Link>
+          ) : (
+            <div key={kpi.id} className="block group">
+              {CardContentInner}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Accesos Rápidos y Tablas por Producto */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2 border-muted/80">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold flex items-center justify-between">
+              <span>Accesos Rápidos del Producto</span>
+              <Sparkles className="h-4 w-4 text-primary" />
+            </CardTitle>
+            <CardDescription>
+              Operaciones principales para gestionar {displayMarca} sin fricción.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[primaryAction, ...secondaryActions].slice(0, 4).map((act, idx) => (
+              <Link
+                key={idx}
+                href={act.href}
+                className="flex items-center justify-between p-4 rounded-xl border bg-muted/30 hover:bg-primary/5 hover:border-primary/30 transition-all group"
               >
-                <div>
-                  <h3 className="font-semibold text-slate-900">{action.label}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{action.description}</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-background flex items-center justify-center border group-hover:border-primary/30 transition-all">
+                    <BookOpen className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {act.label}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Ir a sección</div>
+                  </div>
                 </div>
-                <div className="mt-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                  <ArrowUpRight className="h-4 w-4" />
-                </div>
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
             ))}
-          </div>
-        </div>
-      )}
+          </CardContent>
+        </Card>
+
+        {/* Card de Guía / Ayuda Rápida */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base font-semibold">Modo Autónomo</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Estás operando en modo simplificado de {displayMarca}. El módulo de contabilidad general y compras sigue activo en segundo plano.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3 bg-background/80 rounded-xl border text-xs text-muted-foreground space-y-1">
+              <div className="font-semibold text-foreground">¿Querés ver el ERP completo?</div>
+              <div>Podés cambiar a modo avanzado en la configuración de la barra lateral.</div>
+            </div>
+            <Button asChild variant="outline" size="sm" className="w-full justify-between">
+              <Link href="/dashboard/configuracion">
+                <span>Ajustes del producto</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -49,6 +49,8 @@ export interface FacturaPayload {
   fce?: {
     cbu?: string
     tipoTransferencia?: "SCA" | "ADC"
+    /** Referencia comercial / OC (opcional FCE) */
+    referencia?: string
   }
   /** NC/ND FCE: comprobante original asociado */
   facturaAsociada?: {

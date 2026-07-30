@@ -640,3 +640,128 @@ export function combateLandingMetadata(slug: CombateAppSlug) {
 export function fiadoLandingMetadata() {
   return combateLandingMetadata("fiado")
 }
+
+// --- US LOCALIZATION ---
+
+export const HOME_DOLOR_CHIPS_US: readonly { slug: HomeDolorSlug; label: string; hint: string }[] = [
+  { slug: "fiado", label: "House Tabs", hint: "Free app" },
+  { slug: "cobra", label: "Collect", hint: "SMS Reminders" },
+  { slug: "turnos", label: "Bookings", hint: "Public link" },
+] as const
+
+export const GTM_VITRINE_COPY_US = {
+  heroTagline: "Still using a notebook for house accounts?",
+  heroDescription: "Digital tabs on your phone. See who owes what and set credit limits. Track debt and collect in seconds, without Excel or paper.",
+  combateTitle: "Choose where to start",
+  combateSubtitle: "14-day free trial, no credit card required. Setup in minutes from your phone or PC.",
+  combateHeadingId: "combate-heading",
+  packsHomeTitle: "Industry packs, simple pricing",
+  packsHomeSubtitle: "Ready for local grocers, service pros, and more. One pack, all features, one bill.",
+  verCatalogoLabel: "See all apps and packs",
+  ecosistemaTitle: "You can also add",
+  ecosistemaSubtitle: "The House Tabs app is forever free. Later, you can activate SMS Collections, Inventory, and POS on the same account.",
+  collapsibleTitle: "Demos and more options",
+  collapsibleSubtitle: "Try with sample data or explore the full catalog.",
+  trustBarTitle: "Built for local businesses",
+  trustItems: [
+    { label: "14-day trial", hint: "No card needed" },
+    { label: "Phone and PC", hint: "No installation" },
+    { label: "Cancel anytime", hint: "No contracts" },
+    { label: "Local support", hint: "We are here" },
+  ],
+  heroMicrocopy: "No credit card · Cancel anytime · Fast support",
+  ctaProbar: "Start Free Trial",
+  ctaVerProductos: "See Products",
+  ctaVerPack: "See Pack",
+  badgeGratis: "Free",
+  badgeElegido: "On screen",
+  badgeTrial: "14-day free",
+}
+
+export const PRODUCT_ENTRIES_US: Record<CombateAppSlug, ProductEntryConfig> = {
+  ...PRODUCT_ENTRIES, // fallback for non-home ones for now
+  fiado: {
+    ...FIADO_ENTRY,
+    badge: "Claver House Tabs · Free forever",
+    h1: "Still using a notebook for house accounts?",
+    subtitle: "Digital tabs on your phone. See who owes what and set credit limits. Track debt and collect in seconds, without Excel or paper.",
+    ctaPrimary: "Use House Tabs free",
+    ctaSecondary: "Watch demo",
+    trustBullets: ["Free forever", "Live debt tracking", "Works on mobile"],
+    steps: [
+      { step: 1, title: "Create account", description: "Two minutes. No installation." },
+      { step: 2, title: "Add customers", description: "Name, phone, and credit limit." },
+      { step: 3, title: "Record first tab", description: "From the counter or your phone. Updates instantly." },
+    ],
+    testimonial: {
+      quote: "I used to lose half an hour a day searching the notebook. Now I know exactly who owes me before they even reach the counter.",
+      author: "Diego M.",
+      role: "Local Grocer"
+    },
+    benefits: [
+      { value: "~30 min", label: "saved every day" },
+      { value: "Live", label: "tracking of who owes what" },
+      { value: "SMS", label: "reminders without calling" },
+    ],
+    preview: { title: "Your digital notebook", description: "Debt by customer, limits, and payments — a clear view on your phone or PC." },
+    stepsIntro: "Three steps and your tabs are ready.",
+    finalCta: { title: "Move your notebook to your phone", subtitle: "House Tabs is free forever. Try SMS Collections, Bookings, or POS 14 days free." },
+    ecosistemaSubtitle: "The House Tabs app is free. You can add SMS Collections, Inventory, and POS later on the same account."
+  },
+  cobra: {
+    ...COBRA_ENTRY,
+    badge: "Claver Collect · SMS + Debt Dashboard",
+    h1: "Still calling late payers one by one?",
+    subtitle: "Friendly SMS reminders, live debt dashboard, and payment links. You run the business; collections run automatically.",
+    ctaPrimary: "Try Collect 14 days",
+    ctaSecondary: "Watch demo",
+    trustBullets: ["SMS Reminders", "Live debt dashboard", "14-day free trial"],
+    steps: [
+      { step: 1, title: "Create account", description: "Minutes. No technical setup." },
+      { step: 2, title: "Import balances", description: "Add debtors or use House Tabs if you already have it." },
+      { step: 3, title: "Turn on reminders", description: "Messages send automatically. You stay at the counter." },
+    ],
+    testimonial: {
+      quote: "I stopped calling at 8 PM. The messages go out automatically and I collect more without awkward conversations.",
+      author: "Laura P.",
+      role: "Distributor"
+    },
+    benefits: [
+      { value: "-70%", label: "fewer awkward calls per week" },
+      { value: "Live", label: "view of recoverable debt" },
+      { value: "Link", label: "payment links inside SMS" },
+    ],
+    preview: { title: "Your collections dashboard", description: "Overdue tabs, amounts, and sent messages — clear on any screen." },
+    stepsIntro: "Turn on collections and the follow-ups run while you sell.",
+    finalCta: { title: "Recover debt without chasing anyone", subtitle: "14 days free. SMS + dashboard. Add House Tabs or POS anytime." },
+    ecosistemaSubtitle: "Collect integrates with House Tabs, POS, and Billing whenever you need them — all in one account."
+  },
+  turnos: {
+    ...TURNOS_ENTRY,
+    badge: "Claver Bookings · Salons, barbers & pros",
+    h1: "Coordinating appointments on WhatsApp all day?",
+    subtitle: "A 24/7 public booking link: clients pick their time and get SMS reminders. Less chatting, fewer no-shows, more time working.",
+    ctaPrimary: "Try Bookings 14 days",
+    ctaSecondary: "Watch demo",
+    trustBullets: ["24/7 booking link", "Fewer chat interruptions", "14-day free trial"],
+    steps: [
+      { step: 1, title: "Create account", description: "Minutes. Clients don't need to install anything." },
+      { step: 2, title: "Add services & hours", description: "Staff, duration, and availability slots." },
+      { step: 3, title: "Share your link", description: "Instagram, SMS, or QR in store. They book themselves." },
+    ],
+    testimonial: {
+      quote: "It used to take ten messages to book a single slot. Now I just send the link and my calendar fills up while I work.",
+      author: "Carolina R.",
+      role: "Beauty Salon"
+    },
+    benefits: [
+      { value: "24/7", label: "bookings even when you're busy" },
+      { value: "-40%", label: "fewer no-shows with reminders" },
+      { value: "1 link", label: "for Instagram, SMS, and QR" },
+    ],
+    preview: { title: "Your online calendar", description: "Today's schedule, gaps, and public bookings — on phone or PC." },
+    stepsIntro: "Three steps to your public calendar.",
+    finalCta: { title: "Stop coordinating manually", subtitle: "14 days free. Booking link + reminders. Add Collect or other apps anytime." },
+    ecosistemaSubtitle: "Bookings lives alongside Collect, POS, and more in the same account."
+  }
+}

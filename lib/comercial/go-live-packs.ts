@@ -129,10 +129,19 @@ export const GO_LIVE_PACKS_PILOTO: GoLivePackDef[] = [
     promesaOk: "Órdenes simples + stock básico",
     promesaNo: "Taller industrial / seguros",
   },
+  {
+    id: "fumigacion",
+    label: "Fumigación / plagas",
+    tier: "piloto",
+    industryIds: ["fumigacion"],
+    enganches: ["niche.fumigacion"],
+    goldenPath: "/dashboard/fumigacion",
+    promesaOk: "Ruta del día (mapa OSM), órdenes de visita, clientes, facturación y abonos",
+    promesaNo: "MSDS/SENASA full, optimización TSP de ruta, app offline de campo",
+  },
 ]
 
 export const GO_LIVE_NO_VENDER = [
-  "fumigacion",
   "aire_acondicionado",
   "electricista_field",
   "piletero",

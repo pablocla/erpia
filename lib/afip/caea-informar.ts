@@ -44,7 +44,11 @@ export async function informarComprobantesCaeaPendientes(
       estado: "caea_emitida",
       ...(puntoVenta ? { puntoVenta } : {}),
     },
-    include: { cliente: true },
+    include: {
+      cliente: true,
+      lineas: true,
+      tributos: true,
+    },
     orderBy: [{ tipoCbte: "asc" }, { numero: "asc" }],
     take: 100,
   })
@@ -60,7 +64,15 @@ export async function informarComprobantesCaeaPendientes(
     empresa.cuit,
     empresa.certificadoCRT,
     empresa.certificadoKEY,
+    "wsfe",
   )
+
+  const { mapCondicionIvaReceptor } = await import("./condicion-iva-afip")
+
+  const ivaAfipId = (porcentaje: number): number => {
+    const map: Record<number, number> = { 0: 3, 2.5: 9, 5: 8, 10.5: 4, 21: 5, 27: 6 }
+    return map[porcentaje] ?? 5
+  }
 
   const grupos = new Map<number, typeof facturasOffline>()
   for (const f of facturasOffline) {
@@ -73,32 +85,65 @@ export async function informarComprobantesCaeaPendientes(
   const informadosIds: number[] = []
 
   for (const [pv, facturas] of grupos) {
-    const comprobantes = facturas.map((f) => ({
-      tipoCbte: f.tipoCbte,
-      cbteDesde: f.numero,
-      cbteHasta: f.numero,
-      fecha: f.createdAt.toISOString().slice(0, 10).replace(/-/g, ""),
-      docTipo: f.cliente?.cuit ? 80 : f.cliente?.dni ? 96 : 99,
-      docNro: String(f.cliente?.cuit || f.cliente?.dni || "0").replace(/\D/g, "") || "0",
-      impTotal: Number(f.total) + Number(f.totalPercepciones ?? 0),
-      impNeto: Number(f.subtotal),
-      impIVA: Number(f.iva),
-      impTrib: Number(f.totalPercepciones ?? 0),
-    }))
+    const comprobantes = facturas.map((f) => {
+      const ivaMap = new Map<number, { base: number; importe: number }>()
+      for (const linea of f.lineas) {
+        const id = ivaAfipId(Number(linea.porcentajeIva))
+        const prev = ivaMap.get(id) ?? { base: 0, importe: 0 }
+        prev.base += Number(linea.subtotal)
+        prev.importe += Number(linea.iva)
+        ivaMap.set(id, prev)
+      }
+      return {
+        tipoCbte: f.tipoCbte,
+        cbteDesde: f.numero,
+        cbteHasta: f.numero,
+        fecha: f.createdAt.toISOString().slice(0, 10).replace(/-/g, ""),
+        docTipo: f.cliente?.cuit ? 80 : f.cliente?.dni ? 96 : 99,
+        docNro: String(f.cliente?.cuit || f.cliente?.dni || "0").replace(/\D/g, "") || "0",
+        impTotal: Number(f.total) + Number(f.totalPercepciones ?? 0),
+        impNeto: Number(f.subtotal),
+        impIVA: Number(f.iva),
+        impTrib: Number(f.totalPercepciones ?? 0),
+        impTotConc: Number(f.netoNoGravado ?? 0),
+        impOpEx: Number(f.netoExento ?? 0),
+        monId: f.monedaOrigen ?? "PES",
+        monCotiz: f.tipoCambio ?? 1,
+        concepto: f.concepto ?? 1,
+        condicionIvaReceptor: mapCondicionIvaReceptor(
+          f.cliente?.condicionIva ?? f.condicionIvaReceptor,
+        ),
+        iva: [...ivaMap.entries()].map(([Id, v]) => ({
+          Id,
+          BaseImp: Math.round(v.base * 100) / 100,
+          Importe: Math.round(v.importe * 100) / 100,
+        })),
+        tributos: (f.tributos ?? []).map((t) => ({
+          Id: t.codigoAfip,
+          Desc: t.descripcion,
+          BaseImp: Number(t.baseImponible),
+          Alic: Number(t.alicuota ?? 0),
+          Importe: Number(t.importe),
+        })),
+      }
+    })
 
-    const resultado = await caeaService.informarComprobantesCAEA(
-      auth,
-      empresa.cuit,
-      pv,
-      caea,
-      comprobantes,
-    )
-
-    if (resultado.ok) {
-      informados += facturas.length
-      informadosIds.push(...facturas.map((f) => f.id))
-    } else {
-      erroresTotal.push(...resultado.errores)
+    // Informar uno a uno para marcar solo los OK
+    for (let i = 0; i < facturas.length; i++) {
+      const f = facturas[i]
+      const resultado = await caeaService.informarComprobantesCAEA(
+        auth,
+        empresa.cuit,
+        pv,
+        caea,
+        [comprobantes[i]],
+      )
+      if (resultado.ok) {
+        informados += 1
+        informadosIds.push(f.id)
+      } else {
+        erroresTotal.push(...resultado.errores)
+      }
     }
   }
 

@@ -35,6 +35,14 @@ describe("mipyme-fce", () => {
     expect(op.Opcional[1]).toEqual({ Id: 2102, Valor: "SCA" })
   })
 
+  it("incluye referencia comercial en opcionales", () => {
+    const op = buildFceOpcionales("0000003100010000000000", "ADC", {
+      referenciaComercial: "OC-123",
+    })
+    expect(op.Opcional).toContainEqual({ Id: 23, Valor: "OC-123" })
+    expect(op.Opcional[1]).toEqual({ Id: 2102, Valor: "ADC" })
+  })
+
   it("rechaza CBU inválido en opcionales", () => {
     expect(() => buildFceOpcionales("abc")).toThrow(/CBU/)
   })

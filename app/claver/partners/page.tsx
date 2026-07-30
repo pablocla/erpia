@@ -11,7 +11,8 @@ import {
 } from "lucide-react"
 import { ClaverShell } from "@/components/marketing/claver-shell"
 import { CommissionCalculator } from "@/components/clavernet/commission-calculator"
-import { PARTNER_PROGRAM } from "@/lib/partners/program-copy"
+import { PARTNER_PROGRAM, PARTNER_PROGRAM_US } from "@/lib/partners/program-copy"
+import { getEffectiveMarketId } from "@/lib/i18n/request-market"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,8 +22,11 @@ export const metadata: Metadata = {
   description: PARTNER_PROGRAM.oneLiner,
 }
 
-export default function PartnersProgramPage() {
-  const r = PARTNER_PROGRAM.rates
+export default async function PartnersProgramPage() {
+  const market = await getEffectiveMarketId()
+  const isUs = market === "us"
+  const program = isUs ? PARTNER_PROGRAM_US : PARTNER_PROGRAM
+  const r = program.rates
 
   return (
     <ClaverShell context="matrix">
@@ -30,7 +34,7 @@ export default function PartnersProgramPage() {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(37,99,235,0.35),transparent)]" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
           <Badge className="mb-4 border-emerald-400/30 bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider animate-pulse">
-            🔥 GANÁ MÁS DE $50.000 POR REFERIDO + INGRESOS RECURRENTES
+            {isUs ? "🔥 EARN RECURRING COMMISSIONS + LEVEL 2 BONUSES" : "🔥 GANÁ MÁS DE $50.000 POR REFERIDO + INGRESOS RECURRENTES"}
           </Badge>
           <h1 className="max-w-3xl font-[var(--font-fraunces)] text-4xl font-semibold leading-tight sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-emerald-400">
             {PARTNER_PROGRAM.name}
@@ -39,8 +43,8 @@ export default function PartnersProgramPage() {
           <p className="mt-3 max-w-2xl text-sm text-slate-400">{PARTNER_PROGRAM.oneLiner}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" className="bg-emerald-500 font-bold text-slate-950 hover:bg-emerald-400 px-8 py-6 text-md rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-105" asChild>
-              <Link href={PARTNER_PROGRAM.ctaLogin}>
-                Quiero Ser Partner Ahora
+              <Link href={program.ctaLogin}>
+                {isUs ? "Become a Partner Now" : "Quiero Ser Partner Ahora"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -50,18 +54,18 @@ export default function PartnersProgramPage() {
               className="border-white/20 bg-white/5 text-white hover:bg-white/10 rounded-xl px-8 py-6"
               asChild
             >
-              <Link href="/demo">Ver Demos en Vivo</Link>
+              <Link href="/demo">{isUs ? "Watch Live Demos" : "Ver Demos en Vivo"}</Link>
             </Button>
           </div>
           <ul className="mt-8 flex flex-wrap gap-6 text-sm text-slate-400 font-medium">
             <li className="flex items-center gap-2">
-              <Share2 className="h-5 w-5 text-emerald-400" /> Link de Afiliado al Instante
+              <Share2 className="h-5 w-5 text-emerald-400" /> {isUs ? "Instant Affiliate Link" : "Link de Afiliado al Instante"}
             </li>
             <li className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-emerald-400" /> {r.sellerN1}% Nivel 1 · {r.sellerN2}% Nivel 2
+              <Wallet className="h-5 w-5 text-emerald-400" /> {r.sellerN1}% {isUs ? "Level 1" : "Nivel 1"} · {r.sellerN2}% {isUs ? "Level 2" : "Nivel 2"}
             </li>
             <li className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-emerald-400" /> 100% Setup al Implementador ($50.000)
+              <Shield className="h-5 w-5 text-emerald-400" /> {isUs ? "No Pyramid Scheme" : "100% Setup al Implementador ($50.000)"}
             </li>
           </ul>
         </div>
@@ -70,10 +74,10 @@ export default function PartnersProgramPage() {
       <section className="border-b bg-white px-4 py-14 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl">
-            Cómo funciona
+            {isUs ? "How it works" : "Cómo funciona"}
           </h2>
           <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PARTNER_PROGRAM.howItWorks.map((s) => (
+            {program.howItWorks.map((s) => (
               <li key={s.step} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
                   {s.step}
@@ -89,10 +93,10 @@ export default function PartnersProgramPage() {
       <section className="border-b bg-[#f8fafc] px-4 py-14 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-            Roles y comisiones
+            {isUs ? "Roles and Commissions" : "Roles y comisiones"}
           </h2>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {PARTNER_PROGRAM.roles.map((role) => (
+            {program.roles.map((role) => (
               <Card key={role.id}>
                 <CardHeader>
                   <div className="flex items-center gap-2">
@@ -113,8 +117,9 @@ export default function PartnersProgramPage() {
             ))}
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            Ejemplo: cliente paga $40.000/mes → seller N1 cobra ~$12.000; si hay padre N2, ~$2.000.
-            Solo si el mes está pagado.
+            {isUs 
+              ? "Example: client pays $39/mo (Collect) → N1 seller earns ~$11.70/mo; N2 lead ~$1.95/mo. Paid only when the client pays."
+              : "Ejemplo: cliente paga $40.000/mes → seller N1 cobra ~$12.000; si hay padre N2, ~$2.000. Solo si el mes está pagado."}
           </p>
         </div>
       </section>
@@ -123,10 +128,10 @@ export default function PartnersProgramPage() {
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-2">
           <div>
             <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-              Reglas del programa
+              {isUs ? "Program rules" : "Reglas del programa"}
             </h2>
             <ul className="mt-6 space-y-3">
-              {PARTNER_PROGRAM.rules.map((rule) => (
+              {program.rules.map((rule) => (
                 <li key={rule} className="flex gap-3 text-sm text-slate-700">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <span>{rule}</span>
@@ -136,10 +141,10 @@ export default function PartnersProgramPage() {
           </div>
           <div>
             <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-              Esto NO es
+              {isUs ? "What this is NOT" : "Esto NO es"}
             </h2>
             <ul className="mt-6 space-y-3">
-              {PARTNER_PROGRAM.notThis.map((item) => (
+              {program.notThis.map((item) => (
                 <li key={item} className="flex gap-3 text-sm text-slate-700">
                   <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                   <span>{item}</span>
@@ -156,18 +161,19 @@ export default function PartnersProgramPage() {
 
       <section className="bg-slate-950 px-4 py-16 text-center text-white sm:px-6">
         <h2 className="font-[var(--font-fraunces)] text-3xl font-semibold">
-          Empezá a referir hoy
+          {isUs ? "Start referring today" : "Empezá a referir hoy"}
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-slate-400">
-          Activá el portal, copiá tu link y compartilo en calle, WhatsApp o TikTok con demos de
-          fiado/POS reales.
+          {isUs 
+            ? "Activate your portal, copy your link and share it with local businesses in your area."
+            : "Activá el portal, copiá tu link y compartilo en calle, WhatsApp o TikTok con demos de fiado/POS reales."}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button size="lg" className="bg-emerald-500 text-slate-950 hover:bg-emerald-400" asChild>
-            <Link href={PARTNER_PROGRAM.ctaLogin}>Ir al Portal Partner</Link>
+            <Link href={program.ctaLogin}>{isUs ? "Go to Partner Portal" : "Ir al Portal Partner"}</Link>
           </Button>
           <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10" asChild>
-            <Link href={PARTNER_PROGRAM.ctaRegister}>Crear cuenta Claver</Link>
+            <Link href={program.ctaRegister}>{isUs ? "Create Claver account" : "Crear cuenta Claver"}</Link>
           </Button>
         </div>
       </section>

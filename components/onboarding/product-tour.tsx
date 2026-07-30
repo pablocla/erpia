@@ -41,19 +41,19 @@ export function ProductTour() {
               }
             },
             {
-              element: "#sidebar-menu", // Asumiendo que el sidebar tiene este ID o similar
+              element: '[data-tour="sidebar-menu"], #sidebar-menu, nav',
               popover: {
                 title: "Menú Principal",
-                description: "Aquí encontrarás todos los módulos activos para tu rubro. Navega por las secciones para explorar.",
+                description: "Aquí encontrarás todos los módulos activos para tu producto. Navegá por las secciones para explorar.",
                 side: "right",
                 align: "start"
               }
             },
             {
-              element: "#main-action-button", // Necesitaremos agregar un id al boton principal de creacion (ej. Nueva Factura)
+              element: '[data-tour="main-action"], #main-action-button, button',
               popover: {
                 title: "Tu primera acción",
-                description: "Haz clic aquí para crear tu primera operación. Recuerda que los clientes y productos ya están cargados para probar.",
+                description: "Hacé clic aquí para registrar tu primera operación.",
                 side: "bottom",
                 align: "start"
               }

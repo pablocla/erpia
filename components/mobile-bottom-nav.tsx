@@ -23,6 +23,7 @@ import {
   Store,
   ScanLine,
   Settings,
+  Plus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
@@ -145,6 +146,19 @@ export function MobileBottomNav({ modoLite = "completo", productosSku = null }: 
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Action Button (FAB) para acción principal de Sub-SaaS */}
+      {shell?.primaryAction && (
+        <div className="lg:hidden fixed bottom-16 right-4 z-40">
+          <Link
+            href={shell.primaryAction.href}
+            className="flex items-center gap-2 px-4 h-12 bg-primary text-primary-foreground font-semibold rounded-full shadow-lg shadow-primary/25 active:scale-95 transition-all"
+          >
+            <Plus className="h-5 w-5" />
+            <span className="text-xs font-semibold">{shell.primaryAction.label}</span>
+          </Link>
         </div>
       )}
 

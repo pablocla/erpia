@@ -7,6 +7,7 @@ import {
 import { crearPreferenciaPedidoEcommerce } from "./payment-providers/mercadopago-checkout"
 import { buildTransferenciaInstrucciones } from "./payment-providers/transferencia"
 import type { CheckoutInput, CheckoutResult, MedioPagoEcommerce } from "./types"
+import { cotizarMultiCarrier } from "@/lib/logistica/shipping-orchestrator"
 
 function cleanText(value?: string | null): string | null {
   if (!value) return null
@@ -214,6 +215,37 @@ export async function procesarCheckoutEcommerce(input: CheckoutInput): Promise<C
       precioUnitario,
     }
   })
+
+  let costoEnvioElegido = 0
+  if (clienteData.codigoPostal) {
+    try {
+      const pesoEstimado = lineas.reduce((acc, l) => acc + l.cantidad, 0)
+      const cotizaciones = await cotizarMultiCarrier({
+        empresaId,
+        origen: { cp: "2000", provincia: "Santa Fe" },
+        destinatario: {
+          cp: clienteData.codigoPostal,
+          direccion: clienteData.direccion || "",
+          localidad: "",
+          provincia: ""
+        },
+        pesoKg: pesoEstimado,
+        valorDeclarado: lineasPedido.reduce((acc, l) => acc + (l.precioUnitario * l.cantidad), 0)
+      }, input.carrierElegido ? [input.carrierElegido as any] : undefined)
+
+      if (cotizaciones.length > 0) {
+        costoEnvioElegido = cotizaciones[0].precio
+        lineasPedido.push({
+          productoId: 0, 
+          descripcion: `Envío a domicilio (${cotizaciones[0].carrierId})`,
+          cantidad: 1,
+          precioUnitario: costoEnvioElegido,
+        } as any)
+      }
+    } catch (e) {
+      console.warn("[CHECKOUT] Fallo cotización de flete", e)
+    }
+  }
 
   const notaBase = observaciones ? `Ecommerce: ${observaciones}` : "Ecommerce"
   const nota =

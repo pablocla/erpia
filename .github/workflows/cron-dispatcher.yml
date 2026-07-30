@@ -1,5 +1,16 @@
 name: NOP Cron Dispatcher (Free Tier)
 
+# Dispara cada 5 min POST /api/cron/dispatch en tu deploy (Vercel/etc).
+# NO es un error de TypeScript ni del ERP en sí: es un “despertador” de jobs
+# (trial dunning, facturación recurrente, etc.) vía GitHub Actions free tier.
+#
+# Requiere secrets del REPO (Settings → Secrets and variables → Actions):
+#   NOP_BASE_URL  = https://tu-dominio.com   (sin barra final)
+#   CRON_SECRET   = mismo valor que CRON_SECRET en Vercel
+#
+# Si no los configurás, el job se SALTA (éxito) para no spamear “Run failed”.
+# Para apagarlo del todo: Actions → este workflow → ⋯ → Disable workflow.
+
 on:
   schedule:
     # Cada 5 minutos — máxima frecuencia gratuita de GitHub Actions
@@ -20,13 +31,40 @@ jobs:
           NOP_BASE_URL: ${{ secrets.NOP_BASE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$NOP_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "Configurá secrets NOP_BASE_URL y CRON_SECRET en el repo"
-            exit 1
+          set -euo pipefail
+
+          if [ -z "${NOP_BASE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::notice title=Cron NOP omitido::Faltan secrets NOP_BASE_URL y/o CRON_SECRET en GitHub → Actions. El workflow no falla a propósito (evita spam cada 5 min). Configuralos o deshabilitá este workflow."
+            echo "Cómo configurar:"
+            echo "  1) Repo → Settings → Secrets and variables → Actions"
+            echo "  2) NOP_BASE_URL = https://tu-app.vercel.app  (sin / final)"
+            echo "  3) CRON_SECRET  = el mismo CRON_SECRET de Vercel Environment Variables"
+            echo "  4) En Vercel debe existir CRON_SECRET y el deploy debe servir POST /api/cron/dispatch"
+            exit 0
           fi
-          curl -sfS -X POST "${NOP_BASE_URL}/api/cron/dispatch" \
+
+          # Normalizar barra final
+          BASE="${NOP_BASE_URL%/}"
+          URL="${BASE}/api/cron/dispatch"
+          echo "POST ${URL}"
+
+          HTTP_CODE=$(curl -sS -o dispatch-result.json -w "%{http_code}" -X POST "${URL}" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "Content-Type: application/json" \
-            --max-time 110 \
-            -o dispatch-result.json
-          cat dispatch-result.json
+            --max-time 110) || {
+              echo "::error title=Cron NOP sin respuesta::No se pudo conectar a ${URL}. ¿Deploy caído, URL mal, o cold start > 110s?"
+              exit 1
+            }
+
+          echo "HTTP ${HTTP_CODE}"
+          if [ -f dispatch-result.json ]; then
+            cat dispatch-result.json || true
+            echo ""
+          fi
+
+          if [ "${HTTP_CODE}" -lt 200 ] || [ "${HTTP_CODE}" -ge 300 ]; then
+            echo "::error title=Cron NOP HTTP ${HTTP_CODE}::Revisá CRON_SECRET (401/403), que la ruta exista (404), o logs del servidor (5xx)."
+            exit 1
+          fi
+
+          echo "Dispatcher OK"

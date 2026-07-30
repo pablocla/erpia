@@ -504,6 +504,7 @@ export default function POSPage() {
     },
   ) => {
     if (posLayout.ux.hapticOnAdd) vibrarAgregarProducto()
+    beepEscaneoOk()
     const precio = opts?.precio ?? p.precioVenta
     const descuento = opts?.descuento ?? 0
     const cantidad = opts?.cantidad ?? 1
@@ -983,9 +984,34 @@ export default function POSPage() {
         /* silencioso */
       }
     }
-    const onDown = (e: any) => {
+    const onDown = (e: KeyboardEvent | any) => {
       if (e.altKey && e.key === "F12") {
         holdTimer = setTimeout(() => void dispararPanico(), 3000)
+        return
+      }
+
+      // Evitar interrumpir campos de entrada de texto excepto atajos con F-keys o Esc
+      const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+
+      if (e.key === "F1") {
+        e.preventDefault()
+        searchRef.current?.focus()
+      } else if (e.key === "F2") {
+        e.preventDefault()
+        if (carrito.length > 0) abrirCobro({ medio: "efectivo", monto: total })
+      } else if (e.key === "F3") {
+        e.preventDefault()
+        if (carrito.length > 0) abrirCobro({ medio: "qr", monto: total })
+      } else if (e.key === "F4") {
+        e.preventDefault()
+        setDescuentoGlobal((prev) => (prev === 10 ? 0 : 10))
+        toast({ title: "Descuento 10%", description: descuentoGlobal === 10 ? "Descuento quitado" : "Descuento 10% aplicado" })
+      } else if (e.key === "Escape") {
+        if (busqueda) {
+          setBusqueda("")
+        } else if (modalCobroOpen) {
+          setModalCobroOpen(false)
+        }
       }
     }
     const onUp = (e: any) => {
@@ -1001,7 +1027,7 @@ export default function POSPage() {
       window.removeEventListener("keydown", onDown)
       window.removeEventListener("keyup", onUp)
     }
-  }, [authH, toast])
+  }, [authH, toast, carrito, total, busqueda, modalCobroOpen, descuentoGlobal])
 
   const abrirCobroFiado = () => {
     if (carrito.length === 0) return
@@ -2082,9 +2108,9 @@ export default function POSPage() {
                 </div>
               )}
               <Separator className="my-1" />
-              <div className="flex justify-between font-bold text-lg">
-                <span>TOTAL</span>
-                <span className="text-primary">${fmt(total)}</span>
+              <div className="flex justify-between items-baseline font-black py-1">
+                <span className="text-muted-foreground text-xs font-extrabold tracking-wider">TOTAL</span>
+                <span className="text-primary font-black tracking-tight text-2xl md:text-3xl lg:text-4xl">${fmt(total)}</span>
               </div>
             </div>
 
@@ -2093,7 +2119,7 @@ export default function POSPage() {
               {modo === "mesa" && indicesSeleccionados.size > 0 && (
                 <Button
                   variant="secondary"
-                  className="w-full h-10"
+                  className="w-full h-11 text-sm font-bold"
                   onClick={() =>
                     abrirCobro({ indices: [...indicesSeleccionados] })
                   }
@@ -2107,22 +2133,22 @@ export default function POSPage() {
                 (creditoDispPos == null || creditoDispPos >= total) && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 font-bold border-primary text-primary"
+                    className="w-full h-12 font-bold border-primary text-primary"
                     disabled={!cajaOk || afipBloqueaFiscal}
                     onClick={abrirCobroFiado}
                   >
-                    <Wallet className="h-4 w-4 mr-2" />
+                    <Wallet className="h-5 w-5 mr-2" />
                     FIAR ${fmt(total)}
                   </Button>
                 )}
               <Button
-                className="w-full h-12 text-base font-bold tracking-wide"
+                className="w-full h-14 text-lg font-extrabold tracking-wide shadow-lg shadow-primary/20 touch-target"
                 disabled={carrito.length === 0 || !cajaOk || afipBloqueaFiscal}
                 onClick={() => abrirCobro()}
               >
-                <CreditCard className="h-5 w-5 mr-2" />
-                COBRAR ${fmt(total)}
-                <kbd className="ml-2 text-xs opacity-60 font-normal">F12</kbd>
+                <CreditCard className="h-6 w-6 mr-2 shrink-0" />
+                <span>COBRAR ${fmt(total)}</span>
+                <kbd className="ml-auto text-xs opacity-75 font-mono px-2 py-0.5 rounded bg-primary-foreground/20 border border-primary-foreground/30 hidden sm:inline-block">F12</kbd>
               </Button>
               {!cajaOk && carrito.length > 0 && (
                 <p className="text-xs text-destructive text-center mt-1">

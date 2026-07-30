@@ -13,9 +13,7 @@
  * Webservice: WSFEv1 → FECAEASolicitar / FECAEAInformar / FECAEAConsultar
  */
 
-import { prisma } from "@/lib/prisma"
-import { AFIPSoapClient } from "./soap-client"
-import type { AFIPAuthResponse } from "./soap-client"
+import type { AFIPAuthResponse } from "./wsaa-service"
 import soap from "soap"
 
 export interface CAEAData {
@@ -94,6 +92,20 @@ export class CAEAService {
       impNeto: number
       impIVA: number
       impTrib: number
+      impTotConc?: number
+      impOpEx?: number
+      monId?: string
+      monCotiz?: number
+      concepto?: number
+      condicionIvaReceptor?: number
+      iva?: Array<{ Id: number; BaseImp: number; Importe: number }>
+      tributos?: Array<{
+        Id: number
+        Desc: string
+        BaseImp: number
+        Alic: number
+        Importe: number
+      }>
     }>,
   ): Promise<{ ok: boolean; errores: string[] }> {
     const client = await soap.createClientAsync(this.wsfeUrl)
@@ -102,33 +114,47 @@ export class CAEAService {
 
     for (const cbte of comprobantes) {
       try {
+        const det: Record<string, unknown> = {
+          Concepto: cbte.concepto ?? 1,
+          DocTipo: cbte.docTipo,
+          DocNro: cbte.docNro,
+          CbteDesde: cbte.cbteDesde,
+          CbteHasta: cbte.cbteHasta,
+          CbteFch: cbte.fecha,
+          ImpTotal: cbte.impTotal,
+          ImpTotConc: cbte.impTotConc ?? 0,
+          ImpNeto: cbte.impNeto,
+          ImpOpEx: cbte.impOpEx ?? 0,
+          ImpIVA: cbte.impIVA,
+          ImpTrib: cbte.impTrib,
+          MonId: cbte.monId ?? "PES",
+          MonCotiz: cbte.monCotiz ?? 1,
+          CAEA: caea,
+        }
+        if (cbte.condicionIvaReceptor != null) {
+          det.CondicionIVAReceptor = cbte.condicionIvaReceptor
+        }
+        if (cbte.iva?.length) {
+          det.Iva = cbte.iva
+        }
+        if (cbte.tributos?.length) {
+          det.Tributos = cbte.tributos
+        }
+
         const [result] = await client.FECAEARegInformativoAsync({
           Auth: { Token: auth.token, Sign: auth.sign, Cuit: cuit },
           FeCAEARegInfReq: {
             FeCabReq: { CantReg: 1, PtoVta: puntoVenta, CbteTipo: cbte.tipoCbte },
             FeDetReq: {
-              FECAEADetRequest: {
-                Concepto: 1,
-                DocTipo: cbte.docTipo,
-                DocNro: cbte.docNro,
-                CbteDesde: cbte.cbteDesde,
-                CbteHasta: cbte.cbteHasta,
-                CbteFch: cbte.fecha,
-                ImpTotal: cbte.impTotal,
-                ImpTotConc: 0,
-                ImpNeto: cbte.impNeto,
-                ImpOpEx: 0,
-                ImpIVA: cbte.impIVA,
-                ImpTrib: cbte.impTrib,
-                CAEA: caea,
-              },
+              FECAEADetRequest: det,
             },
           },
         })
 
         const resp = result?.FECAEARegInformativoResult?.FeDetResp?.FECAEADetResponse
-        if (resp?.Resultado !== "A") {
-          errores.push(`Cbte ${cbte.cbteDesde}: ${JSON.stringify(resp?.Observaciones)}`)
+        const detResp = Array.isArray(resp) ? resp[0] : resp
+        if (detResp?.Resultado !== "A") {
+          errores.push(`Cbte ${cbte.cbteDesde}: ${JSON.stringify(detResp?.Observaciones)}`)
         }
       } catch (err) {
         errores.push(`Cbte ${cbte.cbteDesde}: ${err instanceof Error ? err.message : String(err)}`)

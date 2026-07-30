@@ -77,15 +77,92 @@ export const PARTNER_PROGRAM = {
   },
 } as const
 
+export const PARTNER_PROGRAM_US = {
+  name: "Claver Partner Network",
+  tagline: "Build a recurring revenue stream selling software that US SMBs actually need.",
+  oneLiner:
+    "Earn commissions every month selling tools for local businesses. The lead magnet is free House Tab. When they upgrade and pay, you get paid.",
+  maxLevels: 2,
+  rates: {
+    sellerN1: Math.round(AFILIADO_RATES.sellerNivel1 * 100),
+    sellerN2: Math.round(AFILIADO_RATES.sellerNivel2 * 100),
+    implementerN1: Math.round(AFILIADO_RATES.implementerNivel1 * 100),
+    implementerN2: Math.round(AFILIADO_RATES.implementerNivel2 * 100),
+  },
+  roles: [
+    {
+      id: "field_seller",
+      title: "🔥 Field Seller (Street Direct)",
+      forWho: "Independent sales reps, field agents, and local B2B hustlers.",
+      earns: "100% of the first Stripe payment + 30% recurring for life on every business you bring in (Level 1). Joining is 100% FREE under Claver direct.",
+      n2: "Your focus is hitting the streets, closing local shops (bars, salons, trades, gyms) and getting paid. No bosses, no upfront inventory.",
+    },
+    {
+      id: "cell_lead",
+      title: "👑 Cell Lead (Team Builder)",
+      forWho: "Experienced sales pros, agency owners, or team builders.",
+      earns: "5% passive on everything your cell (Level 2) sells + your direct commissions.",
+      n2: "No 'armchair' leads: To build a Cell, you must prove merit (20 active paid accounts closed by you) or purchase the Cell License ($799 USD). Your job is to train and back up your team.",
+    },
+  ],
+  rules: [
+    "Real commission on paid subscriptions. Settled month-to-month as the client pays via Stripe.",
+    "Transparent 2-level structure. You earn on your sales and your invitees' sales.",
+    "The client buys a real software product (House Tab, Collect, Confirm).",
+    "Zero entry cost. Becoming a Claver partner is free and takes 10 seconds.",
+    "Payouts: Use your balance to pay your own Claver bill, or request a USD bank transfer (manual payout v1).",
+  ],
+  notThis: [
+    "Not a pyramid scheme: this is a real product with real value and real customers.",
+    "We don't charge you a membership fee to join, nor force you to buy initial stock.",
+    "You don't rely on empty promises: if your network sells and the software is used, you get real money.",
+  ],
+  howItWorks: [
+    {
+      step: 1,
+      title: "Activate your code",
+      body: "Log into the portal and get your unique referral link instantly.",
+    },
+    {
+      step: 2,
+      title: "Build your network",
+      body: "Share your link with local businesses and add sub-partners under your wing to earn passive L2 commissions.",
+    },
+    {
+      step: 3,
+      title: "The client pays",
+      body: "Shops get a 14-day trial. When they pay their first subscription via Stripe, your commission is credited.",
+    },
+    {
+      step: 4,
+      title: "Get paid",
+      body: "Use the balance to pay your own Claver account, or request a cash payout to your bank account.",
+    },
+  ],
+  ctaPortal: "/dashboard/partner-portal",
+  ctaRegister: "/login/register",
+  ctaLogin: "/login?next=/dashboard/partner-portal",
+  paths: {
+    landing: "/claver/partners",
+    portal: "/dashboard/partner-portal",
+    docs: "/claver/partners#rules",
+  },
+} as const
+
 export function buildReferralRegisterUrl(
   code: string,
-  opts?: { baseUrl?: string; activar?: string },
+  opts?: { baseUrl?: string; activar?: string; market?: string },
 ): string {
   const base = (opts?.baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://claver.com.ar").replace(
     /\/$/,
     "",
   )
+  const isUs = opts?.market === "us"
+  const defaultActivar = isUs ? "house-tab" : "fiado"
+
   const params = new URLSearchParams({ ref: code })
-  params.set("activar", opts?.activar ?? "fiado")
+  params.set("activar", opts?.activar ?? defaultActivar)
+  if (isUs) params.set("market", "us")
+  
   return `${base}/login/register?${params.toString()}`
 }

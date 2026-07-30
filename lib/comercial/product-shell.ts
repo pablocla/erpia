@@ -452,31 +452,33 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
   },
 }
 
-// Asegura shell para cualquier slug micro-saas aún no listado explícitamente
+// Asegura shell para cualquier slug sub-saas aún no listado explícitamente
 const _microShellFallback = (() => {
   for (const app of SUB_SAAS_APPS) {
     if (PRODUCT_SHELLS[app.slug as SubSaasSlug]) continue
     const micro = getMicroSaasBySlug(app.slug)
-    if (!micro) continue
+    const marca = micro?.marca ?? app.marca
+    const primaryAction = micro?.primaryAction ?? { label: "Ir a sección", href: app.dashboardPath || "/dashboard" }
+    const tabs = micro?.shellTabs
+      ? [...micro.shellTabs.map((t) => ({ href: t.href, icon: BookOpen, label: t.label })), DEFAULT_MORE_TAB]
+      : [
+          { href: app.dashboardPath || "/dashboard", icon: BookOpen, label: app.nombre || "Inicio" },
+          { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+          DEFAULT_MORE_TAB,
+        ]
+
     ;(PRODUCT_SHELLS as Record<string, ProductShellConfig>)[app.slug] = {
       slug: app.slug as SubSaasSlug,
-      marca: micro.marca,
+      marca,
       icono: BookOpen,
-      tabs: [
-        ...micro.shellTabs.map((t) => ({
-          href: t.href,
-          icon: BookOpen,
-          label: t.label,
-        })),
-        DEFAULT_MORE_TAB,
-      ],
+      tabs,
       kpis: [
         { id: "kpi1", label: "Actividad", icon: Users, format: "number" as const },
         { id: "kpi2", label: "Pendiente", icon: Wallet, format: "currency" as const },
         { id: "kpi3", label: "Hoy", icon: Calendar, format: "number" as const },
         { id: "kpi4", label: "Estado", icon: MessageSquare, format: "text" as const },
       ],
-      primaryAction: micro.primaryAction,
+      primaryAction,
     }
   }
 })()

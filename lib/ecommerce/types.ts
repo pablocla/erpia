@@ -57,6 +57,7 @@ export interface CheckoutInput {
   /** @deprecated Usar medioPago: "confirmar_sin_pago" */
   autoConfirmar?: boolean
   medioPago?: MedioPagoEcommerce
+  carrierElegido?: string
   cliente: CheckoutClienteInput
   lineas: CheckoutLineaInput[]
 }

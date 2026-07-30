@@ -45,9 +45,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Certificados AFIP no configurados" }, { status: 400 })
     }
 
-    const entorno = (process.env.AFIP_ENTORNO as "homologacion" | "produccion") ?? "homologacion"
+    const entorno =
+      ((empresa.entornoAfip || empresa.entorno || process.env.AFIP_ENTORNO) as
+        | "homologacion"
+        | "produccion") ?? "homologacion"
     const soapClient = new AFIPSoapClient(entorno)
-    const auth = await soapClient.authenticate(empresa.cuit, empresa.certificadoCRT, empresa.certificadoKEY)
+    // TA del servicio wscdc (no reutilizar token de wsfe)
+    const auth = await soapClient.authenticate(
+      empresa.cuit,
+      empresa.certificadoCRT,
+      empresa.certificadoKEY,
+      "wscdc",
+    )
 
     const wscdc = new WSCDCClient(entorno)
     const resultado = await wscdc.constatar(auth, empresa.cuit, input as ConstatacionInput)

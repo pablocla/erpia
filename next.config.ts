@@ -23,13 +23,14 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod) + Google GSI
-      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://accounts.google.com",
-      "style-src 'self' 'unsafe-inline' https://accounts.google.com https://ssl.gstatic.com",
-      "img-src 'self' data: blob: https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com",
+      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod) + Google GSI + MapLibre workers
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com",
+      "worker-src 'self' blob:",
+      "style-src 'self' 'unsafe-inline' https://accounts.google.com https://ssl.gstatic.com https://unpkg.com",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://*.cartocdn.com https://*.cartodb.com https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com",
       "font-src 'self' https://fonts.gstatic.com",
-      // Analytics beacons + Supabase + Vercel insights + Google Auth
-      "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com",
+      // Analytics beacons + Supabase + Vercel insights + Google Auth + OpenStreetMap + Nominatim
+      "connect-src 'self' https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://nominatim.openstreetmap.org https://*.cartocdn.com https://*.cartodb.com https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com",
       "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",

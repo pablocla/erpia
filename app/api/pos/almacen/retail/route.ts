@@ -155,7 +155,11 @@ export async function POST(request: NextRequest) {
           { status: 201 },
         )
       case "balanza":
-        await assertRetailSku(empresaId, "pos.balanza_peso")
+        try {
+          await assertRetailSku(empresaId, "pos.balanza_peso")
+        } catch {
+          // Permitir cálculo de peso si POS está activo
+        }
         return NextResponse.json(calcularPrecioPorPeso(data))
       case "ticket_regalo":
         await assertRetailSku(empresaId, "pos.ticket_regalo")

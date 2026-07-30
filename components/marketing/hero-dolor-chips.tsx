@@ -2,19 +2,23 @@
 
 import {
   HOME_DOLOR_CHIPS,
-  type HomeDolorSlug,
+  HOME_DOLOR_CHIPS_US,
 } from "@/lib/comercial/go-to-market-vitrine"
+import type { HomeDolorSlug } from "@/lib/comercial/go-to-market-vitrine"
 import { cn } from "@/lib/utils"
 
 export function HeroDolorChips({
   active,
   onChange,
   className,
+  isUs = false,
 }: {
   active: HomeDolorSlug
   onChange: (slug: HomeDolorSlug) => void
   className?: string
+  isUs?: boolean
 }) {
+  const chips = isUs ? HOME_DOLOR_CHIPS_US : HOME_DOLOR_CHIPS
   return (
     <div
       role="group"
@@ -22,7 +26,7 @@ export function HeroDolorChips({
       className={cn("mt-6 flex flex-wrap gap-2", className)}
     >
       <span className="sr-only">Elegí Fiado, Cobranza o Turnos</span>
-      {HOME_DOLOR_CHIPS.map((chip) => {
+      {chips.map((chip) => {
         const pressed = active === chip.slug
         return (
           <button

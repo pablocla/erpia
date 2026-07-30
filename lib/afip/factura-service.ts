@@ -12,11 +12,19 @@ import {
   buildCbtesAsocFce,
   buildFceOpcionales,
   formatFechaAfip,
+  isFceFactura,
   isFceNotaCreditoDebito,
   isFceTipoCbte,
+  resolveFceFchVtoPago,
   type TipoTransferenciaFce,
   validateCbu,
 } from "./mipyme-fce"
+import { mapCondicionIvaReceptor, validarTipoCbteVsCondicion } from "./condicion-iva-afip"
+import {
+  validarImportesFe,
+  validarMoneda,
+  validarDocReceptor,
+} from "./payload-validators"
 // Register event handlers (stock, CC/CP, contabilidad)
 import "@/lib/stock/stock-service"
 import "@/lib/cc-cp/cuentas-service"
@@ -104,8 +112,46 @@ export class FacturaService {
         finalPuntoVenta = serieConfig.puntoVenta.numero
       }
 
-      // 3. Autenticar con AFIP
-      const auth = await this.soapClient.authenticate(empresa.cuit, empresa.certificadoCRT, empresa.certificadoKEY)
+      // Exportación: WSFEX (no WSFE)
+      if (esExportacion && moduloExportacionActivo && [19, 20, 21].includes(finalTipoCbte)) {
+        const { emitirFacturaExportacion } = await import("./factura-exportacion-service")
+        const exp = await emitirFacturaExportacion({
+          empresaId: empresa.id,
+          clienteId: cliente.id,
+          puntoVenta: finalPuntoVenta,
+          tipoCbte: finalTipoCbte,
+          tipoExpo: payload.concepto === 2 ? 2 : 1,
+          monedaId: payload.moneda && payload.moneda !== "PES" ? payload.moneda : "DOL",
+          monedaCtz: payload.tipoCambio ?? 1,
+          items: payload.items.map((it) => ({
+            descripcion: it.descripcion,
+            cantidad: it.cantidad,
+            precioUnitario: it.precioUnitario,
+            codigo: it.productoId ? String(it.productoId) : undefined,
+          })),
+          facturaAsociadaId: payload.facturaAsociadaId,
+        })
+        if (!exp.ok) {
+          return { success: false, error: exp.error ?? "Error WSFEX" }
+        }
+        return {
+          success: true,
+          facturaId: exp.facturaId,
+          cae: exp.cae,
+          fechaCAE: exp.vencimientoCAE ?? "",
+          vencimientoCAE: exp.vencimientoCAE ?? "",
+          qrBase64: exp.qrBase64 ?? "",
+          numero: exp.numero,
+        }
+      }
+
+      // 3. Autenticar con AFIP (WSFE)
+      const auth = await this.soapClient.authenticate(
+        empresa.cuit,
+        empresa.certificadoCRT,
+        empresa.certificadoKEY,
+        "wsfe",
+      )
 
       // 4. Obtener el último número de comprobante
       const ultimoNumero = await this.soapClient.consultarUltimoComprobante(
@@ -283,15 +329,42 @@ export class FacturaService {
         }
       }
 
+      const docTipo = payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99)
+      const docNro = payload.cliente.cuit || payload.cliente.dni || 0
+      const ivaArr = this.calcularIVAPorAlicuota(payload.items)
+      const impTotalFe = total + impTrib
+      const condIvaCodigo = mapCondicionIvaReceptor(payload.cliente.condicionIva)
+      const tipoVsCond = validarTipoCbteVsCondicion(finalTipoCbte, condIvaCodigo)
+      if (tipoVsCond) {
+        return { success: false, error: tipoVsCond }
+      }
+
+      const preVal = [
+        ...validarImportesFe({
+          impNeto: netoGravado,
+          impTotConc: netoNoGravado,
+          impOpEx: netoExento,
+          impIva: iva,
+          impTrib,
+          impTotal: impTotalFe,
+          ivaItems: ivaArr,
+        }).errores,
+        ...validarMoneda(monedaOrigen, tipoCambio).errores,
+        ...validarDocReceptor(docTipo, docNro, finalTipoCbte).errores,
+      ]
+      if (preVal.length > 0) {
+        return { success: false, error: `Validación previa: ${preVal.join("; ")}` }
+      }
+
       const comprobante: any = {
         CbteTipo: finalTipoCbte,
         Concepto: concepto,
-        DocTipo: payload.cliente.cuit ? 80 : (payload.cliente.dni ? 96 : 99),
-        DocNro: payload.cliente.cuit || payload.cliente.dni || 0,
+        DocTipo: docTipo,
+        DocNro: docNro,
         CbteDesde: nuevoNumero,
         CbteHasta: nuevoNumero,
         CbteFch: this.formatearFecha(new Date()),
-        ImpTotal: total + impTrib,
+        ImpTotal: impTotalFe,
         ImpTotConc: netoNoGravado,
         ImpNeto: netoGravado,
         ImpOpEx: netoExento,
@@ -299,7 +372,8 @@ export class FacturaService {
         ImpTrib: impTrib,
         MonId: monedaOrigen,
         MonCotiz: tipoCambio,
-        Iva: this.calcularIVAPorAlicuota(payload.items),
+        CondicionIVAReceptor: condIvaCodigo,
+        Iva: ivaArr,
       }
 
       // Concepto 2 o 3: servicios requieren fechas
@@ -315,7 +389,18 @@ export class FacturaService {
       }
 
       if (esFce && cbuFce) {
-        Object.assign(comprobante, buildFceOpcionales(cbuFce, tipoTransferenciaFce))
+        Object.assign(
+          comprobante,
+          buildFceOpcionales(cbuFce, tipoTransferenciaFce, {
+            referenciaComercial: payload.fce?.referencia || undefined,
+          }),
+        )
+        if (isFceFactura(finalTipoCbte) || !comprobante.FchVtoPago) {
+          comprobante.FchVtoPago = resolveFceFchVtoPago(
+            new Date(),
+            payload.fechaVtoPago,
+          )
+        }
       }
 
       const esNcNd = [2, 3, 7, 8, 12, 13, 202, 203, 207, 208, 212, 213].includes(finalTipoCbte)

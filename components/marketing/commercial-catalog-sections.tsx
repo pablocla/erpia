@@ -27,6 +27,7 @@ import {
   COMBATE_APPS,
   COMBATE_APPS_SLUGS,
   GTM_VITRINE_COPY,
+  GTM_VITRINE_COPY_US,
   HOME_COMBATE_SLUGS,
   homeCombateApps,
   type HomeDolorSlug,
@@ -69,15 +70,18 @@ const SUB_SAAS_STATUS = {
 export function CombateHomeSection({
   className,
   highlightSlug,
+  isUs = false,
 }: {
   className?: string
   highlightSlug?: HomeDolorSlug
+  isUs?: boolean
 }) {
   const apps = homeCombateApps()
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
 
   return (
-    <section
-      id={GTM_VITRINE_COPY.combateHeadingId}
+      <section
+      id={gtmCopy.combateHeadingId}
       aria-labelledby="combate-heading"
       className={cn("scroll-mt-24 border-b border-slate-200/80 bg-white px-4 py-14 sm:px-6", className)}
     >
@@ -87,9 +91,9 @@ export function CombateHomeSection({
             id="combate-heading"
             className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
           >
-            {GTM_VITRINE_COPY.combateTitle}
+            {gtmCopy.combateTitle}
           </h2>
-          <p className="mt-2 max-w-2xl text-slate-600">{GTM_VITRINE_COPY.combateSubtitle}</p>
+          <p className="mt-2 max-w-2xl text-slate-600">{gtmCopy.combateSubtitle}</p>
         </ScrollReveal>
 
         <MotionList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -113,17 +117,17 @@ export function CombateHomeSection({
                       <div className="flex shrink-0 flex-wrap justify-end gap-1">
                         {isFree && (
                           <Badge className="bg-emerald-600 text-[10px] text-white">
-                            {GTM_VITRINE_COPY.badgeGratis}
+                            {gtmCopy.badgeGratis}
                           </Badge>
                         )}
                         {!isFree && (
                           <Badge variant="secondary" className="text-[10px]">
-                            {GTM_VITRINE_COPY.badgeTrial}
+                            {gtmCopy.badgeTrial}
                           </Badge>
                         )}
                         {highlighted && (
                           <Badge className="bg-slate-900 text-[10px] text-white">
-                            {GTM_VITRINE_COPY.badgeElegido}
+                            {gtmCopy.badgeElegido}
                           </Badge>
                         )}
                       </div>
@@ -154,7 +158,7 @@ export function CombateHomeSection({
                   <CardFooter className="flex flex-col gap-2">
                     <Button className="w-full bg-emerald-600 hover:bg-emerald-500" asChild>
                       <Link href={registerHref}>
-                        {isFree ? "Empezar gratis" : GTM_VITRINE_COPY.ctaProbar}
+                        {isFree ? (isUs ? "Start free" : "Empezar gratis") : gtmCopy.ctaProbar}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -173,7 +177,8 @@ export function CombateHomeSection({
 }
 
 /** 4 packs con precio en home (fuera del colapsable). */
-export function PacksHomeStripSection({ className }: { className?: string }) {
+export function PacksHomeStripSection({ className, isUs = false }: { className?: string, isUs?: boolean }) {
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
   return (
     <section
       aria-labelledby="packs-home-heading"
@@ -186,13 +191,13 @@ export function PacksHomeStripSection({ className }: { className?: string }) {
               id="packs-home-heading"
               className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
             >
-              {GTM_VITRINE_COPY.packsHomeTitle}
+              {gtmCopy.packsHomeTitle}
             </h2>
-            <p className="mt-2 max-w-xl text-slate-600">{GTM_VITRINE_COPY.packsHomeSubtitle}</p>
+            <p className="mt-2 max-w-xl text-slate-600">{gtmCopy.packsHomeSubtitle}</p>
           </div>
           <Button variant="outline" asChild>
             <Link href="/claver/apps#packs">
-              Ver todos los packs
+              {isUs ? "See all packs" : "Ver todos los packs"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -222,7 +227,7 @@ export function PacksHomeStripSection({ className }: { className?: string }) {
                 <CardFooter>
                   <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500" asChild>
                     <Link href={activarRegisterHref(pack.id)}>
-                      {GTM_VITRINE_COPY.ctaProbar}
+                      {gtmCopy.ctaProbar}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>

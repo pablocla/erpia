@@ -53,6 +53,56 @@ export function isMpMockMode(): boolean {
   return !t || t.startsWith("TEST-mock") || t === "mock"
 }
 
+/**
+ * Stripe (US / multinational) — names canónicos STRIPE_*
+ * Dashboard: https://dashboard.stripe.com/apikeys
+ * Webhook: {APP_URL}/api/webhooks/stripe
+ */
+export function getStripeSecretKey(): string {
+  return first("STRIPE_SECRET_KEY", "STRIPE_API_KEY")
+}
+
+export function getStripePublishableKey(): string {
+  return first(
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_STRIPE_PUBLIC_KEY",
+  )
+}
+
+export function getStripeWebhookSecret(): string {
+  return first("STRIPE_WEBHOOK_SECRET")
+}
+
+/** Optional fixed Price IDs for SaaS subscriptions (USD) */
+export function getStripePriceId(sku?: string): string {
+  if (sku) {
+    const bySku = first(`STRIPE_PRICE_${sku.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}`)
+    if (bySku) return bySku
+  }
+  return first("STRIPE_PRICE_DEFAULT", "STRIPE_DEFAULT_PRICE_ID")
+}
+
+/**
+ * Force provider: "stripe" | "mercadopago" | "auto" (default)
+ * auto = Stripe when secret key present + market/empresa US; else MP
+ */
+export function getPaymentsProviderMode(): "stripe" | "mercadopago" | "auto" {
+  const v = first("PAYMENTS_PROVIDER", "PAYMENT_PROVIDER").toLowerCase()
+  if (v === "stripe" || v === "mercadopago" || v === "auto") return v
+  return "auto"
+}
+
+export function isStripeMockMode(): boolean {
+  const t = getStripeSecretKey()
+  return !t || t.startsWith("sk_test_mock") || t === "mock"
+}
+
+export function isStripeConfigured(): boolean {
+  const t = getStripeSecretKey()
+  return Boolean(t) && !isStripeMockMode()
+}
+
 export function getGeminiApiKey(): string {
   return first("GOOGLE_GENERATIVE_AI_API_KEY", "GEMINI_API_KEY")
 }
@@ -83,6 +133,11 @@ export function getEnvPresenceChecklist() {
       MP_ACCESS_TOKEN: Boolean(mpToken) && !mpMock,
       mpMock,
       MP_WEBHOOK_SECRET: Boolean(getMpWebhookSecret()),
+      STRIPE_SECRET_KEY: isStripeConfigured(),
+      stripeMock: isStripeMockMode(),
+      STRIPE_WEBHOOK_SECRET: Boolean(getStripeWebhookSecret()),
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: Boolean(getStripePublishableKey()),
+      PAYMENTS_PROVIDER: getPaymentsProviderMode(),
     },
     optional: {
       RESEND_API_KEY: Boolean(process.env.RESEND_API_KEY),

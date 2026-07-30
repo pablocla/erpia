@@ -85,6 +85,7 @@ export default function CierrePOSPage() {
   const [zExitoso, setZExitoso] = useState<{ numeroZ: number; totalVentas: number } | null>(null)
 
   // Arqueo para Cierre Z
+  const [modoArqueoCiego, setModoArqueoCiego] = useState(false)
   const [arqueo, setArqueo] = useState({
     efectivo: "",
     tarjeta: "",
@@ -535,7 +536,27 @@ export default function CierrePOSPage() {
           )}
 
           <div className="space-y-3">
-            <p className="text-sm font-semibold">Arqueo final (opcional — si no completás, se usan los valores del sistema)</p>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border">
+              <div>
+                <p className="text-xs font-semibold">Modo Arqueo Ciego (Anti-Fraude)</p>
+                <p className="text-[11px] text-muted-foreground">Oculta los montos esperados del sistema al cajero.</p>
+              </div>
+              <Button
+                type="button"
+                variant={modoArqueoCiego ? "default" : "outline"}
+                size="sm"
+                className="text-xs h-7"
+                onClick={() => setModoArqueoCiego(!modoArqueoCiego)}
+              >
+                {modoArqueoCiego ? "Activado" : "Desactivado"}
+              </Button>
+            </div>
+
+            <p className="text-xs font-semibold text-muted-foreground">
+              {modoArqueoCiego
+                ? "Ingrese el conteo físico de dinero en caja (conteo a ciegas):"
+                : "Arqueo final (opcional — si no completás, se usan los valores del sistema):"}
+            </p>
 
             {[
               { key: "efectivo",     label: "Efectivo",       sistema: snap?.pagos.efectivo },
@@ -543,14 +564,16 @@ export default function CierrePOSPage() {
               { key: "transferencia",label: "Transferencias", sistema: snap?.pagos.transferencia },
               { key: "qr",           label: "QR / Digital",  sistema: snap?.pagos.qr },
               { key: "cheque",       label: "Cheques",        sistema: snap?.pagos.cheque },
-            ].filter((r) => (r.sistema ?? 0) > 0).map((row) => (
+            ].filter((r) => (r.sistema ?? 0) > 0 || modoArqueoCiego).map((row) => (
               <div key={row.key} className="flex items-center gap-2">
                 <Label className="w-32 text-xs shrink-0">{row.label}</Label>
-                <p className="text-xs text-muted-foreground w-24">Sistema: ${fmt(row.sistema ?? 0)}</p>
+                {!modoArqueoCiego && (
+                  <p className="text-xs text-muted-foreground w-24">Sistema: ${fmt(row.sistema ?? 0)}</p>
+                )}
                 <Input
                   type="number"
-                  placeholder={String(row.sistema ?? 0)}
-                  className="h-8 text-sm"
+                  placeholder={modoArqueoCiego ? "Monto contado $" : String(row.sistema ?? 0)}
+                  className="h-8 text-sm flex-1"
                   value={arqueo[row.key as keyof typeof arqueo]}
                   onChange={(e) => setArqueo({ ...arqueo, [row.key]: e.target.value })}
                 />

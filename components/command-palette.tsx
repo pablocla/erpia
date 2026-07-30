@@ -51,12 +51,14 @@ import {
   Stethoscope,
   KeyRound,
   Handshake,
+  Bug,
 } from "lucide-react"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { useTheme } from "next-themes"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useTranslations } from "next-intl"
+import { getActiveProductShell } from "@/lib/comercial/product-shell"
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -107,6 +109,7 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/toma-pedidos", label: "Toma de Pedidos", icon: ShoppingCart, section: "Servicios", keywords: ["pedido", "orden", "mesa"] },
   { href: "/dashboard/hospitalidad/kds", label: "Pantalla Cocina (KDS)", icon: Monitor, section: "Servicios", keywords: ["cocina", "kds", "kitchen"] },
   { href: "/dashboard/hospitalidad", label: "Mesas y Comandas", icon: UtensilsCrossed, section: "Servicios", keywords: ["mesa", "comanda"] },
+  { href: "/dashboard/fumigacion", label: "Ruta Fumigación", icon: Bug, section: "Servicios", keywords: ["fumigación", "plagas", "ruta", "hoja de ruta", "visitas", "fumigador"] },
   { href: "/dashboard/agenda", label: "Agenda de Turnos", icon: CalendarDays, section: "Servicios", keywords: ["turno", "agenda", "cita"] },
   { href: "/dashboard/nicho", label: "Claver Nicho LATAM", icon: Sparkles, section: "Claver Nicho", keywords: ["nicho", "mini saas", "consorcio", "club", "feria"] },
   ...NICHE_APPS.map((app) => ({
@@ -215,11 +218,19 @@ export function CommandPalette() {
   const isFiado = modoLite === "fiado"
   const isCobra = modoLite === "cobranza"
   const isTurnos = modoLite === "turnos"
-  
-  const filteredRoutes = ROUTES.filter(route => {
+  const shell = getActiveProductShell(modoLite, null)
+
+  const filteredRoutes = ROUTES.filter((route) => {
     if (modoLite === "completo") return true
     if (route.href === "/dashboard") return true
-    if (isFiado && route.section === "Ventas") return true
+    if (shell) {
+      return (
+        shell.tabs.some((t) => t.href !== "#more" && route.href.startsWith(t.href)) ||
+        route.section === "Configuración" ||
+        route.href === "/dashboard/mi-plan"
+      )
+    }
+    if (isFiado && (route.section === "Ventas" || route.href.includes("fiado"))) return true
     if (isCobra && route.section === "Financiero") return true
     if (isTurnos && route.section === "Servicios") return true
     if (route.section === "Configuración") return true

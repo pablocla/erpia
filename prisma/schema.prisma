@@ -222,6 +222,25 @@ model Empresa {
   empleadoDigitalTareas       EmpleadoDigitalTarea[]
   empleadoDigitalUsage        EmpleadoDigitalUsage[]
   vehiculosConcesionaria      VehiculoConcesionaria[]
+  // Hospitalidad y Hoteleria
+  habitaciones                Habitacion[]
+  reservasHotel               ReservaHotel[]
+  cerradurasIoT               CerraduraIoT[]
+  llavesDigitales             LlaveDigital[]
+  // Optimizacion Almacen Rosario
+  backgroundJobs              BackgroundJob[]
+  reglaStockCanals            ReglaStockCanal[]
+  // WMS light
+  zonasAlmacen                ZonaAlmacen[]
+  ubicacionesAlmacen          UbicacionAlmacen[]
+  stocksUbicacion             StockUbicacion[]
+  movimientosUbicacion        MovimientoUbicacion[]
+  handlingUnits               HandlingUnit[]
+  tareasWms                   TareaWms[]
+  olasPicking                 OlaPicking[]
+  packingLists                PackingList[]
+  asnRecepciones              AsnRecepcion[]
+  conteosCiclicos             ConteoCiclico[]
 
   @@map("empresas")
 }
@@ -298,6 +317,10 @@ model Cliente {
   emailNotificacionFiado       String?
   emailNotificacionFiado2      String?
   notificarClienteFiado        Boolean   @default(false)
+  /// Coordenadas para hoja de ruta (geocodificadas con Nominatim/OSM, gratis)
+  lat                          Float?
+  lon                          Float?
+  geocodedAt                   DateTime?
   createdAt                    DateTime  @default(now())
   updatedAt                    DateTime  @updatedAt
   deletedAt                    DateTime?
@@ -366,6 +389,7 @@ model Cliente {
   contratosPropietario   ContratoAlquiler[]     @relation("ContratoPropietario")
   nicheMovimientos       NicheMovimiento[]
   ordenServicios         OrdenServicio[]
+  reservasHotel          ReservaHotel[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -896,6 +920,18 @@ model Producto {
   clasificacionFiscal   ClasificacionFiscal? @relation(fields: [clasificacionFiscalId], references: [id])
   posPlus               PosPlu[]             @relation("ProductoPosPlus")
   ordenServicioItems    OrdenServicioItem[]
+  reglaStockCanals      ReglaStockCanal[]
+  stocksUbicacion       StockUbicacion[]
+  movimientosUbicacion  MovimientoUbicacion[]
+  tareasWms             TareaWms[]
+  lineasAsn             LineaAsn[]
+  lineasPacking         LineaPacking[]
+  lineasConteoCiclico   LineaConteoCiclico[]
+  /// Bin preferido de putaway/pick-face (WMS light)
+  ubicacionPreferidaId  Int?
+  ubicacionPreferida    UbicacionAlmacen?    @relation("ProductoUbicacionPreferida", fields: [ubicacionPreferidaId], references: [id])
+  /// Clasificación ABC para slotting / conteo cíclico: "A" | "B" | "C" | null
+  claseAbc              String?
 
   /// FIX C-004: cÃ³digo Ãºnico por empresa
   @@unique([empresaId, codigo])
@@ -1591,6 +1627,8 @@ model ListaPicking {
   remito        Remito?      @relation(fields: [remitoId], references: [id])
   pedidoVentaId Int?
   pedidoVenta   PedidoVenta? @relation(fields: [pedidoVentaId], references: [id])
+  olaPickingId  Int?
+  olaPicking    OlaPicking?  @relation(fields: [olaPickingId], references: [id])
 
   lineas LineaPicking[]
 
@@ -1605,6 +1643,12 @@ model LineaPicking {
   ubicacion      String?
   /// "pendiente" | "parcial" | "completo"
   estado         String  @default("pendiente")
+  /// Bin WMS resuelto (picking dirigido)
+  ubicacionId    Int?
+  ubicacionRef   UbicacionAlmacen? @relation(fields: [ubicacionId], references: [id])
+  loteId         Int?
+  lote           Lote?    @relation(fields: [loteId], references: [id])
+  ordenPath      Int      @default(0)
 
   listaId    Int
   lista      ListaPicking @relation(fields: [listaId], references: [id], onDelete: Cascade)
@@ -1751,6 +1795,16 @@ model Deposito {
   transferenciasDestino TransferenciaDeposito[] @relation("TransferenciaDestino")
   lotes                 Lote[]
   productosDefault      Producto[]              @relation("ProductoDepositoDefault")
+  zonasAlmacen          ZonaAlmacen[]
+  ubicacionesAlmacen    UbicacionAlmacen[]
+  stocksUbicacion       StockUbicacion[]
+  movimientosUbicacion  MovimientoUbicacion[]
+  handlingUnits         HandlingUnit[]
+  tareasWms             TareaWms[]
+  olasPicking           OlaPicking[]
+  packingLists          PackingList[]
+  asnRecepciones        AsnRecepcion[]
+  conteosCiclicos       ConteoCiclico[]
 
   @@map("depositos")
 }
@@ -2400,6 +2454,11 @@ model Lote {
   lineasCompra          LineaCompra[]
   despachoImportacion   DespachoImportacion? @relation(fields: [despachoImportacionId], references: [id])
   despachoImportacionId Int?
+  stocksUbicacion       StockUbicacion[]
+  movimientosUbicacion  MovimientoUbicacion[]
+  tareasWms             TareaWms[]
+  lineasAsn             LineaAsn[]
+  lineasPicking         LineaPicking[]
 
   @@unique([productoId, numeroLote])
   @@map("lotes")
@@ -2979,6 +3038,7 @@ model CanalVenta {
   clientes         Cliente[]
   pedidosVenta     PedidoVenta[]
   periodosFiscales PeriodoFiscal[]
+  reglasStockCanal ReglaStockCanal[]
 
   @@map("canales_venta")
 }
@@ -7562,23 +7622,23 @@ model OrdenServicioItem {
 // -------------------------------------------------------------------------------
 
 model EmpleadoDigitalTemplate {
-  id               Int      @id @default(autoincrement())
-  code             String   @unique
-  nombre           String
-  lema             String?
-  descripcion      String   @db.Text
-  categoria        String
-  icono            String   @default("banknote")
-  sku              String   @unique
-  dependeDe        Json     @default("[]")
-  tools            Json     @default("[]")
-  playbookKeys     Json     @default("[]")
-  llmAgentId       String?
-  cronDefault      String   @default("0 10 * * 1-5")
-  politicaDefault  Json     @default("{}")
-  activoCatalogo   Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  code            String   @unique
+  nombre          String
+  lema            String?
+  descripcion     String   @db.Text
+  categoria       String
+  icono           String   @default("banknote")
+  sku             String   @unique
+  dependeDe       Json     @default("[]")
+  tools           Json     @default("[]")
+  playbookKeys    Json     @default("[]")
+  llmAgentId      String?
+  cronDefault     String   @default("0 10 * * 1-5")
+  politicaDefault Json     @default("{}")
+  activoCatalogo  Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   instancias EmpleadoDigital[]
 
@@ -7586,25 +7646,25 @@ model EmpleadoDigitalTemplate {
 }
 
 model EmpleadoDigital {
-  id              Int       @id @default(autoincrement())
-  empresaId       Int
-  templateId      Int
-  nombre          String?
+  id               Int       @id @default(autoincrement())
+  empresaId        Int
+  templateId       Int
+  nombre           String?
   /// trial | activo | pausado | cancelado | error_config
-  estado          String    @default("pausado")
-  sku             String
-  cron            String?
-  config          Json      @default("{}")
-  lastRunAt       DateTime?
-  lastSuccessAt   DateTime?
-  runsTotal       Int       @default(0)
-  accionesTotal   Int       @default(0)
-  tokensMes       Int       @default(0)
-  accionesMes     Int       @default(0)
-  valorEstimadoArs Decimal  @default(0) @db.Decimal(18, 2)
-  activatedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  estado           String    @default("pausado")
+  sku              String
+  cron             String?
+  config           Json      @default("{}")
+  lastRunAt        DateTime?
+  lastSuccessAt    DateTime?
+  runsTotal        Int       @default(0)
+  accionesTotal    Int       @default(0)
+  tokensMes        Int       @default(0)
+  accionesMes      Int       @default(0)
+  valorEstimadoArs Decimal   @default(0) @db.Decimal(18, 2)
+  activatedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   empresa  Empresa                 @relation(fields: [empresaId], references: [id])
   template EmpleadoDigitalTemplate @relation(fields: [templateId], references: [id])
@@ -7641,8 +7701,8 @@ model EmpleadoDigitalRun {
   createdAt         DateTime  @default(now())
   finishedAt        DateTime?
 
-  empresa  Empresa              @relation(fields: [empresaId], references: [id])
-  empleado EmpleadoDigital      @relation(fields: [empleadoDigitalId], references: [id], onDelete: Cascade)
+  empresa  Empresa                @relation(fields: [empresaId], references: [id])
+  empleado EmpleadoDigital        @relation(fields: [empleadoDigitalId], references: [id], onDelete: Cascade)
   tareas   EmpleadoDigitalTarea[]
   usage    EmpleadoDigitalUsage[]
 
@@ -7671,7 +7731,7 @@ model EmpleadoDigitalTarea {
   payload           Json?
   aprobadoPorUserId Int?
   aprobadoAt        DateTime?
-  enviadoAt        DateTime?
+  enviadoAt         DateTime?
   mensajeWaId       Int?
   error             String?   @db.Text
   createdAt         DateTime  @default(now())
@@ -7713,23 +7773,497 @@ model EmpleadoDigitalUsage {
 }
 
 model VehiculoConcesionaria {
-  id              Int      @id @default(autoincrement())
-  patente         String
-  marca           String
-  modelo          String
-  anio            Int
-  kilometros      Int      @default(0)
-  estado          String   @default("salon") // preparacion, salon, reservado, vendido
-  precioToma      Decimal  @default(0) @db.Decimal(15, 2)
-  precioVenta     Decimal  @default(0) @db.Decimal(15, 2)
-  activo          Boolean  @default(true)
-  consignacion    Boolean  @default(false)
-  observaciones   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  empresaId       Int
-  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+  id            Int      @id @default(autoincrement())
+  patente       String
+  marca         String
+  modelo        String
+  anio          Int
+  kilometros    Int      @default(0)
+  estado        String   @default("salon") // preparacion, salon, reservado, vendido
+  precioToma    Decimal  @default(0) @db.Decimal(15, 2)
+  precioVenta   Decimal  @default(0) @db.Decimal(15, 2)
+  activo        Boolean  @default(true)
+  consignacion  Boolean  @default(false)
+  observaciones String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  empresaId     Int
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
 
   @@unique([empresaId, patente])
   @@map("vehiculos_concesionaria")
+}
+
+model Habitacion {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  numero     String
+  tipo       String   @default("Doble") // "Simple", "Doble", "Suite"
+  estado     String   @default("Disponible") // "Disponible", "Ocupada", "Limpieza", "Mantenimiento"
+  tarifaBase Decimal  @default(0) @db.Decimal(15, 2)
+  piso       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reservas     ReservaHotel[]
+  cerraduraIoT CerraduraIoT?
+
+  @@unique([empresaId, numero])
+  @@map("habitaciones")
+}
+
+model ReservaHotel {
+  id             Int        @id @default(autoincrement())
+  empresaId      Int
+  empresa        Empresa    @relation(fields: [empresaId], references: [id])
+  clienteId      Int
+  cliente        Cliente    @relation(fields: [clienteId], references: [id])
+  habitacionId   Int
+  habitacion     Habitacion @relation(fields: [habitacionId], references: [id])
+  checkIn        DateTime
+  checkOut       DateTime
+  estado         String     @default("Pendiente") // "Confirmada", "CheckIn", "CheckOut", "Cancelada"
+  origen         String     @default("Directa") // "Booking", "Directa", "Airbnb"
+  precioTotal    Decimal    @default(0) @db.Decimal(15, 2)
+  saldoPendiente Decimal    @default(0) @db.Decimal(15, 2)
+  facturaId      Int?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  llavesDigitales LlaveDigital[]
+
+  @@index([empresaId, estado])
+  @@map("reservas_hotel")
+}
+
+model CerraduraIoT {
+  id           Int        @id @default(autoincrement())
+  empresaId    Int
+  empresa      Empresa    @relation(fields: [empresaId], references: [id])
+  habitacionId Int        @unique
+  habitacion   Habitacion @relation(fields: [habitacionId], references: [id])
+  proveedor    String     @default("TTLock")
+  macAddress   String
+  deviceId     String?
+  bateriaPct   Int        @default(100)
+  online       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  llavesDigitales LlaveDigital[]
+
+  @@map("cerraduras_iot")
+}
+
+model LlaveDigital {
+  id          Int          @id @default(autoincrement())
+  empresaId   Int
+  empresa     Empresa      @relation(fields: [empresaId], references: [id])
+  reservaId   Int
+  reserva     ReservaHotel @relation(fields: [reservaId], references: [id])
+  cerraduraId Int
+  cerradura   CerraduraIoT @relation(fields: [cerraduraId], references: [id])
+  pinCode     String?
+  validaDesde DateTime
+  validaHasta DateTime
+  estado      String       @default("Activa") // "Activa", "Expirada", "Revocada"
+  createdAt   DateTime     @default(now())
+
+  @@map("llaves_digitales")
+}
+
+model BackgroundJob {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  tipo       String // "ImportarListaDistribuidora"
+  estado     String   @default("Pendiente") // "Pendiente", "Procesando", "Completado", "Error"
+  progreso   Int      @default(0)
+  resultado  Json?
+  error      String?  @db.Text
+  archivoUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([empresaId, estado])
+  @@map("background_jobs")
+}
+
+model ReglaStockCanal {
+  id           Int        @id @default(autoincrement())
+  empresaId    Int
+  empresa      Empresa    @relation(fields: [empresaId], references: [id])
+  productoId   Int
+  producto     Producto   @relation(fields: [productoId], references: [id])
+  canalVentaId Int
+  canalVenta   CanalVenta @relation(fields: [canalVentaId], references: [id])
+
+  /// Cuántas unidades "reservar" o descontar del stock real que se reporta al canal
+  bufferReserva Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, productoId, canalVentaId])
+  @@map("reglas_stock_canal")
+}
+
+// ─── WMS LIGHT — ubicaciones, tareas, olas, packing, HU, ASN ───────────────
+
+/// Zona lógica del depósito: picking, bulk, staging, muelle, cuarentena
+model ZonaAlmacen {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  depositoId Int
+  deposito   Deposito @relation(fields: [depositoId], references: [id])
+  codigo     String
+  nombre     String
+  /// "picking" | "bulk" | "staging" | "muelle" | "cuarentena" | "devoluciones" | "otro"
+  tipo       String   @default("picking")
+  ordenPath  Int      @default(0)
+  activo     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  ubicaciones UbicacionAlmacen[]
+
+  @@unique([depositoId, codigo])
+  @@index([empresaId, depositoId])
+  @@map("zonas_almacen")
+}
+
+/// Bin / ubicación física (pasillo-rack-nivel-celda)
+model UbicacionAlmacen {
+  id         Int          @id @default(autoincrement())
+  empresaId  Int
+  empresa    Empresa      @relation(fields: [empresaId], references: [id])
+  depositoId Int
+  deposito   Deposito     @relation(fields: [depositoId], references: [id])
+  zonaId     Int?
+  zona       ZonaAlmacen? @relation(fields: [zonaId], references: [id])
+  /// Código escaneable ej. "A-03-12"
+  codigo     String
+  pasillo    String?
+  rack       String?
+  nivel      String?
+  celda      String?
+  /// "bin" | "pick" | "bulk" | "stage" | "dock" | "quarantine"
+  tipo       String       @default("bin")
+  capacidad  Float?
+  ordenPath  Int          @default(0)
+  activo     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  stocks              StockUbicacion[]
+  movimientosOrigen   MovimientoUbicacion[] @relation("MovUbicOrigen")
+  movimientosDestino  MovimientoUbicacion[] @relation("MovUbicDestino")
+  handlingUnits       HandlingUnit[]
+  tareasOrigen        TareaWms[]            @relation("TareaFromBin")
+  tareasDestino       TareaWms[]            @relation("TareaToBin")
+  lineasPicking       LineaPicking[]
+  lineasConteo        LineaConteoCiclico[]
+  productosPreferidos Producto[]            @relation("ProductoUbicacionPreferida")
+
+  @@unique([depositoId, codigo])
+  @@index([empresaId, depositoId])
+  @@index([empresaId, codigo])
+  @@map("ubicaciones_almacen")
+}
+
+/// Stock por ubicación (y opcionalmente lote / HU)
+model StockUbicacion {
+  id          Int              @id @default(autoincrement())
+  empresaId   Int
+  empresa     Empresa          @relation(fields: [empresaId], references: [id])
+  depositoId  Int
+  deposito    Deposito         @relation(fields: [depositoId], references: [id])
+  ubicacionId Int
+  ubicacion   UbicacionAlmacen @relation(fields: [ubicacionId], references: [id])
+  productoId  Int
+  producto    Producto         @relation(fields: [productoId], references: [id])
+  loteId      Int?
+  lote        Lote?            @relation(fields: [loteId], references: [id])
+  huId        Int?
+  hu          HandlingUnit?    @relation(fields: [huId], references: [id])
+  cantidad    Float            @default(0)
+  reservado   Float            @default(0)
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([ubicacionId, productoId, loteId, huId])
+  @@index([empresaId, productoId])
+  @@index([depositoId, productoId])
+  @@map("stocks_ubicacion")
+}
+
+model MovimientoUbicacion {
+  id              Int               @id @default(autoincrement())
+  empresaId       Int
+  empresa         Empresa           @relation(fields: [empresaId], references: [id])
+  depositoId      Int
+  deposito        Deposito          @relation(fields: [depositoId], references: [id])
+  /// "putaway" | "pick" | "move" | "ajuste" | "recepcion" | "packing" | "replenish"
+  tipo            String
+  productoId      Int
+  producto        Producto          @relation(fields: [productoId], references: [id])
+  loteId          Int?
+  lote            Lote?             @relation(fields: [loteId], references: [id])
+  cantidad        Float
+  fromUbicacionId Int?
+  fromUbicacion   UbicacionAlmacen? @relation("MovUbicOrigen", fields: [fromUbicacionId], references: [id])
+  toUbicacionId   Int?
+  toUbicacion     UbicacionAlmacen? @relation("MovUbicDestino", fields: [toUbicacionId], references: [id])
+  tareaWmsId      Int?
+  tareaWms        TareaWms?         @relation(fields: [tareaWmsId], references: [id])
+  motivo          String?
+  createdBy       Int?
+  createdAt       DateTime          @default(now())
+
+  @@index([empresaId, createdAt])
+  @@index([productoId, createdAt])
+  @@map("movimientos_ubicacion")
+}
+
+/// Unidad de manejo: pallet / caja / LPN
+model HandlingUnit {
+  id          Int               @id @default(autoincrement())
+  empresaId   Int
+  empresa     Empresa           @relation(fields: [empresaId], references: [id])
+  depositoId  Int
+  deposito    Deposito          @relation(fields: [depositoId], references: [id])
+  /// Código LPN/SSCC escaneable
+  codigo      String
+  /// "pallet" | "caja" | "tote" | "otro"
+  tipo        String            @default("pallet")
+  ubicacionId Int?
+  ubicacion   UbicacionAlmacen? @relation(fields: [ubicacionId], references: [id])
+  /// "abierta" | "cerrada" | "despachada" | "vacia"
+  estado      String            @default("abierta")
+  pesoKg      Float?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  stocks StockUbicacion[]
+  tareas TareaWms[]
+
+  @@unique([empresaId, codigo])
+  @@index([depositoId, estado])
+  @@map("handling_units")
+}
+
+/// Tarea de ejecución de piso (putaway, pick, move, count, replenish)
+model TareaWms {
+  id              Int               @id @default(autoincrement())
+  empresaId       Int
+  empresa         Empresa           @relation(fields: [empresaId], references: [id])
+  depositoId      Int
+  deposito        Deposito          @relation(fields: [depositoId], references: [id])
+  numero          String
+  /// "putaway" | "pick" | "move" | "count" | "replenish"
+  tipo            String
+  /// "pendiente" | "asignada" | "en_proceso" | "completada" | "cancelada" | "short"
+  estado          String            @default("pendiente")
+  prioridad       String            @default("normal")
+  productoId      Int?
+  producto        Producto?         @relation(fields: [productoId], references: [id])
+  loteId          Int?
+  lote            Lote?             @relation(fields: [loteId], references: [id])
+  cantidadPedida  Float             @default(0)
+  cantidadHecha   Float             @default(0)
+  fromUbicacionId Int?
+  fromUbicacion   UbicacionAlmacen? @relation("TareaFromBin", fields: [fromUbicacionId], references: [id])
+  toUbicacionId   Int?
+  toUbicacion     UbicacionAlmacen? @relation("TareaToBin", fields: [toUbicacionId], references: [id])
+  huId            Int?
+  hu              HandlingUnit?     @relation(fields: [huId], references: [id])
+  listaPickingId  Int?
+  pedidoVentaId   Int?
+  olaPickingId    Int?
+  olaPicking      OlaPicking?       @relation(fields: [olaPickingId], references: [id])
+  asnId           Int?
+  asn             AsnRecepcion?     @relation(fields: [asnId], references: [id])
+  operarioId      Int?
+  operarioNombre  String?
+  ordenPath       Int               @default(0)
+  notas           String?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  movimientos MovimientoUbicacion[]
+
+  @@unique([empresaId, numero])
+  @@index([empresaId, estado, tipo])
+  @@index([depositoId, estado])
+  @@map("tareas_wms")
+}
+
+/// Ola de picking (wave)
+model OlaPicking {
+  id          Int      @id @default(autoincrement())
+  empresaId   Int
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+  depositoId  Int
+  deposito    Deposito @relation(fields: [depositoId], references: [id])
+  numero      String
+  /// "borrador" | "liberada" | "en_proceso" | "completada" | "cancelada"
+  estado      String   @default("borrador")
+  /// Criterio de agrupación libre: carrier, ruta, cutoff, prioridad
+  criterio    String?
+  carrier     String?
+  cutoffAt    DateTime?
+  notas       String?
+  liberadaAt  DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  listas ListaPicking[]
+  tareas TareaWms[]
+
+  @@unique([empresaId, numero])
+  @@index([empresaId, estado])
+  @@map("olas_picking")
+}
+
+model PackingList {
+  id             Int       @id @default(autoincrement())
+  empresaId      Int
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
+  depositoId     Int?
+  deposito       Deposito? @relation(fields: [depositoId], references: [id])
+  numero         String
+  pedidoVentaId  Int?
+  listaPickingId Int?
+  /// "borrador" | "en_packing" | "cerrada" | "despachada"
+  estado         String    @default("borrador")
+  bultos         Int       @default(0)
+  pesoKg         Float?
+  dimensiones    String?
+  etiquetaUrl    String?
+  carrierId      String?
+  tracking       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  lineas        LineaPacking[]
+  bultosDetalle PackingBulto[]
+
+  @@unique([empresaId, numero])
+  @@index([empresaId, estado])
+  @@map("packing_lists")
+}
+
+model LineaPacking {
+  id            Int         @id @default(autoincrement())
+  packingListId Int
+  packingList   PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+  productoId    Int?
+  producto      Producto?   @relation(fields: [productoId], references: [id])
+  descripcion   String
+  cantidad      Float
+  bultoNumero   Int         @default(1)
+
+  @@map("lineas_packing")
+}
+
+model PackingBulto {
+  id            Int         @id @default(autoincrement())
+  packingListId Int
+  packingList   PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+  numero        Int
+  pesoKg        Float?
+  largoCm       Float?
+  anchoCm       Float?
+  altoCm        Float?
+  etiquetaUrl   String?
+  tracking      String?
+
+  @@unique([packingListId, numero])
+  @@map("packing_bultos")
+}
+
+/// Advanced Shipping Notice — preaviso de mercadería en camino
+model AsnRecepcion {
+  id             Int      @id @default(autoincrement())
+  empresaId      Int
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  depositoId     Int
+  deposito       Deposito @relation(fields: [depositoId], references: [id])
+  numero         String
+  ordenCompraId  Int?
+  proveedorId    Int?
+  /// "esperada" | "en_recepcion" | "cerrada" | "cancelada"
+  estado         String   @default("esperada")
+  eta            DateTime?
+  /// Si true, recepción ciega (no muestra cantidades esperadas en UI RF)
+  recepcionCiega Boolean  @default(false)
+  notas          String?
+  closedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lineas LineaAsn[]
+  tareas TareaWms[]
+
+  @@unique([empresaId, numero])
+  @@index([empresaId, estado])
+  @@map("asn_recepciones")
+}
+
+model LineaAsn {
+  id               Int          @id @default(autoincrement())
+  asnId            Int
+  asn              AsnRecepcion @relation(fields: [asnId], references: [id], onDelete: Cascade)
+  productoId       Int?
+  producto         Producto?    @relation(fields: [productoId], references: [id])
+  loteId           Int?
+  lote             Lote?        @relation(fields: [loteId], references: [id])
+  descripcion      String
+  cantidadEsperada Float
+  cantidadRecibida Float        @default(0)
+  /// "pendiente" | "parcial" | "completo" | "excedente" | "faltante"
+  estado           String       @default("pendiente")
+
+  @@map("lineas_asn")
+}
+
+/// Conteo cíclico ABC por ubicación
+model ConteoCiclico {
+  id         Int      @id @default(autoincrement())
+  empresaId  Int
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  depositoId Int
+  deposito   Deposito @relation(fields: [depositoId], references: [id])
+  numero     String
+  /// Filtro ABC: "A" | "B" | "C" | "todas"
+  claseAbc   String   @default("todas")
+  /// "borrador" | "en_conteo" | "cerrado"
+  estado     String   @default("borrador")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  closedAt   DateTime?
+
+  lineas LineaConteoCiclico[]
+
+  @@unique([empresaId, numero])
+  @@map("conteos_ciclicos")
+}
+
+model LineaConteoCiclico {
+  id            Int              @id @default(autoincrement())
+  conteoId      Int
+  conteo        ConteoCiclico    @relation(fields: [conteoId], references: [id], onDelete: Cascade)
+  ubicacionId   Int
+  ubicacion     UbicacionAlmacen @relation(fields: [ubicacionId], references: [id])
+  productoId    Int
+  producto      Producto         @relation(fields: [productoId], references: [id])
+  stockSistema  Float            @default(0)
+  stockContado  Float?
+  diferencia    Float?
+  observaciones String?
+
+  @@map("lineas_conteo_ciclico")
 }

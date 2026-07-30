@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -760,9 +761,8 @@ function DashboardMozo({ user, authHeaders }: { user: any; authHeaders: () => He
   )
 }
 
-// ─── MAIN DASHBOARD COMPONENT ────────────────────────────────────────────────
-
 export default function DashboardPage() {
+  const router = useRouter()
   const user = useAuthStore((s) => s.user)
   const rol = user?.rol
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -772,6 +772,7 @@ export default function DashboardPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [usingDemo, setUsingDemo] = useState(false)
   const [modoLite, setModoLite] = useState<string>("completo")
+  const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
   const [analyticsOpen, setAnalyticsOpen] = useState(false)
 
@@ -779,6 +780,12 @@ export default function DashboardPage() {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }, [])
+
+  useEffect(() => {
+    if (demoIndustryId === "fumigacion" || productosSku?.["niche.fumigacion"] === true) {
+      router.replace("/dashboard/fumigacion")
+    }
+  }, [demoIndustryId, productosSku, router])
 
   // Dynamic role dashboard selection
   if (rol === "cajero") {
@@ -883,6 +890,7 @@ export default function DashboardPage() {
       const data = await res.json()
       setRubro(normalizeRubroValue(data?.rubro))
       if (data?.modoLite) setModoLite(data.modoLite)
+      if (data?.demoIndustryId) setDemoIndustryId(data.demoIndustryId)
       
       const prodRes = await fetch("/api/platform/productos", { headers: authHeaders() })
       if (prodRes.ok) {

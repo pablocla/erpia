@@ -78,10 +78,12 @@ function ColectivoCard({
   colectivo,
   expanded,
   onToggle,
+  isUs = false,
 }: {
   colectivo: MicroSaasColectivo
   expanded: boolean
   onToggle: () => void
+  isUs?: boolean
 }) {
   const products = productsForColectivo(colectivo.id)
   const a = ACCENT[colectivo.accent]
@@ -124,7 +126,7 @@ function ColectivoCard({
         className="mt-4 flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900"
         aria-expanded={expanded}
       >
-        {expanded ? "Ocultar detalle" : "Ver free vs pago"}
+        {expanded ? (isUs ? "Hide details" : "Ocultar detalle") : (isUs ? "View free vs paid" : "Ver free vs pago")}
         <ChevronDown
           className={cn("h-3.5 w-3.5 transition", expanded && "rotate-180")}
           aria-hidden
@@ -155,7 +157,7 @@ function ColectivoCard({
         {leader && (
           <Button asChild size="sm" variant="ghost" className="rounded-full text-slate-600">
             <Link href={`/claver/apps/${leader.subSaasSlug ?? leader.slug}`}>
-              Ver ficha
+              {isUs ? "View product" : "Ver ficha"}
             </Link>
           </Button>
         )}
@@ -171,10 +173,12 @@ function ColectivoCard({
 export function MicroSaasColectivosSection({
   className,
   highlightColectivo,
+  isUs = false,
 }: {
   className?: string
   /** Resalta el colectivo alineado al dolor del hero */
   highlightColectivo?: MicroSaasColectivoId
+  isUs?: boolean
 }) {
   const [openId, setOpenId] = useState<MicroSaasColectivoId | null>(null)
 
@@ -190,17 +194,16 @@ export function MicroSaasColectivosSection({
       <div className="mx-auto max-w-7xl">
         <ScrollReveal>
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Apps Claver · freemium
+            {isUs ? "Claver Apps · freemium" : "Apps Claver · freemium"}
           </p>
           <h2
             id="colectivos-heading"
             className="mt-2 font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
           >
-            Cuatro líneas. Once apps. Sin menú de ERP.
+            {isUs ? "Four suites. Eleven apps. No ERP menus." : "Cuatro líneas. Once apps. Sin menú de ERP."}
           </h2>
           <p className="mt-2 max-w-2xl text-slate-600">
-            Cada línea se vende sola — como un producto chico con su precio y su promesa.
-            Empezás gratis o en trial; pagás cuando el sistema te cobra o te avisa solo.
+            {isUs ? "Each suite works standalone. Start free or on trial, upgrade when the system prompts you." : "Cada línea se vende sola — como un producto chico con su precio y su promesa. Empezás gratis o en trial; pagás cuando el sistema te cobra o te avisa solo."}
           </p>
         </ScrollReveal>
 
@@ -216,6 +219,7 @@ export function MicroSaasColectivosSection({
                   colectivo={c}
                   expanded={openId === c.id}
                   onToggle={() => setOpenId((id) => (id === c.id ? null : c.id))}
+                  isUs={isUs}
                 />
               </div>
             </MotionListItem>
@@ -223,9 +227,9 @@ export function MicroSaasColectivosSection({
         </MotionList>
 
         <p className="mt-8 text-center text-sm text-slate-500">
-          ¿Querés ver el catálogo completo del ecosistema?{" "}
+          {isUs ? "Want to see the full ecosystem catalog?" : "¿Querés ver el catálogo completo del ecosistema?"} {" "}
           <Link href="/claver/apps" className="font-medium text-slate-800 underline-offset-4 hover:underline">
-            Ir a Apps Claver
+            {isUs ? "Go to Claver Apps" : "Ir a Apps Claver"}
           </Link>
         </p>
       </div>

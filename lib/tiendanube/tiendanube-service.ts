@@ -69,7 +69,14 @@ export async function sincronizarStockTN(empresaId: number) {
 
   const productos = await prisma.producto.findMany({
     where: { empresaId, activo: true },
-    select: { codigo: true, stock: true },
+    select: { 
+      id: true, 
+      codigo: true, 
+      stock: true,
+      reglasStockCanal: {
+        where: { canalVenta: { codigo: { in: ["TN", "TIENDANUBE"] } } }
+      }
+    },
   })
 
   let sincronizados = 0
@@ -81,10 +88,13 @@ export async function sincronizarStockTN(empresaId: number) {
     if (!mapping) continue
 
     try {
+      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
+
       await tnFetch(empresaId, `/products/${mapping.productId}/variants/${mapping.variantId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock: Math.max(0, Math.floor(prod.stock)) }),
+        body: JSON.stringify({ stock: stockToSend }),
       })
       sincronizados++
     } catch (e) {
@@ -241,4 +251,59 @@ export async function resumenTN(empresaId: number) {
     productosPublicados: productos.filter((p) => p.publicado).length,
     ultimaSync: config?.updatedAt ?? null,
   }
+}
+
+export async function publicarProductoMasivoTN(empresaId: number, productosIds: number[]) {
+  const config = await obtenerConfigTN(empresaId)
+  if (!config?.accessToken) {
+    return { ok: false, error: "TIENDA_NUBE_NO_CONFIGURADO", publicados: 0 }
+  }
+
+  const productos = await prisma.producto.findMany({
+    where: { empresaId, id: { in: productosIds }, activo: true },
+    select: { 
+      id: true, 
+      nombre: true, 
+      codigo: true, 
+      precioVenta: true, 
+      stock: true, 
+      imagenUrl: true,
+      reglasStockCanal: {
+        where: { canalVenta: { codigo: { in: ["TN", "TIENDANUBE"] } } }
+      }
+    }
+  })
+
+  let publicados = 0
+  const errores = []
+
+  for (const prod of productos) {
+    try {
+      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
+
+      const tnProduct = {
+        name: { es: prod.nombre },
+        published: true,
+        variants: [
+          {
+            price: Number(prod.precioVenta),
+            stock: stockToSend,
+            sku: prod.codigo
+          }
+        ]
+      }
+
+      await tnFetch(empresaId, "/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tnProduct)
+      })
+      publicados++
+    } catch (e: any) {
+      errores.push({ productoId: prod.id, error: e.message })
+    }
+  }
+
+  return { ok: true, publicados, errores }
 }

@@ -16,6 +16,7 @@ interface ClienteSeed {
   nombre: string
   telefono?: string
   email?: string
+  direccion?: string
   /** Deuda fiado (valor positivo → se persiste como saldo negativo) */
   deudaFiado?: number
   saldoCuentaCorriente?: number
@@ -131,6 +132,40 @@ const CLIENTES_POR_RUBRO: Partial<Record<string, ClienteSeed[]>> = {
   consorcios: [
     { nombre: "Consorcio Rivadavia 1200", observaciones: "Administración externa" },
     { nombre: "Residente 4B", telefono: "11-5566-7788", observaciones: "Expensas al día" },
+  ],
+  fumigacion: [
+    {
+      nombre: "Panadería La Espiga",
+      telefono: "11-4788-2200",
+      direccion: "Av. Cabildo 2100, CABA",
+      observaciones: "Abono mensual cucarachas · acceso por lateral",
+      saldoCuentaCorriente: -28000,
+    },
+    {
+      nombre: "Edificio Rivadavia 4500 — Admin",
+      telefono: "11-4900-1122",
+      direccion: "Av. Rivadavia 4500, CABA",
+      observaciones: "Contrato trimestral sótanos + basural",
+    },
+    {
+      nombre: "Depósito Logística Sur SRL",
+      telefono: "11-4001-8899",
+      direccion: "Av. San Martín 3200, CABA",
+      observaciones: "Roedores · visita quincenal",
+      saldoCuentaCorriente: -65000,
+    },
+    {
+      nombre: "Restaurant El Fogón",
+      telefono: "11-4555-7788",
+      direccion: "Av. Corrientes 1800, CABA",
+      observaciones: "Cocina + depósito — preferencia 6–8 hs",
+    },
+    {
+      nombre: "Colegio San Martín",
+      telefono: "11-4666-3344",
+      direccion: "Av. Santa Fe 2800, CABA",
+      observaciones: "Certificado para inspección municipal",
+    },
   ],
 }
 
@@ -1130,6 +1165,7 @@ export async function seedIndustryDemoData(
           nombre: c.nombre,
           telefono: c.telefono ?? null,
           email: c.email ?? null,
+          direccion: c.direccion ?? null,
           saldoCuentaCorriente: resolveSaldo(c),
           condicionIva: "Consumidor Final",
           activo: true,
@@ -1243,6 +1279,8 @@ export async function seedIndustryDemoData(
   if (template.engancheId?.startsWith("niche.")) {
     if (template.engancheId === "niche.taller_mecanico") {
       await safe("ot:taller_mecanico", () => seedTallerMecanicoOTDemo(empresaId))
+    } else if (template.engancheId === "niche.fumigacion" || template.id === "fumigacion") {
+      await safe("ot:fumigacion", () => seedFumigacionOTDemo(empresaId))
     } else {
       await safe(`niche:${template.engancheId}`, () =>
         seedNicheMovimientosDemo(empresaId, template.engancheId!),
@@ -1250,7 +1288,126 @@ export async function seedIndustryDemoData(
     }
   }
 
+  if (template.id === "fumigacion" && template.engancheId !== "niche.fumigacion") {
+    await safe("ot:fumigacion", () => seedFumigacionOTDemo(empresaId))
+  }
+
   return result
+}
+
+async function seedFumigacionOTDemo(empresaId: number) {
+  const service = new OTService()
+  const hoy = new Date()
+  hoy.setHours(12, 0, 0, 0)
+
+  const clientes = await prisma.cliente.findMany({
+    where: { empresaId, activo: true, nombre: { not: { contains: "Consumidor Final" } } },
+    take: 5,
+    orderBy: { id: "asc" },
+  })
+  if (!clientes.length) return
+
+  const planes: Array<{
+    cliente: (typeof clientes)[0]
+    titulo: string
+    plaga: string
+    tipoServicio: string
+    sitio: string
+    precio: number
+    tecnico: string
+  }> = [
+    {
+      cliente: clientes[0],
+      titulo: "Cocina + depósito — abono mensual",
+      plaga: "cucarachas",
+      tipoServicio: "mantenimiento",
+      sitio: "Cocina y depósito",
+      precio: 42000,
+      tecnico: "Diego Ruta Norte",
+    },
+    {
+      cliente: clientes[1] ?? clientes[0],
+      titulo: "Sótanos y basural — contrato",
+      plaga: "roedores",
+      tipoServicio: "tratamiento",
+      sitio: "Sótanos A/B",
+      precio: 85000,
+      tecnico: "Diego Ruta Norte",
+    },
+    {
+      cliente: clientes[2] ?? clientes[0],
+      titulo: "Depósito logístico — quincenal",
+      plaga: "roedores",
+      tipoServicio: "mantenimiento",
+      sitio: "Nave 2",
+      precio: 65000,
+      tecnico: "Laura Zona Oeste",
+    },
+    {
+      cliente: clientes[3] ?? clientes[0],
+      titulo: "Cocina restaurante — urgencia",
+      plaga: "cucarachas",
+      tipoServicio: "urgencia",
+      sitio: "Cocina",
+      precio: 55000,
+      tecnico: "Diego Ruta Norte",
+    },
+  ]
+
+  for (let i = 0; i < planes.length; i++) {
+    const p = planes[i]
+    const existe = await prisma.ordenServicio.findFirst({
+      where: { empresaId, titulo: p.titulo, clienteId: p.cliente.id },
+    })
+    if (existe) continue
+
+    await service.crearOrden(empresaId, {
+      clienteId: p.cliente.id,
+      titulo: p.titulo,
+      descripcion: p.cliente.observaciones ?? undefined,
+      fechaPrometida: hoy,
+      tecnicoAsignado: p.tecnico,
+      metadata: {
+        vertical: "fumigacion",
+        plaga: p.plaga,
+        tipoServicio: p.tipoServicio,
+        sitio: p.sitio,
+        direccionSitio: p.cliente.direccion ?? undefined,
+      },
+      items: [
+        {
+          descripcion: `Tratamiento ${p.plaga} · ${p.sitio}`,
+          cantidad: 1,
+          precioUnitario: p.precio,
+          tipo: "MANO_OBRA",
+        },
+      ],
+    })
+  }
+
+  // Insumos tipicos
+  const insumos = [
+    { codigo: "FUM-GEL-01", nombre: "Gel cucarachicida 30g", precio: 12500 },
+    { codigo: "FUM-CEBO-01", nombre: "Cebo roedores bloque", precio: 8900 },
+    { codigo: "FUM-VIS-01", nombre: "Visita mantenimiento plagas", precio: 45000 },
+  ]
+  for (const ins of insumos) {
+    const ex = await prisma.producto.findFirst({ where: { empresaId, codigo: ins.codigo } })
+    if (ex) continue
+    await prisma.producto.create({
+      data: {
+        empresaId,
+        codigo: ins.codigo,
+        nombre: ins.nombre,
+        precioVenta: ins.precio,
+        porcentajeIva: 21,
+        activo: true,
+        stock: 40,
+        unidad: "unidad",
+        tipoProducto: ins.codigo.startsWith("FUM-VIS") ? "servicio" : "bien",
+      },
+    })
+  }
 }
 
 async function seedTallerMecanicoOTDemo(empresaId: number) {

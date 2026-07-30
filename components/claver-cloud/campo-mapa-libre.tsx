@@ -114,13 +114,19 @@ export function CampoMapaLibre({
           onPinClick?.(pin)
         })
 
+        const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lon}`
         const marker = new maplibregl.Marker({ element: el, anchor: "center" })
           .setLngLat([pin.lon, pin.lat])
           .setPopup(
-            new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
-              `<div style="font:12px system-ui;padding:2px 0">
-                <strong>${pin.nombre}</strong>
-                ${pin.subtitulo ? `<br/><span style="opacity:.75">${pin.subtitulo}</span>` : ""}
+            new maplibregl.Popup({ offset: 12, closeButton: true }).setHTML(
+              `<div style="font:13px system-ui;padding:4px 2px">
+                <strong style="font-size:14px;color:#0f172a">${pin.orden ? `${pin.orden}. ` : ""}${pin.nombre}</strong>
+                ${pin.subtitulo ? `<br/><span style="opacity:.8;font-size:12px">${pin.subtitulo}</span>` : ""}
+                <div style="margin-top:8px">
+                  <a href="${gmapsUrl}" target="_blank" rel="noreferrer" style="display:inline-block;padding:5px 10px;background:#2563eb;color:white;border-radius:6px;text-decoration:none;font-weight:600;font-size:12px">
+                    🗺️ Cómo llegar (Google Maps)
+                  </a>
+                </div>
               </div>`,
             ),
           )

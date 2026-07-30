@@ -87,6 +87,7 @@ import {
   FlaskConical,
   Sprout,
   Beaker,
+  Key,
 } from "lucide-react"
 
 export interface DashboardMenuItem {
@@ -284,13 +285,34 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     color: "text-pink-500",
     moduloKey: "hospitalidad",
     items: [
+      {
+        href: "/dashboard/fumigacion",
+        icon: Bug,
+        label: "Fumigación · Ruta del día",
+        permisoModulo: "clientes",
+      },
+      {
+        href: "/dashboard/ot",
+        icon: Wrench,
+        label: "Órdenes de servicio",
+        permisoModulo: "ventas",
+      },
       { href: "/dashboard/toma-pedidos", icon: ShoppingCart, label: "Toma de Pedidos", permisoModulo: "hospitalidad" },
       { href: "/dashboard/hospitalidad/kds", icon: Monitor, label: "Pantalla Cocina (KDS)", permisoModulo: "kds", featureKey: "kds" },
       { href: "/dashboard/hospitalidad", icon: UtensilsCrossed, label: "Mesas y Comandas", permisoModulo: "hospitalidad" },
       { href: "/dashboard/hospitalidad/delivery", icon: Bike, label: "Delivery Propio", featureKey: "delivery_propio", allowedRubros: ["bar_restaurant"] },
       { href: "/dashboard/hospitalidad/cartelera", icon: Tv, label: "Cartelera Digital", featureKey: "cartelera_digital", allowedRubros: ["bar_restaurant", "kiosco"] },
       { href: "/dashboard/hospitalidad/platos", icon: ClipboardList, label: "Platos y Recetas", featureKey: "recetas_bom", allowedRubros: ["bar_restaurant"] },
-      { href: "/dashboard/agenda", icon: CalendarDays, label: "Agenda de Turnos", permisoModulo: "agenda", featureKey: "turnos_agenda", allowedRubros: ["veterinaria", "clinica", "salon_belleza", "gimnasio", "canchas"] },
+      { href: "/dashboard/hospitalidad/reservas", icon: CalendarDays, label: "Reservas y Llaves", permisoModulo: "hospitalidad", allowedRubros: ["hotel", "alojamiento"] },
+      { href: "/dashboard/hospitalidad/cerraduras", icon: Key, label: "Cerraduras IoT", permisoModulo: "hospitalidad", allowedRubros: ["hotel", "alojamiento"] },
+      {
+        href: "/dashboard/agenda",
+        icon: CalendarDays,
+        label: "Agenda de Turnos",
+        permisoModulo: "agenda",
+        featureKey: "turnos_agenda",
+        allowedRubros: ["veterinaria", "clinica", "salon_belleza", "gimnasio", "canchas", "otro"],
+      },
       { href: "/dashboard/peluqueria", icon: Scissors, label: "Peluquería móvil", permisoModulo: "agenda", featureKey: "turnos_agenda", allowedRubros: ["salon_belleza"] },
       { href: "/dashboard/historia-clinica", icon: HeartPulse, label: "Historia Clínica", permisoModulo: "historia_clinica", featureKey: "historia_clinica", allowedRubros: ["veterinaria", "clinica"] },
       { href: "/dashboard/membresias", icon: Dumbbell, label: "Membresías", permisoModulo: "membresias", featureKey: "membresias", allowedRubros: ["gimnasio"] },
@@ -396,6 +418,16 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/picking", icon: ScanLine, label: "Listas de Picking" },
       { href: "/dashboard/picking", icon: ListChecks, label: "Control de Armado" },
       { href: "/dashboard/picking/tablet", icon: Tablet, label: "Modo Tablet (depósito)" },
+    ],
+  },
+  {
+    label: "WMS",
+    color: "text-amber-600",
+    moduloKey: "picking",
+    items: [
+      { href: "/dashboard/wms", icon: Warehouse, label: "Centro WMS", badge: "Light" },
+      { href: "/dashboard/wms/rf", icon: ScanLine, label: "Modo RF / Handheld" },
+      { href: "/dashboard/wms", icon: MapPin, label: "Ubicaciones y putaway" },
     ],
   },
   {

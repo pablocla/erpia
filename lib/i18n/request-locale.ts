@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { i18nConfig, AppLocale } from "../config";
 import { AuthService } from "@/lib/auth/auth-service";
 import { prisma } from "@/lib/prisma";
+import { MARKET_COOKIE, isMarketId } from "@/lib/comercial/markets";
+import { localeFromMarketId } from "@/lib/i18n/geo-market";
 
 export async function getEffectiveLocale(): Promise<AppLocale> {
   const cookieStore = await cookies();
@@ -9,6 +11,12 @@ export async function getEffectiveLocale(): Promise<AppLocale> {
 
   if (localeCookie && i18nConfig.supportedLocales.includes(localeCookie as AppLocale)) {
     return localeCookie as AppLocale;
+  }
+
+  // Market cookie set by middleware (IP geo) when locale not yet chosen
+  const marketCookie = cookieStore.get(MARKET_COOKIE)?.value;
+  if (marketCookie && isMarketId(marketCookie)) {
+    return localeFromMarketId(marketCookie);
   }
 
   // Si no hay cookie de override, buscar en DB por empresa

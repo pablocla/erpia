@@ -117,9 +117,9 @@ export function ReportErrorButton() {
           setOpen(true)
           setModulo(moduloSugerido)
         }}
-        className="fixed bottom-4 right-4 z-40 h-10 px-3.5 text-xs rounded-full shadow-lg border border-slate-200/50 dark:border-slate-800 backdrop-blur-sm max-lg:bottom-[calc(5.25rem+env(safe-area-inset-bottom))] max-lg:right-3"
+        className="fixed bottom-4 left-4 z-40 h-10 px-3.5 text-xs rounded-full shadow-lg border border-slate-200/50 dark:border-slate-800 backdrop-blur-sm max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] max-lg:left-3 bg-background/90 text-foreground hover:bg-muted"
       >
-        <Bug className="h-3.5 w-3.5 mr-1.5" />
+        <Bug className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
         Reportar error
       </Button>
 

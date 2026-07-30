@@ -45,6 +45,29 @@ Opcional:
 
 ---
 
+## Billing / Stripe (US · multinational)
+
+| Variable canónica | Alias aceptado | Notas |
+|-------------------|----------------|--------|
+| `STRIPE_SECRET_KEY` | `STRIPE_API_KEY` | `sk_live_...` o `sk_test_...`. Vacío → mock en dev |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `STRIPE_PUBLISHABLE_KEY` | `pk_live_...` / `pk_test_...` (browser) |
+| `STRIPE_WEBHOOK_SECRET` | — | `whsec_...` firma webhook |
+| `STRIPE_PRICE_DEFAULT` | `STRIPE_DEFAULT_PRICE_ID` | Price ID opcional para suscripciones SaaS |
+| `PAYMENTS_PROVIDER` | `PAYMENT_PROVIDER` | `auto` (default) · `stripe` · `mercadopago` |
+
+**Router:** con `PAYMENTS_PROVIDER=auto`, si hay `STRIPE_SECRET_KEY` y `empresa.paisFiscal=US` (o market US) se usa Stripe; si no, MercadoPago.
+
+**Webhook en panel Stripe:**  
+`https://TU_DOMINIO/api/webhooks/stripe`  
+Eventos: `checkout.session.completed`
+
+**API checkout autenticada:** `POST /api/stripe/checkout`
+
+Opcional:
+- `FORCE_MOCK_STRIPE_PROD=true` — **no** en prod real
+- `STRIPE_PRICE_<SKU>` — price por SKU (caracteres no alfanuméricos → `_`)
+---
+
 ## IA (Gemini / demos / auditor)
 
 | Variable | Notas |

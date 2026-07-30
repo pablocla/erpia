@@ -12,10 +12,17 @@ import {
   getSubSaasApp,
   subSaasLandingHref,
 } from "@/lib/comercial/sub-saas-catalog"
+import { marketAppAsSubSaas, getMarketCatalogApp } from "@/lib/comercial/market-catalog"
+import { US_SAAS_SLUGS, fmtPrecioUsd, getUsSaasApp } from "@/lib/comercial/us-saas-catalog"
 import { getSiteUrl } from "@/lib/marketing/landing-seo"
+import { getEffectiveMarketId } from "@/lib/i18n/request-market"
 
 export async function generateStaticParams() {
-  return SUB_SAAS_SLUGS.map((slug) => ({ slug }))
+  const ar = SUB_SAAS_SLUGS.map((slug) => ({ slug }))
+  const usOnly = US_SAAS_SLUGS.filter((s) => !(SUB_SAAS_SLUGS as readonly string[]).includes(s)).map(
+    (slug) => ({ slug }),
+  )
+  return [...ar, ...usOnly]
 }
 
 export async function generateMetadata({
@@ -24,6 +31,23 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
+  const us = getUsSaasApp(slug)
+  if (us) {
+    const url = `${getSiteUrl()}/claver/apps/${us.slug}`
+    return {
+      title: `${us.nombre} | ${us.marca}`,
+      description: `${us.lema} ${us.descripcion}`,
+      alternates: { canonical: url },
+      openGraph: {
+        title: `${us.nombre} | ${us.marca}`,
+        description: us.lema,
+        url,
+        locale: "en_US",
+      },
+      keywords: [us.marca, us.nombre, ...us.rubros, "Claver", "SaaS", "United States"],
+    }
+  }
+
   const app = getSubSaasApp(slug)
   if (!app) return {}
 
@@ -45,12 +69,57 @@ export async function generateMetadata({
   }
 }
 
+const US_LANDING_COPY = {
+  catalogLabel: "App catalog",
+  trialCta: "Start free trial",
+  contactCta: "Talk to sales",
+  painsTitle: "Today's pain",
+  outcomesTitle: "What you get",
+  stepsTitle: "Activation steps",
+  available: "Live",
+  beta: "Beta",
+  soon: "Coming soon",
+  ready: "ready",
+  bothPlatforms: "Mobile + desktop",
+} as const
+
 export default async function SubSaasLandingPage({
   params,
 }: {
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
+  const marketId = await getEffectiveMarketId()
+  const usDirect = getUsSaasApp(slug)
+
+  if (usDirect || marketId === "us") {
+    const marketApp = getMarketCatalogApp("us", slug)
+    if (marketApp) {
+      const asSub = marketAppAsSubSaas(marketApp)
+      const us = getUsSaasApp(marketApp.slug) ?? usDirect
+      const priceLabel = us
+        ? us.precioUsd === 0
+          ? "Free forever"
+          : `${fmtPrecioUsd(us.precioUsd)}/mo · ${us.trialDias}-day trial`
+        : undefined
+
+      return (
+        <SubSaasLanding
+          app={{
+            ...asSub,
+            // Prefer marketing slug on CTA for English brand in activar-intent
+            slug: marketApp.slug,
+          }}
+          priceLabel={priceLabel}
+          localeCopy={{
+            ...US_LANDING_COPY,
+            trialCta: `Start ${asSub.trialDias}-day free trial`,
+          }}
+        />
+      )
+    }
+  }
+
   const app = getSubSaasApp(slug)
   if (!app) notFound()
 

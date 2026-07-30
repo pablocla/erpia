@@ -13,8 +13,9 @@ import { useVentasConsulta } from "@/hooks/use-ventas-consulta"
 import { CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import {
   VENTAS_CONSULTA_TIPO_LABELS,
-  type VentasConsultaTipo,
+  VENTAS_CONSULTA_TIPO_LABELS_US,
 } from "@/lib/comercial/ventas-consulta-catalog"
+import type { VentasConsultaTipo } from "@/lib/comercial/ventas-consulta-catalog"
 import { cn } from "@/lib/utils"
 
 const WHATSAPP = process.env.NEXT_PUBLIC_CLAVER_WHATSAPP?.replace(/\D/g, "")
@@ -34,6 +35,7 @@ interface ClaverVentasContactoProps {
   waMessage?: string
   /** CTA "Probar gratis" con ?activar= coherente. */
   registerHref?: string
+  isUs?: boolean
 }
 
 export function ClaverVentasContacto({
@@ -44,12 +46,13 @@ export function ClaverVentasContacto({
   className,
   waMessage,
   registerHref = "/login/register?trial=14",
+  isUs = false,
 }: ClaverVentasContactoProps) {
   const { form, setForm, tipo, setTipo, saving, submit } = useVentasConsulta(defaultTipo)
   const dark = variant === "dark"
   const wa = whatsappUrl(
     waMessage ??
-      "Hola Claver, quiero info sobre el sistema para mi negocio. Mi rubro es: ",
+      (isUs ? "Hi Claver, I want info about the system for my business. My industry is: " : "Hola Claver, quiero info sobre el sistema para mi negocio. Mi rubro es: "),
   )
 
   async function handleSubmit(e: React.FormEvent) {
@@ -80,7 +83,7 @@ export function ClaverVentasContacto({
               }
             >
               <Sparkles className="mr-1.5 h-3 w-3 inline" />
-              Ventas {CLAVER_GROUP.name}
+              {isUs ? "Sales" : "Ventas"} {CLAVER_GROUP.name}
             </Badge>
 
             <h2
@@ -89,11 +92,11 @@ export function ClaverVentasContacto({
                 dark ? "text-white" : "text-slate-900",
               )}
             >
-              Hablemos de tu negocio
+              {isUs ? "Let's talk about your business" : "Hablemos de tu negocio"}
             </h2>
 
             <p className={cn("max-w-md text-base leading-relaxed", dark ? "text-slate-400" : "text-slate-600")}>
-              Dejanos tus datos, pedí una demo guiada o agendá una reunión. Respondemos en menos de 24 h hábiles.
+              {isUs ? "Leave your details, request a guided demo or schedule a meeting. We reply within 24 business hours." : "Dejanos tus datos, pedí una demo guiada o agendá una reunión. Respondemos en menos de 24 h hábiles."}
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -103,7 +106,7 @@ export function ClaverVentasContacto({
                 asChild
               >
                 <Link href={registerHref}>
-                  Probar gratis 14 días
+                  {isUs ? "14-Day Free Trial" : "Probar gratis 14 días"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -117,7 +120,7 @@ export function ClaverVentasContacto({
                 }
                 asChild
               >
-                <Link href="/demo">Ver demos por rubro</Link>
+                <Link href="/demo">{isUs ? "See live demos" : "Ver demos por rubro"}</Link>
               </Button>
             </div>
 
@@ -133,13 +136,13 @@ export function ClaverVentasContacto({
               >
                 <a href={wa} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Escribir por WhatsApp
+                  {isUs ? "Message on WhatsApp" : "Escribir por WhatsApp"}
                 </a>
               </Button>
             )}
 
             <p className={cn("text-xs", dark ? "text-slate-500" : "text-slate-500")}>
-              Diseñado para PyMEs argentinas · Soporte en español
+              {isUs ? "Designed for local commerce · US Support" : "Diseñado para PyMEs argentinas · Soporte en español"}
             </p>
           </ScrollReveal>
         )}
@@ -154,10 +157,10 @@ export function ClaverVentasContacto({
           >
             <CardHeader>
               <CardTitle className={dark ? "text-white" : "text-slate-900"}>
-                Contacto comercial
+                {isUs ? "Sales contact" : "Contacto comercial"}
               </CardTitle>
               <p className={cn("text-sm", dark ? "text-slate-400" : "text-slate-500")}>
-                Elegí qué necesitás y completá el formulario.
+                {isUs ? "Choose what you need and fill out the form." : "Elegí qué necesitás y completá el formulario."}
               </p>
             </CardHeader>
             <CardContent>
@@ -179,7 +182,7 @@ export function ClaverVentasContacto({
                     )}
                   >
                     {t === "reunion" && <Calendar className="mr-1 h-3 w-3 inline" />}
-                    {VENTAS_CONSULTA_TIPO_LABELS[t]}
+                    {isUs ? VENTAS_CONSULTA_TIPO_LABELS_US[t] : VENTAS_CONSULTA_TIPO_LABELS[t]}
                   </button>
                 ))}
               </div>
@@ -187,9 +190,9 @@ export function ClaverVentasContacto({
               <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label className={dark ? "text-slate-300" : undefined}>Nombre *</Label>
+                    <Label className={dark ? "text-slate-300" : undefined}>{isUs ? "Name *" : "Nombre *"}</Label>
                     <Input
-                      placeholder="Tu nombre"
+                      placeholder={isUs ? "Your name" : "Tu nombre"}
                       value={form.nombre}
                       onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
                       className={inputClass}
@@ -200,7 +203,7 @@ export function ClaverVentasContacto({
                     <Label className={dark ? "text-slate-300" : undefined}>Email *</Label>
                     <Input
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="you@email.com"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       className={inputClass}
@@ -208,27 +211,27 @@ export function ClaverVentasContacto({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className={dark ? "text-slate-300" : undefined}>Teléfono</Label>
+                    <Label className={dark ? "text-slate-300" : undefined}>{isUs ? "Phone" : "Teléfono"}</Label>
                     <Input
-                      placeholder="Opcional"
+                      placeholder={isUs ? "Optional" : "Opcional"}
                       value={form.telefono}
                       onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
                       className={inputClass}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className={dark ? "text-slate-300" : undefined}>Negocio</Label>
+                    <Label className={dark ? "text-slate-300" : undefined}>{isUs ? "Business" : "Negocio"}</Label>
                     <Input
-                      placeholder="Almacén, distribuidora…"
+                      placeholder={isUs ? "Store, supplier..." : "Almacén, distribuidora…"}
                       value={form.negocio}
                       onChange={(e) => setForm((f) => ({ ...f, negocio: e.target.value }))}
                       className={inputClass}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className={dark ? "text-slate-300" : undefined}>Rubro</Label>
+                    <Label className={dark ? "text-slate-300" : undefined}>{isUs ? "Industry" : "Rubro"}</Label>
                     <Input
-                      placeholder="kiosco, logística…"
+                      placeholder={isUs ? "retail, logistics..." : "kiosco, logística…"}
                       value={form.rubro}
                       onChange={(e) => setForm((f) => ({ ...f, rubro: e.target.value }))}
                       className={inputClass}
@@ -237,13 +240,13 @@ export function ClaverVentasContacto({
                 </div>
                 <div className="space-y-1.5">
                   <Label className={dark ? "text-slate-300" : undefined}>
-                    {tipo === "reunion" ? "¿Qué querés ver en la reunión?" : "Mensaje"}
+                    {tipo === "reunion" ? (isUs ? "What do you want to see in the meeting?" : "¿Qué querés ver en la reunión?") : (isUs ? "Message" : "Mensaje")}
                   </Label>
                   <Textarea
                     placeholder={
                       tipo === "reunion"
-                        ? "Ej: demo de fiado + facturación AFIP, disponible martes por la tarde"
-                        : "Contanos qué necesitás…"
+                        ? (isUs ? "Eg: demo of store operations, available Tuesday afternoon" : "Ej: demo de fiado + facturación AFIP, disponible martes por la tarde")
+                        : (isUs ? "Tell us what you need..." : "Contanos qué necesitás…")
                     }
                     value={form.mensaje}
                     onChange={(e) => setForm((f) => ({ ...f, mensaje: e.target.value }))}
@@ -273,12 +276,12 @@ export function ClaverVentasContacto({
                   )}
                 >
                   {saving
-                    ? "Enviando…"
+                    ? (isUs ? "Sending..." : "Enviando…")
                     : tipo === "reunion"
-                      ? "Solicitar reunión"
+                      ? (isUs ? "Request meeting" : "Solicitar reunión")
                       : tipo === "demo"
-                        ? "Pedir demo"
-                        : "Enviar consulta"}
+                        ? (isUs ? "Request demo" : "Pedir demo")
+                        : (isUs ? "Send inquiry" : "Enviar consulta")}
                 </Button>
               </form>
             </CardContent>

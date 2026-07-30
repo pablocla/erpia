@@ -7,12 +7,22 @@ import { AFIPSoapClient } from "./soap-client"
 import {
   buildFceOpcionales,
   isFceTipoCbte,
+  isFceFactura,
+  resolveFceFchVtoPago,
   validateCbu,
   type TipoTransferenciaFce,
 } from "./mipyme-fce"
 import { resolverPercepcionesFactura } from "./resolver-percepciones-factura"
 import { getCaeaConfig, debeIntentarCaea, isAfipNetworkError } from "./caea-config"
 import { emitirConCaeaFactura } from "./emitir-caea-factura"
+import { mapCondicionIvaReceptor, validarTipoCbteVsCondicion } from "./condicion-iva-afip"
+import {
+  validarImportesFe,
+  validarMoneda,
+  validarDocReceptor,
+  validarFechaCbte,
+} from "./payload-validators"
+import { translateAfipError } from "./afip-error-translator"
 
 export interface SolicitarCaeResult {
   ok: boolean
@@ -184,14 +194,62 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
 
   const impTotal = Number(factura.total) + impTrib
 
+  // Exportación E: no va por WSFE
+  if ([19, 20, 21].includes(factura.tipoCbte)) {
+    return {
+      ok: false,
+      error:
+        "Factura de exportación (E) debe emitirse por WSFEX. Usá /api/afip/exportacion o emitirFacturaExportacion.",
+    }
+  }
+
+  const docTipo = cliente?.cuit ? 80 : cliente?.dni ? 96 : 99
+  const docNro = cliente?.cuit || cliente?.dni || 0
+  const cbteFch = formatearFechaAfip(factura.createdAt)
+  const ivaArr = [...ivaMap.entries()].map(([Id, v]) => ({
+    Id,
+    BaseImp: Math.round(v.base * 100) / 100,
+    Importe: Math.round(v.importe * 100) / 100,
+  }))
+
+  const condIvaCodigo = mapCondicionIvaReceptor(
+    cliente?.condicionIva ?? factura.condicionIvaReceptor,
+  )
+  const tipoVsCond = validarTipoCbteVsCondicion(factura.tipoCbte, condIvaCodigo)
+  if (tipoVsCond) {
+    return { ok: false, error: tipoVsCond }
+  }
+
+  const valImportes = validarImportesFe({
+    impNeto,
+    impTotConc: Number(factura.netoNoGravado),
+    impOpEx: Number(factura.netoExento),
+    impIva,
+    impTrib,
+    impTotal,
+    ivaItems: ivaArr,
+  })
+  const valMon = validarMoneda(factura.monedaOrigen, factura.tipoCambio)
+  const valDoc = validarDocReceptor(docTipo, docNro, factura.tipoCbte)
+  const valFch = validarFechaCbte(cbteFch)
+  const preErrores = [
+    ...valImportes.errores,
+    ...valMon.errores,
+    ...valDoc.errores,
+    ...valFch.errores,
+  ]
+  if (preErrores.length > 0) {
+    return { ok: false, error: `Validación previa: ${preErrores.join("; ")}` }
+  }
+
   const comprobante: Record<string, unknown> = {
     CbteTipo: factura.tipoCbte,
     Concepto: factura.concepto ?? 1,
-    DocTipo: cliente?.cuit ? 80 : cliente?.dni ? 96 : 99,
-    DocNro: cliente?.cuit || cliente?.dni || 0,
+    DocTipo: docTipo,
+    DocNro: docNro,
     CbteDesde: factura.numero,
     CbteHasta: factura.numero,
-    CbteFch: formatearFechaAfip(factura.createdAt),
+    CbteFch: cbteFch,
     ImpTotal: impTotal,
     ImpTotConc: Number(factura.netoNoGravado),
     ImpNeto: impNeto,
@@ -200,11 +258,18 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
     ImpTrib: impTrib,
     MonId: factura.monedaOrigen,
     MonCotiz: factura.tipoCambio,
-    Iva: [...ivaMap.entries()].map(([Id, v]) => ({
-      Id,
-      BaseImp: Math.round(v.base * 100) / 100,
-      Importe: Math.round(v.importe * 100) / 100,
-    })),
+    CondicionIVAReceptor: condIvaCodigo,
+    Iva: ivaArr,
+  }
+
+  const concepto = factura.concepto ?? 1
+  if (concepto >= 2) {
+    if (factura.fechaServicioDesde) {
+      comprobante.FchServDesde = formatearFechaAfip(factura.fechaServicioDesde)
+    }
+    if (factura.fechaServicioHasta) {
+      comprobante.FchServHasta = formatearFechaAfip(factura.fechaServicioHasta)
+    }
   }
 
   if (tributos.length > 0) {
@@ -227,6 +292,15 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
       }
     }
     Object.assign(comprobante, buildFceOpcionales(cbuFce, tipoTransferenciaFce))
+    // FCE siempre exige FchVtoPago
+    if (isFceFactura(factura.tipoCbte) || !comprobante.FchVtoPago) {
+      comprobante.FchVtoPago = resolveFceFchVtoPago(
+        factura.createdAt,
+        factura.fechaVtoPago,
+      )
+    }
+  } else if (concepto >= 2 && factura.fechaVtoPago) {
+    comprobante.FchVtoPago = formatearFechaAfip(factura.fechaVtoPago)
   }
 
   try {
@@ -238,20 +312,32 @@ export async function solicitarCaeFactura(facturaId: number): Promise<SolicitarC
       empresa.cuit,
       empresa.certificadoCRT,
       empresa.certificadoKEY,
+      "wsfe",
     )
 
-    const resultado = await soapClient.emitirComprobante(
+    const resultado = (await soapClient.emitirComprobante(
       auth,
       empresa.cuit,
       factura.puntoVenta,
       comprobante,
       empresa.id,
       factura.id,
-    )
+    )) as {
+      FeDetResp?: {
+        FECAEDetResponse?: {
+          Resultado?: string
+          Observaciones?: unknown
+          CAE?: string
+          CAEFchVto?: string
+        }
+      }
+    }
 
     if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {
       const obs = resultado.FeDetResp?.FECAEDetResponse?.Observaciones
-      const msg = `AFIP rechazó: ${JSON.stringify(obs)}`
+      const msg = translateAfipError(
+        `AFIP rechazó: ${JSON.stringify(obs)}`,
+      )
       try {
         const { emitAutomationEvent } = await import("@/lib/automation/emit-event")
         void emitAutomationEvent(

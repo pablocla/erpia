@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { ThemeCustomizer } from "@/components/theme-customizer"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { ContextualHelp } from "@/components/contextual-help"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
@@ -292,6 +293,8 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
           <ThemeCustomizer />
           <ContextualHelp />
         </div>
+
+        <ThemeToggle />
 
         <NotificationCenter
           notifications={notifications}

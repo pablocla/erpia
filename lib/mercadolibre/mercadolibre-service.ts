@@ -103,7 +103,14 @@ export async function sincronizarStock(empresaId: number) {
 
   const productos = await prisma.producto.findMany({
     where: { empresaId, activo: true },
-    select: { id: true, codigo: true, stock: true },
+    select: { 
+      id: true, 
+      codigo: true, 
+      stock: true,
+      reglasStockCanal: {
+        where: { canalVenta: { codigo: { in: ["ML", "MERCADOLIBRE"] } } }
+      }
+    },
   })
 
   let sincronizados = 0
@@ -115,10 +122,13 @@ export async function sincronizarStock(empresaId: number) {
     if (!itemId) continue
 
     try {
+      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
+
       await mlFetch(empresaId, `/items/${itemId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ available_quantity: Math.max(0, Math.floor(prod.stock)) }),
+        body: JSON.stringify({ available_quantity: stockToSend }),
       })
       sincronizados++
     } catch (e) {
@@ -313,4 +323,62 @@ export async function resumenML(empresaId: number) {
     publicacionesActivas: publicaciones.filter((p) => p.estado === "activa").length,
     ultimaSync: config?.updatedAt ?? null,
   }
+}
+
+export async function publicarProductoMasivo(empresaId: number, productosIds: number[]) {
+  const config = await obtenerConfigML(empresaId)
+  if (!config?.accessToken) {
+    return { ok: false, error: "MERCADO_LIBRE_NO_CONFIGURADO", publicados: 0 }
+  }
+
+  const productos = await prisma.producto.findMany({
+    where: { empresaId, id: { in: productosIds }, activo: true },
+    select: { 
+      id: true, 
+      nombre: true, 
+      codigo: true, 
+      precioVenta: true, 
+      stock: true, 
+      imagenUrl: true,
+      reglasStockCanal: {
+        where: { canalVenta: { codigo: { in: ["ML", "MERCADOLIBRE"] } } }
+      }
+    }
+  })
+
+  let publicados = 0
+  const errores = []
+
+  for (const prod of productos) {
+    try {
+      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
+
+      const mlItem = {
+        title: prod.nombre.slice(0, 60), // Límite ML
+        category_id: "MLA3530", // Placeholder (Otros). En un flujo real usaríamos un predictor o mapeo de categorías.
+        price: Number(prod.precioVenta),
+        currency_id: "ARS",
+        available_quantity: Math.max(1, stockToSend),
+        buying_mode: "buy_it_now",
+        condition: "new",
+        listing_type_id: "gold_special",
+        pictures: prod.imagenUrl ? [{ source: prod.imagenUrl }] : [],
+        attributes: [
+          { id: "SELLER_SKU", value_name: prod.codigo }
+        ]
+      }
+
+      await mlFetch(empresaId, "/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mlItem)
+      })
+      publicados++
+    } catch (e: any) {
+      errores.push({ productoId: prod.id, error: e.message })
+    }
+  }
+
+  return { ok: true, publicados, errores }
 }

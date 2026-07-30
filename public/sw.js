@@ -29,7 +29,7 @@ self.addEventListener("activate", (event) => {
 
 // Fetch strategy: Network-first for API, Cache-first for static assets
 self.addEventListener("fetch", (event) => {
-  const e = event as FetchEvent
+  const e = event
   const { request } = e
   const url = new URL(request.url)
 

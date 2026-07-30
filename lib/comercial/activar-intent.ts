@@ -10,6 +10,7 @@ import {
   resolvePackCalle,
 } from "@/lib/comercial/pack-calle-catalog"
 import { getSubSaasApp, SUB_SAAS_APPS } from "@/lib/comercial/sub-saas-catalog"
+import { resolveMarketProductIntent } from "@/lib/comercial/market-catalog"
 
 export interface ActivarIntent {
   engancheId: string
@@ -21,6 +22,19 @@ export interface ActivarIntent {
 }
 
 function fromSubSaas(sku: string, slug?: string): ActivarIntent | null {
+  // Multinational: US marketing slugs (collect, house-tab) resolve to core SKUs
+  const marketHit = resolveMarketProductIntent(slug ?? sku)
+  if (marketHit) {
+    return {
+      engancheId: marketHit.sku,
+      modoLite: marketHit.modoLite,
+      landingPath: marketHit.dashboardPath,
+      productName: marketHit.nombre,
+      marca: marketHit.marca,
+      lema: marketHit.lema,
+    }
+  }
+
   const app =
     (slug ? getSubSaasApp(slug) : null) ??
     SUB_SAAS_APPS.find((a) => a.sku === sku || a.skusAdicionales?.includes(sku)) ??
@@ -88,14 +102,17 @@ export function activarRegisterHref(activar: string | null | undefined): string 
 }
 
 /** Copy de trial/registro según oferta comercial */
-export function mensajeActivarTrial(activar: string | null | undefined): string {
+export function mensajeActivarTrial(activar: string | null | undefined, market: string = "ar"): string {
   const intent = resolveActivarIntent(activar)
-  if (!intent) return "Trial 14 días gratis"
+  const isUs = market === "us" || activar === "house-tab" || activar === "collect"
+
+  if (!intent) return isUs ? "Start your 14-day free trial" : "Trial 14 días gratis"
+  
   if (intent.engancheId === "pos.fiado_barrio" || intent.modoLite === "fiado") {
-    return "Libreta gratis + POS 14 días de prueba"
+    return isUs ? "Free house tabs · no card" : "Libreta gratis + POS 14 días de prueba"
   }
   if (intent.modoLite === "pos") {
-    return "POS 14 días de prueba — fiado cuando lo necesités"
+    return isUs ? "14-day free POS trial" : "POS 14 días de prueba — fiado cuando lo necesités"
   }
-  return `Probá ${intent.marca} — 14 días gratis`
+  return isUs ? `Try ${intent.marca} — 14 days free` : `Probá ${intent.marca} — 14 días gratis`
 }

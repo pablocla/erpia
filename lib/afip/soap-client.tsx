@@ -1,125 +1,111 @@
+/**
+ * Cliente SOAP WSFE + bridge WSAA multi-servicio.
+ */
 import soap from "soap"
-import forge from "node-forge"
-import { prisma } from "@/lib/prisma"
+import {
+  getTicketAcceso,
+  type AFIPAuthResponse,
+  type AfipEntorno,
+  type AfipWsaaService,
+} from "./wsaa-service"
+import { decryptPrivateKeyIfNeeded } from "./cert-utils"
+import { logAfip, serializeAfipPayload } from "./afip-log"
 
-/** FIX C-006: Guarda request/response de AFIP en BD para auditoría. */
-async function logAfip(params: {
-  empresaId: number
-  webservice: string
-  operacion: string
-  requestBody?: string
-  responseBody?: string
-  statusCode?: string
-  cae?: string
-  facturaId?: number
-  duracionMs?: number
-  errorMsg?: string
-}) {
-  try {
-    await prisma.afipWebserviceLog.create({ data: params })
-  } catch {
-    // El log no puede romper el flujo principal
-    console.error("[AfipLog] No se pudo guardar log AFIP")
-  }
-}
-
-export interface AFIPAuthResponse {
-  token: string
-  sign: string
-  expirationTime: Date
-}
+export type { AFIPAuthResponse, AfipWsaaService, AfipEntorno }
 
 export class AFIPSoapClient {
-  private wsaaUrl: string
   private wsfeUrl: string
+  private entorno: AfipEntorno
 
-  constructor(entorno: "homologacion" | "produccion") {
-    if (entorno === "produccion") {
-      this.wsaaUrl = "https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl"
-      this.wsfeUrl = "https://servicios1.afip.gov.ar/wsfev1/service.asmx?wsdl"
-    } else {
-      this.wsaaUrl = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms?wsdl"
-      this.wsfeUrl = "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl"
-    }
+  constructor(entorno: AfipEntorno = "homologacion") {
+    this.entorno = entorno
+    this.wsfeUrl =
+      entorno === "produccion"
+        ? "https://servicios1.afip.gov.ar/wsfev1/service.asmx?wsdl"
+        : "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl"
   }
 
-  async authenticate(cuit: string, certificado: string, privateKey: string): Promise<AFIPAuthResponse> {
-    try {
-      const client = await soap.createClientAsync(this.wsaaUrl)
+  /**
+   * Autentica vía WSAA. `service` por defecto "wsfe".
+   * Soporta cache de TA y KEY cifrada (AFIP_CERT_SECRET).
+   */
+  async authenticate(
+    cuit: string,
+    certificado: string,
+    privateKey: string,
+    service: AfipWsaaService = "wsfe",
+  ): Promise<AFIPAuthResponse> {
+    const key = decryptPrivateKeyIfNeeded(privateKey)
+    return getTicketAcceso({
+      cuit,
+      certificadoBase64: certificado,
+      privateKeyBase64: key,
+      entorno: this.entorno,
+      service,
+    })
+  }
 
-      // Crear el TRA (Ticket de Requerimiento de Acceso)
-      const tra = this.createTRA()
-
-      // Firmar el TRA con el certificado
-      const cms = this.signTRA(tra, certificado, privateKey)
-
-      // Llamar al servicio de autenticación
-      const [result] = await client.loginCmsAsync({
-        in0: cms,
-      })
-
-      const credentials = result.loginCmsReturn
-
-      return {
-        token: credentials.token,
-        sign: credentials.sign,
-        expirationTime: new Date(credentials.expirationTime),
-      }
-    } catch (error) {
-      console.error("Error en autenticación AFIP:", error)
-      throw new Error("Error al autenticar con AFIP")
-    }
+  private authBlock(auth: AFIPAuthResponse, cuit: string) {
+    return { Token: auth.token, Sign: auth.sign, Cuit: cuit.replace(/\D/g, "") }
   }
 
   async emitirComprobante(
     auth: AFIPAuthResponse,
     cuit: string,
     puntoVenta: number,
-    comprobante: any,
+    comprobante: Record<string, unknown>,
     empresaId?: number,
     facturaId?: number,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const t0 = Date.now()
-    const requestPayload = { Auth: { Cuit: cuit }, FeCAEReq: { FeCabReq: { PtoVta: puntoVenta, CbteTipo: comprobante.CbteTipo }, FeDetReq: { FECAEDetRequest: comprobante } } }
+    const FeCAEReq = {
+      FeCabReq: {
+        CantReg: 1,
+        PtoVta: puntoVenta,
+        CbteTipo: comprobante.CbteTipo,
+      },
+      FeDetReq: { FECAEDetRequest: comprobante },
+    }
+    const requestPayload = {
+      Auth: this.authBlock(auth, cuit),
+      FeCAEReq,
+    }
 
     try {
       const client = await soap.createClientAsync(this.wsfeUrl)
-
-      const [result] = await client.FECAESolicitarAsync({
-        Auth: { Token: auth.token, Sign: auth.sign, Cuit: cuit },
-        FeCAEReq: {
-          FeCabReq: { CantReg: 1, PtoVta: puntoVenta, CbteTipo: comprobante.CbteTipo },
-          FeDetReq: { FECAEDetRequest: comprobante },
-        },
-      })
-
+      const [result] = await client.FECAESolicitarAsync(requestPayload)
       const wsResult = result.FECAESolicitarResult
-      const cae = wsResult?.FeDetResp?.FECAEDetResponse?.CAE
+      const det = wsResult?.FeDetResp?.FECAEDetResponse
+      const cae = Array.isArray(det) ? det[0]?.CAE : det?.CAE
+      const resultado = Array.isArray(det) ? det[0]?.Resultado : det?.Resultado
 
-      // FIX C-006: Guardar log exitoso
       if (empresaId) {
         await logAfip({
           empresaId,
           webservice: "WSFE",
           operacion: "FECAESolicitar",
-          requestBody: JSON.stringify(requestPayload),
-          responseBody: JSON.stringify(wsResult),
-          statusCode: wsResult?.FeDetResp?.FECAEDetResponse?.Resultado ?? "?",
+          requestBody: serializeAfipPayload(requestPayload),
+          responseBody: serializeAfipPayload(wsResult),
+          statusCode: resultado ?? "?",
           cae: cae ?? undefined,
           facturaId,
           duracionMs: Date.now() - t0,
         })
       }
 
+      // Normalizar det a objeto único
+      if (wsResult?.FeDetResp?.FECAEDetResponse && Array.isArray(wsResult.FeDetResp.FECAEDetResponse)) {
+        wsResult.FeDetResp.FECAEDetResponse = wsResult.FeDetResp.FECAEDetResponse[0]
+      }
+
       return wsResult
     } catch (error) {
-      // FIX C-006: Guardar log de error
       if (empresaId) {
         await logAfip({
           empresaId,
           webservice: "WSFE",
           operacion: "FECAESolicitar",
-          requestBody: JSON.stringify(requestPayload),
+          requestBody: serializeAfipPayload(requestPayload),
           statusCode: "ERROR",
           duracionMs: Date.now() - t0,
           errorMsg: error instanceof Error ? error.message : String(error),
@@ -127,7 +113,9 @@ export class AFIPSoapClient {
         })
       }
       console.error("Error al emitir comprobante:", error)
-      throw new Error("Error al emitir comprobante en AFIP")
+      throw new Error(
+        `Error al emitir comprobante en AFIP: ${error instanceof Error ? error.message : String(error)}`,
+      )
     }
   }
 
@@ -139,61 +127,152 @@ export class AFIPSoapClient {
   ): Promise<number> {
     try {
       const client = await soap.createClientAsync(this.wsfeUrl)
-
       const [result] = await client.FECompUltimoAutorizadoAsync({
-        Auth: {
-          Token: auth.token,
-          Sign: auth.sign,
-          Cuit: cuit,
-        },
+        Auth: this.authBlock(auth, cuit),
         PtoVta: puntoVenta,
         CbteTipo: tipoComprobante,
       })
-
-      return result.FECompUltimoAutorizadoResult.CbteNro || 0
+      return result.FECompUltimoAutorizadoResult?.CbteNro || 0
     } catch (error) {
       console.error("Error al consultar último comprobante:", error)
       return 0
     }
   }
 
-  private createTRA(): string {
-    const now = new Date()
-    const expirationTime = new Date(now.getTime() + 12 * 60 * 60 * 1000) // 12 horas
-
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<loginTicketRequest version="1.0">
-  <header>
-    <uniqueId>${Date.now()}</uniqueId>
-    <generationTime>${now.toISOString()}</generationTime>
-    <expirationTime>${expirationTime.toISOString()}</expirationTime>
-  </header>
-  <service>wsfe</service>
-</loginTicketRequest>`
+  /**
+   * FECompConsultar — reconsulta un comprobante ya autorizado.
+   */
+  async consultarComprobante(
+    auth: AFIPAuthResponse,
+    cuit: string,
+    params: {
+      tipoCbte: number
+      puntoVenta: number
+      numero: number
+    },
+    empresaId?: number,
+  ): Promise<unknown> {
+    const t0 = Date.now()
+    const requestPayload = {
+      Auth: this.authBlock(auth, cuit),
+      FeCompConsReq: {
+        CbteTipo: params.tipoCbte,
+        CbteNro: params.numero,
+        PtoVta: params.puntoVenta,
+      },
+    }
+    try {
+      const client = await soap.createClientAsync(this.wsfeUrl)
+      const [result] = await client.FECompConsultarAsync(requestPayload)
+      const wsResult = result.FECompConsultarResult
+      if (empresaId) {
+        await logAfip({
+          empresaId,
+          webservice: "WSFE",
+          operacion: "FECompConsultar",
+          requestBody: serializeAfipPayload(requestPayload),
+          responseBody: serializeAfipPayload(wsResult),
+          statusCode: wsResult?.ResultGet?.Resultado ?? "OK",
+          cae: wsResult?.ResultGet?.CodAutorizacion,
+          duracionMs: Date.now() - t0,
+        })
+      }
+      return wsResult
+    } catch (error) {
+      if (empresaId) {
+        await logAfip({
+          empresaId,
+          webservice: "WSFE",
+          operacion: "FECompConsultar",
+          requestBody: serializeAfipPayload(requestPayload),
+          statusCode: "ERROR",
+          errorMsg: error instanceof Error ? error.message : String(error),
+          duracionMs: Date.now() - t0,
+        })
+      }
+      throw error
+    }
   }
 
-  private signTRA(tra: string, certificadoBase64: string, privateKeyBase64: string): string {
-    // Decode from the base64-stored PEM format back to PEM strings
-    const certPem = Buffer.from(certificadoBase64, "base64").toString("utf8")
-    const keyPem  = Buffer.from(privateKeyBase64,  "base64").toString("utf8")
+  /**
+   * FEParamGetPtosVenta — puntos de venta habilitados en AFIP.
+   */
+  async consultarPuntosVenta(
+    auth: AFIPAuthResponse,
+    cuit: string,
+    empresaId?: number,
+  ): Promise<
+    Array<{
+      Nro: number
+      EmisionTipo: string
+      Bloqueado: string
+      FchBaja?: string
+    }>
+  > {
+    const t0 = Date.now()
+    try {
+      const client = await soap.createClientAsync(this.wsfeUrl)
+      const [result] = await client.FEParamGetPtosVentaAsync({
+        Auth: this.authBlock(auth, cuit),
+      })
+      const raw = result?.FEParamGetPtosVentaResult?.ResultGet?.PtoVenta
+      const list = !raw ? [] : Array.isArray(raw) ? raw : [raw]
 
-    // Build a PKCS#7 / CMS SignedData message — the format AFIP WSAA requires
-    const cert = forge.pki.certificateFromPem(certPem)
-    const pkey = forge.pki.privateKeyFromPem(keyPem)
+      if (empresaId) {
+        await logAfip({
+          empresaId,
+          webservice: "WSFE",
+          operacion: "FEParamGetPtosVenta",
+          responseBody: serializeAfipPayload(list),
+          statusCode: "OK",
+          duracionMs: Date.now() - t0,
+        })
+      }
 
-    const p7 = forge.pkcs7.createSignedData()
-    p7.content = forge.util.createBuffer(tra, "utf8")
-    p7.addCertificate(cert)
-    p7.addSigner({
-      key: pkey,
-      certificate: cert,
-      digestAlgorithm: forge.pki.oids.sha256,
-      authenticatedAttributes: [],
+      return list.map(
+        (p: {
+          Nro?: number
+          EmisionTipo?: string
+          Bloqueado?: string
+          FchBaja?: string
+        }) => ({
+          Nro: Number(p.Nro),
+          EmisionTipo: String(p.EmisionTipo ?? ""),
+          Bloqueado: String(p.Bloqueado ?? "N"),
+          FchBaja: p.FchBaja,
+        }),
+      )
+    } catch (error) {
+      console.error("FEParamGetPtosVenta error:", error)
+      throw new Error(
+        `Error al consultar puntos de venta AFIP: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+
+  /** FEParamGetTiposCbte */
+  async consultarTiposComprobante(
+    auth: AFIPAuthResponse,
+    cuit: string,
+  ): Promise<Array<{ Id: number; Desc: string; FchDesde?: string; FchHasta?: string }>> {
+    const client = await soap.createClientAsync(this.wsfeUrl)
+    const [result] = await client.FEParamGetTiposCbteAsync({
+      Auth: this.authBlock(auth, cuit),
     })
-    p7.sign({ detached: false })
+    const raw = result?.FEParamGetTiposCbteResult?.ResultGet?.CbteTipo
+    const list = !raw ? [] : Array.isArray(raw) ? raw : [raw]
+    return list.map((t: { Id: number; Desc: string; FchDesde?: string; FchHasta?: string }) => ({
+      Id: Number(t.Id),
+      Desc: String(t.Desc),
+      FchDesde: t.FchDesde,
+      FchHasta: t.FchHasta,
+    }))
+  }
 
-    // DER-encode then base64 — this is what loginCms(in0) expects
-    const der = forge.asn1.toDer(p7.toAsn1()).getBytes()
-    return forge.util.encode64(der)
+  /** Dummy / health: FEDummy */
+  async dummy(): Promise<{ AppServer?: string; DbServer?: string; AuthServer?: string }> {
+    const client = await soap.createClientAsync(this.wsfeUrl)
+    const [result] = await client.FEDummyAsync({})
+    return result?.FEDummyResult ?? {}
   }
 }

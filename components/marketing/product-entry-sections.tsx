@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import {
@@ -25,6 +25,7 @@ import {
   ECOSISTEMA_CAPACIDADES,
   FIADO_ENTRY,
   GTM_VITRINE_COPY,
+  GTM_VITRINE_COPY_US,
 } from "@/lib/comercial/go-to-market-vitrine"
 import { fmtPrecioArs } from "@/lib/comercial/sub-saas-catalog"
 import { ClaverCobraMockup } from "@/components/marketing/claver-cobra-mockup"
@@ -81,6 +82,7 @@ export function ProductHeroSection({
   className,
   chips,
   secondaryCtaHref,
+  isUs = false,
 }: {
   entry: ProductEntryConfig
   showBreadcrumb?: boolean
@@ -89,9 +91,11 @@ export function ProductHeroSection({
   chips?: ReactNode
   /** Override del CTA secundario (ej. ancla a #combate-heading). */
   secondaryCtaHref?: string
+  isUs?: boolean
 }) {
   const registerHref = activarRegisterHref(entry.ctaPrimaryActivar)
   const secondaryHref = secondaryCtaHref ?? entry.demoHref
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
 
   return (
     <section
@@ -132,11 +136,11 @@ export function ProductHeroSection({
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button
               size="lg"
-              className="h-12 bg-emerald-500 px-8 font-semibold text-slate-950 hover:bg-emerald-400"
+              className="bg-emerald-600 hover:bg-emerald-500"
               asChild
             >
               <Link href={registerHref}>
-                {entry.ctaPrimary}
+                {gtmCopy.ctaProbar}
                 <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
               </Link>
             </Button>
@@ -149,7 +153,7 @@ export function ProductHeroSection({
               <Link href={secondaryHref}>
                 {secondaryCtaHref ? (
                   <>
-                    {GTM_VITRINE_COPY.ctaVerProductos}
+                    {gtmCopy.ctaVerProductos}
                     <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                   </>
                 ) : (
@@ -161,7 +165,7 @@ export function ProductHeroSection({
               </Link>
             </Button>
           </div>
-          <p className="mt-3 text-xs text-slate-500 sm:text-sm">{GTM_VITRINE_COPY.heroMicrocopy}</p>
+          <p className="mt-3 text-xs text-slate-500 sm:text-sm">{gtmCopy.heroMicrocopy}</p>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
             {entry.trustBullets.map((label, i) => {
@@ -181,18 +185,19 @@ export function ProductHeroSection({
 }
 
 /** Franja de confianza comercial (home y landings). */
-export function CommercialTrustBar({ className }: { className?: string }) {
+export function CommercialTrustBar({ className, isUs = false }: { className?: string, isUs?: boolean }) {
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
   return (
     <section
-      aria-label={GTM_VITRINE_COPY.trustBarTitle}
+      aria-label={gtmCopy.trustBarTitle}
       className={cn("border-b border-slate-200/80 bg-white px-4 py-8 sm:px-6", className)}
     >
       <div className="mx-auto max-w-7xl">
         <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {GTM_VITRINE_COPY.trustBarTitle}
+          {gtmCopy.trustBarTitle}
         </p>
         <ul className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {GTM_VITRINE_COPY.trustItems.map((item) => (
+          {gtmCopy.trustItems.map((item) => (
             <li
               key={item.label}
               className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3 text-center"
@@ -210,9 +215,11 @@ export function CommercialTrustBar({ className }: { className?: string }) {
 export function ProductAppPreviewSection({
   entry,
   className,
+  isUs = false,
 }: {
   entry: ProductEntryConfig
   className?: string
+  isUs?: boolean
 }) {
   return (
     <section aria-labelledby="preview-heading" className={cn("bg-white px-4 py-16 sm:px-6", className)}>
@@ -301,9 +308,11 @@ export function ProductPainOutcomeSection({
 export function ProductStepsSection({
   entry,
   className,
+  isUs = false,
 }: {
   entry: ProductEntryConfig
   className?: string
+  isUs?: boolean
 }) {
   return (
     <section
@@ -348,9 +357,11 @@ export function ProductStepsSection({
 export function ProductSocialProofSection({
   entry,
   className,
+  isUs = false,
 }: {
   entry: ProductEntryConfig
   className?: string
+  isUs?: boolean
 }) {
   return (
     <section aria-labelledby="proof-heading" className={cn("bg-white px-4 py-16 sm:px-6", className)}>
@@ -427,13 +438,16 @@ export function ProductFinalCtaSection({
   className,
   secondaryHref,
   secondaryLabel,
+  isUs = false,
 }: {
   entry: ProductEntryConfig
   className?: string
   secondaryHref?: string
   secondaryLabel?: string
+  isUs?: boolean
 }) {
   const registerHref = activarRegisterHref(entry.ctaPrimaryActivar)
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
 
   return (
     <section
@@ -443,11 +457,13 @@ export function ProductFinalCtaSection({
         className,
       )}
     >
-      <div className="mx-auto max-w-3xl text-center">
+      <div className="mx-auto max-w-4xl text-center">
         <h2 id="product-cta-heading" className="font-[var(--font-fraunces)] text-3xl font-semibold">
-          {entry.finalCta.title}
+          {gtmCopy.finalCtaTitle}
         </h2>
-        <p className="mt-3 text-slate-400">{entry.finalCta.subtitle}</p>
+        <p className="mt-2 text-slate-300">
+          {isUs ? `Full operations for ${fmtPrecioArs(entry.precioArs)}.` : `Toda la operación resuelta por ${fmtPrecioArs(entry.precioArs)}.`}
+        </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
             size="lg"
@@ -473,10 +489,13 @@ export function ProductFinalCtaSection({
 export function EcosistemaExpansionSection({
   className,
   subtitle,
+  isUs = false,
 }: {
   className?: string
   subtitle?: string
+  isUs?: boolean
 }) {
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
   return (
     <section
       aria-labelledby="ecosistema-heading"
@@ -488,9 +507,9 @@ export function EcosistemaExpansionSection({
             id="ecosistema-heading"
             className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
           >
-            {GTM_VITRINE_COPY.ecosistemaTitle}
+            {gtmCopy.ecosistemaTitle}
           </h2>
-          <p className="mt-2 max-w-2xl text-slate-600">{subtitle ?? GTM_VITRINE_COPY.ecosistemaSubtitle}</p>
+          <p className="mt-2 max-w-2xl text-slate-600">{subtitle ?? gtmCopy.ecosistemaSubtitle}</p>
         </ScrollReveal>
 
         <MotionList className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -522,7 +541,8 @@ export function EcosistemaExpansionSection({
 /** Demos secundarios en home (S6) — no compiten con combate. */
 const HOME_COLLAPSIBLE_DEMO_IDS = ["almacen", "salon_belleza", "consorcios_admin"] as const
 
-export function EcosistemaCollapsibleSection({ className }: { className?: string }) {
+export function EcosistemaCollapsibleSection({ className, isUs = false }: { className?: string, isUs?: boolean }) {
+  const gtmCopy = isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY
   const demos = LANDING_FEATURED_DEMOS.filter((d) =>
     (HOME_COLLAPSIBLE_DEMO_IDS as readonly string[]).includes(d.id),
   )
@@ -539,10 +559,10 @@ export function EcosistemaCollapsibleSection({ className }: { className?: string
             >
               <span>
                 <span className="block font-semibold text-slate-900">
-                  {GTM_VITRINE_COPY.collapsibleTitle}
+                  {gtmCopy.socialProofTitle}
                 </span>
                 <span className="mt-0.5 block text-sm font-normal text-slate-500">
-                  {GTM_VITRINE_COPY.collapsibleSubtitle}
+                  {gtmCopy.collapsibleSubtitle}
                 </span>
               </span>
               <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />

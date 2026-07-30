@@ -3,14 +3,14 @@ import { Prisma } from "@prisma/client"
 
 export type CreateOTInput = {
   clienteId: number
-  numero: string
+  numero?: string
   estado?: string
   titulo?: string
   descripcion?: string
-  fechaPrometida?: Date
+  fechaPrometida?: Date | string
   tecnicoAsignado?: string
   metadata?: Prisma.InputJsonValue
-  items: {
+  items?: {
     productoId?: number
     descripcion: string
     cantidad: number
@@ -20,49 +20,66 @@ export type CreateOTInput = {
 }
 
 export class OTService {
+  async nextNumero(empresaId: number, tx?: Prisma.TransactionClient): Promise<string> {
+    const db = tx ?? prisma
+    const count = await db.ordenServicio.count({ where: { empresaId } })
+    return `OS-${String(count + 1).padStart(4, "0")}`
+  }
+
   async crearOrden(empresaId: number, input: CreateOTInput) {
-    const total = input.items.reduce(
+    const items = input.items ?? []
+    const total = items.reduce(
       (acc, item) => acc + Number(item.cantidad) * Number(item.precioUnitario),
-      0
+      0,
     )
 
+    const fechaPrometida =
+      input.fechaPrometida == null
+        ? undefined
+        : input.fechaPrometida instanceof Date
+          ? input.fechaPrometida
+          : new Date(input.fechaPrometida)
+
     return await prisma.$transaction(async (tx) => {
-      // 1. Crear la Orden y sus Items
+      const numero = input.numero?.trim() || (await this.nextNumero(empresaId, tx))
+
       const orden = await tx.ordenServicio.create({
         data: {
           empresaId,
           clienteId: input.clienteId,
-          numero: input.numero,
-          estado: "PENDIENTE",
+          numero,
+          estado: input.estado ?? "PENDIENTE",
           titulo: input.titulo,
           descripcion: input.descripcion,
-          fechaPrometida: input.fechaPrometida,
+          fechaPrometida,
           tecnicoAsignado: input.tecnicoAsignado,
           metadata: input.metadata ?? {},
-          total: total,
-          items: {
-            create: input.items.map(item => ({
-              productoId: item.productoId,
-              descripcion: item.descripcion,
-              cantidad: item.cantidad,
-              precioUnitario: item.precioUnitario,
-              tipo: item.tipo
-            }))
-          }
+          total,
+          items: items.length
+            ? {
+                create: items.map((item) => ({
+                  productoId: item.productoId,
+                  descripcion: item.descripcion,
+                  cantidad: item.cantidad,
+                  precioUnitario: item.precioUnitario,
+                  tipo: item.tipo,
+                })),
+              }
+            : undefined,
         },
         include: {
-          items: true
-        }
+          items: true,
+          cliente: { select: { id: true, nombre: true, telefono: true, direccion: true } },
+        },
       })
 
-      // 2. Descontar stock para los REPUESTOS (si tienen productoId)
-      for (const item of input.items) {
+      for (const item of items) {
         if (item.tipo === "REPUESTO" && item.productoId) {
           const prod = await tx.producto.findUnique({ where: { id: item.productoId } })
           if (prod && prod.tipoProducto !== "servicio") {
             await tx.producto.update({
               where: { id: prod.id },
-              data: { stock: { decrement: item.cantidad } }
+              data: { stock: { decrement: item.cantidad } },
             })
           }
         }
@@ -81,7 +98,15 @@ export class OTService {
         ...(filters?.estado && { estado: filters.estado }),
       },
       include: {
-        cliente: { select: { nombre: true, telefono: true } },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+            direccion: true,
+            direccionComplemento: true,
+          },
+        },
         items: true,
       },
       orderBy: { fechaCreacion: "desc" },
@@ -89,9 +114,91 @@ export class OTService {
   }
 
   async cambiarEstado(empresaId: number, ordenId: number, nuevoEstado: string) {
+    const existing = await prisma.ordenServicio.findFirst({
+      where: { id: ordenId, empresaId, activo: true },
+    })
+    if (!existing) throw new Error("Orden no encontrada")
     return prisma.ordenServicio.update({
-      where: { id: ordenId, empresaId },
-      data: { estado: nuevoEstado }
+      where: { id: ordenId },
+      data: { estado: nuevoEstado },
+    })
+  }
+
+  async actualizarOrden(
+    empresaId: number,
+    ordenId: number,
+    patch: {
+      estado?: string
+      tecnicoAsignado?: string | null
+      fechaPrometida?: Date | string | null
+      descripcion?: string | null
+      titulo?: string
+      metadata?: Record<string, unknown>
+    },
+  ) {
+    const existing = await prisma.ordenServicio.findFirst({
+      where: { id: ordenId, empresaId, activo: true },
+    })
+    if (!existing) throw new Error("Orden de servicio no encontrada")
+
+    const updateData: Record<string, unknown> = {}
+    if (patch.estado !== undefined) updateData.estado = patch.estado
+    if (patch.tecnicoAsignado !== undefined) updateData.tecnicoAsignado = patch.tecnicoAsignado
+    if (patch.titulo !== undefined) updateData.titulo = patch.titulo
+    if (patch.descripcion !== undefined) updateData.descripcion = patch.descripcion
+
+    if (patch.fechaPrometida !== undefined) {
+      updateData.fechaPrometida =
+        patch.fechaPrometida === null || patch.fechaPrometida === ""
+          ? null
+          : patch.fechaPrometida instanceof Date
+            ? patch.fechaPrometida
+            : new Date(patch.fechaPrometida)
+    }
+
+    if (patch.metadata !== undefined) {
+      const prevMeta = (existing.metadata ?? {}) as Record<string, unknown>
+      updateData.metadata = { ...prevMeta, ...patch.metadata }
+
+      // Impacto en Cuentas por Cobrar si el cobro queda PENDIENTE_PAGO y tiene monto
+      const meta = patch.metadata as Record<string, unknown>
+      const monto = Number(meta.montoCobrado ?? 0)
+      if (meta.estadoPago === "PENDIENTE_PAGO" && monto > 0) {
+        try {
+          const fechaVenc = meta.fechaVencimientoCertificado
+            ? new Date(String(meta.fechaVencimientoCertificado))
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
+          await (prisma as any).cuentaCobrar.create({
+            data: {
+              clienteId: existing.clienteId,
+              montoTotal: monto,
+              saldo: monto,
+              fechaVencimiento: fechaVenc,
+              estado: "pendiente",
+            },
+          })
+        } catch (e) {
+          console.warn("[OTService] No se pudo generar automatismo de CuentaCobrar:", e)
+        }
+      }
+    }
+
+    return prisma.ordenServicio.update({
+      where: { id: ordenId },
+      data: updateData,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            telefono: true,
+            direccion: true,
+            direccionComplemento: true,
+          },
+        },
+        items: true,
+      },
     })
   }
 

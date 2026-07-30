@@ -111,6 +111,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
   const impTrib = Number(nc.totalPercepciones)
   const impTotal = Number(nc.total) + impTrib
 
+  const { mapCondicionIvaReceptor } = await import("./condicion-iva-afip")
   const comprobante: Record<string, unknown> = {
     CbteTipo: nc.tipoCbte,
     Concepto: 1,
@@ -127,6 +128,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
     ImpTrib: impTrib,
     MonId: nc.monedaOrigen,
     MonCotiz: nc.tipoCambio,
+    CondicionIVAReceptor: mapCondicionIvaReceptor(cliente?.condicionIva),
     Iva: [...ivaMap.entries()].map(([Id, v]) => ({
       Id,
       BaseImp: Math.round(v.base * 100) / 100,
@@ -170,6 +172,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
       empresa.cuit,
       empresa.certificadoCRT,
       empresa.certificadoKEY,
+      "wsfe",
     )
 
     const resultado = await soapClient.emitirComprobante(

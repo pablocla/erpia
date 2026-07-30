@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import type { SubSaasApp } from "@/lib/comercial/sub-saas-catalog"
 import { fmtPrecioArs, subSaasActivarHref } from "@/lib/comercial/sub-saas-catalog"
+import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 import { ClaverShell } from "@/components/marketing/claver-shell"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,17 +36,59 @@ const PLATAFORMA_LABEL = {
   ambos: { icon: Smartphone, text: "Celular + PC" },
 } as const
 
-interface SubSaasLandingProps {
-  app: SubSaasApp
+export interface SubSaasLandingLocaleCopy {
+  catalogLabel: string
+  trialCta: string
+  contactCta: string
+  painsTitle: string
+  outcomesTitle: string
+  stepsTitle: string
+  available: string
+  beta: string
+  soon: string
+  ready: string
+  bothPlatforms: string
 }
 
-export function SubSaasLanding({ app }: SubSaasLandingProps) {
-  const estado = ESTADO_LABEL[app.estado]
+interface SubSaasLandingProps {
+  app: SubSaasApp
+  /** Override price line (e.g. USD for US market) */
+  priceLabel?: string
+  localeCopy?: SubSaasLandingLocaleCopy
+}
+
+export function SubSaasLanding({ app, priceLabel, localeCopy }: SubSaasLandingProps) {
+  const estadoBase = ESTADO_LABEL[app.estado]
+  const estado = localeCopy
+    ? {
+        ...estadoBase,
+        text:
+          app.estado === "disponible"
+            ? localeCopy.available
+            : app.estado === "beta"
+              ? localeCopy.beta
+              : localeCopy.soon,
+      }
+    : estadoBase
   const plataforma = PLATAFORMA_LABEL[app.plataforma]
   const PlataformaIcon = plataforma.icon
-  const activarHref = subSaasActivarHref(app)
+  const plataformaText =
+    localeCopy && app.plataforma === "ambos" ? localeCopy.bothPlatforms : plataforma.text
+  // US marketing slugs → register with slug for English brand; AR keeps SKU deep-link
+  const activarHref = localeCopy
+    ? activarRegisterHref(app.slug)
+    : subSaasActivarHref(app)
   const precioLabel =
-    app.precioArs === 0 ? "Incluido con trial" : `${fmtPrecioArs(app.precioArs)}/mes`
+    priceLabel ??
+    (app.precioArs === 0 ? "Incluido con trial" : `${fmtPrecioArs(app.precioArs)}/mes`)
+  const catalogLabel = localeCopy?.catalogLabel ?? "Catálogo de apps"
+  const trialCta =
+    localeCopy?.trialCta ?? `Probar ${app.trialDias} días gratis`
+  const contactCta = localeCopy?.contactCta ?? "Hablar con ventas"
+  const painsTitle = localeCopy?.painsTitle ?? "El dolor de hoy"
+  const outcomesTitle = localeCopy?.outcomesTitle ?? "Lo que ganás"
+  const stepsTitle = localeCopy?.stepsTitle ?? "Activación"
+  const readyLabel = localeCopy?.ready ?? "listo"
 
   return (
     <ClaverShell context="matrix">
@@ -60,17 +103,17 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
               href="/claver/apps"
               className="mb-4 inline-flex items-center text-sm text-white/60 hover:text-white"
             >
-              Catálogo de apps
+              {catalogLabel}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={estado.className}>{estado.text}</Badge>
               <Badge className="border-white/20 bg-white/10 text-white">
                 <PlataformaIcon className="mr-1.5 h-3.5 w-3.5" />
-                {plataforma.text}
+                {plataformaText}
               </Badge>
               <Badge variant="outline" className="border-white/20 text-white/80">
-                {app.listoPct}% listo
+                {app.listoPct}% {readyLabel}
               </Badge>
             </div>
             <p className="mt-4 text-sm font-medium text-emerald-300">{app.marca}</p>
@@ -88,13 +131,13 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
                   asChild
                 >
                   <Link href={activarHref}>
-                    Probar {app.trialDias} días gratis
+                    {trialCta}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               ) : (
                 <Button size="lg" className="h-12" disabled>
-                  Próximamente
+                  {localeCopy?.soon ?? "Próximamente"}
                 </Button>
               )}
               <Button
@@ -103,7 +146,7 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
                 className="h-12 border-white/25 bg-white/5 text-white hover:bg-white/10"
                 asChild
               >
-                <Link href="/claver/contacto">Hablar con ventas</Link>
+                <Link href="/claver/contacto">{contactCta}</Link>
               </Button>
             </div>
 
@@ -142,7 +185,7 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
           <div className="grid gap-12 lg:grid-cols-2">
             <ScrollReveal>
               <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-                El dolor de hoy
+                {painsTitle}
               </h2>
               <ul className="mt-6 space-y-3">
                 {app.pains.map((pain) => (
@@ -158,7 +201,7 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
             </ScrollReveal>
             <ScrollReveal>
               <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-                Lo que ganás
+                {outcomesTitle}
               </h2>
               <ul className="mt-6 space-y-3">
                 {app.outcomes.map((outcome) => (
@@ -180,7 +223,7 @@ export function SubSaasLanding({ app }: SubSaasLandingProps) {
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <ScrollReveal>
             <h2 className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900">
-              Activación en minutos
+              {stepsTitle}
             </h2>
             <p className="mt-2 text-slate-600">
               Mismo motor del ERP. Menú reducido con modo{" "}

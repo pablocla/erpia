@@ -28,7 +28,6 @@ import {
   Trash2,
   AlertTriangle,
   Calendar,
-  FileText,
 } from "lucide-react"
 import { PageShell, PageHeader } from "@/components/layout"
 import { Button } from "@/components/ui/button"

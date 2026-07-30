@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <aside
         className={cn(
-          "sidebar-container flex flex-col z-20 shrink-0 sticky top-0 h-screen overflow-hidden",
+          "sidebar-container flex flex-col z-20 shrink-0 h-full overflow-hidden",
           "transition-[width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
           "hidden md:flex",
           effectiveSidebarOpen ? "w-[17.5rem]" : "w-[4.5rem]",

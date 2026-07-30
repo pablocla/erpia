@@ -160,26 +160,52 @@ export class OTService {
       const prevMeta = (existing.metadata ?? {}) as Record<string, unknown>
       updateData.metadata = { ...prevMeta, ...patch.metadata }
 
-      // Impacto en Cuentas por Cobrar si el cobro queda PENDIENTE_PAGO y tiene monto
       const meta = patch.metadata as Record<string, unknown>
-      const monto = Number(meta.montoCobrado ?? 0)
-      if (meta.estadoPago === "PENDIENTE_PAGO" && monto > 0) {
+      const newStatus = patch.estado || existing.estado
+      
+      // Impacto en Stock de Insumos Consumidos
+      if (meta.insumosConsumidos && Array.isArray(meta.insumosConsumidos) && !prevMeta.stockDescontado && (newStatus === "LISTO" || newStatus === "ENTREGADO")) {
         try {
-          const fechaVenc = meta.fechaVencimientoCertificado
-            ? new Date(String(meta.fechaVencimientoCertificado))
-            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          const txStock = meta.insumosConsumidos
+            .filter((i: any) => i.productoId && Number(i.cantidad) > 0)
+            .map((insumo: any) => prisma.producto.update({
+              where: { id: Number(insumo.productoId), empresaId },
+              data: { stock: { decrement: Number(insumo.cantidad) } }
+            }))
+          if (txStock.length > 0) {
+            await prisma.$transaction(txStock)
+            // Save flag to prevent double discounting
+            updateData.metadata = { ...(updateData.metadata as object), stockDescontado: true }
+          }
+        } catch (e) {
+          console.error("Error al descontar stock", e)
+        }
+      }
 
-          await (prisma as any).cuentaCobrar.create({
+      // Impacto en Cuentas por Cobrar si el cobro queda PENDIENTE_PAGO y tiene monto
+      const monto = Number(meta.montoCobrado ?? 0)
+      if (meta.estadoPago === "PENDIENTE_PAGO" && monto > 0 && !meta.cuentaCobrarGeneradaId) {
+        try {
+          const fechaVenc = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000) // 15 días por defecto
+
+          const cxc = await prisma.cuentaCobrar.create({
             data: {
               clienteId: existing.clienteId,
-              montoTotal: monto,
+              montoOriginal: monto,
               saldo: monto,
+              fechaEmision: new Date(),
               fechaVencimiento: fechaVenc,
               estado: "pendiente",
+              observaciones: `Servicio de Fumigación OT #${existing.numero}`,
             },
           })
+          
+          updateData.metadata = {
+            ...(updateData.metadata as object),
+            cuentaCobrarGeneradaId: cxc.id
+          }
         } catch (e) {
-          console.warn("[OTService] No se pudo generar automatismo de CuentaCobrar:", e)
+          console.error("[OTService] No se pudo generar automatismo de CuentaCobrar:", e)
         }
       }
     }

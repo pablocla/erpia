@@ -86,7 +86,7 @@ export default async function RootLayout({
       </head>
       <body className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} ${inter.variable} font-sans antialiased`}>
         <I18nProvider locale={locale} messages={messages}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <ThemeConfigProvider>
               {children}
               <CommandPalette />

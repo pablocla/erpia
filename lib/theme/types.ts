@@ -83,7 +83,7 @@ export const PALETTE_COLORS: Record<Palette, { label: string; swatch: string }> 
 
 export const DEFAULT_TEMA_CONFIG: EmpresaTemaConfig = {
   version: 1,
-  mode: "system",
+  mode: "light",
   palette: "porcelain",
   density: "default",
   sidebarStyle: "floating",

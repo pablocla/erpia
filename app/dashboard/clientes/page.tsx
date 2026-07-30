@@ -36,8 +36,8 @@ import { useConfirm } from "@/hooks/use-confirm"
 import { useToast } from "@/hooks/use-toast"
 import { FilterPanel, type FilterField, type FilterValues } from "@/components/filter-panel"
 import { CuitPadronLookup, mapCondicionIvaPadron } from "@/components/fiscal/cuit-padron-lookup"
-
-/* ---------- helpers ---------- */
+import { HistorialFumigacion } from "@/components/clientes/historial-fumigacion"
+import { Bug } from "lucide-react"
 const authHeaders = (): HeadersInit => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -508,12 +508,13 @@ export default function ClientesPage() {
           </DialogHeader>
           {vistaDetalle && (
             <Tabs defaultValue="general" className="mt-2">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
                 <TabsTrigger value="contacto">Contacto</TabsTrigger>
                 <TabsTrigger value="financiero">Financiero</TabsTrigger>
                 <TabsTrigger value="comercial">Comercial</TabsTrigger>
+                <TabsTrigger value="fumigacion"><Bug className="w-3.5 h-3.5 mr-1"/> Fumigación</TabsTrigger>
               </TabsList>
               <TabsContent value="general" className="space-y-2 mt-4">
                 <DatoRO label="Código" value={vistaDetalle.codigo} />
@@ -574,6 +575,9 @@ export default function ClientesPage() {
                 <DatoRO label="Lista Precio" value={vistaDetalle.listaPrecio?.nombre} />
                 <DatoRO label="Zona Geográfica" value={vistaDetalle.zonaGeografica?.nombre} />
               </TabsContent>
+              <TabsContent value="fumigacion" className="mt-4">
+                <HistorialFumigacion clienteId={vistaDetalle.id} />
+              </TabsContent>
             </Tabs>
           )}
         </DialogContent>
@@ -588,12 +592,13 @@ export default function ClientesPage() {
           </DialogHeader>
 
           <Tabs defaultValue="general" className="mt-2">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general"><Building2 className="h-3.5 w-3.5 mr-1" />General</TabsTrigger>
               <TabsTrigger value="fiscal"><FileText className="h-3.5 w-3.5 mr-1" />Fiscal</TabsTrigger>
               <TabsTrigger value="contacto"><MapPin className="h-3.5 w-3.5 mr-1" />Contacto</TabsTrigger>
               <TabsTrigger value="financiero"><DollarSign className="h-3.5 w-3.5 mr-1" />Financiero</TabsTrigger>
               <TabsTrigger value="comercial"><ShoppingCart className="h-3.5 w-3.5 mr-1" />Comercial</TabsTrigger>
+              <TabsTrigger value="fumigacion"><Bug className="h-3.5 w-3.5 mr-1" />Visitas</TabsTrigger>
             </TabsList>
 
             {/* ----- TAB: General ----- */}

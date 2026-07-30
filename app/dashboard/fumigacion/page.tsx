@@ -26,6 +26,9 @@ import {
   Clock,
   Edit,
   Trash2,
+  AlertTriangle,
+  Calendar,
+  FileText,
 } from "lucide-react"
 import { PageShell, PageHeader } from "@/components/layout"
 import { Button } from "@/components/ui/button"
@@ -115,8 +118,14 @@ export default function FumigacionPage() {
     montoCobrado: "",
     estadoPago: "PENDIENTE_PAGO",
     fechaVencimientoCertificado: "",
+    insumosConsumidos: [] as { productoId: string, cantidad: string, nombre: string }[],
   })
   const [updating, setUpdating] = useState(false)
+
+  const { data: productosRaw } = useAuthFetch<any>("/api/productos")
+  const productos = useMemo(() => {
+    return Array.isArray(productosRaw) ? productosRaw.filter((p: any) => p.categoria === "Insumos" || p.tipo === "Insumo" || true) : [] // Por ahora todos
+  }, [productosRaw])
 
   const { data: otsRaw, mutate: mutateOts } = useAuthFetch<unknown>("/api/ot")
   const otsCount = useMemo(() => {
@@ -124,6 +133,12 @@ export default function FumigacionPage() {
     const arr = (otsRaw as { ots?: unknown[] } | null)?.ots
     return Array.isArray(arr) ? arr.length : 0
   }, [otsRaw])
+
+  const { data: alertasRaw } = useAuthFetch<any>("/api/fumigacion/alertas")
+  const alertasCriticas = useMemo(() => {
+    if (!alertasRaw?.alertas) return []
+    return alertasRaw.alertas.filter((a: any) => a.diasParaVencer <= 7)
+  }, [alertasRaw])
 
   const cargarRuta = useCallback(async (optimizarProximidad = false) => {
     setLoading(true)
@@ -223,17 +238,19 @@ export default function FumigacionPage() {
     }
   }
 
-  function abrirEdicion(parada: FumigacionParada) {
-    setEditingParada(parada)
+  function abrirEdicion(p: FumigacionParada) {
+    setEditingParada(p)
+    const meta = (p as any).metadata || {}
     setEditForm({
-      estado: parada.estado,
-      tecnicoAsignado: parada.tecnicoAsignado ?? "",
-      fechaPrometida: parada.fechaPrometida ? parada.fechaPrometida.slice(0, 10) : fecha,
-      descripcion: parada.titulo ?? "",
-      observacionesVisita: (parada as any).observacionesVisita ?? "",
-      montoCobrado: (parada as any).montoCobrado ? String((parada as any).montoCobrado) : "",
-      estadoPago: (parada as any).estadoPago ?? "PENDIENTE_PAGO",
-      fechaVencimientoCertificado: (parada as any).fechaVencimientoCertificado ? String((parada as any).fechaVencimientoCertificado).slice(0, 10) : "",
+      estado: p.estado as string,
+      tecnicoAsignado: p.tecnicoAsignado || "",
+      fechaPrometida: p.fechaPrometida?.substring(0, 10) || hoyIso(),
+      descripcion: p.descripcion || "",
+      observacionesVisita: (meta.observacionesVisita as string) || "",
+      montoCobrado: (meta.montoCobrado as string) || "",
+      estadoPago: (meta.estadoPago as string) || "PENDIENTE_PAGO",
+      fechaVencimientoCertificado: (meta.fechaVencimientoCertificado as string) || "",
+      insumosConsumidos: [],
     })
     setEditDialogOpen(true)
   }
@@ -255,6 +272,7 @@ export default function FumigacionPage() {
             montoCobrado: editForm.montoCobrado ? Number(editForm.montoCobrado) : 0,
             estadoPago: editForm.estadoPago,
             fechaVencimientoCertificado: editForm.fechaVencimientoCertificado,
+            insumosConsumidos: editForm.insumosConsumidos,
           },
         }),
       })
@@ -283,10 +301,16 @@ export default function FumigacionPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Fumigación · Visitas del día"
-        description="Armado de hoja de ruta con mapa gratis, navegación móvil en 1 toque y cobranzas de abonos."
+        title="Fumigación & Servicios Especiales"
+        description="Ruteo diario, emisión de certificados y seguimiento de cobros en campo."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" asChild className="h-11 px-4">
+              <Link href="/dashboard/fumigacion/calendario">
+                <Calendar className="mr-2 h-4 w-4" />
+                Calendario
+              </Link>
+            </Button>
             <Button size="lg" className="h-11 px-5 text-sm font-semibold touch-target shadow-sm" onClick={() => setOtDialogOpen(true)}>
               <Plus className="mr-2 h-5 w-5" />
               + Nueva visita
@@ -295,9 +319,48 @@ export default function FumigacionPage() {
               <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
               Actualizar
             </Button>
+            <Button variant="outline" size="lg" className="h-11 px-4 touch-target bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800" onClick={() => {
+              const tecnicoQuery = tecnicoFiltro && tecnicoFiltro !== "TODOS" ? `&tecnico=${encodeURIComponent(tecnicoFiltro)}` : ""
+              window.open(`/api/fumigacion/ruta?fecha=${encodeURIComponent(fecha)}${tecnicoQuery}&export=csv`, "_blank")
+            }}>
+              <FileText className="mr-2 h-4 w-4" />
+              Exportar CSV
+            </Button>
           </div>
         }
       />
+
+      {/* Alertas de Vencimiento */}
+      {alertasCriticas.length > 0 && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900/50 p-4 text-sm text-red-900 dark:text-red-200">
+          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-red-800 dark:text-red-300 text-base mb-1">
+              Atención: {alertasCriticas.length} certificado{alertasCriticas.length > 1 ? "s" : ""} por vencer
+            </h4>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              {alertasCriticas.slice(0, 5).map((alerta: any) => (
+                <li key={alerta.otId}>
+                  <Link href={`/dashboard/clientes/${alerta.clienteId}`} className="font-medium hover:underline">
+                    {alerta.clienteNombre}
+                  </Link>
+                  {" — "}
+                  {alerta.diasParaVencer < 0 
+                    ? <span className="font-bold text-red-700 dark:text-red-400">Vencido hace {Math.abs(alerta.diasParaVencer)} días</span>
+                    : alerta.diasParaVencer === 0 
+                      ? <span className="font-bold text-amber-600 dark:text-amber-400">Vence HOY</span>
+                      : <span>Vence en {alerta.diasParaVencer} días</span>
+                  }
+                  {alerta.telefono && <span className="text-muted-foreground ml-1">({alerta.telefono})</span>}
+                </li>
+              ))}
+              {alertasCriticas.length > 5 && (
+                <li className="text-muted-foreground font-medium">...y {alertasCriticas.length - 5} más</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Micro hint para usuarios no técnicos sobre el sol/luna */}
       {showHint && (
@@ -314,73 +377,74 @@ export default function FumigacionPage() {
         </div>
       )}
 
-      {/* Acciones Rápidas (Grandes & Touch-friendly para celular) */}
-      <div className="grid gap-2.5 sm:gap-3 grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6">
-        {[
-          { label: "+ Nueva visita", icon: Plus, onClick: () => setOtDialogOpen(true), primary: true },
-          { href: "/dashboard/clientes", label: "Clientes", icon: Users, hint: "Alta y datos" },
-          { href: "/dashboard/ot", label: "Visitas abiertas", icon: ClipboardList, hint: `${otsCount} activas` },
-          { href: "/dashboard/cuentas-cobrar", label: "Cobrar saldos", icon: Wallet, hint: "CxC y cobrar" },
-          { href: "/dashboard/ventas", label: "Facturar", icon: FileText, hint: "Factura A/B/C" },
-          { href: "/dashboard/facturacion-recurrente", label: "Cobrar abonos", icon: Wallet, hint: "Mensuales" },
-          { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays, hint: "Turnos" },
-          { href: "/dashboard/productos", label: "Insumos", icon: Bug, hint: "Químicos" },
-        ].map((a, idx) => (
-          a.onClick ? (
-            <button
-              key={idx}
-              type="button"
-              onClick={a.onClick}
-              className="group flex flex-col items-center justify-center p-3 rounded-xl border border-primary bg-primary text-primary-foreground shadow-sm hover:opacity-95 transition min-h-[72px] text-center"
-            >
-              <a.icon className="h-5 w-5 mb-1 shrink-0" />
-              <span className="font-semibold text-xs leading-tight">{a.label}</span>
-            </button>
-          ) : (
-            <Link key={a.href} href={a.href}>
-              <Card className="h-full transition hover:border-primary/50 hover:shadow-sm">
-                <CardContent className="flex flex-col items-center justify-center p-3 min-h-[72px] text-center">
-                  <div className="rounded-lg bg-primary/10 p-1.5 mb-1">
-                    <a.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="font-semibold text-xs leading-tight text-foreground">{a.label}</span>
-                </CardContent>
-              </Card>
-            </Link>
-          )
-        ))}
-      </div>
+      {/* Accesos Rápido y Días de la Semana (Diseño Empaquetado) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 bg-muted/20 p-2 rounded-xl border">
+        <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
+          {[
+            { label: "+ Visita", icon: Plus, onClick: () => setOtDialogOpen(true), primary: true },
+            { href: "/dashboard/clientes", label: "Clientes", icon: Users },
+            { href: "/dashboard/ot", label: "Visitas", icon: ClipboardList },
+            { href: "/dashboard/cuentas-cobrar", label: "Cobrar CxC", icon: Wallet },
+            { href: "/dashboard/ventas", label: "Facturar", icon: FileText },
+            { href: "/dashboard/productos", label: "Insumos", icon: Bug },
+          ].map((a, idx) => (
+            a.onClick ? (
+              <Button
+                key={idx}
+                size="sm"
+                className="h-8 gap-1.5 font-bold text-xs bg-primary text-primary-foreground shadow-sm"
+                onClick={a.onClick}
+              >
+                <a.icon className="h-3.5 w-3.5" />
+                <span>{a.label}</span>
+              </Button>
+            ) : (
+              <Button
+                key={a.href}
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs font-semibold bg-background"
+                asChild
+              >
+                <Link href={a.href}>
+                  <a.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{a.label}</span>
+                </Link>
+              </Button>
+            )
+          ))}
+        </div>
 
-      {/* Selector de Días de la Semana Rápido */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-3 bg-muted/20 p-2 rounded-xl border overflow-x-auto">
-        <span className="text-xs font-bold text-muted-foreground mr-1 px-1">Días:</span>
-        <Button
-          variant={fecha === hoyIso() ? "default" : "outline"}
-          size="sm"
-          className="h-8 px-3 text-xs font-semibold rounded-lg"
-          onClick={() => setFecha(hoyIso())}
-        >
-          Hoy
-        </Button>
-
-        {[
-          { label: "Lun", dayIdx: 1 },
-          { label: "Mar", dayIdx: 2 },
-          { label: "Mié", dayIdx: 3 },
-          { label: "Jue", dayIdx: 4 },
-          { label: "Vie", dayIdx: 5 },
-          { label: "Sáb", dayIdx: 6 },
-        ].map((d) => (
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <span className="text-[11px] font-bold text-muted-foreground mr-1">Día:</span>
           <Button
-            key={d.label}
-            variant="outline"
+            variant={fecha === hoyIso() ? "default" : "outline"}
             size="sm"
-            className="h-8 px-2.5 text-xs font-medium rounded-lg"
-            onClick={() => irADiaSemana(d.dayIdx)}
+            className="h-7 px-2.5 text-xs font-bold rounded-md"
+            onClick={() => setFecha(hoyIso())}
           >
-            {d.label}
+            Hoy
           </Button>
-        ))}
+
+          {[
+            { label: "Lun", dayIdx: 1 },
+            { label: "Mar", dayIdx: 2 },
+            { label: "Mié", dayIdx: 3 },
+            { label: "Jue", dayIdx: 4 },
+            { label: "Vie", dayIdx: 5 },
+            { label: "Sáb", dayIdx: 6 },
+          ].map((d) => (
+            <Button
+              key={d.label}
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs font-medium rounded-md hover:bg-background"
+              onClick={() => irADiaSemana(d.dayIdx)}
+            >
+              {d.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Barra de Filtro de Fecha, Firmadores & Resumen de Visitas */}
@@ -397,15 +461,16 @@ export default function FumigacionPage() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Firmador / Técnico</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">👤 Quién hace las visitas hoy</label>
             <select
               value={tecnicoFiltro}
               onChange={(e) => setTecnicoFiltro(e.target.value)}
-              className="h-9 px-3 text-xs font-medium rounded-md border border-input bg-background text-foreground"
+              className="h-9 px-3 text-xs font-medium rounded-md border border-input bg-background text-foreground shadow-sm"
             >
-              <option value="TODOS">👥 Todos los firmadores</option>
-              <option value="Firmador 1">👤 Firmador 1</option>
-              <option value="Firmador 2">👤 Firmador 2</option>
+              <option value="TODOS">👥 Todas las personas (Ruta completa)</option>
+              <option value="Carina Gallardo">👤 Carina Gallardo</option>
+              <option value="Germán Almirón">👤 Germán Almirón</option>
+              <option value="Pablo Test">👤 Pablo Test</option>
             </select>
           </div>
 
@@ -615,6 +680,14 @@ export default function FumigacionPage() {
                           </a>
                         </Button>
                       )}
+                      {(p.estado === "LISTO" || p.estado === "ENTREGADO") && (
+                        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 gap-1 text-black dark:text-white border-neutral-300" asChild>
+                          <Link href={`/dashboard/fumigacion/certificado/${p.ordenServicioId}`} target="_blank">
+                            <FileText className="h-3 w-3" />
+                            Certificado
+                          </Link>
+                        </Button>
+                      )}
                     </div>
 
                     <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2" onClick={() => abrirEdicion(p)}>
@@ -821,13 +894,18 @@ export default function FumigacionPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="editTecnico">Técnico / Fumigador asignado</Label>
-              <Input
+              <Label htmlFor="editTecnico">Persona encargada de la visita (Firmador)</Label>
+              <select
                 id="editTecnico"
-                placeholder="Ej: Firmador 1 / Marcelo"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs font-semibold shadow-sm"
                 value={editForm.tecnicoAsignado}
                 onChange={(e) => setEditForm((p) => ({ ...p, tecnicoAsignado: e.target.value }))}
-              />
+              >
+                <option value="">-- Sin asignar --</option>
+                <option value="Carina Gallardo">👤 Carina Gallardo</option>
+                <option value="Germán Almirón">👤 Germán Almirón</option>
+                <option value="Pablo Test">👤 Pablo Test</option>
+              </select>
             </div>
 
             <div className="grid gap-2">
@@ -866,7 +944,50 @@ export default function FumigacionPage() {
               </div>
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 border-t pt-2 mt-2">
+              <Label>Insumos Consumidos (Descuento de Stock)</Label>
+              {editForm.insumosConsumidos.map((insumo, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <span className="text-xs flex-1 truncate">{insumo.nombre}</span>
+                  <Input 
+                    type="number" 
+                    className="w-20 h-7 text-xs" 
+                    value={insumo.cantidad} 
+                    onChange={e => {
+                      const newArr = [...editForm.insumosConsumidos]
+                      newArr[idx].cantidad = e.target.value
+                      setEditForm(p => ({ ...p, insumosConsumidos: newArr }))
+                    }}
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-500" onClick={() => {
+                    const newArr = [...editForm.insumosConsumidos]
+                    newArr.splice(idx, 1)
+                    setEditForm(p => ({ ...p, insumosConsumidos: newArr }))
+                  }}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              ))}
+              <div className="flex gap-2 items-center">
+                <select id="select-insumo" className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs">
+                  <option value="">-- Agregar producto --</option>
+                  {productos.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.nombre} (Stock: {p.stock})</option>
+                  ))}
+                </select>
+                <Button type="button" variant="secondary" size="sm" onClick={() => {
+                  const select = document.getElementById("select-insumo") as HTMLSelectElement
+                  if (!select.value) return
+                  const p = productos.find((x:any) => String(x.id) === select.value)
+                  if (!p) return
+                  setEditForm(prev => ({
+                    ...prev,
+                    insumosConsumidos: [...prev.insumosConsumidos, { productoId: String(p.id), cantidad: "1", nombre: p.nombre }]
+                  }))
+                  select.value = ""
+                }}>Agregar</Button>
+              </div>
+            </div>
+
+            <div className="grid gap-2 border-t pt-2 mt-2">
               <Label htmlFor="editVencCert">Vencimiento del Certificado / Próxima desinsectación</Label>
               <Input
                 id="editVencCert"

@@ -112,12 +112,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="dashboard-canvas dashboard-shell flex min-h-svh relative overflow-x-hidden bg-background">
+    <div className="dashboard-canvas dashboard-shell flex h-[100dvh] relative overflow-hidden bg-background">
       <div className="theme-canvas-decor pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,color-mix(in_oklab,var(--primary)_6%,transparent),transparent)]" />
 
       <aside
         className={cn(
-          "sidebar-container flex flex-col z-20 shrink-0 sticky top-0 min-h-0",
+          "sidebar-container flex flex-col z-20 shrink-0 sticky top-0 h-screen overflow-hidden",
           "transition-[width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
           "hidden md:flex",
           effectiveSidebarOpen ? "w-[17.5rem]" : "w-[4.5rem]",
@@ -208,14 +208,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             isPosShell ? "overflow-hidden bg-background" : "overflow-auto bg-background/50",
           )}
         >
-          <div className={cn(isPosShell ? "h-full p-0" : "p-3 sm:p-6 dashboard-main-pb")}>
-            {!isPosShell && (
+          <div className="p-3 sm:p-6 dashboard-main-pb">
+            {!isPosShell && !pathname.startsWith("/dashboard/fumigacion") && (
               <div className="mx-auto w-full max-w-[1400px] mb-3">
                 <DashboardAlertsHub />
               </div>
             )}
             {!isPosShell && modoLite === "completo" && <Breadcrumbs className="mb-4 max-lg:mb-3" />}
-            {!isPosShell && isLiteShell && (
+            {!isPosShell && isLiteShell && !pathname.startsWith("/dashboard/fumigacion") && (
               <LiteBreadcrumb
                 modoLite={modoLite}
                 productosSku={productosSku}
@@ -229,7 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isPosShell && "h-full",
               )}
             >
-              {isLiteShell && !isPosShell && (
+              {isLiteShell && !isPosShell && !pathname.startsWith("/dashboard/fumigacion") && (
                 <ProductContextBanner modoLite={modoLite} productosSku={productosSku} className="mb-4" />
               )}
               {operationalRoute ? (

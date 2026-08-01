@@ -30,6 +30,7 @@ export interface ComercialAccessPayload {
   precioUpgradeArs?: number
   bloqueoTotal?: boolean
   mpAutorizado?: boolean
+  modoLite?: string | null
 }
 
 export function useComercialAccess() {

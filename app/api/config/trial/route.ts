@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
       precioUpgradeArs: access.precioUpgradeArs,
       bloqueoTotal: access.bloqueoTotal,
       mpAutorizado: access.mpAutorizado,
+      modoLite: access.modoLite,
     },
   })
 }

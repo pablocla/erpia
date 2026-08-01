@@ -42,6 +42,7 @@ export interface ComercialAccessState {
   bloqueoTotal: boolean
   bloqueoEscrituraGlobal: boolean
   mpAutorizado: boolean
+  modoLite: string | null
 }
 
 async function empresaBilling(empresaId: number) {
@@ -189,6 +190,7 @@ export async function getComercialAccessState(empresaId: number): Promise<Comerc
     bloqueoTotal,
     bloqueoEscrituraGlobal,
     mpAutorizado,
+    modoLite: empresa?.modoLite ?? null,
   }
 }
 

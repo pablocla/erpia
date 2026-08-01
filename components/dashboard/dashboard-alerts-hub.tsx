@@ -69,7 +69,7 @@ export function DashboardAlertsHub() {
   }, [token, rol])
 
   useEffect(() => {
-    if (!ROLES_DRAFT.has(rol)) return
+    if (!ROLES_DRAFT.has(rol) || access?.modoLite !== "pos") return
     const refresh = () => {
       let total = contarVentasSuspendidas()
       try {
@@ -90,7 +90,7 @@ export function DashboardAlertsHub() {
       window.removeEventListener("storage", onStorage)
       clearInterval(interval)
     }
-  }, [rol])
+  }, [rol, access?.modoLite])
 
   async function iniciarSuscripcion() {
     setSubscribing(true)

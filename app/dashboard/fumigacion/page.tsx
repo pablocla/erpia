@@ -679,6 +679,19 @@ export default function FumigacionPage() {
                 </Button>
               </div>
             )}
+            {alertasCriticas.length > 0 && (
+              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+                  <p className="text-sm text-red-700 font-semibold">
+                    Atención: Hay {alertasCriticas.length} certificados vencidos o por vencer en los próximos 7 días.
+                  </p>
+                  <Button asChild variant="link" className="ml-auto text-red-700 underline h-auto p-0">
+                    <Link href="/dashboard/fumigacion/alertas">Ver detalles</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
             {ruta?.paradas.map((p, idx) => {
               const isSelected = selectedId === p.id
               const gmapsSingle = buildGoogleMapsUrl(p)

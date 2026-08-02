@@ -450,6 +450,25 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
     ],
     primaryAction: { label: "Abrir ruta", href: "/vendedor" },
   },
+  fumigacion: {
+    slug: "fumigacion",
+    marca: "Claver Fumigación",
+    icono: MapPin,
+    tabs: [
+      { href: "/dashboard/fumigacion", icon: MapPin, label: "Ruta / Mapa" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      { href: "/dashboard/ventas", icon: ShoppingBag, label: "Facturar" },
+      { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "paradas", label: "Paradas", icon: MapPin, format: "number" },
+      { id: "clientes", label: "Clientes", icon: Users, format: "number" },
+      { id: "facturado", label: "Facturado", icon: Wallet, format: "currency" },
+      { id: "pendientes", label: "Pendientes", icon: Calendar, format: "number" },
+    ],
+    primaryAction: { label: "Ver Ruta", href: "/dashboard/fumigacion" },
+  },
 }
 
 // Asegura shell para cualquier slug sub-saas aún no listado explícitamente

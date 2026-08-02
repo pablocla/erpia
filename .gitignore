@@ -33,3 +33,8 @@ next-env.d.ts
 
 # Claver Lab local state (per-tenant JSON)
 /data/claver-lab/
+
+# Certificados AFIP y Claves Privadas
+certificadosafip/
+*.key
+*.pfx

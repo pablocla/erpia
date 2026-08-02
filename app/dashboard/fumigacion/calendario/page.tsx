@@ -4,12 +4,14 @@ import { useState, useEffect, useMemo } from "react"
 import { PageShell, PageHeader } from "@/components/layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
+import { useRouter } from "next/navigation"
 
 export default function CalendarioFumigacionPage() {
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   
   // Obtenemos todas las OTs. En una app real, deberíamos filtrar por mes en el backend.
@@ -62,16 +64,14 @@ export default function CalendarioFumigacionPage() {
 
   return (
     <PageShell>
+      <div className="mb-4">
+        <Button variant="outline" onClick={() => router.push("/dashboard/fumigacion")} size="sm">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Volver al Mapa
+        </Button>
+      </div>
       <PageHeader
-        title="Calendario de Fumigaciones"
-        description="Vista mensual de visitas programadas y vencimientos."
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/fumigacion">Volver a Mapa del Día</Link>
-            </Button>
-          </div>
-        }
+        title="Calendario de Fumigación"
+        description="Vista mensual de visitas y rutas planificadas"
       />
       <div className="space-y-4">
         <div className="flex items-center justify-between bg-card p-4 rounded-lg border shadow-sm">

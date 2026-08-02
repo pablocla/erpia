@@ -48,6 +48,7 @@ export function OTDialog({
   const [saving, setSaving] = useState(false)
   const [clientes, setClientes] = useState<ClienteOpt[]>([])
   const [formData, setFormData] = useState({
+    clienteSearch: "",
     clienteId: "",
     titulo: "",
     descripcion: "",
@@ -79,7 +80,8 @@ export function OTDialog({
           })),
         )
         if (list.length && !formData.clienteId) {
-          setFormData((p) => ({ ...p, clienteId: String(list[0].id) }))
+          const first = list[0]
+          setFormData((p) => ({ ...p, clienteId: String(first.id), clienteSearch: `${first.nombre}${first.direccion ? ` · ${first.direccion}` : " · sin dirección"}` }))
         }
       })
       .catch(() => setClientes([]))
@@ -185,22 +187,25 @@ export function OTDialog({
         <form onSubmit={handleSubmit} className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>Cliente</Label>
-            <Select
-              value={formData.clienteId}
-              onValueChange={(v) => setFormData((p) => ({ ...p, clienteId: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Elegir cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.nombre}
-                    {c.direccion ? ` · ${c.direccion}` : " · sin dirección"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              list="clientesList"
+              placeholder="Escribir para buscar cliente..."
+              value={formData.clienteSearch}
+              onChange={(e) => {
+                const val = e.target.value
+                const match = clientes.find(c => `${c.nombre}${c.direccion ? ` · ${c.direccion}` : " · sin dirección"}` === val)
+                setFormData(p => ({
+                  ...p,
+                  clienteSearch: val,
+                  clienteId: match ? String(match.id) : ""
+                }))
+              }}
+            />
+            <datalist id="clientesList">
+              {clientes.map((c) => (
+                <option key={c.id} value={`${c.nombre}${c.direccion ? ` · ${c.direccion}` : " · sin dirección"}`} />
+              ))}
+            </datalist>
             {clientes.length === 0 && (
               <p className="text-xs text-amber-600">
                 No hay clientes. Cargá al menos uno con dirección en Clientes.

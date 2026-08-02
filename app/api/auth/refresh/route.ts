@@ -23,12 +23,18 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
 
-    // Decode without verification first to get payload
-    let decoded: { userId?: number; email?: string; rol?: string; empresaId?: number; iat?: number }
+    // Verify signature first, allow if it's just expired
+    let decoded: any
     try {
-      decoded = decodeJwt(token) as typeof decoded
-    } catch {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 })
+      const { jwtVerify } = await import("jose")
+      const result = await jwtVerify(token, JWT_SECRET)
+      decoded = result.payload
+    } catch (error: any) {
+      if (error?.code === "ERR_JWT_EXPIRED") {
+        decoded = decodeJwt(token)
+      } else {
+        return NextResponse.json({ error: "Token inválido" }, { status: 401 })
+      }
     }
 
     if (!decoded?.userId) {

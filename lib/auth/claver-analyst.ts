@@ -31,20 +31,26 @@ export function isClaverAnalyst(email: string, rol?: string): boolean {
 
 export async function getAnalystEmpresaScope(
   email: string,
-): Promise<{ mode: "all" } | { mode: "assigned"; empresaIds: number[] }> {
+): Promise<{ mode: "all" } | { mode: "assigned"; empresaIds: number[] } | { mode: "none" }> {
   const db = prisma as any
   const asignaciones = await db.analistaAsignacion.findMany({
     where: { analistaEmail: email.trim().toLowerCase(), activo: true },
     select: { empresaId: true },
   })
 
-  if (asignaciones.length === 0) return { mode: "all" }
+  if (asignaciones.length === 0) {
+    if (process.env.CLAVER_ANALYST_GLOBAL === "1" || email.trim().toLowerCase() === CLAVER_OWNER_EMAIL.toLowerCase()) {
+      return { mode: "all" }
+    }
+    return { mode: "none" }
+  }
   return { mode: "assigned", empresaIds: asignaciones.map((a: { empresaId: number }) => a.empresaId) }
 }
 
 export async function canAnalystAccessEmpresa(email: string, empresaId: number): Promise<boolean> {
   const scope = await getAnalystEmpresaScope(email)
   if (scope.mode === "all") return true
+  if (scope.mode === "none") return false
   return scope.empresaIds.includes(empresaId)
 }
 

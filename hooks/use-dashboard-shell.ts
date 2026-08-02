@@ -38,9 +38,35 @@ export function useDashboardShell() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const compactShell = useCompactShell()
   const [mounted, setMounted] = useState(false)
-  const [modulosActivos, setModulosActivos] = useState<Record<string, boolean> | null>(null)
+  
+  // Inicializar desde localStorage para evitar FOUC
+  const [modulosActivos, setModulosActivos] = useState<Record<string, boolean> | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("claver_modulos_activos")
+        if (cached) return JSON.parse(cached)
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    return null
+  })
+  
   const [featuresActivas, setFeaturesActivas] = useState<Record<string, boolean> | null>(null)
-  const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
+  
+  // Inicializar desde localStorage para evitar FOUC
+  const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("claver_productos_sku")
+        if (cached) return JSON.parse(cached)
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    return null
+  })
+  
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const [modoLite, setModoLite] = useState<string>("completo")
@@ -155,7 +181,13 @@ export function useDashboardShell() {
   const cargarModulos = useCallback(async () => {
     try {
       const res = await fetch("/api/config/modulos", { headers: authHeaders() })
-      if (res.ok) setModulosActivos(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        setModulosActivos(data)
+        if (typeof window !== "undefined") {
+          localStorage.setItem("claver_modulos_activos", JSON.stringify(data))
+        }
+      }
     } catch {
       /* use all modules */
     }
@@ -195,6 +227,9 @@ export function useDashboardShell() {
       const data = await res.json()
       if (data.mapa && typeof data.mapa === "object") {
         setProductosSku(data.mapa as Record<string, boolean>)
+        if (typeof window !== "undefined") {
+          localStorage.setItem("claver_productos_sku", JSON.stringify(data.mapa))
+        }
       }
     } catch {
       setProductosSku(null)

@@ -135,6 +135,16 @@ export async function POST(request: NextRequest) {
 
     const db = prisma as any
 
+    let codigoFinal = rest.codigo
+    if (!codigoFinal) {
+      const maxId = await db.cliente.aggregate({
+        where: { empresaId: ctx.auth.empresaId },
+        _max: { id: true }
+      })
+      const nextNum = (maxId._max.id || 0) + 1
+      codigoFinal = `CLI-${String(nextNum).padStart(4, "0")}`
+    }
+
     // Obtener modoLite y rubro para validación de calidad
     const empresa = await db.empresa.findUnique({ where: { id: ctx.auth.empresaId }, select: { modoLite: true, rubro: true } })
     const evalCtx = { modoLite: empresa?.modoLite || "pos", rubro: empresa?.rubro || "kiosco" }
@@ -147,6 +157,7 @@ export async function POST(request: NextRequest) {
     const cliente = await db.cliente.create({
       data: {
         ...rest,
+        codigo: codigoFinal,
         limiteCredito: limiteCredito ?? 0,
         descuentoPct: descuentoPct ?? 0,
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,

@@ -67,6 +67,7 @@ export function HistorialFumigacion({ clienteId }: { clienteId: number }) {
             <TableHead>Servicio / Plaga</TableHead>
             <TableHead>Técnico</TableHead>
             <TableHead>Cobro</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -91,6 +92,13 @@ export function HistorialFumigacion({ clienteId }: { clienteId: number }) {
                   <span className="text-muted-foreground">-</span>
                 )}
                 {v.metadata?.montoCobrado ? <div className="text-xs mt-1 font-medium">${v.metadata.montoCobrado}</div> : null}
+              </TableCell>
+              <TableCell className="text-right">
+                {(v.estado === "LISTO" || v.estado === "ENTREGADO") && (
+                  <a href={`/api/fumigacion/certificado/${v.id}`} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">
+                    Ver Certificado
+                  </a>
+                )}
               </TableCell>
             </TableRow>
           ))}

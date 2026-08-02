@@ -102,6 +102,7 @@ export default function FumigacionPage() {
   const [ruta, setRuta] = useState<FumigacionRutaDia | null>(null)
   const [kpis, setKpis] = useState<{ visitasHoy: number, visitasCompletadas: number, visitasPendientes: number, clientesAtrasados: number, isAdmin: boolean } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [geocoding, setGeocoding] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [otDialogOpen, setOtDialogOpen] = useState(false)
@@ -182,6 +183,22 @@ export default function FumigacionPage() {
       setLoading(false)
     }
   }, [fecha, tecnicoFiltro])
+
+  const geocodificarBatch = useCallback(async () => {
+    setGeocoding(true)
+    setError(null)
+    try {
+      const res = await authFetch("/api/fumigacion/geocode-batch", { method: "POST" })
+      if (!res.ok) throw new Error("Error al geocodificar")
+      const data = await res.json()
+      alert(`Geocodificados: ${data.geocoded}. Restantes: ${data.remaining}`)
+      cargarRuta()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error de red")
+    } finally {
+      setGeocoding(false)
+    }
+  }, [cargarRuta])
 
   useEffect(() => {
     void cargarRuta()
@@ -340,6 +357,10 @@ export default function FumigacionPage() {
             <Button variant="outline" size="lg" className="h-11 px-4 touch-target" onClick={() => void cargarRuta()} disabled={loading}>
               <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
               Actualizar
+            </Button>
+            <Button variant="outline" size="lg" className="h-11 px-4 touch-target" onClick={() => void geocodificarBatch()} disabled={geocoding}>
+              <MapPin className={cn("mr-2 h-4 w-4", geocoding && "animate-bounce")} />
+              Geocodificar
             </Button>
             <Button variant="outline" size="lg" className="h-11 px-4 touch-target bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800" onClick={() => {
               const tecnicoQuery = tecnicoFiltro && tecnicoFiltro !== "TODOS" ? `&tecnico=${encodeURIComponent(tecnicoFiltro)}` : ""

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       fecha,
       tecnico: tecnico || undefined,
       optimizarProximidad,
-      maxGeocode: 12,
+      maxGeocode: 0,
     })
 
     if (formatoExportacion === "csv") {

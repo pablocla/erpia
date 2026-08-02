@@ -45,7 +45,7 @@ export async function geocodeQuery(query: string): Promise<GeocodeResult | null>
 
   const res = await fetch(url.toString(), {
     headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    next: { revalidate: 86400 },
+    cache: "no-store",
   })
 
   if (!res.ok) return null

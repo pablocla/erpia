@@ -384,7 +384,7 @@ export default function ClientesPage() {
                   const res = await fetch("/api/clientes", {
                     method: "POST",
                     headers: authHeaders(),
-                    body: JSON.stringify({ ...EMPTY_FORM, ...rows[i] }),
+                    body: JSON.stringify(formToPayload({ ...EMPTY_FORM, ...rows[i] })),
                   })
                   if (res.ok) success++
                   else {

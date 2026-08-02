@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import {
   Bug,
   ExternalLink,
@@ -96,6 +97,7 @@ function cleanPhoneForWa(phone: string): string {
 }
 
 export default function FumigacionPage() {
+  const searchParams = useSearchParams()
   const [fecha, setFecha] = useState(hoyIso())
   const [ruta, setRuta] = useState<FumigacionRutaDia | null>(null)
   const [kpis, setKpis] = useState<{ visitasHoy: number, visitasCompletadas: number, visitasPendientes: number, clientesAtrasados: number, isAdmin: boolean } | null>(null)
@@ -103,8 +105,22 @@ export default function FumigacionPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [otDialogOpen, setOtDialogOpen] = useState(false)
+  const [defaultClienteId, setDefaultClienteId] = useState<string | undefined>(undefined)
   const [showHint, setShowHint] = useState(true)
   const [tecnicoFiltro, setTecnicoFiltro] = useState<string>("TODOS")
+
+  useEffect(() => {
+    if (searchParams) {
+      const action = searchParams.get("action")
+      const cid = searchParams.get("clienteId")
+      if (action === "new_visit" && cid) {
+        setDefaultClienteId(cid)
+        setOtDialogOpen(true)
+        // Clean URL to prevent reopening on refresh
+        window.history.replaceState(null, "", "/dashboard/fumigacion")
+      }
+    }
+  }, [searchParams])
 
   // Modal para editar visita seleccionada
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -899,7 +915,10 @@ export default function FumigacionPage() {
         open={otDialogOpen}
         onOpenChange={setOtDialogOpen}
         mode="fumigacion"
+        defaultClienteId={defaultClienteId}
         onSuccess={() => {
+          setOtDialogOpen(false)
+          setDefaultClienteId(undefined)
           void cargarRuta()
           void mutateOts()
         }}

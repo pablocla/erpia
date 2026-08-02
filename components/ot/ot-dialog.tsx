@@ -37,12 +37,14 @@ export function OTDialog({
   onOpenChange,
   onSuccess,
   mode = "general",
+  defaultClienteId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
   /** "fumigacion" muestra plaga / sitio / tipo de servicio */
   mode?: "general" | "fumigacion"
+  defaultClienteId?: string
 }) {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
@@ -79,14 +81,28 @@ export function OTDialog({
             direccion: (c as { direccion?: string }).direccion ?? null,
           })),
         )
-        if (list.length && !formData.clienteId) {
-          const first = list[0]
-          setFormData((p) => ({ ...p, clienteId: String(first.id), clienteSearch: `${first.nombre}${first.direccion ? ` · ${first.direccion}` : " · sin dirección"}` }))
+
+        let targetId = formData.clienteId
+        if (defaultClienteId) {
+          targetId = defaultClienteId
+        } else if (list.length && !formData.clienteId) {
+          targetId = String(list[0].id)
+        }
+
+        if (targetId) {
+          const targetClient = list.find((c: ClienteOpt) => String(c.id) === targetId) || list[0]
+          if (targetClient) {
+            setFormData((p) => ({ 
+              ...p, 
+              clienteId: String(targetClient.id), 
+              clienteSearch: `${targetClient.nombre}${targetClient.direccion ? ` - ${targetClient.direccion}` : " - sin dirección"}` 
+            }))
+          }
         }
       })
       .catch(() => setClientes([]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, defaultClienteId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

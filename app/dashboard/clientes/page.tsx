@@ -462,8 +462,8 @@ export default function ClientesPage() {
                 key: "acciones" as any, header: "Acciones", align: "right" as const,
                 cell: (c: any) => (
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/agenda?clienteId=${c.id}`) }} title="Agendar visita"><CalendarPlus className="h-4 w-4 text-emerald-600" /></Button>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/ot?clienteId=${c.id}`) }} title="Visita rápida"><PlayCircle className="h-4 w-4 text-blue-600" /></Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion/calendario?clienteId=${c.id}`) }} title="Agendar visita en calendario"><CalendarPlus className="h-4 w-4 text-emerald-600" /></Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion?action=new_visit&clienteId=${c.id}`) }} title="Visita rápida (Hoy)"><PlayCircle className="h-4 w-4 text-blue-600" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); verDetalle(c) }} title="Ver detalle"><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); editarCliente(c) }} title="Editar"><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); eliminarCliente(c.id) }} title="Desactivar"><Trash2 className="h-4 w-4" /></Button>

@@ -288,7 +288,13 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       {
         href: "/dashboard/fumigacion",
         icon: Bug,
-        label: "Fumigación · Ruta del día",
+        label: "Fumigación — Ruta del día",
+        permisoModulo: "clientes",
+      },
+      {
+        href: "/dashboard/fumigacion/campo",
+        icon: Bug,
+        label: "Fumigación (Campo)",
         permisoModulo: "clientes",
       },
       {

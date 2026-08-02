@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   Bug,
   ExternalLink,
@@ -54,7 +54,7 @@ import {
 import { CampoMapaLibre, type CampoMapPin } from "@/components/claver-cloud/campo-mapa-libre"
 import { OTDialog } from "@/components/ot/ot-dialog"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { authFetch } from "@/lib/stores"
+import { authFetch, useAuthStore } from "@/lib/stores"
 import { cn } from "@/lib/utils"
 import {
   buildGoogleMapsUrl,
@@ -97,6 +97,8 @@ function cleanPhoneForWa(phone: string): string {
 }
 
 export default function FumigacionPage() {
+  const router = useRouter()
+  const { user } = useAuthStore()
   const searchParams = useSearchParams()
   const [fecha, setFecha] = useState(hoyIso())
   const [ruta, setRuta] = useState<FumigacionRutaDia | null>(null)
@@ -109,6 +111,12 @@ export default function FumigacionPage() {
   const [defaultClienteId, setDefaultClienteId] = useState<string | undefined>(undefined)
   const [showHint, setShowHint] = useState(true)
   const [tecnicoFiltro, setTecnicoFiltro] = useState<string>("TODOS")
+
+  useEffect(() => {
+    if (user && user.rol === "tecnico") {
+      router.replace("/dashboard/fumigacion/campo")
+    }
+  }, [user, router])
 
   useEffect(() => {
     if (searchParams) {

@@ -98,6 +98,7 @@ function cleanPhoneForWa(phone: string): string {
 export default function FumigacionPage() {
   const [fecha, setFecha] = useState(hoyIso())
   const [ruta, setRuta] = useState<FumigacionRutaDia | null>(null)
+  const [kpis, setKpis] = useState<{ visitasHoy: number, visitasCompletadas: number, visitasPendientes: number, clientesAtrasados: number, isAdmin: boolean } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -152,6 +153,12 @@ export default function FumigacionPage() {
       }
       const data = (await res.json()) as FumigacionRutaDia
       setRuta(data)
+
+      const kpiRes = await authFetch(`/api/fumigacion/kpis`)
+      if (kpiRes.ok) {
+        const kpiData = await kpiRes.json()
+        setKpis(kpiData)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error de red")
       setRuta(null)
@@ -373,6 +380,47 @@ export default function FumigacionPage() {
           <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-800 dark:text-amber-300" onClick={() => setShowHint(false)}>
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {kpis?.isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <Card className="bg-card">
+            <CardHeader className="py-3 px-4 pb-0 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Visitas Hoy</CardTitle>
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-4 py-3 pt-1">
+              <div className="text-2xl font-bold">{kpis.visitasHoy}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card">
+            <CardHeader className="py-3 px-4 pb-0 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-emerald-600">Completadas</CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent className="px-4 py-3 pt-1">
+              <div className="text-2xl font-bold text-emerald-700">{kpis.visitasCompletadas}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card">
+            <CardHeader className="py-3 px-4 pb-0 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-blue-600">Pendientes</CardTitle>
+              <Clock className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent className="px-4 py-3 pt-1">
+              <div className="text-2xl font-bold text-blue-700">{kpis.visitasPendientes}</div>
+            </CardContent>
+          </Card>
+          <Card className={cn("bg-card", kpis.clientesAtrasados > 0 && "border-destructive")}>
+            <CardHeader className="py-3 px-4 pb-0 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-destructive">Sin visita &gt;60d</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </CardHeader>
+            <CardContent className="px-4 py-3 pt-1">
+              <div className="text-2xl font-bold text-destructive">{kpis.clientesAtrasados}</div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight,
   Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight, Sparkles,
+  CalendarPlus, PlayCircle,
 } from "lucide-react"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
@@ -124,31 +126,34 @@ function clienteToForm(c: any): Record<string, any> {
 }
 
 function formToPayload(f: Record<string, any>) {
+  const p = { ...f }
   const fkToInt = (v: string) => v === "__none__" ? null : Number(v)
-  return {
-    ...f,
-    situacionIIBB: f.situacionIIBB === "__none__" ? null : f.situacionIIBB,
-    limiteCredito: Number(f.limiteCredito),
-    descuentoPct: Number(f.descuentoPct),
-    diasGraciaExtra: Number(f.diasGraciaExtra),
-    provinciaId: fkToInt(f.provinciaId),
-    localidadId: fkToInt(f.localidadId),
-    paisId: fkToInt(f.paisId),
-    zonaGeograficaId: fkToInt(f.zonaGeograficaId),
-    condicionPagoId: fkToInt(f.condicionPagoId),
-    formaPagoId: fkToInt(f.formaPagoId),
-    vendedorId: fkToInt(f.vendedorId),
-    listaPrecioId: fkToInt(f.listaPrecioId),
-    tipoClienteId: fkToInt(f.tipoClienteId),
-    estadoClienteId: fkToInt(f.estadoClienteId),
-    rubroId: fkToInt(f.rubroId),
-    canalVentaId: fkToInt(f.canalVentaId),
-    segmentoClienteId: fkToInt(f.segmentoClienteId),
-    vigenciaCertificadoExclusion: f.vigenciaCertificadoExclusion || null,
-    fechaNacimiento: f.fechaNacimiento || null,
-    emailNotificacionFiado: f.emailNotificacionFiado || null,
-    emailNotificacionFiado2: f.emailNotificacionFiado2 || null,
-  }
+  
+  if (p.situacionIIBB === "__none__") p.situacionIIBB = null
+
+  p.limiteCredito = Number(p.limiteCredito) || 0
+  p.descuentoPct = Number(p.descuentoPct) || 0
+  p.diasGraciaExtra = Number(p.diasGraciaExtra) || 0
+
+  p.provinciaId = fkToInt(p.provinciaId)
+  p.localidadId = fkToInt(p.localidadId)
+  p.paisId = fkToInt(p.paisId)
+  p.zonaGeograficaId = fkToInt(p.zonaGeograficaId)
+  p.condicionPagoId = fkToInt(p.condicionPagoId)
+  p.formaPagoId = fkToInt(p.formaPagoId)
+  p.vendedorId = fkToInt(p.vendedorId)
+  p.listaPrecioId = fkToInt(p.listaPrecioId)
+  p.tipoClienteId = fkToInt(p.tipoClienteId)
+  p.estadoClienteId = fkToInt(p.estadoClienteId)
+  p.rubroId = fkToInt(p.rubroId)
+  p.canalVentaId = fkToInt(p.canalVentaId)
+  p.segmentoClienteId = fkToInt(p.segmentoClienteId)
+  p.vigenciaCertificadoExclusion = p.vigenciaCertificadoExclusion || null
+  p.fechaNacimiento = p.fechaNacimiento || null
+  p.emailNotificacionFiado = p.emailNotificacionFiado || null
+  p.emailNotificacionFiado2 = p.emailNotificacionFiado2 || null
+  
+  return p
 }
 
 /* ---------- maestro lookup selector ---------- */
@@ -176,6 +181,7 @@ function MaestroSelect({ tabla, value, onChange, label }: { tabla: string; value
 
 /* ========== MAIN COMPONENT ========== */
 export default function ClientesPage() {
+  const router = useRouter()
   const [clientes, setClientes] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [busqueda, setBusqueda] = useState("")
@@ -433,6 +439,21 @@ export default function ClientesPage() {
                 </div>
               ) },
               { key: "cuit", header: "CUIT", sortable: true, cell: (c: any) => c.cuit || "-" },
+              { key: "ultimaVisita", header: "Última Visita", sortable: true, sortFn: (a: any, b: any) => {
+                const da = a.turnos?.[0]?.fecha ? new Date(a.turnos[0].fecha).getTime() : 0
+                const db = b.turnos?.[0]?.fecha ? new Date(b.turnos[0].fecha).getTime() : 0
+                return db - da
+              }, cell: (c: any) => {
+                const turno = c.turnos?.[0]
+                if (!turno) return <span className="text-muted-foreground">-</span>
+                const days = Math.floor((new Date().getTime() - new Date(turno.fecha).getTime()) / (1000 * 3600 * 24))
+                return (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium">{new Date(turno.fecha).toLocaleDateString("es-AR")}</span>
+                    <span className="text-[10px] text-muted-foreground">Hace {days} {days === 1 ? "día" : "días"}</span>
+                  </div>
+                )
+              } },
               { key: "condicionIva", header: "Cond. IVA", cell: (c: any) => <span className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</span> },
               { key: "provincia", header: "Provincia", cell: (c: any) => <span className="text-xs">{c.provincia?.nombre || "-"}</span>, exportFn: (c: any) => c.provincia?.nombre ?? "" },
               { key: "limiteCredito", header: "Lím. Crédito", align: "right" as const, sortable: true, cell: (c: any) => c.limiteCredito != null ? Number(c.limiteCredito).toLocaleString("es-AR", { style: "currency", currency: "ARS" }) : "-" },
@@ -441,6 +462,8 @@ export default function ClientesPage() {
                 key: "acciones" as any, header: "Acciones", align: "right" as const,
                 cell: (c: any) => (
                   <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/agenda?clienteId=${c.id}`) }} title="Agendar visita"><CalendarPlus className="h-4 w-4 text-emerald-600" /></Button>
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/ot?clienteId=${c.id}`) }} title="Visita rápida"><PlayCircle className="h-4 w-4 text-blue-600" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); verDetalle(c) }} title="Ver detalle"><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); editarCliente(c) }} title="Editar"><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); eliminarCliente(c.id) }} title="Desactivar"><Trash2 className="h-4 w-4" /></Button>

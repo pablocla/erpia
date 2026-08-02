@@ -782,10 +782,10 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (demoIndustryId === "fumigacion" || productosSku?.["niche.fumigacion"] === true) {
+    if (demoIndustryId === "fumigacion" || productosSku?.["niche.fumigacion"] === true || modoLite === "fumigacion") {
       router.replace("/dashboard/fumigacion")
     }
-  }, [demoIndustryId, productosSku, router])
+  }, [demoIndustryId, productosSku, modoLite, router])
 
   // Dynamic role dashboard selection
   if (rol === "cajero") {

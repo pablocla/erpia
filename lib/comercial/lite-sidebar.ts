@@ -111,6 +111,16 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/mi-plan",
     "/dashboard/apps",
   ],
+  fumigacion: [
+    "/dashboard",
+    "/dashboard/fumigacion",
+    "/dashboard/ot",
+    "/dashboard/clientes",
+    "/dashboard/ventas",
+    "/dashboard/configuracion",
+    "/dashboard/mi-plan",
+    "/dashboard/apps",
+  ],
 }
 
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {

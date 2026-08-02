@@ -457,6 +457,7 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
     icono: MapPin,
     tabs: [
       { href: "/dashboard/fumigacion", icon: MapPin, label: "Ruta / Mapa" },
+      { href: "/dashboard/ot", icon: BookOpen, label: "Visitas" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       { href: "/dashboard/ventas", icon: ShoppingBag, label: "Facturar" },
       { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },

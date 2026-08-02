@@ -76,7 +76,13 @@ const CLIENTE_INCLUDES = {
   rubro: true,
   canalVenta: true,
   segmentoCliente: true,
-} as Record<string, boolean>
+  turnos: {
+    where: { estado: "completado" },
+    orderBy: { fecha: "desc" },
+    take: 1,
+    select: { fecha: true, id: true },
+  },
+} as Record<string, any>
 
 export async function GET(request: NextRequest) {
   try {

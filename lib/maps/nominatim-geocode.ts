@@ -25,7 +25,8 @@ export function buildAddressQuery(parts: {
   localidad?: string | null
   negocio?: string | null
 }): string | null {
-  const bits = [parts.direccion, parts.localidad, "Argentina"].filter(Boolean)
+  const loc = parts.localidad && parts.localidad.trim() !== "" ? parts.localidad : "Rosario, Santa Fe"
+  const bits = [parts.direccion, loc, "Argentina"].filter(Boolean)
   if (bits.length < 2) return null
   return bits.join(", ")
 }

@@ -32,6 +32,7 @@ const LANDING: Record<ModoLite, string> = {
   niche: "/dashboard/nicho",
   servicios: "/dashboard/ventas/presupuestos",
   leo: "/dashboard/empleados-digitales/leo_cobranza",
+  fumigacion: "/dashboard/fumigacion",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {

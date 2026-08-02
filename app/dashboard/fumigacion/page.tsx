@@ -778,6 +778,14 @@ export default function FumigacionPage() {
                       <Edit className="h-3 w-3 mr-1" />
                       Editar
                     </Button>
+                    {(p.estado === "LISTO" || p.estado === "ENTREGADO") && (
+                      <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2 text-blue-600 hover:text-blue-700" asChild>
+                        <a href={`/api/fumigacion/certificado/${p.ordenServicioId}`} target="_blank" rel="noreferrer">
+                          <FileText className="h-3 w-3 mr-1" />
+                          Certificado
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -921,6 +929,15 @@ export default function FumigacionPage() {
                 <Edit className="h-4 w-4 mr-1" />
                 Editar
               </Button>
+
+              {(selected.estado === "LISTO" || selected.estado === "ENTREGADO") && (
+                <Button variant="outline" size="sm" className="h-9 text-blue-600 border-blue-200 hover:bg-blue-50" asChild>
+                  <a href={`/api/fumigacion/certificado/${selected.ordenServicioId}`} target="_blank" rel="noreferrer">
+                    <FileText className="h-4 w-4 mr-1" />
+                    Certificado
+                  </a>
+                </Button>
+              )}
 
               <Button variant="ghost" size="sm" className="h-9 text-destructive hover:bg-destructive/10" onClick={() => void quitarDeLaRuta(selected.ordenServicioId)}>
                 <Trash2 className="h-4 w-4 mr-1" />
@@ -1084,13 +1101,23 @@ export default function FumigacionPage() {
               />
             </div>
 
-            <DialogFooter className="mt-2">
-              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={updating}>
-                {updating ? "Guardando…" : "Guardar cambios"}
-              </Button>
+            <DialogFooter className="mt-2 flex sm:justify-between">
+              {(editForm.estado === "LISTO" || editForm.estado === "ENTREGADO") && editingParada ? (
+                <Button type="button" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" asChild>
+                  <a href={`/api/fumigacion/certificado/${editingParada.ordenServicioId}`} target="_blank" rel="noreferrer">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Ver Certificado
+                  </a>
+                </Button>
+              ) : <div />}
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={updating}>
+                  {updating ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </DialogContent>

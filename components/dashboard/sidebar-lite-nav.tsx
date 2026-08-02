@@ -22,7 +22,8 @@ export function SidebarLiteNav({
   const pathname = usePathname()
 
   const tabs = shell.tabs.filter((tab) => tab.href !== "#more")
-  const extra = [
+  const isFumigacion = shell.slug === "fumigacion"
+  const extra = isFumigacion ? [] : [
     { href: MI_PLAN_HREF, icon: CreditCard, label: "Mi plan" },
     { href: APPS_HREF, icon: LayoutGrid, label: "Más apps" },
   ]
@@ -67,12 +68,12 @@ export function SidebarLiteNav({
           </Link>
         )
       })}
-      {sidebarOpen && (
+      {sidebarOpen && !isFumigacion && (
         <p className="px-2 pt-2 text-[10px] text-muted-foreground leading-snug">
           Menú reducido para {shell.marca}. Sumá POS y más módulos desde Mi plan.
         </p>
       )}
-      {!sidebarOpen && (
+      {!sidebarOpen && !isFumigacion && (
         <Link href={APPS_HREF} title="Más apps" onClick={onNavigate} className="block">
           <Button variant="ghost" size="sm" className="sidebar-link w-full flex items-center justify-center">
             <MoreHorizontal className="sidebar-icon h-4 w-4" />

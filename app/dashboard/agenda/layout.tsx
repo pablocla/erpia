@@ -17,7 +17,7 @@ export default async function AgendaLayout({ children }: { children: React.React
 
   const empresaId = usuario.empresaId
 
-  const [consultorio, vet, peluqueria, confirma, core, agendaMod] = await Promise.all([
+  const [consultorio, vet, peluqueria, confirma, core, agendaMod, fumigacion] = await Promise.all([
     canUseSku(empresaId, "niche.consultorio_solo"),
     canUseSku(empresaId, "niche.vet_barrio"),
     canUseSku(empresaId, "niche.peluqueria_barrio"),
@@ -26,6 +26,7 @@ export default async function AgendaLayout({ children }: { children: React.React
     prisma.configuracionModulo.findFirst({
       where: { empresaId, modulo: "agenda", habilitado: true },
     }),
+    canUseSku(empresaId, "niche.fumigacion"),
   ])
 
   if (
@@ -34,7 +35,8 @@ export default async function AgendaLayout({ children }: { children: React.React
     !peluqueria.ok &&
     !confirma.ok &&
     !core.ok &&
-    !agendaMod
+    !agendaMod &&
+    !fumigacion.ok
   ) {
     redirect("/dashboard/apps?sku=micro.confirma_turnos&blocked=true")
   }

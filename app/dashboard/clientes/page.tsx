@@ -178,7 +178,6 @@ function MaestroSelect({ tabla, value, onChange, label }: { tabla: string; value
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<any[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(0)
   const [busqueda, setBusqueda] = useState("")
   const [dialogAbierto, setDialogAbierto] = useState(false)
   const [vistaDetalle, setVistaDetalle] = useState<any>(null)
@@ -195,12 +194,13 @@ export default function ClientesPage() {
   const cargarClientes = useCallback(async () => {
     setLoading(true)
     try {
-      const qs = new URLSearchParams({ skip: String(page * PAGE_SIZE), take: String(PAGE_SIZE) })
+      const qs = new URLSearchParams({ take: "5000" }) // Fetch a large amount of clients to let DataTable handle pagination
       if (busqueda) qs.set("q", busqueda)
       const res = await fetch(`/api/clientes?${qs}`, { headers: authHeaders() })
-      const data = await res.json()
-      setClientes(parseApiList(data))
-      setTotal(data.total ?? 0)
+      if (!res.ok) throw new Error("Error fetching")
+      const raw = await res.json()
+      setClientes(parseApiList(raw))
+      setTotal(raw.total ?? 0)
     } catch (error) {
       console.error("Error al cargar clientes:", error)
       toast({
@@ -213,7 +213,7 @@ export default function ClientesPage() {
     }
     // toast is stable (module-level store); omit from deps to avoid refetch loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, busqueda])
+  }, [busqueda])
 
   useEffect(() => { cargarClientes() }, [cargarClientes])
 
@@ -307,7 +307,7 @@ export default function ClientesPage() {
     }
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+
 
   const filterFields: FilterField[] = [
     { key: "condicionIva", label: "Condición IVA", type: "select", options: [
@@ -344,7 +344,6 @@ export default function ClientesPage() {
   const clearClientFilters = () => {
     setFilters({})
     setBusqueda("")
-    setPage(0)
   }
 
   /* ---------- RENDER ---------- */

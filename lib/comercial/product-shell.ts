@@ -49,6 +49,7 @@ const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
   pos: "pos",
   niche: "turnos",
   servicios: "monotributo",
+  fumigacion: "fumigacion",
 }
 
 export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {

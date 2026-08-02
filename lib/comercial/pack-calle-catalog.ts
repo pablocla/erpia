@@ -9,7 +9,7 @@ import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MICRO_SAAS_PORTFOLIO } from "@/lib/comercial/micro-saas-portfolio"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo" | "fumigacion"
 
 export interface PackCalle {
   id: string

@@ -30,6 +30,7 @@ export function getDemoPresentationPaths(industryId: string): string[] {
 export function isPathAllowedInDemoPresentation(href: string | undefined, industryId: string): boolean {
   if (!href) return true
   const allowed = getDemoPresentationPaths(industryId)
+  if (!allowed || !Array.isArray(allowed)) return true
   return allowed.some((path) =>
     path === "/dashboard" ? href === "/dashboard" : href === path || href.startsWith(`${path}/`),
   )

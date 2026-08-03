@@ -22,7 +22,7 @@ function hasRoleAccessToModulo(role: string | undefined, modulo: string): boolea
   if (!role) return false
   if (isElevatedRole(role)) return true
   const def = getRoleDefinition(role)
-  return def?.modulosAcceso.some((m) => m.modulo === modulo) ?? false
+  return def?.modulosAcceso?.some((m) => m.modulo === modulo) ?? false
 }
 
 export function canRenderMenuItem(

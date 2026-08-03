@@ -126,6 +126,7 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {
   if (modoLite === "completo") return true
   const allowed = LITE_MENU_PATHS[modoLite]
+  if (!allowed || !Array.isArray(allowed)) return true
   return allowed.some((path) =>
     path === "/dashboard" ? href === "/dashboard" : href === path || href.startsWith(`${path}/`),
   )

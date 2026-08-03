@@ -119,8 +119,56 @@ async function seedLazaroPrestamos() {
     console.log(`🔄 Usuario Pablo actualizado correctamente en la empresa ${empresa.id}`)
   }
 
+  // 4. Sembrar los 16 Deudores Reales en la base de datos de Lázaro Préstamos
+  const deudoresMarcos = [
+    { nombre: "Madera", saldo: 65000, obs: "Capital $50.000 + Interés $15.000 (30%)" },
+    { nombre: "Aldo", saldo: 393000, obs: "Capital $318.500 + Interés $74.500 (30%)" },
+    { nombre: "Máquina #1", saldo: 130000, obs: "Capital $100.000 + Interés $30.000 (30%)" },
+    { nombre: "Máquina #2", saldo: 260000, obs: "Capital $200.000 + Interés $60.000 (30%)" },
+    { nombre: "Farana", saldo: 325000, obs: "Capital $250.000 + Interés $75.000 (30%)" },
+    { nombre: "Máquina #3", saldo: 130000, obs: "Capital $100.000 + Interés $30.000 (30%)" },
+    { nombre: "Máquina #4", saldo: 260000, obs: "Capital $200.000 + Interés $60.000 (30%)" },
+    { nombre: "Máquina #5", saldo: 520000, obs: "Capital $400.000 + Interés $120.000 (30%)" },
+    { nombre: "Máquina #6", saldo: 78000, obs: "Capital $60.000 + Interés $18.000 (30%)" },
+    { nombre: "Máquina #7", saldo: 65000, obs: "Capital $50.000 + Interés $15.000 (30%)" },
+    { nombre: "Máquina #8", saldo: 260000, obs: "Capital $200.000 + Interés $60.000 (30%)" },
+    { nombre: "Máquina #9", saldo: 65000, obs: "Capital $50.000 + Interés $15.000 (30%)" },
+    { nombre: "Máquina #10", saldo: 130000, obs: "Capital $100.000 + Interés $30.000 (30%)" },
+    { nombre: "Máquina (Septiembre)", saldo: 500000, obs: "Capital $350.000 + Interés $150.000. Vence Septiembre" },
+    { nombre: "Padre máquina", saldo: 520000, obs: "Capital $400.000 + Interés $120.000 (30%)" },
+    { nombre: "Enano", saldo: 520000, obs: "Capital $400.000 + Interés $120.000 (30%)" },
+  ]
+
+  for (const d of deudoresMarcos) {
+    const existing = await prisma.cliente.findFirst({
+      where: { empresaId: empresa.id, nombre: d.nombre }
+    })
+    if (!existing) {
+      await prisma.cliente.create({
+        data: {
+          empresaId: empresa.id,
+          nombre: d.nombre,
+          saldoCuentaCorriente: d.saldo,
+          observaciones: d.obs,
+          condicionIva: "Consumidor Final",
+          tipoPersona: "persona_fisica",
+        }
+      })
+    } else {
+      await prisma.cliente.update({
+        where: { id: existing.id },
+        data: {
+          saldoCuentaCorriente: d.saldo,
+          observaciones: d.obs
+        }
+      })
+    }
+  }
+
+  console.log(`✅ 16 Deudores reales sembrados en la base de datos de Lázaro Préstamos (Total Cartera: $4.316.000 ARS)`)
+
   console.log("\n==================================================")
-  console.log("🎉 CONFIGURACIÓN DE GOOGLE AUTH COMPLETADA EXITOSAMENTE")
+  console.log("🎉 CONFIGURACIÓN DE GOOGLE AUTH & MAESTRO DE DEUDORES COMPLETADA")
   console.log("==================================================")
   console.log(`Empresa: Lázaro Préstamos (ID: ${empresa.id})`)
   console.log(`\n🔴 Marcos (Google Login):`)

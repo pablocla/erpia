@@ -132,6 +132,13 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/configuracion",
     ...LITE_SHARED,
   ],
+  asociacion: [
+    "/dashboard",
+    "/dashboard/grow",
+    "/dashboard/clientes",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
 }
 
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {

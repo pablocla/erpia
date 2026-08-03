@@ -10,6 +10,10 @@ import {
   ShoppingBag,
   Users,
   Wallet,
+  Landmark,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
   type LucideIcon,
 } from "lucide-react"
 import { type SubSaasSlug, SUB_SAAS_APPS, SUB_SAAS_DESTACADOS } from "./sub-saas-catalog"

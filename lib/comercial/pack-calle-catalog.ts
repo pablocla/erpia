@@ -9,7 +9,7 @@ import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MICRO_SAAS_PORTFOLIO } from "@/lib/comercial/micro-saas-portfolio"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo" | "fumigacion" | "prestamista"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo" | "fumigacion" | "prestamista" | "asociacion"
 
 export interface PackCalle {
   id: string
@@ -34,6 +34,7 @@ const LANDING: Record<ModoLite, string> = {
   leo: "/dashboard/empleados-digitales/leo_cobranza",
   fumigacion: "/dashboard/fumigacion",
   prestamista: "/dashboard/prestamos",
+  asociacion: "/dashboard/grow",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {

@@ -309,8 +309,8 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/hospitalidad/delivery", icon: Bike, label: "Delivery Propio", featureKey: "delivery_propio", allowedRubros: ["bar_restaurant"] },
       { href: "/dashboard/hospitalidad/cartelera", icon: Tv, label: "Cartelera Digital", featureKey: "cartelera_digital", allowedRubros: ["bar_restaurant", "kiosco"] },
       { href: "/dashboard/hospitalidad/platos", icon: ClipboardList, label: "Platos y Recetas", featureKey: "recetas_bom", allowedRubros: ["bar_restaurant"] },
-      { href: "/dashboard/hospitalidad/reservas", icon: CalendarDays, label: "Reservas y Llaves", permisoModulo: "hospitalidad", allowedRubros: ["hotel", "alojamiento"] },
-      { href: "/dashboard/hospitalidad/cerraduras", icon: Key, label: "Cerraduras IoT", permisoModulo: "hospitalidad", allowedRubros: ["hotel", "alojamiento"] },
+      { href: "/dashboard/hospitalidad/reservas", icon: CalendarDays, label: "Reservas y Llaves", permisoModulo: "hospitalidad", allowedRubros: ["bar_restaurant", "otro"] },
+      { href: "/dashboard/hospitalidad/cerraduras", icon: Key, label: "Cerraduras IoT", permisoModulo: "hospitalidad", allowedRubros: ["bar_restaurant", "otro"] },
       {
         href: "/dashboard/agenda",
         icon: CalendarDays,

@@ -20,6 +20,7 @@ import {
   ClipboardList,
   CreditCard,
   Landmark,
+  DollarSign,
   FileMinus,
   FilePlus,
   Tags,
@@ -323,6 +324,28 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/historia-clinica", icon: HeartPulse, label: "Historia Clínica", permisoModulo: "historia_clinica", featureKey: "historia_clinica", allowedRubros: ["veterinaria", "clinica"] },
       { href: "/dashboard/membresias", icon: Dumbbell, label: "Membresías", permisoModulo: "membresias", featureKey: "membresias", allowedRubros: ["gimnasio"] },
       { href: "/dashboard/veterinaria", icon: PawPrint, label: "Veterinaria / Mascotas", permisoModulo: "veterinaria", featureKey: "veterinaria", allowedRubros: ["veterinaria"] },
+    ],
+  },
+  {
+    label: "Préstamos / Financiera",
+    color: "text-emerald-500",
+    moduloKey: "prestamos",
+    items: [
+      {
+        href: "/dashboard/prestamos",
+        icon: Landmark,
+        label: "Gestión de Préstamos",
+      },
+      {
+        href: "/dashboard/prestamos/cobranza",
+        icon: DollarSign,
+        label: "Planilla de Cobranza",
+      },
+      {
+        href: "/dashboard/prestamos/pagares",
+        icon: FileText,
+        label: "Pagarés Legales",
+      },
     ],
   },
   {

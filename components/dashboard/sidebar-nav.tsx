@@ -95,9 +95,10 @@ export function SidebarCollapseSection({
   const pathname = usePathname()
   const t = useTranslations("nav")
   const label = modulo.translationKey ? t(modulo.translationKey) : modulo.label
-  const hasActiveChild = modulo.items.some(
+  const items = modulo?.items || []
+  const hasActiveChild = items.some(
     (item) =>
-      item.href &&
+      item?.href &&
       (item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href)),
   )
 
@@ -108,9 +109,9 @@ export function SidebarCollapseSection({
   if (!sidebarOpen) {
     return (
       <div className="space-y-0.5">
-        {modulo.items.map((item) => (
+        {items.map((item) => (
           <SidebarNavItem
-            key={`${item.href ?? ""}:${item.label}`}
+            key={`${item?.href ?? ""}:${item?.label ?? ""}`}
             item={item}
             sidebarOpen={sidebarOpen}
             onNavigate={onNavigate}
@@ -138,19 +139,19 @@ export function SidebarCollapseSection({
       </button>
       <div
         className={cn(
-          "sidebar-collapse-content overflow-hidden transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]",
-          expanded ? "max-h-[2000px] opacity-100 mt-0.5" : "max-h-0 opacity-0 overflow-hidden",
+          "space-y-0.5 transition-[height] duration-200",
+          !expanded && "hidden",
         )}
       >
-        <div className="sidebar-section-items">
-          {modulo.items.map((item) => (
-            <SidebarNavItem
-              key={`${item.href ?? ""}:${item.label}`}
-              item={item}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </div>
+        {items.map((item) => (
+          <SidebarNavItem
+            key={`${item?.href ?? ""}:${item?.label ?? ""}`}
+            item={item}
+            depth={1}
+            sidebarOpen={sidebarOpen}
+            onNavigate={onNavigate}
+          />
+        ))}
       </div>
     </div>
   )

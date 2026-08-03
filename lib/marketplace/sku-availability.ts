@@ -40,7 +40,8 @@ export function assertSkuProvisionable(sku: string): void {
   }
 }
 
-export function isPathAllowedInSidebarAllowlist(href: string, allowed: string[]): boolean {
+export function isPathAllowedInSidebarAllowlist(href: string, allowed: string[] | null | undefined): boolean {
+  if (!allowed || !Array.isArray(allowed)) return true
   return allowed.some((path) =>
     path === "/dashboard" ? href === "/dashboard" : href === path || href.startsWith(`${path}/`),
   )

@@ -382,8 +382,8 @@ export function useDashboardShell() {
 
     return modulosOrdenados
       .map((modulo) => {
-        const items =
-          modulo.label === "Claver Nicho" ? [...modulo.items, ...nicheAppItems] : modulo.items
+        const rawItems = modulo?.items || []
+        const items = modulo?.label === "Claver Nicho" ? [...rawItems, ...nicheAppItems] : rawItems
 
         return {
           ...modulo,
@@ -402,7 +402,7 @@ export function useDashboardShell() {
           }),
         }
       })
-      .filter((modulo) => modulo.items.length > 0)
+      .filter((modulo) => (modulo?.items || []).length > 0)
   }, [modulosOrdenados, effectiveRubro, demoIndustryId, productosSku, sidebarAllowlist])
 
   const modulosBuscados = useMemo(() => {
@@ -411,9 +411,9 @@ export function useDashboardShell() {
     return modulosConLabels
       .map((modulo) => ({
         ...modulo,
-        items: modulo.items.filter((item) => item.label.toLowerCase().includes(q)),
+        items: (modulo?.items || []).filter((item) => item?.label?.toLowerCase()?.includes(q)),
       }))
-      .filter((modulo) => modulo.items.length > 0)
+      .filter((modulo) => (modulo?.items || []).length > 0)
   }, [modulosConLabels, sidebarSearch])
 
   return {

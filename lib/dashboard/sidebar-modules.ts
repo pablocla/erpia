@@ -20,7 +20,6 @@ import {
   ClipboardList,
   CreditCard,
   Landmark,
-  DollarSign,
   FileMinus,
   FilePlus,
   Tags,

@@ -121,6 +121,17 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/mi-plan",
     "/dashboard/apps",
   ],
+  prestamista: [
+    "/dashboard",
+    "/dashboard/prestamos",
+    "/dashboard/prestamos/cobranza",
+    "/dashboard/prestamos/pagares",
+    "/dashboard/clientes",
+    "/dashboard/cuentas-cobrar",
+    "/dashboard/caja",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
 }
 
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {

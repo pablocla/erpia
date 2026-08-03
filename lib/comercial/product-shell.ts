@@ -50,6 +50,7 @@ const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
   niche: "turnos",
   servicios: "monotributo",
   fumigacion: "fumigacion",
+  prestamista: "prestamista",
 }
 
 export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
@@ -470,6 +471,27 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       { id: "pendientes", label: "Pendientes", icon: Calendar, format: "number" },
     ],
     primaryAction: { label: "Ver Ruta", href: "/dashboard/fumigacion" },
+  },
+  prestamista: {
+    slug: "prestamista" as SubSaasSlug,
+    marca: "Lázaro Préstamos",
+    icono: Landmark,
+    tabs: [
+      { href: "/dashboard/prestamos", icon: Landmark, label: "Préstamos" },
+      { href: "/dashboard/prestamos/cobranza", icon: Wallet, label: "Cobranzas" },
+      { href: "/dashboard/prestamos/pagares", icon: FileText, label: "Pagarés" },
+      { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+      { href: "/dashboard/caja", icon: CreditCard, label: "Caja" },
+      { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "calle", label: "Capital prestado", icon: Wallet, format: "currency" },
+      { id: "interes", label: "Interés 30%", icon: TrendingUp, format: "currency" },
+      { id: "total", label: "Total a cobrar", icon: Landmark, format: "currency" },
+      { id: "mora", label: "En mora (PAR30)", icon: AlertTriangle, format: "number" },
+    ],
+    primaryAction: { label: "Ver Préstamos", href: "/dashboard/prestamos" },
   },
 }
 

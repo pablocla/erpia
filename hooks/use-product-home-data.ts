@@ -180,6 +180,15 @@ async function fetchKpiValues(
     }
   }
 
+  if (slug === "prestamista") {
+    return {
+      calle: 3328500,
+      interes: 987500,
+      total: 4316000,
+      mora: 0,
+    }
+  }
+
   return {}
 }
 

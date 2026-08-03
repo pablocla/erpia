@@ -29,7 +29,9 @@ import {
   Trash2,
   AlertTriangle,
   Calendar,
+  HelpCircle,
 } from "lucide-react"
+import { FumigacionHelpDialog } from "@/components/fumigacion/fumigacion-help-dialog"
 import { PageShell, PageHeader } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -108,6 +110,7 @@ export default function FumigacionPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [otDialogOpen, setOtDialogOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [defaultClienteId, setDefaultClienteId] = useState<string | undefined>(undefined)
   const [showHint, setShowHint] = useState(true)
   const [tecnicoFiltro, setTecnicoFiltro] = useState<string>("TODOS")
@@ -352,6 +355,10 @@ export default function FumigacionPage() {
         description="Ruteo diario, emisión de certificados y seguimiento de cobros en campo."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="lg" className="h-11 px-4 touch-target border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800" onClick={() => setHelpOpen(true)}>
+              <HelpCircle className="mr-2 h-4 w-4 text-emerald-600" />
+              Guía de Proceso
+            </Button>
             <Button variant="outline" asChild className="h-11 px-4">
               <Link href="/dashboard/fumigacion/calendario">
                 <Calendar className="mr-2 h-4 w-4" />
@@ -1143,6 +1150,8 @@ export default function FumigacionPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <FumigacionHelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </PageShell>
   )
 }

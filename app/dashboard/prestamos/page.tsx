@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Wallet, Plus, Printer, DollarSign, Users, AlertTriangle, CheckCircle, MessageSquare, ArrowRight, MapPin } from "lucide-react"
+import { Wallet, Plus, Printer, DollarSign, Users, AlertTriangle, CheckCircle, MessageSquare, ArrowRight, MapPin, HelpCircle } from "lucide-react"
 import Link from "next/link"
+import { PrestamosHelpDialog } from "@/components/prestamos/prestamos-help-dialog"
+import { PrestamosOnboardingWizard } from "@/components/prestamos/prestamos-onboarding-wizard"
 
 interface Prestamo {
   id: number
@@ -32,48 +34,243 @@ interface Prestamo {
 const INITIAL_PRESTAMOS: Prestamo[] = [
   {
     id: 1,
-    cliente: "Juan Carlos Pérez",
-    dni: "31.456.789",
-    capital: 150000,
-    interes: 45000,
-    total: 195000,
-    cuotasTotales: 10,
-    cuotasPagas: 4,
-    montoCuota: 19500,
-    frecuencia: "Semanal",
+    cliente: "Madera",
+    dni: "Cliente #01",
+    capital: 50000,
+    interes: 15000,
+    total: 65000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 65000,
+    frecuencia: "Mensual",
     estado: "Al día",
-    fechaInicio: "2026-05-15",
-    fechaVencimiento: "2026-07-24"
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
   },
   {
     id: 2,
-    cliente: "Estela Maris Rodríguez",
-    dni: "28.123.456",
-    capital: 300000,
-    interes: 120000,
-    total: 420000,
-    cuotasTotales: 6,
-    cuotasPagas: 2,
-    montoCuota: 70000,
+    cliente: "Aldo",
+    dni: "Cliente #02",
+    capital: 318500,
+    interes: 74500,
+    total: 393000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 393000,
     frecuencia: "Mensual",
-    estado: "Atrasado",
-    fechaInicio: "2026-04-01",
-    fechaVencimiento: "2026-10-01"
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
   },
   {
     id: 3,
-    cliente: "Mariano Ariel Gómez",
-    dni: "35.789.012",
-    capital: 80000,
-    interes: 32000,
-    total: 112000,
-    cuotasTotales: 20,
-    cuotasPagas: 5,
-    montoCuota: 5600,
-    frecuencia: "Diario",
-    estado: "Vencido",
-    fechaInicio: "2026-06-01",
-    fechaVencimiento: "2026-06-25"
+    cliente: "Máquina (Préstamo 1)",
+    dni: "Cliente #03",
+    capital: 100000,
+    interes: 30000,
+    total: 130000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 130000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 4,
+    cliente: "Máquina (Préstamo 2)",
+    dni: "Cliente #04",
+    capital: 200000,
+    interes: 60000,
+    total: 260000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 260000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 5,
+    cliente: "Farana",
+    dni: "Cliente #05",
+    capital: 250000,
+    interes: 75000,
+    total: 325000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 325000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 6,
+    cliente: "Máquina (Préstamo 3)",
+    dni: "Cliente #06",
+    capital: 100000,
+    interes: 30000,
+    total: 130000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 130000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 7,
+    cliente: "Máquina (Préstamo 4)",
+    dni: "Cliente #07",
+    capital: 200000,
+    interes: 60000,
+    total: 260000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 260000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 8,
+    cliente: "Máquina (Préstamo 5)",
+    dni: "Cliente #08",
+    capital: 400000,
+    interes: 120000,
+    total: 520000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 520000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 9,
+    cliente: "Máquina (Préstamo 6)",
+    dni: "Cliente #09",
+    capital: 60000,
+    interes: 18000,
+    total: 78000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 78000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 10,
+    cliente: "Maquina (Préstamo 7)",
+    dni: "Cliente #10",
+    capital: 50000,
+    interes: 15000,
+    total: 65000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 65000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 11,
+    cliente: "Máquina (Préstamo 8)",
+    dni: "Cliente #11",
+    capital: 200000,
+    interes: 60000,
+    total: 260000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 260000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 12,
+    cliente: "Máquina (Préstamo 9)",
+    dni: "Cliente #12",
+    capital: 50000,
+    interes: 15000,
+    total: 65000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 65000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 13,
+    cliente: "Máquina (Préstamo 10)",
+    dni: "Cliente #13",
+    capital: 100000,
+    interes: 30000,
+    total: 130000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 130000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 14,
+    cliente: "Máquina (Septiembre)",
+    dni: "Cliente #14",
+    capital: 350000,
+    interes: 150000,
+    total: 500000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 500000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-15"
+  },
+  {
+    id: 15,
+    cliente: "Padre máquina",
+    dni: "Cliente #15",
+    capital: 400000,
+    interes: 120000,
+    total: 520000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 520000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
+  },
+  {
+    id: 16,
+    cliente: "Enano",
+    dni: "Cliente #16",
+    capital: 400000,
+    interes: 120000,
+    total: 520000,
+    cuotasTotales: 1,
+    cuotasPagas: 0,
+    montoCuota: 520000,
+    frecuencia: "Mensual",
+    estado: "Al día",
+    fechaInicio: "2026-08-01",
+    fechaVencimiento: "2026-09-01"
   }
 ]
 
@@ -81,6 +278,7 @@ export default function PrestamosPage() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([])
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false)
   const [modalWapOpen, setModalWapOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
   
   // Formulario Nuevo Préstamo
@@ -93,7 +291,7 @@ export default function PrestamosPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("claver:prestamos")
-    if (saved) {
+    if (saved && saved.includes("Madera")) {
       setPrestamos(JSON.parse(saved))
     } else {
       setPrestamos(INITIAL_PRESTAMOS)
@@ -171,8 +369,11 @@ export default function PrestamosPage() {
             <p className="text-slate-500">Originación, cuotas y ruteo inteligente para prestamistas de efectivo.</p>
           </div>
           <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setHelpOpen(true)} className="border-blue-300 text-blue-700 hover:bg-blue-50 bg-white">
+              <HelpCircle className="mr-2 h-4 w-4 text-blue-600" /> Manual & Diagrama
+            </Button>
             <Link href="/dashboard/prestamos/cobranza">
-              <Button variant="outline" className="border-slate-300 hover:bg-slate-100">
+              <Button variant="outline" className="border-slate-300 hover:bg-slate-100 bg-white">
                 <MapPin className="mr-2 h-4 w-4 text-emerald-600" /> Ruteo Cobranza
               </Button>
             </Link>
@@ -453,6 +654,9 @@ export default function PrestamosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PrestamosHelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
+      <PrestamosOnboardingWizard onComplete={() => {}} />
     </MotionPage>
   )
 }

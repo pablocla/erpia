@@ -31,7 +31,8 @@ const cache = new Map<string, CacheEntry>()
 
 const DOCS_DIR = path.join(process.cwd(), "content", "docs")
 
-function slugify(text: string) {
+function slugify(input: any) {
+  const text = typeof input === "string" ? input : (input?.text || input?.raw || String(input || ""))
   return text
     .toLowerCase()
     .normalize("NFD")
@@ -40,9 +41,11 @@ function slugify(text: string) {
     .replace(/(^-|-$)/g, "")
 }
 
-/** Estilos orientados a lectura amigable (no “manual de ingeniero denso”) */
+/** Estilos orientados a lectura amigable (soporta marked v12+ y firmas legacy) */
 const renderer = {
-  heading(text: string, level: number) {
+  heading(this: any, arg1: any, arg2?: any) {
+    const text = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
+    const level = typeof arg1 === "object" && arg1 !== null ? (arg1.depth || 2) : Number(arg2 || 2)
     const id = slugify(text)
     const levelClasses: Record<number, string> = {
       1: "text-2xl md:text-3xl font-extrabold tracking-tight text-foreground mb-4 mt-2",
@@ -53,46 +56,63 @@ const renderer = {
     const cls = levelClasses[level] || "text-sm font-medium mt-4 mb-2 text-foreground"
     return `<h${level} id="${id}" class="scroll-mt-24 group relative ${cls}">${text}<a href="#${id}" class="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-primary font-mono text-xs" aria-label="Enlace a sección">#</a></h${level}>`
   },
-  paragraph(text: string) {
+  paragraph(arg1: any) {
+    const text = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<p class="text-[15px] md:text-base leading-relaxed text-foreground/85 mb-4">${text}</p>`
   },
-  list(body: string, ordered: boolean) {
+  list(arg1: any, arg2?: any) {
+    const body = typeof arg1 === "object" && arg1 !== null ? (arg1.body || arg1.raw || "") : String(arg1 || "")
+    const ordered = typeof arg1 === "object" && arg1 !== null ? Boolean(arg1.ordered) : Boolean(arg2)
     const tag = ordered ? "ol" : "ul"
     const listCls = ordered
       ? "list-decimal pl-5 space-y-2.5 mb-5 text-[15px] text-foreground/85 marker:text-primary marker:font-semibold"
       : "list-disc pl-5 space-y-2.5 mb-5 text-[15px] text-foreground/85 marker:text-primary"
     return `<${tag} class="${listCls}">${body}</${tag}>`
   },
-  listitem(text: string) {
+  listitem(arg1: any) {
+    const text = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<li class="leading-relaxed pl-1">${text}</li>`
   },
-  blockquote(quote: string) {
+  blockquote(arg1: any) {
+    const quote = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<aside class="my-6 rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 md:px-5 md:py-4 text-[15px] leading-relaxed text-foreground shadow-sm [&>p]:mb-0 [&>p]:text-foreground/90">${quote}</aside>`
   },
-  codespan(code: string) {
+  codespan(arg1: any) {
+    const code = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<code class="rounded-md bg-muted px-1.5 py-0.5 text-[13px] font-mono text-foreground border border-border/60">${code}</code>`
   },
-  code(code: string, infostring: string | undefined) {
+  code(arg1: any, arg2?: any) {
+    const code = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
+    const infostring = typeof arg1 === "object" && arg1 !== null ? (arg1.lang || "") : String(arg2 || "")
     if (infostring === "mermaid") {
       return `<div class="my-8 rounded-2xl border border-border/80 bg-gradient-to-b from-muted/40 to-muted/10 p-3 md:p-5 shadow-sm overflow-x-auto"><p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Diagrama</p><pre class="mermaid !bg-transparent !border-0 !p-0 !m-0 text-center min-h-[80px]">${code}</pre></div>`
     }
     return `<pre class="bg-slate-950 dark:bg-black/60 p-4 rounded-2xl border border-border my-6 overflow-x-auto shadow-inner"><code class="language-${infostring || "plaintext"} text-slate-100 text-[12px] md:text-[13px] font-mono leading-relaxed">${code}</code></pre>`
   },
-  table(header: string, body: string) {
+  table(arg1: any, arg2?: any) {
+    const header = typeof arg1 === "object" && arg1 !== null ? (arg1.header || "") : String(arg1 || "")
+    const body = typeof arg1 === "object" && arg1 !== null ? (arg1.body || "") : String(arg2 || "")
     return `<div class="overflow-x-auto my-6 rounded-2xl border border-border shadow-sm"><table class="w-full text-left border-collapse min-w-[280px]"><thead class="bg-muted/80"><tr>${header}</tr></thead><tbody class="bg-card/40">${body}</tbody></table></div>`
   },
-  tablerow(content: string) {
+  tablerow(arg1: any) {
+    const content = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<tr class="border-b border-border/70 last:border-0 hover:bg-muted/25 transition-colors">${content}</tr>`
   },
-  tablecell(content: string, flags: { header: boolean; align: string | null }) {
-    const tag = flags.header ? "th" : "td"
-    const align = flags.align ? `text-${flags.align}` : ""
-    const base = flags.header
+  tablecell(arg1: any, arg2?: any) {
+    const content = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
+    const flags = typeof arg1 === "object" && arg1 !== null ? arg1 : (arg2 || {})
+    const isHeader = Boolean(flags.header)
+    const alignStr = flags.align ? `text-${flags.align}` : ""
+    const tag = isHeader ? "th" : "td"
+    const base = isHeader
       ? "p-3 md:p-3.5 text-xs font-bold uppercase tracking-wide text-muted-foreground border-b border-border"
       : "p-3 md:p-3.5 text-sm text-foreground/90 align-top"
-    return `<${tag} class="${base} ${align}">${content}</${tag}>`
+    return `<${tag} class="${base} ${alignStr}">${content}</${tag}>`
   },
-  link(href: string, title: string | null | undefined, text: string) {
+  link(arg1: any, arg2?: any, arg3?: any) {
+    const href = typeof arg1 === "object" && arg1 !== null ? (arg1.href || "") : String(arg1 || "")
+    const title = typeof arg1 === "object" && arg1 !== null ? arg1.title : arg2
+    const text = typeof arg1 === "object" && arg1 !== null ? (arg1.text || "") : String(arg3 || "")
     const isInternal = href.startsWith("/dashboard") || href.startsWith("#")
     const titleAttr = title ? ` title="${title}"` : ""
     if (isInternal && !href.startsWith("#")) {
@@ -100,7 +120,8 @@ const renderer = {
     }
     return `<a href="${href}"${titleAttr} class="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary" ${href.startsWith("http") ? 'target="_blank" rel="noopener noreferrer"' : ""}>${text}</a>`
   },
-  strong(text: string) {
+  strong(arg1: any) {
+    const text = typeof arg1 === "object" && arg1 !== null ? (arg1.text || arg1.raw || "") : String(arg1 || "")
     return `<strong class="font-semibold text-foreground">${text}</strong>`
   },
   hr() {

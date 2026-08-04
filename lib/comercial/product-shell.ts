@@ -490,12 +490,11 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       DEFAULT_MORE_TAB,
     ],
     kpis: [
-      { id: "calle", label: "Capital prestado", icon: Wallet, format: "currency" },
-      { id: "interes", label: "Interés 30%", icon: TrendingUp, format: "currency" },
-      { id: "total", label: "Total a cobrar", icon: Landmark, format: "currency" },
-      { id: "mora", label: "En mora (PAR30)", icon: AlertTriangle, format: "number" },
+      { id: "calle", label: "Plata en la calle", icon: Wallet, format: "currency" },
+      { id: "cobrar_hoy", label: "Cobrar hoy / esta semana", icon: Landmark, format: "currency", href: "/dashboard/prestamos/cobranza" },
+      { id: "interes", label: "Ganancia (30%)", icon: TrendingUp, format: "currency" },
     ],
-    primaryAction: { label: "Ver Préstamos", href: "/dashboard/prestamos" },
+    primaryAction: { label: "💸 Ver Lista y Cobrar", href: "/dashboard/prestamos/cobranza" },
   },
 }
 

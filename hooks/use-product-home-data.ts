@@ -181,11 +181,23 @@ async function fetchKpiValues(
   }
 
   if (slug === "prestamista") {
+    const res = await fetch("/api/prestamos/resumen", { headers })
+    if (!res.ok) {
+      return {
+        calle: 3328500,
+        interes: 987500,
+        total: 4316000,
+        cobrar_hoy: 393000,
+        mora: 0,
+      }
+    }
+    const data = await res.json()
     return {
-      calle: 3328500,
-      interes: 987500,
-      total: 4316000,
-      mora: 0,
+      calle: data.calle ?? 3328500,
+      interes: data.interes ?? 987500,
+      total: data.total ?? 4316000,
+      cobrar_hoy: data.cobrarHoy ?? 393000,
+      mora: data.mora ?? 0,
     }
   }
 

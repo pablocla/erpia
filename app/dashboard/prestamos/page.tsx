@@ -276,20 +276,33 @@ const INITIAL_PRESTAMOS: Prestamo[] = [
 
 export default function PrestamosPage() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([])
+  const [loading, setLoading] = useState(true)
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false)
   const [modalWapOpen, setModalWapOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
   
-  // Formulario Nuevo Préstamo
+  // Formulario Nuevo Préstamo (30% mensual por defecto)
   const [nuevoCliente, setNuevoCliente] = useState("")
-  const [nuevoDni, setNuevoDni] = useState("")
   const [nuevoCapital, setNuevoCapital] = useState(100000)
-  const [nuevaTna, setNuevaTna] = useState(120) // 120% Tasa Nominal Anual
-  const [nuevasCuotas, setNuevasCuotas] = useState(12)
-  const [nuevaFrecuencia, setNuevaFrecuencia] = useState<"Diario" | "Semanal" | "Mensual">("Mensual")
+  const [nuevoInteresPct, setNuevoInteresPct] = useState(30) // 30% TEM mensual por defecto
+  const [nuevoTelefono, setNuevoTelefono] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
+  const cargarPrestamos = async () => {
+    try {
+      const res = await fetch("/api/prestamos")
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0) {
+          setPrestamos(data)
+          setLoading(false)
+          return
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
     const saved = localStorage.getItem("claver:prestamos")
     if (saved && saved.includes("Madera")) {
       setPrestamos(JSON.parse(saved))
@@ -297,58 +310,91 @@ export default function PrestamosPage() {
       setPrestamos(INITIAL_PRESTAMOS)
       localStorage.setItem("claver:prestamos", JSON.stringify(INITIAL_PRESTAMOS))
     }
-  }, [])
-
-  const saveToStorage = (newPrestamos: Prestamo[]) => {
-    setPrestamos(newPrestamos)
-    localStorage.setItem("claver:prestamos", JSON.stringify(newPrestamos))
+    setLoading(false)
   }
 
-  // Cálculos dinámicos del simulador
-  const calculoInteres = Math.round(nuevoCapital * (nuevaTna / 100) * (nuevasCuotas / (nuevaFrecuencia === "Diario" ? 365 : nuevaFrecuencia === "Semanal" ? 52 : 12)))
-  const calculoTotal = nuevoCapital + calculoInteres
-  const calculoCuota = Math.round(calculoTotal / nuevasCuotas)
+  useEffect(() => {
+    void cargarPrestamos()
+  }, [])
 
-  const handleCrearPrestamo = (e: React.FormEvent) => {
+  // Cálculos dinámicos del simulador (30% directo)
+  const calculoInteres = Math.round((nuevoCapital * nuevoInteresPct) / 100)
+  const calculoTotal = nuevoCapital + calculoInteres
+
+  const handleCrearPrestamo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nuevoCliente || !nuevoDni) return
+    if (!nuevoCliente || !nuevoCapital) return
+    setSubmitting(true)
+
+    try {
+      const res = await fetch("/api/prestamos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente: nuevoCliente,
+          capital: nuevoCapital,
+          interesPct: nuevoInteresPct,
+          telefono: nuevoTelefono
+        })
+      })
+      if (res.ok) {
+        await cargarPrestamos()
+        setModalNuevoOpen(false)
+        setNuevoCliente("")
+        setNuevoCapital(100000)
+        setNuevoTelefono("")
+        setSubmitting(false)
+        return
+      }
+    } catch (e) {
+      console.error(e)
+    }
 
     const nuevo: Prestamo = {
       id: Date.now(),
       cliente: nuevoCliente,
-      dni: nuevoDni,
+      dni: "Cliente #" + (prestamos.length + 1),
       capital: nuevoCapital,
       interes: calculoInteres,
       total: calculoTotal,
-      cuotasTotales: nuevasCuotas,
+      cuotasTotales: 1,
       cuotasPagas: 0,
-      montoCuota: calculoCuota,
-      frecuencia: nuevaFrecuencia,
+      montoCuota: calculoTotal,
+      frecuencia: "Mensual",
       estado: "Al día",
       fechaInicio: new Date().toISOString().split("T")[0],
-      fechaVencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 * nuevasCuotas).toISOString().split("T")[0]
+      fechaVencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
     }
 
     const actualizados = [nuevo, ...prestamos]
-    saveToStorage(actualizados)
+    setPrestamos(actualizados)
+    localStorage.setItem("claver:prestamos", JSON.stringify(actualizados))
     setModalNuevoOpen(false)
-    // Limpiar campos
     setNuevoCliente("")
-    setNuevoDni("")
     setNuevoCapital(100000)
-    setNuevasCuotas(12)
+    setSubmitting(false)
   }
 
-  const handleCobrarCuota = (id: number) => {
+  const handleCobrarCuota = async (id: number, monto: number) => {
+    try {
+      await fetch("/api/prestamos/cobrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clienteId: id, monto })
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
     const actualizados = prestamos.map(p => {
       if (p.id === id) {
         const pagas = Math.min(p.cuotasPagas + 1, p.cuotasTotales)
-        const estado = pagas === p.cuotasTotales ? "Al día" : p.estado // si termina de pagar queda al día/completado
-        return { ...p, cuotasPagas: pagas, estado }
+        return { ...p, cuotasPagas: pagas, estado: "Al día" as const }
       }
       return p
     })
-    saveToStorage(actualizados)
+    setPrestamos(actualizados)
+    localStorage.setItem("claver:prestamos", JSON.stringify(actualizados))
   }
 
   // Métricas

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Printer, ArrowLeft, Download, Landmark } from "lucide-react"
 import Link from "next/link"
+import { authFetch } from "@/lib/stores"
 
 interface PagareItem {
   id: number
@@ -26,7 +27,7 @@ export default function PagaresPage() {
   useEffect(() => {
     const fetchPagares = async () => {
       try {
-        const res = await fetch("/api/prestamos")
+        const res = await authFetch("/api/prestamos")
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length > 0) {

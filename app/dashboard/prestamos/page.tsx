@@ -14,6 +14,7 @@ import { Wallet, Plus, Printer, DollarSign, Users, AlertTriangle, CheckCircle, M
 import Link from "next/link"
 import { PrestamosHelpDialog } from "@/components/prestamos/prestamos-help-dialog"
 import { PrestamosOnboardingWizard } from "@/components/prestamos/prestamos-onboarding-wizard"
+import { authFetch } from "@/lib/stores"
 
 interface Prestamo {
   id: number
@@ -291,7 +292,7 @@ export default function PrestamosPage() {
 
   const cargarPrestamos = async () => {
     try {
-      const res = await fetch("/api/prestamos")
+      const res = await authFetch("/api/prestamos")
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
@@ -327,9 +328,8 @@ export default function PrestamosPage() {
     setSubmitting(true)
 
     try {
-      const res = await fetch("/api/prestamos", {
+      const res = await authFetch("/api/prestamos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cliente: nuevoCliente,
           capital: nuevoCapital,
@@ -375,11 +375,10 @@ export default function PrestamosPage() {
     setSubmitting(false)
   }
 
-  const handleCobrarCuota = async (id: number, monto: number) => {
+  const handleCobrarCuota = async (id: number, monto: number = 0) => {
     try {
-      await fetch("/api/prestamos/cobrar", {
+      await authFetch("/api/prestamos/cobrar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clienteId: id, monto })
       })
     } catch (e) {
@@ -587,75 +586,53 @@ export default function PrestamosPage() {
         </Card>
       </div>
 
-      {/* Modal: Otorgar Préstamo (Con Simulador de Tasas) */}
+      {/* Modal: Otorgar Préstamo */}
       <Dialog open={modalNuevoOpen} onOpenChange={setModalNuevoOpen}>
-        <DialogContent className="max-w-2xl bg-white border border-slate-200 shadow-xl rounded-xl">
+        <DialogContent className="max-w-xl bg-white border border-slate-200 shadow-xl rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Otorgar Nuevo Préstamo</DialogTitle>
-            <DialogDescription>Simulá cuotas, intereses y generá la orden comercial de cobro en un solo paso.</DialogDescription>
+            <DialogDescription>Cálculo automático con tasa del 30% mensual.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCrearPrestamo} className="space-y-6 py-2">
+          <form onSubmit={handleCrearPrestamo} className="space-y-4 py-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cliente">Nombre Completo del Cliente</Label>
                 <Input id="cliente" value={nuevoCliente} onChange={e => setNuevoCliente(e.target.value)} placeholder="Ej: Roberto Sánchez" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dni">DNI / Documento</Label>
-                <Input id="dni" value={nuevoDni} onChange={e => setNuevoDni(e.target.value)} placeholder="Ej: 22.345.678" required />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="capital">Capital a Prestar ($)</Label>
-                <Input id="capital" type="number" value={nuevoCapital} onChange={e => setNuevoCapital(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tna">Tasa Nominal Anual (%)</Label>
-                <Input id="tna" type="number" value={nuevaTna} onChange={e => setNuevaTna(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="frecuencia">Frecuencia de Pago</Label>
-                <select 
-                  id="frecuencia" 
-                  value={nuevaFrecuencia} 
-                  onChange={e => setNuevaFrecuencia(e.target.value as any)}
-                  className="w-full h-10 px-3 border rounded-md border-slate-200 bg-white text-sm"
-                >
-                  <option value="Diario">Diario</option>
-                  <option value="Semanal">Semanal</option>
-                  <option value="Mensual">Mensual</option>
-                </select>
+                <Label htmlFor="telefono">WhatsApp / Teléfono (opcional)</Label>
+                <Input id="telefono" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} placeholder="Ej: 1123456789" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="cuotas">Cantidad de Cuotas</Label>
-                <Input id="cuotas" type="number" value={nuevasCuotas} onChange={e => setNuevasCuotas(Number(e.target.value))} required />
+                <Label htmlFor="capital">Capital a Prestar ($)</Label>
+                <Input id="capital" type="number" value={nuevoCapital} onChange={e => setNuevoCapital(Number(e.target.value))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="interesPct">Interés Mensual (%)</Label>
+                <Input id="interesPct" type="number" value={nuevoInteresPct} onChange={e => setNuevoInteresPct(Number(e.target.value))} required />
               </div>
             </div>
 
             {/* Caja de Simulación en Vivo */}
             <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-slate-500">Intereses Totales ({nuevaTna}% TNA):</p>
-                <p className="text-lg font-bold text-slate-800">${calculoInteres.toLocaleString("es-AR")}</p>
+                <p className="text-slate-500">Ganancia Interés ({nuevoInteresPct}%):</p>
+                <p className="text-lg font-bold text-emerald-600">${calculoInteres.toLocaleString("es-AR")}</p>
               </div>
               <div>
-                <p className="text-slate-500">Monto Final a Devolver:</p>
+                <p className="text-slate-500">Total a Cobrar:</p>
                 <p className="text-lg font-bold text-blue-600">${calculoTotal.toLocaleString("es-AR")}</p>
-              </div>
-              <div className="col-span-2 pt-2 border-t border-slate-200 flex justify-between items-center">
-                <span className="text-slate-500">Valor de cada cuota:</span>
-                <span className="text-xl font-black text-emerald-600">${calculoCuota.toLocaleString("es-AR")} / {nuevaFrecuencia.toLowerCase()}</span>
               </div>
             </div>
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setModalNuevoOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">Confirmar y Generar Pagaré</Button>
+              <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                {submitting ? "Guardando..." : "Confirmar y Crear Préstamo"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

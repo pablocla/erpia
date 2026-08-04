@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, MessageSquare, CheckCircle, ArrowLeft, Landmark, Calendar, Phone } from "lucide-react"
 import Link from "next/link"
+import { authFetch } from "@/lib/stores"
 
 interface DeudorCobranza {
   id: number
@@ -26,7 +27,7 @@ export default function PlanillaCobranzaPage() {
   useEffect(() => {
     const fetchCobranzas = async () => {
       try {
-        const res = await fetch("/api/prestamos")
+        const res = await authFetch("/api/prestamos")
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length > 0) {
@@ -52,9 +53,8 @@ export default function PlanillaCobranzaPage() {
 
   const handleMarcarCobrado = async (id: number, monto: number) => {
     try {
-      await fetch("/api/prestamos/cobrar", {
+      await authFetch("/api/prestamos/cobrar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clienteId: id, monto })
       })
     } catch (e) {

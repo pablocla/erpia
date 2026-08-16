@@ -6,12 +6,12 @@ import { getIndustryTemplate } from "@/lib/comercial/industry-templates"
 import { cn } from "@/lib/utils"
 
 const FEATURED_PACKS = [
+  { id: "oficios", label: "Oficios & Obras", hint: "Presupuestos 3 niveles + señas" },
   { id: "almacen", label: "Fiado de barrio", hint: "Libreta gratis" },
   { id: "prestamista", label: "Préstamos", hint: "Cuotas y deudores" },
   { id: "consorcios_admin", label: "Consorcios", hint: "Expensas + avisos" },
   { id: "salon_belleza", label: "Turnos salón", hint: "Agenda + link web" },
   { id: "gimnasio", label: "Gimnasio", hint: "Membresías y morosos" },
-  { id: "bar_restaurant", label: "Restó / bar", hint: "Mesas y comandas" },
 ] as const
 
 interface DemoFeaturedPacksProps {

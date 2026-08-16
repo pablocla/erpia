@@ -14,6 +14,9 @@ import {
   TrendingUp,
   AlertTriangle,
   FileText,
+  Wrench,
+  Plus,
+  Gift,
   type LucideIcon,
 } from "lucide-react"
 import { type SubSaasSlug, SUB_SAAS_APPS, SUB_SAAS_DESTACADOS } from "./sub-saas-catalog"
@@ -48,16 +51,36 @@ export interface ProductShellConfig {
 const DEFAULT_MORE_TAB: ProductShellTab = { href: "#more", icon: MoreHorizontal, label: "Más" }
 
 const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
+  oficios: "oficios",
   fiado: "fiado",
   cobranza: "cobra",
   pos: "pos",
-  niche: "turnos",
-  servicios: "monotributo",
+  niche: "oficios",
+  servicios: "oficios",
   fumigacion: "fumigacion",
   prestamista: "prestamista",
 }
 
 export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
+  oficios: {
+    slug: "oficios",
+    marca: "Claver Oficios",
+    icono: Wrench,
+    tabs: [
+      { href: "/dashboard/oficios", icon: Wrench, label: "Trabajos" },
+      { href: "/dashboard/oficios/nuevo", icon: Plus, label: "Presupuesto" },
+      { href: "/dashboard/oficios/cuadrilla", icon: Users, label: "Cuadrilla" },
+      { href: "/dashboard/afiliados", icon: Gift, label: "Mi Red" },
+      DEFAULT_MORE_TAB,
+    ],
+    kpis: [
+      { id: "obras_activas", label: "Obras activas", icon: Wrench, format: "number", href: "/dashboard/oficios" },
+      { id: "senas_cobradas", label: "Señas cobradas", icon: Wallet, format: "currency", href: "/dashboard/oficios" },
+      { id: "presupuestos_pendientes", label: "Cotizaciones", icon: BookOpen, format: "number", href: "/dashboard/oficios" },
+      { id: "operarios", label: "Cuadrilla", icon: Users, format: "number", href: "/dashboard/oficios/cuadrilla" },
+    ],
+    primaryAction: { label: "Nuevo Presupuesto", href: "/dashboard/oficios/nuevo" },
+  },
   pos: {
     slug: "pos",
     marca: "Claver POS",

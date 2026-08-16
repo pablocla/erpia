@@ -1276,16 +1276,16 @@ export async function seedIndustryDemoData(
   }
 
   // Movimientos de nicho DESPUÉS de socios/clientes para poder linkear clienteId
-  if (template.engancheId?.startsWith("niche.")) {
-    if (template.engancheId === "niche.taller_mecanico") {
-      await safe("ot:taller_mecanico", () => seedTallerMecanicoOTDemo(empresaId))
-    } else if (template.engancheId === "niche.fumigacion" || template.id === "fumigacion") {
-      await safe("ot:fumigacion", () => seedFumigacionOTDemo(empresaId))
-    } else {
-      await safe(`niche:${template.engancheId}`, () =>
-        seedNicheMovimientosDemo(empresaId, template.engancheId!),
-      )
-    }
+  if (template.id === "oficios" || template.engancheId === "niche.oficios") {
+    await safe("oficios:obras", () => seedOficiosDemo(empresaId))
+  } else if (template.engancheId === "niche.taller_mecanico") {
+    await safe("ot:taller_mecanico", () => seedTallerMecanicoOTDemo(empresaId))
+  } else if (template.engancheId === "niche.fumigacion" || template.id === "fumigacion") {
+    await safe("ot:fumigacion", () => seedFumigacionOTDemo(empresaId))
+  } else if (template.engancheId?.startsWith("niche.")) {
+    await safe(`niche:${template.engancheId}`, () =>
+      seedNicheMovimientosDemo(empresaId, template.engancheId!),
+    )
   }
 
   if (template.id === "fumigacion" && template.engancheId !== "niche.fumigacion") {
@@ -1448,5 +1448,128 @@ async function seedTallerMecanicoOTDemo(empresaId: number) {
         { descripcion: "Mano de obra service", cantidad: 1, precioUnitario: 15000, tipo: "MANO_OBRA" }
       ]
     })
+  }
+}
+
+async function seedOficiosDemo(empresaId: number) {
+  // 1. Crear operarios de cuadrilla
+  const op1 = await prisma.oficioOperario.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      empresaId,
+      nombre: "Carlos Gómez",
+      telefono: "11-4567-8901",
+      especialidad: "Oficial Gasista Matriculado",
+      costoJornal: 45000,
+      activo: true,
+    },
+  }).catch(() => null)
+
+  const op2 = await prisma.oficioOperario.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      empresaId,
+      nombre: "Mateo Rossi",
+      telefono: "11-9876-5432",
+      especialidad: "Ayudante Albañil",
+      costoJornal: 30000,
+      activo: true,
+    },
+  }).catch(() => null)
+
+  // 2. Crear clientes de obras
+  const c1 = await prisma.cliente.create({
+    data: {
+      empresaId,
+      nombre: "Arq. Valentina Rossi",
+      telefono: "11-5555-8899",
+      email: "valentina.rossi@estudio.com.ar",
+      direccion: "Av. Libertador 4500, Belgrano, CABA",
+      activo: true,
+    },
+  }).catch(() => null)
+
+  const c2 = await prisma.cliente.create({
+    data: {
+      empresaId,
+      nombre: "Dr. Esteban Benítez",
+      telefono: "11-4433-2211",
+      email: "drbenitez@gmail.com",
+      direccion: "Calle 14 Nro 650, La Plata",
+      activo: true,
+    },
+  }).catch(() => null)
+
+  // 3. Crear Trabajos
+  if (c1) {
+    await prisma.oficioTrabajo.create({
+      data: {
+        empresaId,
+        clienteId: c1.id,
+        titulo: "Instalación Completa Cañería Termofusión y Griferías",
+        descripcion: "Tendido de 25m caño IPS termofusión, colocación de griferías FV monocomando en baño principal y cocina.",
+        direccion: c1.direccion,
+        estado: "PRESUPUESTADO",
+        tokenPublico: "demo-obra-plomeria",
+        porcentajeSena: 30,
+        montoEstimado: 450000,
+        opcionesPresupuesto: [
+          {
+            nombre: "Opción Básica (Económica)",
+            descripcion: "Cañería estándar + griferías nacionales línea básica.",
+            total: 380000,
+            items: [
+              { concepto: "Mano de obra termofusión", subtotal: 250000 },
+              { concepto: "Materiales estándar", subtotal: 130000 },
+            ],
+          },
+          {
+            nombre: "Opción Recomendada (IPS Fusión + FV)",
+            descripcion: "Caños IPS con barrera antibacteriana y griferías FV con cierre cerámico.",
+            total: 450000,
+            recomendada: true,
+            items: [
+              { concepto: "Mano de obra termofusión", subtotal: 250000 },
+              { concepto: "Cañerías IPS & Accesorios", subtotal: 200000 },
+            ],
+          },
+          {
+            nombre: "Opción Premium (Garantía Extendida 2 Años)",
+            descripcion: "IPS Máxima Presión, pruebas hidráulicas con manómetro digital y garantía extendida.",
+            total: 580000,
+            items: [
+              { concepto: "Mano de obra especializada", subtotal: 300000 },
+              { concepto: "Materiales reforzados y válvulas", subtotal: 280000 },
+            ],
+          },
+        ],
+      },
+    }).catch(() => null)
+  }
+
+  if (c2) {
+    await prisma.oficioTrabajo.create({
+      data: {
+        empresaId,
+        clienteId: c2.id,
+        titulo: "Renovación Tablero Trifásico y Disyuntores Schneider",
+        descripcion: "Montaje de caja tablero DIN 24 módulos, disyuntores bipolares y jabalina de puesta a tierra reglamentaria.",
+        direccion: c2.direccion,
+        estado: "EN_CURSO",
+        tokenPublico: "demo-obra-electricidad",
+        montoAcordado: 380000,
+        porcentajeSena: 40,
+        senaPagada: true,
+        gastosMateriales: [
+          { proveedor: "Electricidad Central", monto: 85000, comprobante: "FAC-B-0004-9876" },
+          { proveedor: "Ferretería La Tuerca", monto: 14500, comprobante: "TICKET-4521" },
+        ],
+        fotosAntes: [
+          "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&q=80",
+        ],
+      },
+    }).catch(() => null)
   }
 }

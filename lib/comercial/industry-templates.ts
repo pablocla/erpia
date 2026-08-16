@@ -87,6 +87,27 @@ function tpl(
 /** Todas las industrias disponibles en el sensor comercial */
 export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
   tpl({
+    id: "oficios",
+    rubro: "otro",
+    label: "Oficios & Obras",
+    emoji: "🛠️",
+    group: "Servicios & fitness",
+    tagline: "Presupuestos en 3 niveles, fotos antes/después y cobro de señas.",
+    wowMoment: "Creá un presupuesto con 3 opciones y cobrá la seña por Mercado Pago en 1 tap.",
+    isRetail: false,
+    engancheId: "niche.oficios",
+    goldenPath: "/dashboard/oficios",
+    featured: true,
+    menuLabels: {
+      "/dashboard/oficios": "Mis Obras & Trabajos",
+      "/dashboard/oficios/nuevo": "Nuevo Presupuesto",
+      "/dashboard/oficios/cuadrilla": "Cuadrilla & Jornales",
+      "/dashboard/oficios/services": "Services & Mantenimientos",
+      "/dashboard/afiliados": "Mi Red & Ganancias",
+    },
+    sectionLabels: { oficios: "Obras & Cuadrilla" },
+  }),
+  tpl({
     id: "almacen",
     rubro: "kiosco",
     label: "Almacén de barrio",

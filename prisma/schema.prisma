@@ -245,6 +245,8 @@ model Empresa {
   oficioOperarios             OficioOperario[]
   oficioBoletines             OficioBoletinTecnico[]
   afiliadosReferidos          AfiliadoReferido[]
+  oficioMaquinarias           OficioMaquinaria[]
+  oficioAlquilerContratoes    OficioAlquilerContrato[]
 
   @@map("empresas")
 }
@@ -369,32 +371,33 @@ model Cliente {
   profesionId       Int?
   profesion         Profesion?       @relation(fields: [profesionId], references: [id])
 
-  facturas               Factura[]
-  notasCredito           NotaCredito[]
-  notasDebito            NotaDebito[]
-  remitos                Remito[]
-  cuentasBancarias       CuentaBancaria[]
-  cheques                Cheque[]
-  presupuestos           Presupuesto[]
-  cuentasCobrar          CuentaCobrar[]
-  recibos                Recibo[]
-  padronRegimenes        PadronRegimenCliente[]
-  turnos                 Turno[]
-  pacientes              Paciente[]
-  membresias             Membresia[]
-  pedidosVenta           PedidoVenta[]
-  paradasRuta            ParadaRuta[]
-  movimientosEnvase      MovimientoEnvase[]
-  valesDinero            ValeDinero[]
-  agroContratos          AgroContrato[]
-  unidadesResidente      UnidadFuncional[]      @relation("ClienteResidente")
-  propiedadesPropietario Propiedad[]            @relation("PropiedadPropietario")
-  contratosInquilino     ContratoAlquiler[]     @relation("ContratoInquilino")
-  contratosPropietario   ContratoAlquiler[]     @relation("ContratoPropietario")
-  nicheMovimientos       NicheMovimiento[]
-  ordenServicios         OrdenServicio[]
-  reservasHotel          ReservaHotel[]
-  oficioTrabajos         OficioTrabajo[]
+  facturas                 Factura[]
+  notasCredito             NotaCredito[]
+  notasDebito              NotaDebito[]
+  remitos                  Remito[]
+  cuentasBancarias         CuentaBancaria[]
+  cheques                  Cheque[]
+  presupuestos             Presupuesto[]
+  cuentasCobrar            CuentaCobrar[]
+  recibos                  Recibo[]
+  padronRegimenes          PadronRegimenCliente[]
+  turnos                   Turno[]
+  pacientes                Paciente[]
+  membresias               Membresia[]
+  pedidosVenta             PedidoVenta[]
+  paradasRuta              ParadaRuta[]
+  movimientosEnvase        MovimientoEnvase[]
+  valesDinero              ValeDinero[]
+  agroContratos            AgroContrato[]
+  unidadesResidente        UnidadFuncional[]        @relation("ClienteResidente")
+  propiedadesPropietario   Propiedad[]              @relation("PropiedadPropietario")
+  contratosInquilino       ContratoAlquiler[]       @relation("ContratoInquilino")
+  contratosPropietario     ContratoAlquiler[]       @relation("ContratoPropietario")
+  nicheMovimientos         NicheMovimiento[]
+  ordenServicios           OrdenServicio[]
+  reservasHotel            ReservaHotel[]
+  oficioTrabajos           OficioTrabajo[]
+  oficioAlquilerContratoes OficioAlquilerContrato[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -919,11 +922,11 @@ model Producto {
   lineasNotaCredito     LineaNotaCredito[]
   lineasNotaDebito      LineaNotaDebito[]
   unidadMedidaId        Int?
-  unidadMedida          UnidadMedida?        @relation(fields: [unidadMedidaId], references: [id])
+  unidadMedida          UnidadMedida?         @relation(fields: [unidadMedidaId], references: [id])
   /// ClasificaciÃ³n fiscal: determina IVA, exenciÃ³n, cÃ³digo NCM
   clasificacionFiscalId Int?
-  clasificacionFiscal   ClasificacionFiscal? @relation(fields: [clasificacionFiscalId], references: [id])
-  posPlus               PosPlu[]             @relation("ProductoPosPlus")
+  clasificacionFiscal   ClasificacionFiscal?  @relation(fields: [clasificacionFiscalId], references: [id])
+  posPlus               PosPlu[]              @relation("ProductoPosPlus")
   ordenServicioItems    OrdenServicioItem[]
   reglaStockCanals      ReglaStockCanal[]
   stocksUbicacion       StockUbicacion[]
@@ -934,7 +937,7 @@ model Producto {
   lineasConteoCiclico   LineaConteoCiclico[]
   /// Bin preferido de putaway/pick-face (WMS light)
   ubicacionPreferidaId  Int?
-  ubicacionPreferida    UbicacionAlmacen?    @relation("ProductoUbicacionPreferida", fields: [ubicacionPreferidaId], references: [id])
+  ubicacionPreferida    UbicacionAlmacen?     @relation("ProductoUbicacionPreferida", fields: [ubicacionPreferidaId], references: [id])
   /// Clasificación ABC para slotting / conteo cíclico: "A" | "B" | "C" | null
   claseAbc              String?
 
@@ -1641,19 +1644,19 @@ model ListaPicking {
 }
 
 model LineaPicking {
-  id             Int     @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   descripcion    String
   cantidadPedida Float
-  cantidadPicada Float   @default(0)
+  cantidadPicada Float             @default(0)
   ubicacion      String?
   /// "pendiente" | "parcial" | "completo"
-  estado         String  @default("pendiente")
+  estado         String            @default("pendiente")
   /// Bin WMS resuelto (picking dirigido)
   ubicacionId    Int?
   ubicacionRef   UbicacionAlmacen? @relation(fields: [ubicacionId], references: [id])
   loteId         Int?
-  lote           Lote?    @relation(fields: [loteId], references: [id])
-  ordenPath      Int      @default(0)
+  lote           Lote?             @relation(fields: [loteId], references: [id])
+  ordenPath      Int               @default(0)
 
   listaId    Int
   lista      ListaPicking @relation(fields: [listaId], references: [id], onDelete: Cascade)
@@ -2457,7 +2460,7 @@ model Lote {
 
   lineasFactura         LineaFactura[]
   lineasCompra          LineaCompra[]
-  despachoImportacion   DespachoImportacion? @relation(fields: [despachoImportacionId], references: [id])
+  despachoImportacion   DespachoImportacion?  @relation(fields: [despachoImportacionId], references: [id])
   despachoImportacionId Int?
   stocksUbicacion       StockUbicacion[]
   movimientosUbicacion  MovimientoUbicacion[]
@@ -8107,14 +8110,14 @@ model TareaWms {
 
 /// Ola de picking (wave)
 model OlaPicking {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   empresaId   Int
-  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
   depositoId  Int
-  deposito    Deposito @relation(fields: [depositoId], references: [id])
+  deposito    Deposito  @relation(fields: [depositoId], references: [id])
   numero      String
   /// "borrador" | "liberada" | "en_proceso" | "completada" | "cancelada"
-  estado      String   @default("borrador")
+  estado      String    @default("borrador")
   /// Criterio de agrupación libre: carrier, ruta, cutoff, prioridad
   criterio    String?
   carrier     String?
@@ -8122,8 +8125,8 @@ model OlaPicking {
   notas       String?
   liberadaAt  DateTime?
   completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   listas ListaPicking[]
   tareas TareaWms[]
@@ -8192,23 +8195,23 @@ model PackingBulto {
 
 /// Advanced Shipping Notice — preaviso de mercadería en camino
 model AsnRecepcion {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   empresaId      Int
-  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  empresa        Empresa   @relation(fields: [empresaId], references: [id])
   depositoId     Int
-  deposito       Deposito @relation(fields: [depositoId], references: [id])
+  deposito       Deposito  @relation(fields: [depositoId], references: [id])
   numero         String
   ordenCompraId  Int?
   proveedorId    Int?
   /// "esperada" | "en_recepcion" | "cerrada" | "cancelada"
-  estado         String   @default("esperada")
+  estado         String    @default("esperada")
   eta            DateTime?
   /// Si true, recepción ciega (no muestra cantidades esperadas en UI RF)
-  recepcionCiega Boolean  @default(false)
+  recepcionCiega Boolean   @default(false)
   notas          String?
   closedAt       DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   lineas LineaAsn[]
   tareas TareaWms[]
@@ -8237,18 +8240,18 @@ model LineaAsn {
 
 /// Conteo cíclico ABC por ubicación
 model ConteoCiclico {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   empresaId  Int
-  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  empresa    Empresa   @relation(fields: [empresaId], references: [id])
   depositoId Int
-  deposito   Deposito @relation(fields: [depositoId], references: [id])
+  deposito   Deposito  @relation(fields: [depositoId], references: [id])
   numero     String
   /// Filtro ABC: "A" | "B" | "C" | "todas"
-  claseAbc   String   @default("todas")
+  claseAbc   String    @default("todas")
   /// "borrador" | "en_conteo" | "cerrado"
-  estado     String   @default("borrador")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  estado     String    @default("borrador")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   closedAt   DateTime?
 
   lineas LineaConteoCiclico[]
@@ -8303,41 +8306,41 @@ enum TipoOficio {
 }
 
 model OficioTrabajo {
-  id                  String              @id @default(uuid())
-  empresaId           Int
-  empresa             Empresa             @relation(fields: [empresaId], references: [id])
-  clienteId           Int?
-  cliente             Cliente?            @relation(fields: [clienteId], references: [id])
-  tokenPublico        String              @unique @default(cuid())
-  numero              Int                 @default(autoincrement())
-  tipoOficio          TipoOficio          @default(GENERAL)
-  titulo              String
-  descripcion         String?             @db.Text
-  direccion           String?
-  ubicacionGps        String?
-  fechaPactada        DateTime?
-  estado              EstadoTrabajoOficio @default(PRESUPUESTADO)
+  id           String              @id @default(uuid())
+  empresaId    Int
+  empresa      Empresa             @relation(fields: [empresaId], references: [id])
+  clienteId    Int?
+  cliente      Cliente?            @relation(fields: [clienteId], references: [id])
+  tokenPublico String              @unique @default(cuid())
+  numero       Int                 @default(autoincrement())
+  tipoOficio   TipoOficio          @default(GENERAL)
+  titulo       String
+  descripcion  String?             @db.Text
+  direccion    String?
+  ubicacionGps String?
+  fechaPactada DateTime?
+  estado       EstadoTrabajoOficio @default(PRESUPUESTADO)
 
   // Cotización en 3 Niveles (JSON estructurado)
   opcionesPresupuesto Json?
   opcionElegida       String?
-  montoAcordado       Decimal?            @db.Decimal(12, 2)
-  porcentajeSena      Int                 @default(30)
-  validezDias         Int                 @default(7)
+  montoAcordado       Decimal? @db.Decimal(12, 2)
+  porcentajeSena      Int      @default(30)
+  validezDias         Int      @default(7)
 
   // Cobranza Mercado Pago & Finanzas
   mpPreferenceIdSena  String?
   mpPaymentIdSena     String?
-  senaPagada          Boolean             @default(false)
+  senaPagada          Boolean @default(false)
   mpPreferenceIdSaldo String?
   mpPaymentIdSaldo    String?
-  saldoPagado         Boolean             @default(false)
+  saldoPagado         Boolean @default(false)
   medioPagoFinal      String?
 
   // Evidencias fotográficas
-  fotosAntes          String[]            @default([])
-  fotosDespues        String[]            @default([])
-  firmaClienteUrl     String?             @db.Text
+  fotosAntes      String[] @default([])
+  fotosDespues    String[] @default([])
+  firmaClienteUrl String?  @db.Text
 
   // Post-Venta & Encuesta
   calificacionEstrellas Int?
@@ -8345,21 +8348,21 @@ model OficioTrabajo {
   garantiaHasta         DateTime?
 
   // Mantenimiento preventivo recurrente
-  proximoServiceMeses Int?
-  fechaProximoService DateTime?
-  alertaServiceEnviada Boolean            @default(false)
+  proximoServiceMeses  Int?
+  fechaProximoService  DateTime?
+  alertaServiceEnviada Boolean   @default(false)
 
   // Relaciones del módulo
-  asignaciones        OficioAsignacion[]
-  contrato            OficioContratoObra?
-  checklists          OficioChecklistEjecucion[]
-  gastosMateriales    OficioGastoMaterial[]
+  asignaciones     OficioAsignacion[]
+  contrato         OficioContratoObra?
+  checklists       OficioChecklistEjecucion[]
+  gastosMateriales OficioGastoMaterial[]
 
-  ventaId             Int?
-  cuentaCorrienteId   Int?
+  ventaId           Int?
+  cuentaCorrienteId Int?
 
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([empresaId, estado])
   @@index([empresaId, fechaProximoService])
@@ -8368,52 +8371,52 @@ model OficioTrabajo {
 }
 
 model OficioGastoMaterial {
-  id            String        @id @default(uuid())
+  id            String  @id @default(uuid())
   trabajoId     String
   proveedor     String?
-  monto         Decimal       @db.Decimal(10, 2)
+  monto         Decimal @db.Decimal(10, 2)
   fotoTicketUrl String?
-  ocrDetalle    String?       @db.Text
-  reembolsable  Boolean       @default(false)
-  
-  trabajo       OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  ocrDetalle    String? @db.Text
+  reembolsable  Boolean @default(false)
 
-  createdAt     DateTime      @default(now())
+  trabajo OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 
   @@index([trabajoId])
   @@map("oficio_gastos_materiales")
 }
 
 model OficioOperario {
-  id          String             @id @default(uuid())
+  id          String   @id @default(uuid())
   empresaId   Int
-  empresa     Empresa            @relation(fields: [empresaId], references: [id])
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
   nombre      String
   telefono    String
   rol         String
-  valorJornal Decimal?           @db.Decimal(10, 2)
-  activo      Boolean            @default(true)
+  valorJornal Decimal? @db.Decimal(10, 2)
+  activo      Boolean  @default(true)
 
   asignaciones OficioAsignacion[]
 
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([empresaId, activo])
   @@map("oficio_operarios")
 }
 
 model OficioAsignacion {
-  id          String         @id @default(uuid())
+  id          String    @id @default(uuid())
   trabajoId   String
   operarioId  String
-  fecha       DateTime       @default(now())
+  fecha       DateTime  @default(now())
   horaLlegada DateTime?
   horaSalida  DateTime?
   notas       String?
-  
-  trabajo     OficioTrabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
-  operario    OficioOperario @relation(fields: [operarioId], references: [id], onDelete: Cascade)
+
+  trabajo  OficioTrabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  operario OficioOperario @relation(fields: [operarioId], references: [id], onDelete: Cascade)
 
   @@index([trabajoId])
   @@index([operarioId])
@@ -8429,80 +8432,141 @@ model OficioBoletinTecnico {
   contenido     String   @db.Text
   archivosUrls  String[]
   destinatarios String
-  
-  createdAt     DateTime @default(now())
+
+  createdAt DateTime @default(now())
 
   @@index([empresaId])
   @@map("oficio_boletines_tecnicos")
 }
 
 model OficioPlantillaProceso {
-  id          String     @id @default(uuid())
-  empresaId   Int?
-  tipoOficio  TipoOficio
-  nombre      String
-  pasosJson   Json
+  id         String     @id @default(uuid())
+  empresaId  Int?
+  tipoOficio TipoOficio
+  nombre     String
+  pasosJson  Json
 
-  createdAt   DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   @@index([empresaId, tipoOficio])
   @@map("oficio_plantillas_proceso")
 }
 
 model OficioChecklistEjecucion {
-  id          String        @id @default(uuid())
-  trabajoId   String
-  nombre      String
-  pasosJson   Json
-  completado  Boolean       @default(false)
+  id         String  @id @default(uuid())
+  trabajoId  String
+  nombre     String
+  pasosJson  Json
+  completado Boolean @default(false)
 
-  trabajo     OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  trabajo OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
 
   @@index([trabajoId])
   @@map("oficio_checklists_ejecucion")
 }
 
 model OficioContratoObra {
-  id                String    @id @default(uuid())
-  empresaId         Int
-  trabajoId         String    @unique
-  clausulasJson     Json
-  montoTotal        Decimal   @db.Decimal(12, 2)
-  formaPago         String
-  plazoDias         Int?
-  
+  id            String  @id @default(uuid())
+  empresaId     Int
+  trabajoId     String  @unique
+  clausulasJson Json
+  montoTotal    Decimal @db.Decimal(12, 2)
+  formaPago     String
+  plazoDias     Int?
+
   firmadoPorCliente Boolean   @default(false)
   fechaFirma        DateTime?
   firmaDigitalUrl   String?   @db.Text
   ipFirma           String?
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  trabajo           OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  trabajo OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
 
   @@index([empresaId])
   @@map("oficio_contratos_obra")
 }
 
 model AfiliadoReferido {
-  id                 String   @id @default(uuid())
-  codigoAfiliado     String   @unique
-  empresaId          Int      @unique
-  empresa            Empresa  @relation(fields: [empresaId], references: [id])
-  aliasMercadoPago   String?
-  
-  padreAfiliadoId    String?
-  
-  comisionNivel1Pct  Decimal  @default(25.0) @db.Decimal(5, 2)
-  comisionNivel2Pct  Decimal  @default(10.0) @db.Decimal(5, 2)
-  
-  saldoAcumulado     Decimal  @default(0.0) @db.Decimal(12, 2)
-  totalCobrado       Decimal  @default(0.0) @db.Decimal(12, 2)
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id               String  @id @default(uuid())
+  codigoAfiliado   String  @unique
+  empresaId        Int     @unique
+  empresa          Empresa @relation(fields: [empresaId], references: [id])
+  aliasMercadoPago String?
+
+  padreAfiliadoId String?
+
+  comisionNivel1Pct Decimal @default(25.0) @db.Decimal(5, 2)
+  comisionNivel2Pct Decimal @default(10.0) @db.Decimal(5, 2)
+
+  saldoAcumulado Decimal @default(0.0) @db.Decimal(12, 2)
+  totalCobrado   Decimal @default(0.0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([codigoAfiliado])
   @@map("afiliados_referidos")
+}
+
+model OficioMaquinaria {
+  id            String   @id @default(uuid())
+  empresaId     Int
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  codigo        String
+  nombre        String
+  categoria     String   @default("Herramientas")
+  numeroSerie   String?
+  estado        String   @default("DISPONIBLE") // DISPONIBLE | ALQUILADO | EN_MANTENIMIENTO | DE_BAJA
+  tarifaDiaria  Decimal  @db.Decimal(10, 2)
+  tarifaSemanal Decimal? @db.Decimal(10, 2)
+  tarifaMensual Decimal? @db.Decimal(10, 2)
+  montoGarantia Decimal? @db.Decimal(10, 2)
+  horasUso      Int      @default(0)
+  fotosUrls     String[]
+  activo        Boolean  @default(true)
+
+  alquileres OficioAlquilerContrato[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId, estado])
+  @@map("oficio_maquinarias")
+}
+
+model OficioAlquilerContrato {
+  id           String           @id @default(uuid())
+  empresaId    Int
+  empresa      Empresa          @relation(fields: [empresaId], references: [id])
+  clienteId    Int
+  cliente      Cliente          @relation(fields: [clienteId], references: [id])
+  maquinariaId String
+  maquinaria   OficioMaquinaria @relation(fields: [maquinariaId], references: [id])
+  trabajoId    String?
+
+  fechaInicio            DateTime  @default(now())
+  fechaPactadaDevolucion DateTime
+  fechaDevolucionReal    DateTime?
+
+  estado           String  @default("ACTIVO") // ACTIVO | DEVUELTO | VENCIDO_EN_MORA | DANADO
+  montoPactado     Decimal @db.Decimal(12, 2)
+  depositoGarantia Decimal @default(0.0) @db.Decimal(12, 2)
+  depositoDevuelto Boolean @default(false)
+  cargosExtras     Decimal @default(0.0) @db.Decimal(12, 2)
+
+  fotosEntrega    String[]
+  fotosDevolucion String[]
+  firmaClienteUrl String?  @db.Text
+  remitoNumero    String?
+  observaciones   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId, estado])
+  @@index([clienteId])
+  @@map("oficio_alquiler_contratos")
 }

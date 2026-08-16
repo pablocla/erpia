@@ -26,6 +26,7 @@ import {
   Cloud,
   FileSpreadsheet,
   Store,
+  Truck,
 } from "lucide-react"
 
 export interface DashboardMenuItem {
@@ -64,6 +65,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/oficios", icon: Wrench, label: "Trabajos & Obras", badge: "Principal" },
       { href: "/dashboard/oficios/nuevo", icon: Plus, label: "Nuevo Presupuesto (3 Niv)", badge: "IA" },
       { href: "/dashboard/oficios/cuadrilla", icon: Users, label: "Cuadrilla & Jornales" },
+      { href: "/dashboard/oficios/alquileres", icon: Truck, label: "Alquiler Maquinaria" },
       { href: "/dashboard/oficios/services", icon: Clock, label: "Services & Alertas" },
       { href: "/dashboard/afiliados", icon: Gift, label: "Mi Red & Ganancias", badge: "25%" },
     ],

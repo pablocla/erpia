@@ -1,685 +1,489 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Topbar } from "@/components/topbar"
 import { MotionPage } from "@/components/ui/motion"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Wallet, Plus, Printer, DollarSign, Users, AlertTriangle, CheckCircle, MessageSquare, ArrowRight, MapPin, HelpCircle } from "lucide-react"
-import Link from "next/link"
-import { PrestamosHelpDialog } from "@/components/prestamos/prestamos-help-dialog"
-import { PrestamosOnboardingWizard } from "@/components/prestamos/prestamos-onboarding-wizard"
-import { authFetch } from "@/lib/stores"
+import {
+  Plus,
+  MessageSquare,
+  Search,
+  History,
+  Printer,
+  Wallet,
+  RefreshCw,
+} from "lucide-react"
+import { authFetch, useAuthStore } from "@/lib/stores"
+import { useToast } from "@/hooks/use-toast"
+import { CobrarDialog } from "@/components/prestamos/cobrar-dialog"
+import { NuevoPrestamoDialog } from "@/components/prestamos/nuevo-prestamo-dialog"
+import { HistorialDialog } from "@/components/prestamos/historial-dialog"
+import { fmtArs, type CobroPrestamo, type MedioCobro } from "@/lib/prestamos/prestamos-meta"
+import {
+  mensajeRecordatorio,
+  mensajeReciboCobro,
+  waMeUrl,
+} from "@/lib/prestamos/prestamos-messages"
 
 interface Prestamo {
   id: number
   cliente: string
-  dni: string
+  telefono?: string
   capital: number
   interes: number
+  interesPct?: number
   total: number
-  cuotasTotales: number
-  cuotasPagas: number
-  montoCuota: number
-  frecuencia: "Diario" | "Semanal" | "Mensual"
-  estado: "Al día" | "Atrasado" | "Vencido"
-  fechaInicio: string
+  totalOriginal?: number
+  estado: string
   fechaVencimiento: string
+  notas?: string
+  cobros?: CobroPrestamo[]
+  cobrarHoy?: boolean
+  cobradoHoy?: number
 }
 
-const INITIAL_PRESTAMOS: Prestamo[] = [
-  {
-    id: 1,
-    cliente: "Madera",
-    dni: "Cliente #01",
-    capital: 50000,
-    interes: 15000,
-    total: 65000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 65000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 2,
-    cliente: "Aldo",
-    dni: "Cliente #02",
-    capital: 318500,
-    interes: 74500,
-    total: 393000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 393000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 3,
-    cliente: "Máquina (Préstamo 1)",
-    dni: "Cliente #03",
-    capital: 100000,
-    interes: 30000,
-    total: 130000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 130000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 4,
-    cliente: "Máquina (Préstamo 2)",
-    dni: "Cliente #04",
-    capital: 200000,
-    interes: 60000,
-    total: 260000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 260000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 5,
-    cliente: "Farana",
-    dni: "Cliente #05",
-    capital: 250000,
-    interes: 75000,
-    total: 325000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 325000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 6,
-    cliente: "Máquina (Préstamo 3)",
-    dni: "Cliente #06",
-    capital: 100000,
-    interes: 30000,
-    total: 130000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 130000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 7,
-    cliente: "Máquina (Préstamo 4)",
-    dni: "Cliente #07",
-    capital: 200000,
-    interes: 60000,
-    total: 260000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 260000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 8,
-    cliente: "Máquina (Préstamo 5)",
-    dni: "Cliente #08",
-    capital: 400000,
-    interes: 120000,
-    total: 520000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 520000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 9,
-    cliente: "Máquina (Préstamo 6)",
-    dni: "Cliente #09",
-    capital: 60000,
-    interes: 18000,
-    total: 78000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 78000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 10,
-    cliente: "Maquina (Préstamo 7)",
-    dni: "Cliente #10",
-    capital: 50000,
-    interes: 15000,
-    total: 65000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 65000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 11,
-    cliente: "Máquina (Préstamo 8)",
-    dni: "Cliente #11",
-    capital: 200000,
-    interes: 60000,
-    total: 260000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 260000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 12,
-    cliente: "Máquina (Préstamo 9)",
-    dni: "Cliente #12",
-    capital: 50000,
-    interes: 15000,
-    total: 65000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 65000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 13,
-    cliente: "Máquina (Préstamo 10)",
-    dni: "Cliente #13",
-    capital: 100000,
-    interes: 30000,
-    total: 130000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 130000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 14,
-    cliente: "Máquina (Septiembre)",
-    dni: "Cliente #14",
-    capital: 350000,
-    interes: 150000,
-    total: 500000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 500000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-15"
-  },
-  {
-    id: 15,
-    cliente: "Padre máquina",
-    dni: "Cliente #15",
-    capital: 400000,
-    interes: 120000,
-    total: 520000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 520000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  },
-  {
-    id: 16,
-    cliente: "Enano",
-    dni: "Cliente #16",
-    capital: 400000,
-    interes: 120000,
-    total: 520000,
-    cuotasTotales: 1,
-    cuotasPagas: 0,
-    montoCuota: 520000,
-    frecuencia: "Mensual",
-    estado: "Al día",
-    fechaInicio: "2026-08-01",
-    fechaVencimiento: "2026-09-01"
-  }
-]
+interface ClienteOption {
+  id: number
+  nombre: string
+  telefono?: string | null
+  saldo?: number
+}
+
+type TabId = "cartera" | "hoy"
+
+function formatVence(iso: string): string {
+  if (!iso) return "—"
+  const [y, m, d] = iso.slice(0, 10).split("-")
+  if (!y || !m || !d) return iso
+  return `${d}/${m}/${y}`
+}
+
+function estadoBadge(estado: string) {
+  if (estado === "Vencido")
+    return "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300"
+  if (estado === "Vence hoy")
+    return "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300"
+  if (estado === "Saldado")
+    return "bg-slate-100 text-slate-600 border-slate-200"
+  return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300"
+}
 
 export default function PrestamosPage() {
-  const [prestamos, setPrestamos] = useState<Prestamo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalNuevoOpen, setModalNuevoOpen] = useState(false)
-  const [modalWapOpen, setModalWapOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
-  const [selectedPrestamo, setSelectedPrestamo] = useState<Prestamo | null>(null)
-  
-  // Formulario Nuevo Préstamo (30% mensual por defecto)
-  const [nuevoCliente, setNuevoCliente] = useState("")
-  const [nuevoCapital, setNuevoCapital] = useState(100000)
-  const [nuevoInteresPct, setNuevoInteresPct] = useState(30) // 30% TEM mensual por defecto
-  const [nuevoTelefono, setNuevoTelefono] = useState("")
-  const [submitting, setSubmitting] = useState(false)
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground text-sm">
+          Cargando libreta…
+        </div>
+      }
+    >
+      <PrestamosPageInner />
+    </Suspense>
+  )
+}
 
-  const cargarPrestamos = async () => {
+function PrestamosPageInner() {
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+  const empresaNombre = useAuthStore((s) => s.user?.empresaNombre) || "mi negocio"
+
+  const [tab, setTab] = useState<TabId>("cartera")
+  const [prestamos, setPrestamos] = useState<Prestamo[]>([])
+  const [clientes, setClientes] = useState<ClienteOption[]>([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState("")
+  const [modalNuevo, setModalNuevo] = useState(false)
+  const [modalCobrar, setModalCobrar] = useState(false)
+  const [modalHist, setModalHist] = useState(false)
+  const [selected, setSelected] = useState<Prestamo | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [lastCobro, setLastCobro] = useState<{
+    cliente: string
+    telefono?: string
+    monto: number
+    saldo: number
+    medio: string
+  } | null>(null)
+
+  const cargar = useCallback(async () => {
+    setLoading(true)
     try {
-      const res = await authFetch("/api/prestamos")
-      if (res.ok) {
-        const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          setPrestamos(data)
-          setLoading(false)
-          return
-        }
+      const [resList, resCli] = await Promise.all([
+        authFetch("/api/prestamos"),
+        authFetch("/api/prestamos?scope=clientes"),
+      ])
+      if (resList.ok) {
+        const data = await resList.json()
+        setPrestamos(Array.isArray(data) ? data : [])
+      } else {
+        setPrestamos([])
+      }
+      if (resCli.ok) {
+        const data = await resCli.json()
+        setClientes(Array.isArray(data) ? data : [])
       }
     } catch (e) {
       console.error(e)
+      setPrestamos([])
+      toast({
+        title: "No se pudo cargar la libreta",
+        description: "Revisá la conexión e intentá de nuevo.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
-    const saved = localStorage.getItem("claver:prestamos")
-    if (saved && saved.includes("Madera")) {
-      setPrestamos(JSON.parse(saved))
-    } else {
-      setPrestamos(INITIAL_PRESTAMOS)
-      localStorage.setItem("claver:prestamos", JSON.stringify(INITIAL_PRESTAMOS))
-    }
-    setLoading(false)
-  }
+  }, [toast])
 
   useEffect(() => {
-    void cargarPrestamos()
-  }, [])
+    void cargar()
+  }, [cargar])
 
-  // Cálculos dinámicos del simulador (30% directo)
-  const calculoInteres = Math.round((nuevoCapital * nuevoInteresPct) / 100)
-  const calculoTotal = nuevoCapital + calculoInteres
+  useEffect(() => {
+    if (searchParams.get("nuevo") === "1") {
+      setModalNuevo(true)
+    }
+    if (searchParams.get("tab") === "hoy") {
+      setTab("hoy")
+    }
+  }, [searchParams])
 
-  const handleCrearPrestamo = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!nuevoCliente || !nuevoCapital) return
+  const filtrados = useMemo(() => {
+    const base = tab === "hoy" ? prestamos.filter((p) => p.cobrarHoy) : prestamos
+    const query = q.trim().toLowerCase()
+    if (!query) return base
+    return base.filter(
+      (p) =>
+        p.cliente.toLowerCase().includes(query) ||
+        (p.telefono || "").includes(query) ||
+        (p.notas || "").toLowerCase().includes(query),
+    )
+  }, [prestamos, tab, q])
+
+  const totalCartera = prestamos.reduce((s, p) => s + p.total, 0)
+  const totalHoy = prestamos.filter((p) => p.cobrarHoy).reduce((s, p) => s + p.total, 0)
+  const cobradoHoy = prestamos.reduce((s, p) => s + (p.cobradoHoy || 0), 0)
+  const countHoy = prestamos.filter((p) => p.cobrarHoy).length
+
+  const openCobrar = (p: Prestamo) => {
+    setSelected(p)
+    setLastCobro(null)
+    setModalCobrar(true)
+  }
+
+  const openHistorial = (p: Prestamo) => {
+    setSelected(p)
+    setModalHist(true)
+  }
+
+  const openWaRecordatorio = (p: Prestamo) => {
+    const texto = mensajeRecordatorio({
+      cliente: p.cliente,
+      saldo: p.total,
+      empresaNombre,
+      fechaVencimiento: p.fechaVencimiento,
+    })
+    window.open(waMeUrl(p.telefono, texto), "_blank", "noopener,noreferrer")
+  }
+
+  const openWaRecibo = () => {
+    if (!lastCobro) return
+    const texto = mensajeReciboCobro({
+      cliente: lastCobro.cliente,
+      monto: lastCobro.monto,
+      saldoRestante: lastCobro.saldo,
+      empresaNombre,
+      medio: lastCobro.medio,
+    })
+    window.open(waMeUrl(lastCobro.telefono, texto), "_blank", "noopener,noreferrer")
+  }
+
+  const handleCobrar = async (payload: { monto: number; medio: MedioCobro }) => {
+    if (!selected) return
     setSubmitting(true)
+    try {
+      const res = await authFetch("/api/prestamos/cobrar", {
+        method: "POST",
+        body: JSON.stringify({
+          clienteId: selected.id,
+          monto: payload.monto,
+          medio: payload.medio,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "No se pudo registrar el cobro")
+      }
+      const data = await res.json()
+      setLastCobro({
+        cliente: data.cliente,
+        telefono: data.telefono || selected.telefono,
+        monto: data.montoCobrado,
+        saldo: data.nuevoSaldo,
+        medio: data.medio || payload.medio,
+      })
+      setModalCobrar(false)
+      toast({
+        title:
+          data.nuevoSaldo <= 0
+            ? `${data.cliente} quedó en cero`
+            : `Cobrado ${fmtArs(data.montoCobrado)}`,
+        description:
+          data.nuevoSaldo <= 0
+            ? "Préstamo saldado."
+            : `Queda debiendo ${fmtArs(data.nuevoSaldo)}.`,
+      })
+      await cargar()
+    } catch (e) {
+      toast({
+        title: "Error al cobrar",
+        description: e instanceof Error ? e.message : "Reintentá",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
+  const handleNuevo = async (payload: {
+    cliente: string
+    clienteId?: number
+    capital: number
+    interesPct: number
+    fechaVencimiento: string
+    telefono?: string
+  }) => {
+    setSubmitting(true)
     try {
       const res = await authFetch("/api/prestamos", {
         method: "POST",
-        body: JSON.stringify({
-          cliente: nuevoCliente,
-          capital: nuevoCapital,
-          interesPct: nuevoInteresPct,
-          telefono: nuevoTelefono
-        })
+        body: JSON.stringify(payload),
       })
-      if (res.ok) {
-        await cargarPrestamos()
-        setModalNuevoOpen(false)
-        setNuevoCliente("")
-        setNuevoCapital(100000)
-        setNuevoTelefono("")
-        setSubmitting(false)
-        return
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || "No se pudo crear el préstamo")
       }
-    } catch (e) {
-      console.error(e)
-    }
-
-    const nuevo: Prestamo = {
-      id: Date.now(),
-      cliente: nuevoCliente,
-      dni: "Cliente #" + (prestamos.length + 1),
-      capital: nuevoCapital,
-      interes: calculoInteres,
-      total: calculoTotal,
-      cuotasTotales: 1,
-      cuotasPagas: 0,
-      montoCuota: calculoTotal,
-      frecuencia: "Mensual",
-      estado: "Al día",
-      fechaInicio: new Date().toISOString().split("T")[0],
-      fechaVencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-    }
-
-    const actualizados = [nuevo, ...prestamos]
-    setPrestamos(actualizados)
-    localStorage.setItem("claver:prestamos", JSON.stringify(actualizados))
-    setModalNuevoOpen(false)
-    setNuevoCliente("")
-    setNuevoCapital(100000)
-    setSubmitting(false)
-  }
-
-  const handleCobrarCuota = async (id: number, monto: number = 0) => {
-    try {
-      await authFetch("/api/prestamos/cobrar", {
-        method: "POST",
-        body: JSON.stringify({ clienteId: id, monto })
+      const data = await res.json()
+      setModalNuevo(false)
+      toast({
+        title: data.reutilizado ? `Suma a ${data.cliente}` : `Préstamo a ${data.cliente}`,
+        description: `Tiene que devolver ${fmtArs(data.total)} (saldo actual).`,
       })
+      await cargar()
     } catch (e) {
-      console.error(e)
+      toast({
+        title: "Error al prestar",
+        description: e instanceof Error ? e.message : "Reintentá",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
     }
-
-    const actualizados = prestamos.map(p => {
-      if (p.id === id) {
-        const pagas = Math.min(p.cuotasPagas + 1, p.cuotasTotales)
-        return { ...p, cuotasPagas: pagas, estado: "Al día" as const }
-      }
-      return p
-    })
-    setPrestamos(actualizados)
-    localStorage.setItem("claver:prestamos", JSON.stringify(actualizados))
   }
-
-  // Métricas
-  const totalPrestado = prestamos.reduce((sum, p) => sum + p.capital, 0)
-  const totalIntereses = prestamos.reduce((sum, p) => sum + p.interes, 0)
-  const totalMoroso = prestamos.filter(p => p.estado !== "Al día").reduce((sum, p) => sum + p.total - (p.cuotasPagas * p.montoCuota), 0)
-  const cobroHoySugerido = prestamos.reduce((sum, p) => sum + p.montoCuota, 0)
 
   return (
-    <MotionPage className="flex h-full flex-col bg-slate-50">
-      <Topbar />
-      <div className="flex-1 p-6 space-y-6 overflow-y-auto max-w-7xl mx-auto w-full">
-        
-        {/* Encabezado Principal */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+    <MotionPage className="flex h-full flex-col bg-background">
+      <div className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto max-w-3xl mx-auto w-full pb-28">
+        {/* Header simple */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard de Préstamos</h2>
-            <p className="text-slate-500">Originación, cuotas y ruteo inteligente para prestamistas de efectivo.</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">Libreta de cobros</h1>
+            <p className="text-sm text-muted-foreground">
+              Quién te debe, cobrá lo que te dieron, avisá por WhatsApp.
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setHelpOpen(true)} className="border-blue-300 text-blue-700 hover:bg-blue-50 bg-white">
-              <HelpCircle className="mr-2 h-4 w-4 text-blue-600" /> Manual & Diagrama
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={() => void cargar()} title="Actualizar">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
-            <Link href="/dashboard/prestamos/cobranza">
-              <Button variant="outline" className="border-slate-300 hover:bg-slate-100 bg-white">
-                <MapPin className="mr-2 h-4 w-4 text-emerald-600" /> Ruteo Cobranza
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              onClick={() => setModalNuevo(true)}
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> Prestar
+            </Button>
+          </div>
+        </div>
+
+        {/* KPIs mínimos caseros */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-border/80">
+            <CardContent className="p-3">
+              <p className="text-xs text-muted-foreground">Te deben</p>
+              <p className="text-xl font-bold tabular-nums">{fmtArs(totalCartera)}</p>
+              <p className="text-[11px] text-muted-foreground">{prestamos.length} deudores</p>
+            </CardContent>
+          </Card>
+          <Card className="border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+            <CardContent className="p-3">
+              <p className="text-xs text-muted-foreground">Hoy cobré</p>
+              <p className="text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+                {fmtArs(cobradoHoy)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                A cobrar hoy: {fmtArs(totalHoy)} ({countHoy})
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex rounded-xl border p-1 bg-muted/40 gap-1">
+          <button
+            type="button"
+            onClick={() => setTab("cartera")}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+              tab === "cartera" ? "bg-background shadow text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Quién me debe
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("hoy")}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+              tab === "hoy" ? "bg-background shadow text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            Hoy {countHoy > 0 ? `(${countHoy})` : ""}
+          </button>
+        </div>
+
+        {/* Buscar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-9 h-11"
+            placeholder="Buscar por apodo, nombre o teléfono…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+
+        {lastCobro && (
+          <Card className="border-emerald-500/40 bg-emerald-50/80 dark:bg-emerald-950/30">
+            <CardContent className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <p className="text-sm">
+                Último cobro: <strong>{fmtArs(lastCobro.monto)}</strong> a {lastCobro.cliente}
+                {lastCobro.saldo > 0
+                  ? ` · queda ${fmtArs(lastCobro.saldo)}`
+                  : " · saldado"}
+              </p>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openWaRecibo}>
+                <MessageSquare className="h-4 w-4 mr-1" /> Enviar recibo WA
               </Button>
-            </Link>
-            <Button onClick={() => setModalNuevoOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md">
-              <Plus className="mr-2 h-4 w-4" /> Otorgar Préstamo
-            </Button>
-          </div>
-        </div>
-
-        {/* Tarjetas de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-slate-200/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-semibold text-slate-500">Capital Activo en Calle</CardTitle>
-              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                <Wallet className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">${totalPrestado.toLocaleString("es-AR")}</div>
-              <p className="text-xs text-slate-400 mt-1">Suma del capital otorgado</p>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="border-slate-200/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-semibold text-slate-500">Intereses a Cobrar</CardTitle>
-              <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                <DollarSign className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">${totalIntereses.toLocaleString("es-AR")}</div>
-              <p className="text-xs text-slate-400 mt-1">Margen de ganancia bruto</p>
+        {/* Lista */}
+        {loading ? (
+          <p className="text-center text-muted-foreground py-12 animate-pulse">Cargando libreta…</p>
+        ) : filtrados.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center space-y-3">
+              <p className="text-muted-foreground">
+                {q
+                  ? "Nadie coincide con la búsqueda."
+                  : tab === "hoy"
+                    ? "No hay vencidos ni cobros de hoy. Cuando marques un vencimiento, aparecen acá."
+                    : "Todavía no hay deudas. Tocá Prestar para anotar el primero."}
+              </p>
+              {!q && tab === "cartera" && (
+                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setModalNuevo(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Prestar
+                </Button>
+              )}
             </CardContent>
           </Card>
-
-          <Card className="border-slate-200/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-semibold text-slate-500">Saldo Moroso / Vencido</CardTitle>
-              <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
-                <AlertTriangle className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-rose-600">${totalMoroso.toLocaleString("es-AR")}</div>
-              <p className="text-xs text-slate-400 mt-1">Saldo atrasado / impago</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-semibold text-slate-500">Cobranza del Día (Proyectada)</CardTitle>
-              <div className="p-2 bg-violet-50 rounded-lg text-violet-600">
-                <CheckCircle className="h-4 w-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">${cobroHoySugerido.toLocaleString("es-AR")}</div>
-              <p className="text-xs text-slate-400 mt-1">Meta diaria del ruteador</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabla de Cartera Activa */}
-        <Card className="border-slate-200/80 shadow-sm">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl">Clientes & Préstamos Vigentes</CardTitle>
-              <CardDescription>Listado general de cobros, pagarés y recordatorios directos.</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader className="bg-slate-100/50">
-                <TableRow>
-                  <TableHead className="font-semibold text-slate-700">Deudor</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Plan</TableHead>
-                  <TableHead className="font-semibold text-slate-700 text-right">Capital</TableHead>
-                  <TableHead className="font-semibold text-slate-700 text-right">Monto Cuota</TableHead>
-                  <TableHead className="font-semibold text-slate-700 text-center">Progreso</TableHead>
-                  <TableHead className="font-semibold text-slate-700 text-center">Estado</TableHead>
-                  <TableHead className="font-semibold text-slate-700 text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {prestamos.map(p => {
-                  const saldoRestante = p.total - (p.cuotasPagas * p.montoCuota)
-                  return (
-                    <TableRow key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-medium text-slate-900">
-                        <div>{p.cliente}</div>
-                        <div className="text-xs text-slate-400 font-normal">DNI: {p.dni}</div>
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {p.cuotasTotales} cuotas / {p.frecuencia}
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-slate-950">
-                        ${p.capital.toLocaleString("es-AR")}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-slate-900">
-                        ${p.montoCuota.toLocaleString("es-AR")}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="text-xs font-semibold">{p.cuotasPagas}/{p.cuotasTotales}</span>
-                          <div className="w-16 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-blue-600 h-full rounded-full" 
-                              style={{ width: `${(p.cuotasPagas / p.cuotasTotales) * 100}%` }}
-                            />
-                          </div>
+        ) : (
+          <ul className="space-y-3">
+            {filtrados.map((p) => (
+              <li key={p.id}>
+                <Card className="overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-lg truncate">{p.cliente}</h3>
+                          <Badge variant="outline" className={estadoBadge(p.estado)}>
+                            {p.estado}
+                          </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-400 text-center mt-0.5">Saldo restante: ${saldoRestante.toLocaleString("es-AR")}</div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge 
-                          className={
-                            p.estado === "Al día" 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                              : p.estado === "Atrasado"
-                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50"
-                                : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50"
-                          }
-                          variant="outline"
-                        >
-                          {p.estado}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1.5">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-8 border-slate-300 px-2.5 text-slate-700 hover:bg-slate-100"
-                            onClick={() => handleCobrarCuota(p.id)}
-                            disabled={p.cuotasPagas === p.cuotasTotales}
-                          >
-                            Cobrar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-8 border-slate-300 px-2.5 text-slate-700 hover:bg-slate-100"
-                            onClick={() => {
-                              setSelectedPrestamo(p)
-                              setModalWapOpen(true)
-                            }}
-                          >
-                            <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
-                          </Button>
-                          <Link href={`/dashboard/prestamos/pagares?id=${p.id}`}>
-                            <Button size="sm" variant="outline" className="h-8 border-slate-300 px-2.5 text-slate-700 hover:bg-slate-100">
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                        <p className="text-2xl font-black tabular-nums mt-0.5">{fmtArs(p.total)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Vence {formatVence(p.fechaVencimiento)}
+                          {p.capital > 0 && (
+                            <>
+                              {" "}
+                              · capital {fmtArs(p.capital)}
+                              {p.interesPct != null ? ` + ${p.interesPct}%` : ""}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold col-span-2 sm:col-span-1"
+                        onClick={() => openCobrar(p)}
+                      >
+                        <Wallet className="h-4 w-4 mr-1" /> Cobrar
+                      </Button>
+                      <Button variant="outline" onClick={() => openWaRecordatorio(p)}>
+                        <MessageSquare className="h-4 w-4 mr-1 text-emerald-600" /> WA
+                      </Button>
+                      <Button variant="outline" onClick={() => openHistorial(p)}>
+                        <History className="h-4 w-4 mr-1" /> Historial
+                      </Button>
+                      <Link href={`/dashboard/prestamos/pagares?id=${p.id}`}>
+                        <Button variant="outline" className="w-full">
+                          <Printer className="h-4 w-4 mr-1" /> Pagaré
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {/* Modal: Otorgar Préstamo */}
-      <Dialog open={modalNuevoOpen} onOpenChange={setModalNuevoOpen}>
-        <DialogContent className="max-w-xl bg-white border border-slate-200 shadow-xl rounded-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Otorgar Nuevo Préstamo</DialogTitle>
-            <DialogDescription>Cálculo automático con tasa del 30% mensual.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCrearPrestamo} className="space-y-4 py-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cliente">Nombre Completo del Cliente</Label>
-                <Input id="cliente" value={nuevoCliente} onChange={e => setNuevoCliente(e.target.value)} placeholder="Ej: Roberto Sánchez" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefono">WhatsApp / Teléfono (opcional)</Label>
-                <Input id="telefono" value={nuevoTelefono} onChange={e => setNuevoTelefono(e.target.value)} placeholder="Ej: 1123456789" />
-              </div>
-            </div>
+      <CobrarDialog
+        open={modalCobrar}
+        onOpenChange={setModalCobrar}
+        deudor={
+          selected
+            ? { id: selected.id, cliente: selected.cliente, total: selected.total, telefono: selected.telefono }
+            : null
+        }
+        submitting={submitting}
+        onConfirm={handleCobrar}
+      />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="capital">Capital a Prestar ($)</Label>
-                <Input id="capital" type="number" value={nuevoCapital} onChange={e => setNuevoCapital(Number(e.target.value))} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="interesPct">Interés Mensual (%)</Label>
-                <Input id="interesPct" type="number" value={nuevoInteresPct} onChange={e => setNuevoInteresPct(Number(e.target.value))} required />
-              </div>
-            </div>
+      <NuevoPrestamoDialog
+        open={modalNuevo}
+        onOpenChange={setModalNuevo}
+        clientes={clientes}
+        submitting={submitting}
+        onConfirm={handleNuevo}
+      />
 
-            {/* Caja de Simulación en Vivo */}
-            <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-slate-500">Ganancia Interés ({nuevoInteresPct}%):</p>
-                <p className="text-lg font-bold text-emerald-600">${calculoInteres.toLocaleString("es-AR")}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">Total a Cobrar:</p>
-                <p className="text-lg font-bold text-blue-600">${calculoTotal.toLocaleString("es-AR")}</p>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setModalNuevoOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
-                {submitting ? "Guardando..." : "Confirmar y Crear Préstamo"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Bot de Cobranza WhatsApp */}
-      <Dialog open={modalWapOpen} onOpenChange={setModalWapOpen}>
-        <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl rounded-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-emerald-600" />
-              Notificar Cuota por WhatsApp
-            </DialogTitle>
-            <DialogDescription>
-              Se enviará un recordatorio automático utilizando la plantilla homologada de cobranzas de Claver.
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedPrestamo && (
-            <div className="space-y-4 py-3">
-              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-sm text-slate-800 whitespace-pre-line leading-relaxed">
-                {`*Recordatorio de Pago de Cuota Claver*\n\nHola *${selectedPrestamo.cliente}*,\n\nTe recordamos que tenés una cuota pendiente del préstamo con vencimiento próximo.\n\n👉 *Detalles del vencimiento:*\n• Cuota N°: *${selectedPrestamo.cuotasPagas + 1}/${selectedPrestamo.cuotasTotales}*\n• Monto cuota: *$: ${selectedPrestamo.montoCuota.toLocaleString("es-AR")}*\n• Frecuencia: *${selectedPrestamo.frecuencia}*\n\nPodés abonarla ahora de forma digital ingresando a este link de pago de MercadoPago: \n_https://mpago.la/claver-prestamos-${selectedPrestamo.id}_\n\nSi ya realizaste la transferencia, por favor envianos el comprobante por este medio.\n\n*Grupo Claver - Cobranza Automatizada*`}
-              </div>
-              
-              <div className="text-xs text-slate-400 italic">
-                El mensaje simulará su salida a través de la API oficial de WhatsApp Business de Claver.
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setModalWapOpen(false)}>Cerrar</Button>
-            <Button 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => {
-                setModalWapOpen(false)
-                alert("¡Mensaje de WhatsApp encolado y enviado con éxito al cliente!")
-              }}
-            >
-              Enviar por WhatsApp
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <PrestamosHelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
-      <PrestamosOnboardingWizard onComplete={() => {}} />
+      <HistorialDialog
+        open={modalHist}
+        onOpenChange={setModalHist}
+        cliente={selected?.cliente || ""}
+        saldo={selected?.total || 0}
+        cobros={selected?.cobros || []}
+        notas={selected?.notas}
+      />
     </MotionPage>
   )
 }

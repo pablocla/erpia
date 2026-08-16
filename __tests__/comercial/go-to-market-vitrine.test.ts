@@ -26,30 +26,32 @@ import {
 } from "@/lib/comercial/go-to-market-vitrine"
 
 describe("go-to-market-vitrine", () => {
-  it("usa fiado como puerta de entrada principal", () => {
-    expect(ENTRY_DOOR_SLUG).toBe("fiado")
+  it("usa oficios como puerta de entrada principal", () => {
+    expect(ENTRY_DOOR_SLUG).toBe("oficios")
     expect(FIADO_ENTRY.h1.toLowerCase()).toContain("cuaderno")
     expect(FIADO_ENTRY.ctaPrimaryActivar).toBe("fiado")
   })
 
-  it("expone productos de combate incluyendo propiedad", () => {
+  it("expone productos de combate incluyendo propiedad y oficios", () => {
+    expect(COMBATE_APPS_SLUGS).toContain("oficios")
     expect(COMBATE_APPS_SLUGS).toContain("propiedad")
     expect(COMBATE_APPS_SLUGS).toContain("monotributo")
     expect(COMBATE_APPS_SLUGS).toContain("servicios")
     expect(COMBATE_APPS_SLUGS).toContain("obra")
-    expect(COMBATE_APPS.map((a) => a.slug)).toContain("propiedad")
-    expect(COMBATE_APPS.find((a) => a.slug === "propiedad")?.sku).toBe("pool-propiedad")
+    expect(COMBATE_APPS.map((a) => a.slug)).toContain("oficios")
+    expect(COMBATE_APPS.find((a) => a.slug === "oficios")?.sku).toBe("niche.oficios")
   })
 
-  it("home muestra solo fiado, cobra y turnos", () => {
-    expect(HOME_COMBATE_SLUGS).toEqual(["fiado", "cobra", "turnos"])
-    expect(homeCombateApps().map((a) => a.slug)).toEqual(["fiado", "cobra", "turnos"])
+  it("home muestra oficios, fiado y turnos", () => {
+    expect(HOME_COMBATE_SLUGS).toEqual(["oficios", "fiado", "turnos"])
+    expect(homeCombateApps().map((a) => a.slug)).toEqual(["oficios", "fiado", "turnos"])
     expect(HOME_DOLOR_CHIPS).toHaveLength(3)
-    expect(resolveHomeDolor(null)).toBe("fiado")
-    expect(resolveHomeDolor("cobra")).toBe("cobra")
+    expect(resolveHomeDolor(null)).toBe("oficios")
+    expect(resolveHomeDolor("oficios")).toBe("oficios")
+    expect(resolveHomeDolor("fiado")).toBe("fiado")
     expect(resolveHomeDolor("turnos")).toBe("turnos")
-    expect(resolveHomeDolor("propiedad")).toBe("fiado")
-    expect(isHomeDolorSlug("cobra")).toBe(true)
+    expect(resolveHomeDolor("propiedad")).toBe("oficios")
+    expect(isHomeDolorSlug("oficios")).toBe(true)
     expect(isHomeDolorSlug("pos")).toBe(false)
   })
 

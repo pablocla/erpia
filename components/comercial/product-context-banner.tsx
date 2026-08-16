@@ -15,6 +15,7 @@ interface ProductContextBannerProps {
 export function ProductContextBanner({ modoLite, productosSku = null, className }: ProductContextBannerProps) {
   const shell = getActiveProductShell(modoLite, productosSku ?? null)
   if (!shell) return null
+  if (shell.slug === "prestamista") return null
 
   return (
     <div

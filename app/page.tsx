@@ -12,11 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = isUs
     ? `${CLAVER_GROUP.name} — Business apps that pay for themselves`
-    : `${CLAVER_GROUP.name} — Fiado, cobranzas, turnos y POS para Argentina`
+    : `${CLAVER_GROUP.name} — Presupuestos en 3 niveles, señas con Mercado Pago y cuadrilla para obras y oficios`
     
   const description = isUs
     ? "Free digital house tabs, automated collections via SMS, booking confirmations, and B2B ordering for local businesses. Start your 14-day free trial."
-    : `${CLAVER_GROUP.tagline} Libreta de fiado gratis, Cobrá por WhatsApp, turnos online, POS con AFIP y packs por rubro. 14 días de prueba sin tarjeta.`
+    : "App para plomeros, electricistas, pintores, técnicos y capataces en Argentina. Cotizaciones en 30 segs, fotos antes/después, señas con Mercado Pago y liquidación de cuadrilla."
 
   const keywords = isUs
     ? ["house account app", "collections SMS", "appointment no-show", "deposit invoice", "local business software"]

@@ -72,6 +72,10 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
   completo: [],
   niche: [
     "/dashboard",
+    "/dashboard/oficios",
+    "/dashboard/oficios/nuevo",
+    "/dashboard/oficios/cuadrilla",
+    "/dashboard/afiliados",
     "/dashboard/nicho",
     "/dashboard/apps",
     "/dashboard/clientes",
@@ -95,6 +99,10 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
   ],
   servicios: [
     "/dashboard",
+    "/dashboard/oficios",
+    "/dashboard/oficios/nuevo",
+    "/dashboard/oficios/cuadrilla",
+    "/dashboard/afiliados",
     "/dashboard/ventas/presupuestos",
     "/dashboard/ventas",
     "/dashboard/facturacion-recurrente",

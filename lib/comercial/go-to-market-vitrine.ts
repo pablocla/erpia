@@ -1,6 +1,7 @@
 import { SUB_SAAS_APPS, type SubSaasApp } from "./sub-saas-catalog"
 
 export const COMBATE_APPS_SLUGS = [
+  "oficios",
   "fiado",
   "cobra",
   "monotributo",
@@ -19,20 +20,20 @@ export const COMBATE_APPS: SubSaasApp[] = COMBATE_APPS_SLUGS.map((slug) => {
   return app
 })
 
-/** Puerta de entrada principal de la home (validar con tráfico antes de rotar). */
-export const ENTRY_DOOR_SLUG = "fiado" as const
+/** Puerta de entrada principal de la home: Claver Oficios & Obras. */
+export const ENTRY_DOOR_SLUG = "oficios" as const
 
 /**
  * Tres productos de combate above-the-fold en home.
- * Fiado / Cobranza / Turnos — el resto vive en catálogo y mega menú.
+ * Oficios / Fiado / Turnos — el resto vive en catálogo y mega menú.
  */
-export const HOME_COMBATE_SLUGS = ["fiado", "cobra", "turnos"] as const
+export const HOME_COMBATE_SLUGS = ["oficios", "fiado", "turnos"] as const
 
 export type HomeDolorSlug = (typeof HOME_COMBATE_SLUGS)[number]
 
 export const HOME_DOLOR_CHIPS: readonly { slug: HomeDolorSlug; label: string; hint: string }[] = [
+  { slug: "oficios", label: "Oficios & Obras", hint: "Presupuestos y Señas" },
   { slug: "fiado", label: "Fiado", hint: "Libreta gratis" },
-  { slug: "cobra", label: "Cobrá", hint: "WhatsApp + panel" },
   { slug: "turnos", label: "Turnos", hint: "Link de reserva" },
 ] as const
 
@@ -44,7 +45,7 @@ export function isHomeDolorSlug(value: string | null | undefined): value is Home
   return !!value && (HOME_COMBATE_SLUGS as readonly string[]).includes(value)
 }
 
-/** Resuelve ?dolor= de la home. Default: fiado. */
+/** Resuelve ?dolor= de la home. Default: oficios. */
 export function resolveHomeDolor(raw: string | null | undefined): HomeDolorSlug {
   if (isHomeDolorSlug(raw)) return raw
   return ENTRY_DOOR_SLUG
@@ -63,11 +64,11 @@ export function homeCombateApps(): SubSaasApp[] {
 export function ventasWhatsappMessage(dolor: HomeDolorSlug): string {
   const app = COMBATE_APPS.find((a) => a.slug === dolor)
   const marca = app?.marca ?? "Claver"
+  if (dolor === "oficios") {
+    return `Hola Claver, quiero probar ${marca} (presupuestos en 3 niveles y señas) en mis obras y trabajos.`
+  }
   if (dolor === "fiado") {
     return `Hola Claver, quiero probar ${marca} (libreta de fiado) en mi comercio.`
-  }
-  if (dolor === "cobra") {
-    return `Hola Claver, quiero probar ${marca} (cobranzas por WhatsApp) en mi negocio.`
   }
   return `Hola Claver, quiero probar ${marca} (turnero online) en mi negocio.`
 }
@@ -96,6 +97,75 @@ export interface ProductEntryConfig {
   finalCta: { title: string; subtitle: string }
   ecosistemaSubtitle: string
   seo: { title: string; keywords: readonly string[] }
+}
+
+export const OFICIOS_ENTRY: ProductEntryConfig = {
+  slug: "oficios",
+  badge: "Claver Oficios & Obras · Presupuestos y Cobros en Obra",
+  h1: "Dejá el cuaderno sucio y las cotizaciones por audio. Manejá tus obras y cobros desde el celular.",
+  subtitle:
+    "Cotizaciones en 3 niveles en 30 segundos, cobro de seña con Mercado Pago, fotos antes/después y hoja de ruta para tu cuadrilla por WhatsApp.",
+  ctaPrimary: "Probar Oficios gratis",
+  ctaSecondary: "Ver demo de presupuesto",
+  ctaPrimaryActivar: "oficios",
+  demoHref: "/demo/contratista_obra",
+  trustBullets: [
+    "Cobro de seña con Mercado Pago",
+    "Liquidación de cuadrilla sin peleas",
+    "Contratos con firma en pantalla",
+  ],
+  steps: [
+    {
+      step: 1,
+      title: "Creá tu cuenta en 1 minuto",
+      description: "Elegí tu oficio (plomería, electricidad, obra, clima) y conectá tu Mercado Pago.",
+    },
+    {
+      step: 2,
+      title: "Armá tu primer presupuesto",
+      description: "Dictalo por voz o tocalo en 3 niveles (Básico, Recomendado, Premium).",
+    },
+    {
+      step: 3,
+      title: "Mandalo por WhatsApp y cobrá la seña",
+      description: "El cliente aprueba con 1 tap y te paga la seña directo a tu cuenta.",
+    },
+  ],
+  testimonial: {
+    quote:
+      "Antes mandaba audios largos y me regateaban. Ahora mando el link en 3 niveles con cobro de seña por Mercado Pago y cierro un 30% más de trabajos.",
+    author: "Carlos P.",
+    role: "Instalador & Plomero Matriculado · Córdoba",
+  },
+  benefits: [
+    { value: "30 seg", label: "para cotizar desde la obra" },
+    { value: "En mano", label: "seña asegurada por Mercado Pago" },
+    { value: "WhatsApp", label: "hoja de ruta del día a tu cuadrilla" },
+  ],
+  preview: {
+    title: "Así se ve tu presupuesto interactivo",
+    description:
+      "Opciones en 3 niveles, fotos antes y después, botón de Mercado Pago y firma digital.",
+  },
+  stepsIntro: "En tres pasos tenés tu primer presupuesto profesional listo en el celular.",
+  finalCta: {
+    title: "Empezá a presupuestar y cobrar como una empresa grande",
+    subtitle: "Probá Claver Oficios 7 días gratis. Si no cerrás un presupuesto, no pagás nada.",
+  },
+  ecosistemaSubtitle:
+    "Empezá por presupuestos y señas. Después podés activar cuadrilla, facturación AFIP y control de materiales.",
+  seo: {
+    title: "Claver Oficios · Presupuestos, señas Mercado Pago y cuadrilla para profesionales",
+    keywords: [
+      "Claver Oficios",
+      "presupuestos plomero",
+      "presupuestos electricista",
+      "jornales albañil",
+      "contratista obra",
+      "seña Mercado Pago",
+      "Argentina",
+    ],
+  },
 }
 
 export const FIADO_ENTRY: ProductEntryConfig = {
@@ -544,6 +614,7 @@ export const POS_ENTRY: ProductEntryConfig = {
 }
 
 export const PRODUCT_ENTRIES: Record<CombateAppSlug, ProductEntryConfig> = {
+  oficios: OFICIOS_ENTRY,
   fiado: FIADO_ENTRY,
   cobra: COBRA_ENTRY,
   monotributo: MONOTRIBUTO_ENTRY,

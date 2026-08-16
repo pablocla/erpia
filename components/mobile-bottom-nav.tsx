@@ -8,21 +8,47 @@ import { useAuthStore } from "@/lib/stores/auth-store"
 export function MobileBottomNav() {
   const pathname = usePathname()
   const user = useAuthStore((s) => s.user)
-  const isPrestamista = user?.empresaModoLite === "prestamista" || pathname.startsWith("/dashboard/prestamos")
+  const isPrestamista =
+    user?.empresaModoLite === "prestamista" || pathname.startsWith("/dashboard/prestamos")
 
   if (!isPrestamista) return null
 
+  const isLibreta =
+    pathname === "/dashboard/prestamos" || pathname.startsWith("/dashboard/prestamos/pagares")
+  const isHoy = pathname.startsWith("/dashboard/prestamos/cobranza")
+
   const navItems = [
-    { href: "/dashboard", icon: Home, label: "Inicio" },
-    { href: "/dashboard/prestamos/cobranza", icon: Wallet, label: "Cobrar hoy" },
-    { href: "/dashboard/prestamos", icon: PlusCircle, label: "Nuevo", highlight: true },
-    { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
+    {
+      href: "/dashboard",
+      icon: Home,
+      label: "Inicio",
+      active: pathname === "/dashboard",
+    },
+    {
+      href: "/dashboard/prestamos?tab=hoy",
+      icon: Wallet,
+      label: "Hoy",
+      // cobranza redirige a tab=hoy; también marcamos activo si estamos en libreta (usuario elige tab)
+      active: isHoy,
+    },
+    {
+      href: "/dashboard/prestamos?nuevo=1",
+      icon: PlusCircle,
+      label: "Prestar",
+      highlight: true as const,
+      active: false,
+    },
+    {
+      href: "/dashboard/prestamos",
+      icon: Users,
+      label: "Libreta",
+      active: isLibreta,
+    },
   ]
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border px-2 py-2 flex items-center justify-around shadow-2xl">
       {navItems.map((item) => {
-        const isActive = pathname === item.href
         const Icon = item.icon
 
         if (item.highlight) {
@@ -41,10 +67,10 @@ export function MobileBottomNav() {
             key={item.href}
             href={item.href}
             className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all ${
-              isActive ? "text-primary font-extrabold" : "text-muted-foreground hover:text-foreground"
+              item.active ? "text-primary font-extrabold" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Icon className={`h-6 w-6 ${isActive ? "scale-110 text-primary" : ""}`} />
+            <Icon className={`h-6 w-6 ${item.active ? "scale-110 text-primary" : ""}`} />
             <span className="text-[11px] mt-0.5">{item.label}</span>
           </Link>
         )

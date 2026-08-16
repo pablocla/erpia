@@ -8,17 +8,23 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    if (!body.clienteId || !body.monto) {
+    if (!body.clienteId || body.monto == null) {
       return NextResponse.json({ error: "CLIENTE_ID_Y_MONTO_REQUERIDOS" }, { status: 400 })
     }
 
     const cobro = await registrarCobroPrestamo(ctx.auth.empresaId, {
       clienteId: Number(body.clienteId),
-      monto: Number(body.monto)
+      monto: Number(body.monto),
+      medio: body.medio,
+      nota: body.nota,
     })
 
     return NextResponse.json(cobro)
   } catch (error) {
+    const msg = error instanceof Error ? error.message : "INTERNAL_ERROR"
+    if (msg === "MONTO_INVALIDO" || msg === "SIN_SALDO" || msg === "Cliente no encontrado") {
+      return NextResponse.json({ error: msg }, { status: 400 })
+    }
     console.error("Error al registrar cobro de préstamo:", error)
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 })
   }

@@ -5,9 +5,9 @@
  * for a given period.
  *
  * Query params:
- *   mes   (required) â€” 1â€“12
- *   anio  (required) â€” YYYY
- *   tipo  (optional) â€” "emitidas" | "recibidas" | omit for both
+ *   mes   (required) — 1–12
+ *   anio  (required) — YYYY
+ *   tipo  (optional) — "emitidas" | "recibidas" | omit for both
  */
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
     const anioNum = Number.parseInt(anio, 10)
 
     if (Number.isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
-      return NextResponse.json({ error: "mes invÃ¡lido" }, { status: 400 })
+      return NextResponse.json({ error: "mes inválido" }, { status: 400 })
     }
     if (Number.isNaN(anioNum) || anioNum < 2000) {
-      return NextResponse.json({ error: "anio invÃ¡lido" }, { status: 400 })
+      return NextResponse.json({ error: "anio inválido" }, { status: 400 })
     }
 
     // Date range for the period
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     let percepciones_emitidas = null
     let percepciones_recibidas = null
 
-    // Percepciones EMITIDAS â€” totalPercepciones on Facturas (ventas)
+    // Percepciones EMITIDAS — totalPercepciones on Facturas (ventas)
     if (!tipo || tipo === "emitidas") {
       const facturas = await prisma.factura.findMany({
         where: {
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Percepciones RECIBIDAS â€” totalPercepciones on Compras (purchases)
+    // Percepciones RECIBIDAS — totalPercepciones on Compras (purchases)
     if (!tipo || tipo === "recibidas") {
       const compras = await prisma.compra.findMany({
         where: {

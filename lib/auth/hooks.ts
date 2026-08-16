@@ -10,6 +10,9 @@ interface Usuario {
   email: string
   rol: string
   empresaId: number
+  empresaNombre?: string
+  empresaModoLite?: string | null
+  avatarUrl?: string | null
 }
 
 /** Rutas donde un token inválido no debe expulsar al usuario (flujo demo/público). */
@@ -23,11 +26,21 @@ function isAuthOptionalPath(pathname: string): boolean {
   return false
 }
 
-function toAuthUser(usuarioData: Usuario) {
+function toAuthUser(usuarioData: Usuario & {
+  empresaNombre?: string
+  empresaModoLite?: string | null
+  empresa?: { nombre?: string; modoLite?: string | null }
+}) {
   return {
-    ...usuarioData,
     id: String(usuarioData.id),
-  } as unknown as import("@/lib/stores/auth-store").AuthUser
+    email: usuarioData.email,
+    nombre: usuarioData.nombre,
+    rol: usuarioData.rol,
+    empresaId: usuarioData.empresaId,
+    empresaNombre: usuarioData.empresaNombre ?? usuarioData.empresa?.nombre,
+    empresaModoLite: usuarioData.empresaModoLite ?? usuarioData.empresa?.modoLite ?? undefined,
+    avatarUrl: usuarioData.avatarUrl,
+  } as import("@/lib/stores/auth-store").AuthUser
 }
 
 export function useAuth() {
@@ -61,7 +74,7 @@ export function useAuth() {
         if (response.ok) {
           const data = await response.json()
           setUsuario(data.usuario)
-          useAuthStore.getState().login(tokenActual, data.usuario)
+          useAuthStore.getState().login(tokenActual, toAuthUser(data.usuario))
           return
         }
 

@@ -36,25 +36,29 @@ import {
 } from "@/lib/comercial/go-to-market-vitrine"
 import { activarRegisterHref } from "@/lib/comercial/activar-intent"
 
-function MatrixHubInner({ isUs = false }: { isUs?: boolean }) {
+function MatrixHubInner({ isUs = false, initialDolor }: { isUs?: boolean; initialDolor?: HomeDolorSlug }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
   const dolorParam = searchParams.get("dolor")
-  const [dolor, setDolor] = useState<HomeDolorSlug>(() => resolveHomeDolor(dolorParam))
+  const [dolor, setDolor] = useState<HomeDolorSlug>(() => initialDolor ?? resolveHomeDolor(dolorParam))
 
   useEffect(() => {
+    if (initialDolor) {
+      setDolor(initialDolor)
+      return
+    }
     setDolor(resolveHomeDolor(dolorParam))
-  }, [dolorParam])
+  }, [dolorParam, initialDolor])
 
-  // Si no hay ?dolor=, recuperar última elección de la sesión (S3).
+  // Si no hay ?dolor= ni initialDolor, recuperar última elección de la sesión (S3).
   useEffect(() => {
-    if (dolorParam) return
+    if (dolorParam || initialDolor) return
     try {
       const stored = sessionStorage.getItem(HOME_DOLOR_STORAGE_KEY)
       if (stored) {
         const resolved = resolveHomeDolor(stored)
-        if (resolved !== "fiado") {
+        if (resolved !== "oficios") {
           setDolor(resolved)
         }
       }
@@ -153,14 +157,15 @@ function MatrixHubInner({ isUs = false }: { isUs?: boolean }) {
   )
 }
 
-function MatrixHubFallback({ isUs = false }: { isUs?: boolean }) {
+function MatrixHubFallback({ isUs = false, initialDolor }: { isUs?: boolean; initialDolor?: HomeDolorSlug }) {
   const entries = isUs ? PRODUCT_ENTRIES_US : PRODUCT_ENTRIES
-  const entry = entries.fiado
+  const slug = initialDolor ?? (isUs ? "fiado" : "oficios")
+  const entry = (entries as any)[slug] ?? entries.fiado
   return (
     <ClaverShell context="matrix" isUs={isUs}>
       <ProductHeroSection entry={entry} secondaryCtaHref={`#${GTM_VITRINE_COPY.combateHeadingId}`} />
       <CommercialTrustBar isUs={isUs} />
-      <CombateHomeSection highlightSlug="fiado" isUs={isUs} />
+      <CombateHomeSection highlightSlug={slug} isUs={isUs} />
       <ProductAppPreviewSection entry={entry} isUs={isUs} />
       <ProductStepsSection entry={entry} isUs={isUs} />
       <ProductSocialProofSection entry={entry} isUs={isUs} />
@@ -179,10 +184,10 @@ function MatrixHubFallback({ isUs = false }: { isUs?: boolean }) {
 }
 
 /** Home Grupo Claver — un dolor primero, ecosistema después (GTM S1–S3 / S6). */
-export function ClaverMatrixHub({ isUs = false }: { isUs?: boolean }) {
+export function ClaverMatrixHub({ isUs = false, initialDolor }: { isUs?: boolean; initialDolor?: HomeDolorSlug }) {
   return (
-    <Suspense fallback={<MatrixHubFallback isUs={isUs} />}>
-      <MatrixHubInner isUs={isUs} />
+    <Suspense fallback={<MatrixHubFallback isUs={isUs} initialDolor={initialDolor} />}>
+      <MatrixHubInner isUs={isUs} initialDolor={initialDolor} />
     </Suspense>
   )
 }

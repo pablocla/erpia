@@ -31,6 +31,8 @@ export type GoogleAuthSuccess = {
     email: string
     rol: string
     empresaId: number
+    empresaNombre?: string
+    empresaModoLite?: string | null
     authProvider?: string
     avatarUrl?: string | null
   }
@@ -186,6 +188,11 @@ async function issueTokenForUser(usuario: {
     empresaId: usuario.empresaId,
   })
 
+  const empresa = await prisma.empresa.findUnique({
+    where: { id: usuario.empresaId },
+    select: { nombre: true, modoLite: true },
+  })
+
   return {
     success: true,
     token,
@@ -195,6 +202,8 @@ async function issueTokenForUser(usuario: {
       email: usuario.email,
       rol: usuario.rol,
       empresaId: usuario.empresaId,
+      empresaNombre: empresa?.nombre,
+      empresaModoLite: empresa?.modoLite ?? undefined,
       authProvider: usuario.authProvider ?? undefined,
       avatarUrl: usuario.avatarUrl,
     },

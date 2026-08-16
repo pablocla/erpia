@@ -24,6 +24,8 @@ export interface AuthResponse {
     email: string
     rol: string
     empresaId: number
+    empresaNombre?: string
+    empresaModoLite?: string | null
     avatarUrl?: string | null
   }
   error?: string
@@ -111,6 +113,7 @@ export class AuthService {
       // Buscar el usuario
       const usuario = await prisma.usuario.findUnique({
         where: { email: email.toLowerCase().trim() },
+        include: { empresa: { select: { nombre: true, modoLite: true } } },
       })
 
       if (!usuario) {
@@ -165,6 +168,8 @@ export class AuthService {
           email: usuario.email,
           rol: usuario.rol,
           empresaId: usuario.empresaId,
+          empresaNombre: usuario.empresa?.nombre,
+          empresaModoLite: usuario.empresa?.modoLite ?? undefined,
           avatarUrl: usuario.avatarUrl,
         },
       }
@@ -276,10 +281,13 @@ export class AuthService {
       hasPassword: !!usuario.password,
       activo: usuario.activo,
       empresaId: usuario.empresaId,
+      empresaNombre: usuario.empresa.nombre,
+      empresaModoLite: usuario.empresa.modoLite ?? undefined,
       empresa: {
         id: usuario.empresa.id,
         nombre: usuario.empresa.nombre,
         cuit: usuario.empresa.cuit,
+        modoLite: usuario.empresa.modoLite,
       },
     }
   }

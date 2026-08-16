@@ -184,20 +184,18 @@ async function fetchKpiValues(
     const res = await fetch("/api/prestamos/resumen", { headers })
     if (!res.ok) {
       return {
-        calle: 3328500,
-        interes: 987500,
-        total: 4316000,
-        cobrar_hoy: 393000,
+        total: 0,
+        cobrar_hoy: 0,
+        cobrado_hoy: 0,
+        deudores: 0,
         mora: 0,
       }
     }
     const data = await res.json()
     return {
-      calle: data.calle ?? 3328500,
-      interes: data.interes ?? 987500,
-      total: data.total ?? 4316000,
-      cobrar_hoy: data.cobrarHoy ?? 393000,
-      mora: data.mora ?? 0,
+      calle: data.total ?? 0,
+      cobrar_hoy: data.cobrarHoy ?? 0,
+      interes: data.interes ?? ((data.total ?? 0) * 0.3),
     }
   }
 

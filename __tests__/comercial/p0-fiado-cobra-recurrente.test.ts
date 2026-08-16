@@ -33,9 +33,9 @@ describe("P0 Fiado + Cobrá + recurrente", () => {
     expect(LITE_MENU_PATHS.cobranza).toContain("/dashboard/fiado")
   })
 
-  it("home combate resuelve activación fiado/cobra", () => {
-    expect(HOME_COMBATE_SLUGS).toEqual(["fiado", "cobra", "turnos"])
-    for (const slug of ["fiado", "cobra"] as const) {
+  it("home combate resuelve activación oficios/fiado", () => {
+    expect(HOME_COMBATE_SLUGS).toEqual(["oficios", "fiado", "turnos"])
+    for (const slug of ["oficios", "fiado"] as const) {
       const intent = resolveActivarIntent(slug)
       expect(intent).toBeTruthy()
       expect(intent!.landingPath).toMatch(/^\/dashboard/)

@@ -15,6 +15,8 @@ export interface AuthUser {
   rol: string
   empresaId: number
   empresaNombre?: string
+  /** Pack UX: fiado | prestamista | pos | … */
+  empresaModoLite?: string
   avatarUrl?: string | null
 }
 

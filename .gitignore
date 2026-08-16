@@ -38,3 +38,6 @@ next-env.d.ts
 certificadosafip/
 *.key
 *.pfx
+
+# Sub-projects / external repos
+poui-ai/

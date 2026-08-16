@@ -25,7 +25,7 @@ export function HeroDolorChips({
       aria-label="Elegí un producto"
       className={cn("mt-6 flex flex-wrap gap-2", className)}
     >
-      <span className="sr-only">Elegí Fiado, Cobranza o Turnos</span>
+      <span className="sr-only">Elegí Oficios, Fiado o Turnos</span>
       {chips.map((chip) => {
         const pressed = active === chip.slug
         return (

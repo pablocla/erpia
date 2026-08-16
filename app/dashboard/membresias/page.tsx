@@ -23,6 +23,8 @@ import { isCuotaProductShell } from "@/lib/comercial/product-shell"
 import { useDashboardShell } from "@/hooks/use-dashboard-shell"
 import { useToast } from "@/hooks/use-toast"
 import { buildWaMeUrl, messageCuotaVencida } from "@/lib/comercial/whatsapp-copy"
+import { CobrarDialog, type CobrarDialogDeudor } from "@/components/prestamos/cobrar-dialog"
+import type { MedioCobro } from "@/lib/prestamos/prestamos-meta"
 
 interface Plan {
   id: number
@@ -43,6 +45,7 @@ interface Membresia {
   notas: string | null
   plan: { id: number; nombre: string; precio: number; periodicidad: string }
   cliente: { id: number; nombre: string; email: string | null; telefono?: string | null }
+  saldoDeuda?: number // Opcional, para manejar pagos parciales
 }
 
 const PLAN_COLORS = [
@@ -53,25 +56,32 @@ const PLAN_COLORS = [
   "bg-[var(--status-error)]",
 ]
 
-const ESTADO_VARIANT: Record<string, "success" | "warning" | "error" | "neutral"> = {
+const ESTADO_VARIANT: Record<string, "success" | "warning" | "error" | "neutral" | "default"> = {
   activa: "success",
   por_vencer: "warning",
   vencida: "error",
+  parcial: "default", // Violeta/Primario
   suspendida: "neutral",
 }
 
 const ESTADO_LABEL: Record<string, string> = {
-  activa: "Activa",
-  por_vencer: "Por vencer",
+  activa: "Activa / Al día",
+  por_vencer: "Vence hoy",
   vencida: "Vencida",
+  parcial: "Pago parcial",
   suspendida: "Suspendida",
 }
 
 export default function MembresiasPage() {
-  const { modoLite, productosSku } = useDashboardShell()
+  const { modoLite, productosSku, demoIndustryId } = useDashboardShell()
   const isCuota = isCuotaProductShell(modoLite, productosSku)
   const cuotaGuide = getCuotaExperience()
   const { toast } = useToast()
+
+  const labelSujeto = ["escuela_barrio"].includes(demoIndustryId || "") ? "Alumno" : 
+                      ["colonia_verano"].includes(demoIndustryId || "") ? "Colono" : 
+                      ["pena_folklore"].includes(demoIndustryId || "") ? "Peñero" : 
+                      ["cooperativa_cuotas"].includes(demoIndustryId || "") ? "Asociado" : "Socio"
 
   const [planes, setPlanes] = useState<Plan[]>([])
   const [membresias, setMembresias] = useState<Membresia[]>([])
@@ -93,6 +103,9 @@ export default function MembresiasPage() {
     periodicidad: "mensual",
     duracionDias: "30",
   })
+
+  const [deudorActivo, setDeudorActivo] = useState<CobrarDialogDeudor | null>(null)
+  const [cobrando, setCobrando] = useState(false)
 
   const cargarDatos = useCallback(async () => {
     try {
@@ -177,6 +190,37 @@ export default function MembresiasPage() {
     }
   }
 
+  const avisarRecibo = async (m: Membresia, monto: number) => {
+    const texto = `Hola ${m.cliente.nombre}, recibimos tu pago de $${monto.toLocaleString("es-AR")}. Ya estás al día, ¡gracias!`
+    const wa = buildWaMeUrl(m.cliente.telefono, texto)
+    try {
+      if (wa) window.open(wa, "_blank", "noopener,noreferrer")
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleCobrar = async (payload: { monto: number; medio: MedioCobro }) => {
+    if (!deudorActivo) return
+    setCobrando(true)
+    try {
+      // Simular pegada al backend para cobrar
+      await new Promise((r) => setTimeout(r, 600))
+      toast({ title: "¡Cobro registrado!", description: "La cuota quedó al día." })
+      setDeudorActivo(null)
+      
+      // Simular cambio de estado localmente para wow-moment
+      const mToUpdate = membresias.find(m => m.id === deudorActivo.id)
+      setMembresias(prev => prev.map(m => m.id === deudorActivo.id ? { ...m, estado: payload.monto < deudorActivo.total ? "parcial" : "activa", saldoDeuda: deudorActivo.total - payload.monto } : m))
+      
+      if (mToUpdate && payload.monto >= deudorActivo.total) {
+        void avisarRecibo(mToUpdate, payload.monto)
+      }
+    } finally {
+      setCobrando(false)
+    }
+  }
+
   const membresiasFiltradas = membresias.filter((m) => {
     const matchBusqueda = m.cliente.nombre.toLowerCase().includes(busqueda.toLowerCase())
     const matchEstado = filtroEstado === "todos" || m.estado === filtroEstado
@@ -195,10 +239,10 @@ export default function MembresiasPage() {
 
       <PageHeader
         variant="surface"
-        title={isCuota ? "Socios y cuotas" : "Membresías"}
+        title={isCuota ? `${labelSujeto}s y cuotas` : "Membresías"}
         description={
           isCuota
-            ? "Planes, socios al día y morosos. Avisá por WhatsApp cuando vence la cuota."
+            ? `Planes, ${labelSujeto.toLowerCase()}s al día y morosos. Avisá por WhatsApp cuando vence la cuota.`
             : "Gestión de socios, planes y vencimientos"
         }
         badge={
@@ -234,7 +278,7 @@ export default function MembresiasPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Total socios</p>
+              <p className="text-xs text-muted-foreground">Total {labelSujeto.toLowerCase()}s</p>
             </div>
             <p className="text-2xl font-bold">{resumen.totalMembresias}</p>
           </CardContent>
@@ -280,7 +324,7 @@ export default function MembresiasPage() {
         <EmptyState
           icon={Dumbbell}
           title="Creá tu primer plan"
-          description="Mensual, trimestral o anual. Después asociás socios y cobrás cuotas."
+          description={`Mensual, trimestral o anual. Después asociás ${labelSujeto.toLowerCase()}s y cobrás cuotas.`}
           actionLabel="Nuevo plan"
           onAction={() => setModalNuevo(true)}
         />
@@ -321,7 +365,7 @@ export default function MembresiasPage() {
       <Card id="tabla-socios">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <CardTitle className="text-base">Socios</CardTitle>
+            <CardTitle className="text-base">{labelSujeto}s</CardTitle>
             <Select value={filtroEstado} onValueChange={setFiltroEstado}>
               <SelectTrigger className="h-9 w-40">
                 <Filter className="h-3.5 w-3.5 mr-1" />
@@ -342,7 +386,7 @@ export default function MembresiasPage() {
             columns={[
               {
                 key: "cliente" as any,
-                header: "Socio",
+                header: labelSujeto,
                 cell: (m) => (
                   <div>
                     <p className="font-medium">{m.cliente.nombre}</p>
@@ -392,21 +436,43 @@ export default function MembresiasPage() {
               {
                 key: "acciones" as any,
                 header: "",
-                cell: (m) =>
-                  m.estado === "vencida" || m.estado === "por_vencer" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs min-h-[36px]"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        void avisarCuota(m)
-                      }}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5 mr-1" />
-                      WhatsApp
-                    </Button>
-                  ) : null,
+                cell: (m) => (
+                  <div className="flex items-center gap-2 justify-end">
+                    {(m.estado === "vencida" || m.estado === "por_vencer" || m.estado === "parcial") && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-8 text-xs min-h-[36px]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeudorActivo({
+                            id: m.id,
+                            cliente: m.cliente.nombre,
+                            total: m.saldoDeuda ?? m.plan.precio,
+                            telefono: m.cliente.telefono || undefined,
+                          })
+                        }}
+                      >
+                        <CreditCard className="h-3.5 w-3.5 mr-1" />
+                        Cobrar
+                      </Button>
+                    )}
+                    {(m.estado === "vencida" || m.estado === "parcial") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs min-h-[36px]"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void avisarCuota(m)
+                        }}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                        Avisar
+                      </Button>
+                    )}
+                  </div>
+                ),
               },
             ] as DataTableColumn<Membresia>[]}
             rowKey="id"
@@ -419,12 +485,12 @@ export default function MembresiasPage() {
               <EmptyState
                 icon={Users}
                 title={
-                  filtroEstado !== "todos" ? "Ningún socio en este estado" : "Todavía no hay socios"
+                  filtroEstado !== "todos" ? `Ningún ${labelSujeto.toLowerCase()} en este estado` : `Todavía no hay ${labelSujeto.toLowerCase()}s`
                 }
                 description={
                   filtroEstado !== "todos"
-                    ? "Cambiá el filtro o registrá un socio con un plan activo."
-                    : "Creá un plan y asociá el primer socio. Después avisás cuotas por WhatsApp."
+                    ? `Cambiá el filtro o registrá un ${labelSujeto.toLowerCase()} con un plan activo.`
+                    : `Creá un plan y asociá el primer ${labelSujeto.toLowerCase()}. Después avisás cuotas por WhatsApp.`
                 }
                 actionLabel={filtroEstado !== "todos" ? "Ver todos" : "Nuevo plan"}
                 onAction={
@@ -514,6 +580,14 @@ export default function MembresiasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CobrarDialog
+        open={!!deudorActivo}
+        onOpenChange={(v) => !v && setDeudorActivo(null)}
+        deudor={deudorActivo}
+        submitting={cobrando}
+        onConfirm={handleCobrar}
+      />
     </PageShell>
   )
 }

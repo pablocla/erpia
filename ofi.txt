@@ -1,0 +1,458 @@
+# MASTER ARCHITECTURE & IMPLEMENTATION GUIDE: CLAVER PLATFORM
+> **Arquitectura de Motores Estructurales (Core Platform) vs. Micro-Apps Verticales Compuestas (Micro-SaaS)**
+> **Foco Especial:** Micro-App Piloto `Claver Oficios & Obras` + Motor Impositivo y Fiscal Universal
+
+---
+
+## 1. Visión de Arquitectura en 2 Capas
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       CAPA 2: MICRO-APPS VERTICALES                                     │
+│                  (Micro-SaaS ligeros, mobile-first, 100% opt-in por rubro/tenant)                      │
+├───────────────────┬────────────────────┬────────────────────┬────────────────────┬─────────────────────┤
+│  CLAVER OFICIOS   │   CLAVER RENTAL    │  CLAVER FUMIGACIÓN │   CLAVER SALONES   │   CLAVER DETAILING  │
+│  Presupuestos 3N  │   Maquinarias      │   Certificados QR  │   Señas / Eventos  │   Inspección 360°   │
+│  Fotos / Cuadrilla│   Días extra / Remito│   Vto. 30/60 días  │   Contrato Alquiler│   Aviso Retiro WA   │
+└─────────┬─────────┴──────────┬─────────┴──────────┬─────────┴──────────┬─────────┴──────────┬──────────┘
+          │                    │                    │                    │                    │
+          ▼                    ▼                    ▼                    ▼                    ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              CAPA 1: MOTORES & PROCESOS ESTRUCTURALES                                   │
+│            (Servicios Universales Compartidos — Disponibles para CUALQUIER Tenant por separado)        │
+├────────────────────────────────┬────────────────────────────────┬──────────────────────────────────────┤
+│ 1. MOTOR IMPOSITIVO & FISCAL   │ 2. MOTOR FINANCIERO & COBRO    │ 3. MOTOR INTELIGENCIA ARTIFICIAL     │
+│ • Facturación AFIP (A, B, C)   │ • Mercado Pago (Connect/QR/Lnk)│ • Gemini 3.7 Audio-a-Presupuesto     │
+│ • Padrones IIBB (ARBA/AGIP/DGR)│ • Caja Chica / Vales / Gastos  │ • Gemini Vision (OCR de Tickets)     │
+│ • Convenio Multilateral SIFERE │ • Cta Cte / Fiado / Cuotas     │ • Redactor Legal de Contratos        │
+├────────────────────────────────┼────────────────────────────────┼──────────────────────────────────────┤
+│ 4. MOTOR CLIENTES & CRM        │ 5. MOTOR MENSAJERÍA & AUTOMAC. │ 6. MOTOR RED & AFILIADOS (VIRAL)     │
+│ • Directorio Multi-tenant      │ • WhatsApp Gateway con Tokens  │ • Tracking de Referidos (N1 y N2)    │
+│ • Lookup AFIP Padrón A5 por CUIT│• Cron de Mantenimiento / Vto. │ • Liquidación Comisiones MercadoPago │
+│ • Historial y Geolocalización  │ • Portales Públicos sin Login  │ • Regla "Traé 3 y es Gratis"         │
+└────────────────────────────────┴────────────────────────────────┴──────────────────────────────────────┘
+```
+
+---
+
+## 2. CAPA 1: Procesos Estructurales (Plataforma Core para TODOS los Tenants)
+
+Cualquier tenant de Claver (sea una ferretería, un supermercado, un médico o un electricista) puede utilizar estos motores estructurales de forma independiente y aislada:
+
+### A. Motor Impositivo & Fiscal Universal (AFIP + IIBB + Convenio Multilateral)
+* **Facturación Electrónica AFIP:**
+  - Emisión de Facturas y Notas de Crédito `A`, `B`, `C` con CAE oficial y código QR normativo.
+  - Reutiliza `@/lib/afip` y `@/app/api/afip`.
+* **Motor de Padrones de IIBB (Ingresos Brutos):**
+  - **Subida Masiva:** Importador universal en `@/lib/impuestos/padron-service.ts` compatible con padrones mensuales de:
+    - **ARBA (Provincia de Buenos Aires)**
+    - **AGIP / ARCIBA (CABA)**
+    - **DGR Provinciales:** Santa Fe (`DGR_SF`), Córdoba (`DGR_CBA`), Mendoza (`DGR_MZA`).
+  - **Cálculo Automático por CUIT:** Al emitir cualquier comprobante, consulta la alícuota de percepción/retención del CUIT del cliente/proveedor y aplica el impuesto automáticamente.
+* **Convenio Multilateral (SIFERE / Comarb):**
+  - Acumulación de base imponible e IIBB por jurisdicción (`PeriodoIIBB` en `@/lib/impuestos/iibb-service.ts`).
+  - Persistencia de DDJJ con hash SHA-256 (`@/lib/impuestos/declaracion-jurada-service.ts`).
+  - Exportación de archivos planos para el aplicativo **SIFERE Web (CM03)**.
+
+### B. Motor Financiero & Cobranzas Mercado Pago
+* **Mercado Pago Directo (OAuth / Connect):** El tenant vincula su cuenta y recibe los fondos directamente sin custodia por parte de Claver.
+* **Pasarelas:** Preference API para Links de Pago en WhatsApp, QR dinámico para mostrador/móvil y Point.
+* **Webhooks IPN:** `@/app/api/webhooks/mercadopago` impacta ingresos en tiempo real en la Caja del tenant.
+* **Caja Chica & Gastos:** Registro de movimientos, vales, egresos y conciliación diaria.
+
+### C. Motor de IA Multimodal (Gemini 3.7)
+* Transcripción de audios de WhatsApp a estructuras de datos JSON.
+* OCR de tickets y facturas mediante visión computacional.
+* Generación de contratos y cláusulas legales personalizadas.
+
+### D. Motor de Red Viral de Afiliados
+* Registro de código de referido por tenant (`claver.com.ar/?ref=CODIGO`).
+* Reparto de comisiones recurrentes: **25% (Nivel 1)** y **10% (Nivel 2)**.
+* Automatización de la regla *"Traé 3 clientes activos y tu suscripción es $0 de por vida"*.
+
+---
+
+## 3. CAPA 2: Micro-Apps Verticales Compuestas (Micro-SaaS)
+
+Las micro-apps no reinventan la rueda; **componen los motores estructurales** agregando la UI/UX especializada, terminología de nicho y flujos operativos específicos:
+
+---
+
+## 4. ESPECIFICACIÓN DETALLADA: Micro-App `Claver Oficios & Obras`
+
+### A. Target y Especialidades
+Plomeros, gasistas matriculados, electricistas, pintores, techistas, albañiles, capataces de obra, técnicos de aire acondicionado/refrigeración, cerrajeros, herreros, carpinteros, empresas de limpieza de obra e instaladores de seguridad/redes.
+
+### B. Funcionalidades Compuestas de la Micro-App
+1. **Presupuestador Express 3 Niveles:**
+   - Cotización rápida (Básica / Recomendada / Premium) por pantalla, dictado por audio de WhatsApp (Gemini 3.7) o por unidad de medida ($/m², $/boca de luz).
+   - Cláusula anti-inflación: Validez 7 días, congelamiento con 40% de seña y saldos reajustables por índice CAC.
+2. **Gestión de Cuadrilla & Jornales:**
+   - Despacho de la agenda del día por WhatsApp en 1 click (direcciones, tareas y materiales).
+   - Check-in / Check-out del operario con fotos y geolocalización.
+   - Liquidación semanal automática: `Días trabajados × Jornal - Vales de Caja Chica = Neto a pagar`.
+3. **Control en Obra & Fotos:**
+   - Ficha con cámara directa para fotos "Antes" y "Después".
+   - Navegación GPS a 1-tap (Waze / Google Maps).
+   - Carga de tickets de ferretería con OCR de Gemini Vision para imputación de costos reales.
+4. **Boletines Técnicos, Procesos SOP y Contratos:**
+   - Boletines técnicos por WhatsApp a la cuadrilla con directivas de seguridad/planos.
+   - Checklists de ejecución obligatorios por oficio antes de cerrar etapas de obra.
+   - Generación de Contrato de Locación de Obra con firma digital en pantalla.
+5. **Circuito de Garantías & Mantenimiento Preventivo:**
+   - Estado `EN_GARANTIA` para visitas de reparación sin ensuciar facturación nueva.
+   - Cron automático de alerta de mantenimiento a 6 / 12 meses (calderas, filtros, techos).
+6. **Portal Público del Cliente (`/p/trabajo/[token]`):**
+   - Vista web sin login donde el cliente aprueba el presupuesto, paga la seña con Mercado Pago, firma el contrato, ve las fotos y califica el servicio (1 a 5 estrellas con link a Google Maps).
+
+---
+
+## 5. Modelo de Datos Prisma (Delta Completo & Aislado)
+
+```prisma
+// ==========================================
+// MÓDULO CLAVER OFICIOS & OBRAS (AISLADO)
+// ==========================================
+
+enum EstadoTrabajoOficio {
+  PRESUPUESTADO
+  CONFIRMADO
+  EN_CURSO
+  FINALIZADO
+  CANCELADO
+  EN_GARANTIA
+}
+
+enum TipoOficio {
+  PLOMERIA_GAS
+  ELECTRICIDAD
+  PINTURA
+  ALBANILERIA_OBRA
+  REFRIGERACION_CLIMA
+  TECHOS_ZINGUERIA
+  CERRAJERIA
+  HERRERIA
+  CARPINTERIA
+  LIMPIEZA_FINAL_OBRA
+  JARDINERIA_ESPACIOS
+  INSTALACIONES_REDES_CAMARAS
+  GENERAL
+}
+
+model OficioTrabajo {
+  id                  String              @id @default(uuid())
+  empresaId           String              // Multi-tenant guard obligatorio
+  clienteId           String?             // FK al modelo Cliente del core
+  tokenPublico        String              @unique @default(cuid()) // Para acceso del cliente /p/trabajo/[token]
+  numero              Int                 @default(autoincrement())
+  tipoOficio          TipoOficio          @default(GENERAL)
+  titulo              String              // Ej: "Instalación Aire 3000F" o "Refacción Baño Principal"
+  descripcion         String?             @db.Text
+  direccion           String?
+  ubicacionGps        String?
+  fechaPactada        DateTime?
+  estado              EstadoTrabajoOficio @default(PRESUPUESTADO)
+
+  // Cotización en 3 Niveles (JSON estructurado)
+  opcionesPresupuesto Json?
+  opcionElegida       String?             // "Básico" | "Recomendado" | "Premium"
+  montoAcordado       Decimal?            @db.Decimal(12, 2)
+  porcentajeSena      Int                 @default(30) // % de seña requerida
+  validezDias         Int                 @default(7)  // Validez contra inflación
+
+  // Cobranza Mercado Pago & Finanzas (Usa Capa 1)
+  mpPreferenceIdSena  String?
+  mpPaymentIdSena     String?
+  senaPagada          Boolean             @default(false)
+  mpPreferenceIdSaldo String?
+  mpPaymentIdSaldo    String?
+  saldoPagado         Boolean             @default(false)
+  medioPagoFinal      String?             // "MERCADOPAGO", "EFECTIVO", "TRANSFERENCIA"
+
+  // Evidencias fotográficas (URLs seguras)
+  fotosAntes          String[]            @default([])
+  fotosDespues        String[]            @default([])
+  firmaClienteUrl     String?             @db.Text
+
+  // Post-Venta & Encuesta
+  calificacionEstrellas Int?              // 1 a 5 estrellas
+  resenaComentario      String?
+  garantiaHasta         DateTime?
+
+  // Mantenimiento preventivo recurrente
+  proximoServiceMeses Int?                // 6, 12, 24 meses
+  fechaProximoService DateTime?
+  alertaServiceEnviada Boolean            @default(false)
+
+  // Relaciones del módulo
+  asignaciones        OficioAsignacion[]
+  contrato            OficioContratoObra?
+  checklists          OficioChecklistEjecucion[]
+  gastosMateriales    OficioGastoMaterial[]
+
+  // Link opcional con finanzas core
+  ventaId             String?
+  cuentaCorrienteId   String?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([empresaId, estado])
+  @@index([empresaId, fechaProximoService])
+  @@index([tokenPublico])
+}
+
+model OficioGastoMaterial {
+  id            String        @id @default(uuid())
+  trabajoId     String
+  proveedor     String?       // "Ferretería El Puente"
+  monto         Decimal       @db.Decimal(10, 2)
+  fotoTicketUrl String?
+  ocrDetalle    String?       @db.Text
+  reembolsable  Boolean       @default(false) // Si lo paga el cliente
+  
+  trabajo       OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime      @default(now())
+
+  @@index([trabajoId])
+}
+
+model OficioOperario {
+  id          String             @id @default(uuid())
+  empresaId   String
+  nombre      String
+  telefono    String             // Celular con código de área para WhatsApp
+  rol         String             // "Oficial", "Medio Oficial", "Ayudante", "Técnico"
+  valorJornal Decimal?           @db.Decimal(10, 2)
+  activo      Boolean            @default(true)
+
+  asignaciones OficioAsignacion[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([empresaId, activo])
+}
+
+model OficioAsignacion {
+  id          String         @id @default(uuid())
+  trabajoId   String
+  operarioId  String
+  fecha       DateTime       @default(now())
+  horaLlegada DateTime?
+  horaSalida  DateTime?
+  notas       String?
+  
+  trabajo     OficioTrabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  operario    OficioOperario @relation(fields: [operarioId], references: [id], onDelete: Cascade)
+
+  @@index([trabajoId])
+  @@index([operarioId])
+}
+
+model OficioBoletinTecnico {
+  id            String   @id @default(uuid())
+  empresaId     String
+  trabajoId     String?
+  titulo        String   // Ej: "Instrucción de Seguridad: Uso de Arnés en Altura"
+  contenido     String   @db.Text
+  archivosUrls  String[]
+  destinatarios String   // "TODOS" | "OFICIALES" | "CLIENTE"
+  
+  createdAt     DateTime @default(now())
+
+  @@index([empresaId])
+}
+
+model OficioPlantillaProceso {
+  id          String     @id @default(uuid())
+  empresaId   String?    // Null si es plantilla global del sistema
+  tipoOficio  TipoOficio
+  nombre      String     // Ej: "Protocolo Colado de Losa" o "Prueba de Hermeticidad Gas"
+  pasosJson   Json       // [{ orden: 1, tarea: "Encofrado y apuntalamiento", requiereFoto: true }]
+
+  createdAt   DateTime   @default(now())
+
+  @@index([empresaId, tipoOficio])
+}
+
+model OficioChecklistEjecucion {
+  id          String        @id @default(uuid())
+  trabajoId   String
+  nombre      String
+  pasosJson   Json          // [{ orden: 1, tarea: "...", completado: true, fotoUrl: "..." }]
+  completado  Boolean       @default(false)
+
+  trabajo     OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  @@index([trabajoId])
+}
+
+model OficioContratoObra {
+  id                String    @id @default(uuid())
+  empresaId         String
+  trabajoId         String    @unique
+  clausulasJson     Json      // Cláusulas legales de alcance, materiales y mora
+  montoTotal        Decimal   @db.Decimal(12, 2)
+  formaPago         String    // Ej: "40% anticipo, 30% losa terminada, 30% entrega"
+  plazoDias         Int?
+  
+  firmadoPorCliente Boolean   @default(false)
+  fechaFirma        DateTime?
+  firmaDigitalUrl   String?   @db.Text
+  ipFirma           String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  trabajo           OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+}
+
+// ==========================================
+// MÓDULO DE RED & AFILIADOS (ESTRUCTURAL)
+// ==========================================
+
+model AfiliadoReferido {
+  id                 String   @id @default(uuid())
+  codigoAfiliado     String   @unique // Ej: "JUAN123" o "CORRALON-NORTE"
+  empresaId          String   @unique // La empresa/usuario que refiere
+  aliasMercadoPago   String?  // Para transferirle las comisiones
+  
+  // Referente padre (Nivel 2)
+  padreAfiliadoId    String?
+  
+  comisionNivel1Pct  Decimal  @default(25.0) @db.Decimal(5, 2)
+  comisionNivel2Pct  Decimal  @default(10.0) @db.Decimal(5, 2)
+  
+  saldoAcumulado     Decimal  @default(0.0) @db.Decimal(12, 2)
+  totalCobrado       Decimal  @default(0.0) @db.Decimal(12, 2)
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([codigoAfiliado])
+}
+```
+
+---
+
+## 6. Endpoints API (`/app/api/oficios/...` & `/app/api/afiliados/...`)
+
+| Método | Endpoint | Parámetros / Body | Descripción / Capa de Proceso |
+|---|---|---|---|
+| `GET` | `/api/oficios/trabajos` | `?estado=...&fecha=...` | Lista trabajos con `whereEmpresa()`. |
+| `POST` | `/api/oficios/trabajos` | `clienteId, tipoOficio, titulo, opcionesPresupuesto, ...` | Crea trabajo y genera `tokenPublico`. |
+| `POST` | `/api/oficios/ia/audio-presupuesto`| `audioBase64` | Transcribe y parsea con Gemini 3.7 a 3 niveles. |
+| `POST` | `/api/oficios/ia/ocr-ticket` | `imagenBase64, trabajoId` | Extrae datos del ticket con Gemini Vision y crea gasto. |
+| `GET` | `/api/oficios/trabajos/[id]` | `id` | Detalle, fotos antes/después, checklists, contrato y gastos. |
+| `PUT` | `/api/oficios/trabajos/[id]` | `estado, montoAcordado, opcionElegida, fotos, firma` | Actualiza estado y guarda fotos. |
+| `POST` | `/api/oficios/trabajos/[id]/cobrar` | `monto, medioPago, generarFacturaAFIP` | Registra cobro en Caja core o genera Factura AFIP (Capa 1). |
+| `POST` | `/api/oficios/trabajos/[id]/mp-link`| `tipo: "SENA" \| "SALDO"` | Genera Preference MP y devuelve link de pago (Capa 1). |
+| `GET` | `/api/oficios/cuadrilla` | - | Lista operarios con saldo semanal calculado. |
+| `POST` | `/api/oficios/cuadrilla/despacho-wa` | `fecha` | Genera los links de hoja de ruta del día por operario. |
+| `POST` | `/api/oficios/cuadrilla/liquidar` | `operarioId, dias, montoPagar, valeDescuento` | Cierra semana y registra egreso en Caja core (Capa 1). |
+| `GET` | `/api/oficios/services-pendientes` | `?meses=...` | Lista de clientes con service vencido para enviar WA. |
+| `GET/POST`| `/api/oficios/boletines` | `titulo, contenido, archivosUrls, destinatarios` | Boletines técnicos broadcast a la cuadrilla. |
+| `GET` | `/api/oficios/publico/[token]` | `token` | Endpoint público (sin JWT) para el portal del cliente. |
+| `POST`| `/api/oficios/publico/[token]/aprobar`| `opcionElegida, firmaDigitalUrl` | El cliente aprueba el presupuesto desde su celular. |
+| `POST`| `/api/oficios/publico/[token]/calificar`| `estrellas, comentario` | Calificación post-venta del cliente final. |
+| `GET` | `/api/afiliados/mi-red` | - | Lista de colegas referidos, comisiones ganadas y saldo. |
+| `POST`| `/api/afiliados/solicitar-retiro` | `monto, aliasMP` | Dispara solicitud de transferencia a Mercado Pago. |
+
+---
+
+## 7. UI Dashboard & Mobile Navigation
+
+1. **Dashboard Home (`/dashboard/oficios`):**
+   - KPIs: Trabajos de hoy, Pendientes de cobro ($), Señas MP ($), Services del mes.
+   - Kanban rápido (Presupuestado ➔ Confirmado ➔ En Curso ➔ Listo para Cobrar).
+   - Botón flotante `+ Nuevo Trabajo`.
+2. **Presupuestador Express con Audio IA y Cotizador m² (`/dashboard/oficios/nuevo`):**
+   - Botón de micrófono: *"Dictar presupuesto por voz"*.
+   - Calculador por m² / Bocas de luz / Metros lineales.
+   - 3 tarjetas de precio con plantillas automáticas (Básico / Recomendado / Premium).
+   - Selector de % de seña (30%, 50% o Total) y plazo de validez.
+   - Botón verde gigante **"Enviar Presupuesto por WhatsApp"**.
+3. **Ficha de Trabajo en Obra (`/dashboard/oficios/[id]`):**
+   - Cámara directa para fotos Antes y Después.
+   - Botón 1-Tap: **"Abrir en Waze / Google Maps"**.
+   - Botón: **"Cargar Ticket de Ferretería (OCR)"**.
+   - Selector de Checklist de calidad (SOP).
+   - Botón "Generar Contrato de Obra".
+   - Botón **"Cobrar con QR / Mercado Pago"** o "Cobrar en Efectivo" (con opción de Factura AFIP).
+4. **Cuadrilla y Jornales (`/dashboard/oficios/cuadrilla`):**
+   - Lista de albañiles/técnicos.
+   - Botón **"Enviar Agenda del Día por WA"** (dispara mensajes a todos en 1 click).
+   - Modal **"Liquidar Semana"**: muestra días trabajados - vales de caja = neto en mano.
+5. **Panel "Mi Red & Ganancias" (`/dashboard/afiliados`):**
+   - Mi Link de Referido con botón "Copiar" y "Compartir en WhatsApp".
+   - Contador: *"Tenés 3 referidos activos. Tu Claver es 100% GRATIS."*
+   - Saldo disponible en comisiones con botón "Retirar a Mercado Pago".
+6. **Portal Público del Cliente (`/app/p/trabajo/[token]`):**
+   - Vista web responsive limpia (sin login).
+   - Selector interactivo de opciones con botón "Aprobar Trabajo".
+   - Botón de Pago Directo con Mercado Pago.
+   - Galería de fotos del trabajo antes y después.
+   - Calificación de servicio (1 a 5 estrellas) con link directo a Google Maps.
+
+---
+
+## 8. Estrategia Comercial, Funnel de Venta y Go-To-Market
+
+### A. Estructura de Precios y Oferta
+* **Plan Profesional Autónomo:** **$29.900 ARS/mes** (1 usuario, presupuestos ilimitados, fotos, recordatorios de service, cobro Mercado Pago / WhatsApp).
+* **Plan Cuadrilla / Pro:** **$44.900 ARS/mes** (Capataz + hasta 5 operarios, boletines técnicos, checklists de procesos, liquidación de jornales, contratos con firma).
+* **Garantía Cero Riesgo:** *"Probalo 7 días gratis. Si no cerrás al menos un presupuesto con nuestro formato interactivo, no pagás nada."*
+* **Incentivo Viral:** *"Traé a 3 colegas y tu suscripción es $0 de por vida."*
+
+### B. Canales de Adquisición Directa en Argentina
+1. **Outreach Directo por WhatsApp (Scraping Google Maps & Facebook Groups):**
+   - Contacto a plomeros, electricistas, gasistas matriculados y pintores en Google Maps por zona.
+   - Mensaje de contacto frío de 3 líneas con demo interactiva en video de 30 segundos.
+2. **Alianzas B2B con Corralones y Ferreterías Industriales:**
+   - Afiches/código QR en el mostrador del corralón: *"¿Sos contratista? Organizá tus jornales y presupuestos con Claver"*.
+   - Comisión del 25% recurrente para el empleado/dueño del corralón por cliente referido.
+3. **Grupos de Oficios en Facebook / Comunidades:**
+   - Publicaciones con valor real: *"Plantilla gratuita de Contrato de Locación de Obra para evitar que los clientes te dejen clavado con los adicionales"*. Al descargar la plantilla, se ofrece la app.
+
+### C. Script de Venta por WhatsApp (Conversión en 3 Mensajes)
+
+**Mensaje 1 (Apertura con dolor real):**
+> *"Hola {{nombre}}, vi tus trabajos en {{zona}}. Te hago una consulta rápida: ¿seguís pasando presupuestos por mensaje de texto o ya usás cotizaciones interactivas en 3 niveles con cobro de seña por Mercado Pago para asegurar el trabajo?"*
+
+**Mensaje 2 (Demostración de valor):**
+> *"Te muestro un ejemplo de 15 segundos: mirá cómo le llega el presupuesto al cliente con tu logo, fotos, botón para aceptar y pagar la seña desde el celular: [link-demo-claver]. Los profesionales que lo usan están cobrando un 30% más caro porque da mucha más presencia. ¿Querés probarlo gratis en tu próximo trabajo?"*
+
+**Mensaje 3 (Cierre y Onboarding):**
+> *"Genial, te activo tu cuenta en 1 minuto. Pasame el nombre de tu empresa o servicio y tu logo/foto así te lo dejo listo para tu primer presupuesto."*
+
+---
+
+## 9. Próximas Micro-Apps a Desplegar (Reutilizando la Capa 1)
+
+```
+┌───────────────────────────────────┬───────────────────────────────────┬───────────────────────────────┐
+│              MICRO-APP            │            DOLOR CRÍTICO          │     MOTORES CAPA 1 UTILIZADOS │
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 1. Rental de Maquinaria/Andamios  │ Pérdida de equipos, días extra sin│ Ficha de Alquiler / Remito +  │
+│    y Volquetes                    │ cobrar y reclamos por roturas.    │ Cta Cte Días + Fotos Estado.  │
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 2. Fumigación & Control de Plagas │ Pérdida de clientes por olvidar   │ Cron Vto. 30/60 días +        │
+│    (Certificados Bromatológicos)  │ vencimiento del certificado legal.│ Certificado Oficial con QR.   │
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 3. Salones de Eventos, Quintas e  │ Overbooking de fechas, seña vs.   │ Turnos/Canchas con Seña MP +  │
+│    Inflables                      │ inflación y cobro de roturas.     │ Cronograma de Saldo por WA.   │
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 4. Detailing & Estética Vehicular │ Reclamos de rayones preexistentes │ Inspección 360° con Fotos +   │
+│    (Lavaderos Premium)            │ y autos listos que no retiran.    │ Aviso WA Retiro + Recurrencia.│
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 5. Guarderías y Hotelería Canina  │ Ansiedad de dueños (exigen fotos  │ Ficha Mascota + Portal Diario │
+│                                   │ diarias) y control de vacunas.    │ de Fotos + Noches Estadía.    │
+├───────────────────────────────────┼───────────────────────────────────┼───────────────────────────────┤
+│ 6. Obleas de GNC & Talleres       │ Clientes que renuevan en otro     │ Radar Anual de Vto. Obleas    │
+│    Mecánicos                      │ taller por falta de aviso previo. │ + Registro Enargas por WA.    │
+└───────────────────────────────────┴───────────────────────────────────┴───────────────────────────────┘
+```

@@ -1,6 +1,6 @@
 ﻿/**
- * Email/SMTP Service â€” Sprint 15
- * Transactional email via nodemailer (optional â€” degrades gracefully when SMTP_* env vars are missing).
+ * Email/SMTP Service — Sprint 15
+ * Transactional email via nodemailer (optional — degrades gracefully when SMTP_* env vars are missing).
  * 
  * Required env vars:
  *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
@@ -17,7 +17,7 @@ import {
   emailNotificationBody,
 } from "@/lib/email/email-templates"
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface EmailOptions {
   to: string | string[]
@@ -38,7 +38,7 @@ export interface EmailResult {
   error?: string
 }
 
-// â”€â”€â”€ SMTP Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SMTP Configuration ──────────────────────────────────────────────────────
 
 function getSmtpConfig() {
   const host = process.env.SMTP_HOST
@@ -53,7 +53,7 @@ function getSmtpConfig() {
   return { host, port, user, pass, from: from!, secure }
 }
 
-// â”€â”€â”€ Lazy nodemailer import (avoids crash if not installed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Lazy nodemailer import (avoids crash if not installed) ──────────────────
 
 let _transporter: any = null
 
@@ -64,7 +64,7 @@ async function getTransporter() {
   if (!config) return null
 
   try {
-    // @ts-ignore â€” nodemailer is an optional dependency
+    // @ts-ignore — nodemailer is an optional dependency
     const nodemailer = await import("nodemailer")
     _transporter = nodemailer.createTransport({
       host: config.host,
@@ -74,12 +74,12 @@ async function getTransporter() {
     })
     return _transporter
   } catch {
-    console.warn("[EmailService] nodemailer no disponible â€” emails deshabilitados")
+    console.warn("[EmailService] nodemailer no disponible — emails deshabilitados")
     return null
   }
 }
 
-// â”€â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Public API ──────────────────────────────────────────────────────────────
 
 export const emailService = {
   /**
@@ -95,7 +95,7 @@ export const emailService = {
   async enviar(options: EmailOptions): Promise<EmailResult> {
     const transporter = await getTransporter()
     if (!transporter) {
-      console.warn("[EmailService] SMTP no configurado â€” email no enviado:", options.subject)
+      console.warn("[EmailService] SMTP no configurado — email no enviado:", options.subject)
       return { ok: false, error: "SMTP no configurado" }
     }
 
@@ -137,21 +137,21 @@ export const emailService = {
 
     return this.enviar({
       to: factura.cliente.email,
-      subject: `Factura ${factura.tipo} ${nroFormatted} â€” ${factura.empresa.razonSocial}`,
+      subject: `Factura ${factura.tipo} ${nroFormatted} — ${factura.empresa.razonSocial}`,
       html: emailLayout(`
-          <h2 style="margin:0 0 16px;font-size:18px;">Comprobante electrÃ³nico</h2>
+          <h2 style="margin:0 0 16px;font-size:18px;">Comprobante electrónico</h2>
           ${emailFacturaIntro(factura.cliente.nombre)}
           <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Tipo</td><td style="padding:8px;border:1px solid #e2e8f0;">Factura ${factura.tipo}</td></tr>
-            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">NÃºmero</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Número</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">CAE</td><td style="padding:8px;border:1px solid #e2e8f0;">${factura.cae || "Pendiente"}</td></tr>
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Total</td><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;">$ ${Number(factura.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
           </table>
           <p style="font-size:12px;color:#64748b;">
-            Autorizado por AFIP â€”
+            Autorizado por AFIP —
             <a href="https://www.afip.gob.ar/fe/qr/?ver=1&fecha=${factura.createdAt.toISOString().split("T")[0]}&cuit=${factura.empresa.cuit.replace(/-/g, "")}&ptoVta=${factura.puntoVenta}&tipoCmp=${factura.tipoCbte}&nroCmp=${factura.numero}&importe=${factura.total}&moneda=PES&ctz=1&tipoCodAut=E&codAut=${factura.cae || ""}" style="color:#1d4ed8;">verificar QR</a>
           </p>
-          <p style="margin-top:20px;font-size:11px;color:#94a3b8;">${factura.empresa.razonSocial} â€” CUIT ${factura.empresa.cuit}<br/>${factura.empresa.direccion || ""}</p>
+          <p style="margin-top:20px;font-size:11px;color:#94a3b8;">${factura.empresa.razonSocial} — CUIT ${factura.empresa.cuit}<br/>${factura.empresa.direccion || ""}</p>
       `),
       attachments: [
         {
@@ -164,7 +164,7 @@ export const emailService = {
   },
 
   /**
-   * Send a nota de crÃ©dito by email
+   * Send a nota de crédito by email
    */
   async enviarNotaCredito(ncId: number, pdfHtml: string): Promise<EmailResult> {
     const nc = await prisma.notaCredito.findUnique({
@@ -178,17 +178,17 @@ export const emailService = {
 
     return this.enviar({
       to: nc.cliente.email,
-      subject: `Nota de CrÃ©dito ${nc.tipo} ${nroFormatted} â€” ${nc.factura?.empresa.razonSocial}`,
+      subject: `Nota de Crédito ${nc.tipo} ${nroFormatted} — ${nc.factura?.empresa.razonSocial}`,
       html: emailLayout(`
-          <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Nota de CrÃ©dito</h2>
+          <h2 style="margin:0 0 16px;font-size:18px;color:#dc2626;">Nota de Crédito</h2>
           ${emailNotaCreditoIntro(nc.cliente.nombre)}
           <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Tipo</td><td style="padding:8px;border:1px solid #e2e8f0;">NC ${nc.tipo}</td></tr>
-            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">NÃºmero</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
+            <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Número</td><td style="padding:8px;border:1px solid #e2e8f0;">${nroFormatted}</td></tr>
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Motivo</td><td style="padding:8px;border:1px solid #e2e8f0;">${nc.motivo}</td></tr>
             <tr><td style="padding:8px;border:1px solid #e2e8f0;color:#64748b;">Total</td><td style="padding:8px;border:1px solid #e2e8f0;font-weight:bold;color:#dc2626;">$ ${Number(nc.total).toLocaleString("es-AR", { minimumFractionDigits: 2 })}</td></tr>
           </table>
-          <p style="font-size:11px;color:#94a3b8;">${nc.factura?.empresa.razonSocial} â€” CUIT ${nc.factura?.empresa.cuit}</p>
+          <p style="font-size:11px;color:#94a3b8;">${nc.factura?.empresa.razonSocial} — CUIT ${nc.factura?.empresa.cuit}</p>
       `),
       attachments: [
         {

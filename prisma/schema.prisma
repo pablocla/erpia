@@ -241,6 +241,10 @@ model Empresa {
   packingLists                PackingList[]
   asnRecepciones              AsnRecepcion[]
   conteosCiclicos             ConteoCiclico[]
+  oficioTrabajos              OficioTrabajo[]
+  oficioOperarios             OficioOperario[]
+  oficioBoletines             OficioBoletinTecnico[]
+  afiliadosReferidos          AfiliadoReferido[]
 
   @@map("empresas")
 }
@@ -390,6 +394,7 @@ model Cliente {
   nicheMovimientos       NicheMovimiento[]
   ordenServicios         OrdenServicio[]
   reservasHotel          ReservaHotel[]
+  oficioTrabajos         OficioTrabajo[]
 
   @@index([cuit])
   @@index([empresaId, activo])
@@ -8266,4 +8271,238 @@ model LineaConteoCiclico {
   observaciones String?
 
   @@map("lineas_conteo_ciclico")
+}
+
+// ==========================================
+// MÓDULO CLAVER OFICIOS & OBRAS (AISLADO)
+// ==========================================
+
+enum EstadoTrabajoOficio {
+  PRESUPUESTADO
+  CONFIRMADO
+  EN_CURSO
+  FINALIZADO
+  CANCELADO
+  EN_GARANTIA
+}
+
+enum TipoOficio {
+  PLOMERIA_GAS
+  ELECTRICIDAD
+  PINTURA
+  ALBANILERIA_OBRA
+  REFRIGERACION_CLIMA
+  TECHOS_ZINGUERIA
+  CERRAJERIA
+  HERRERIA
+  CARPINTERIA
+  LIMPIEZA_FINAL_OBRA
+  JARDINERIA_ESPACIOS
+  INSTALACIONES_REDES_CAMARAS
+  GENERAL
+}
+
+model OficioTrabajo {
+  id                  String              @id @default(uuid())
+  empresaId           Int
+  empresa             Empresa             @relation(fields: [empresaId], references: [id])
+  clienteId           Int?
+  cliente             Cliente?            @relation(fields: [clienteId], references: [id])
+  tokenPublico        String              @unique @default(cuid())
+  numero              Int                 @default(autoincrement())
+  tipoOficio          TipoOficio          @default(GENERAL)
+  titulo              String
+  descripcion         String?             @db.Text
+  direccion           String?
+  ubicacionGps        String?
+  fechaPactada        DateTime?
+  estado              EstadoTrabajoOficio @default(PRESUPUESTADO)
+
+  // Cotización en 3 Niveles (JSON estructurado)
+  opcionesPresupuesto Json?
+  opcionElegida       String?
+  montoAcordado       Decimal?            @db.Decimal(12, 2)
+  porcentajeSena      Int                 @default(30)
+  validezDias         Int                 @default(7)
+
+  // Cobranza Mercado Pago & Finanzas
+  mpPreferenceIdSena  String?
+  mpPaymentIdSena     String?
+  senaPagada          Boolean             @default(false)
+  mpPreferenceIdSaldo String?
+  mpPaymentIdSaldo    String?
+  saldoPagado         Boolean             @default(false)
+  medioPagoFinal      String?
+
+  // Evidencias fotográficas
+  fotosAntes          String[]            @default([])
+  fotosDespues        String[]            @default([])
+  firmaClienteUrl     String?             @db.Text
+
+  // Post-Venta & Encuesta
+  calificacionEstrellas Int?
+  resenaComentario      String?
+  garantiaHasta         DateTime?
+
+  // Mantenimiento preventivo recurrente
+  proximoServiceMeses Int?
+  fechaProximoService DateTime?
+  alertaServiceEnviada Boolean            @default(false)
+
+  // Relaciones del módulo
+  asignaciones        OficioAsignacion[]
+  contrato            OficioContratoObra?
+  checklists          OficioChecklistEjecucion[]
+  gastosMateriales    OficioGastoMaterial[]
+
+  ventaId             Int?
+  cuentaCorrienteId   Int?
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([empresaId, estado])
+  @@index([empresaId, fechaProximoService])
+  @@index([tokenPublico])
+  @@map("oficio_trabajos")
+}
+
+model OficioGastoMaterial {
+  id            String        @id @default(uuid())
+  trabajoId     String
+  proveedor     String?
+  monto         Decimal       @db.Decimal(10, 2)
+  fotoTicketUrl String?
+  ocrDetalle    String?       @db.Text
+  reembolsable  Boolean       @default(false)
+  
+  trabajo       OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime      @default(now())
+
+  @@index([trabajoId])
+  @@map("oficio_gastos_materiales")
+}
+
+model OficioOperario {
+  id          String             @id @default(uuid())
+  empresaId   Int
+  empresa     Empresa            @relation(fields: [empresaId], references: [id])
+  nombre      String
+  telefono    String
+  rol         String
+  valorJornal Decimal?           @db.Decimal(10, 2)
+  activo      Boolean            @default(true)
+
+  asignaciones OficioAsignacion[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([empresaId, activo])
+  @@map("oficio_operarios")
+}
+
+model OficioAsignacion {
+  id          String         @id @default(uuid())
+  trabajoId   String
+  operarioId  String
+  fecha       DateTime       @default(now())
+  horaLlegada DateTime?
+  horaSalida  DateTime?
+  notas       String?
+  
+  trabajo     OficioTrabajo  @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+  operario    OficioOperario @relation(fields: [operarioId], references: [id], onDelete: Cascade)
+
+  @@index([trabajoId])
+  @@index([operarioId])
+  @@map("oficio_asignaciones")
+}
+
+model OficioBoletinTecnico {
+  id            String   @id @default(uuid())
+  empresaId     Int
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  trabajoId     String?
+  titulo        String
+  contenido     String   @db.Text
+  archivosUrls  String[]
+  destinatarios String
+  
+  createdAt     DateTime @default(now())
+
+  @@index([empresaId])
+  @@map("oficio_boletines_tecnicos")
+}
+
+model OficioPlantillaProceso {
+  id          String     @id @default(uuid())
+  empresaId   Int?
+  tipoOficio  TipoOficio
+  nombre      String
+  pasosJson   Json
+
+  createdAt   DateTime   @default(now())
+
+  @@index([empresaId, tipoOficio])
+  @@map("oficio_plantillas_proceso")
+}
+
+model OficioChecklistEjecucion {
+  id          String        @id @default(uuid())
+  trabajoId   String
+  nombre      String
+  pasosJson   Json
+  completado  Boolean       @default(false)
+
+  trabajo     OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  @@index([trabajoId])
+  @@map("oficio_checklists_ejecucion")
+}
+
+model OficioContratoObra {
+  id                String    @id @default(uuid())
+  empresaId         Int
+  trabajoId         String    @unique
+  clausulasJson     Json
+  montoTotal        Decimal   @db.Decimal(12, 2)
+  formaPago         String
+  plazoDias         Int?
+  
+  firmadoPorCliente Boolean   @default(false)
+  fechaFirma        DateTime?
+  firmaDigitalUrl   String?   @db.Text
+  ipFirma           String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  trabajo           OficioTrabajo @relation(fields: [trabajoId], references: [id], onDelete: Cascade)
+
+  @@index([empresaId])
+  @@map("oficio_contratos_obra")
+}
+
+model AfiliadoReferido {
+  id                 String   @id @default(uuid())
+  codigoAfiliado     String   @unique
+  empresaId          Int      @unique
+  empresa            Empresa  @relation(fields: [empresaId], references: [id])
+  aliasMercadoPago   String?
+  
+  padreAfiliadoId    String?
+  
+  comisionNivel1Pct  Decimal  @default(25.0) @db.Decimal(5, 2)
+  comisionNivel2Pct  Decimal  @default(10.0) @db.Decimal(5, 2)
+  
+  saldoAcumulado     Decimal  @default(0.0) @db.Decimal(12, 2)
+  totalCobrado       Decimal  @default(0.0) @db.Decimal(12, 2)
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([codigoAfiliado])
+  @@map("afiliados_referidos")
 }

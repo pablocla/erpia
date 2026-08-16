@@ -3,8 +3,8 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { prisma } from "@/lib/prisma"
 
 /**
- * GET /api/ordenes-pago/[id] â€” Get payment order detail
- * DELETE /api/ordenes-pago/[id] â€” Anular orden de pago
+ * GET /api/ordenes-pago/[id] — Get payment order detail
+ * DELETE /api/ordenes-pago/[id] — Anular orden de pago
  */
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -205,7 +205,7 @@ export class AsientoService {
       },
     })
 
-    // Calcular saldo acumulado (Decimal â†’ number para aritmÃ©tica JS)
+    // Calcular saldo acumulado (Decimal → number para aritmética JS)
     let saldo = 0
     const movimientosConSaldo = movimientos.map((m) => {
       saldo += Number(m.debe) - Number(m.haber)
@@ -230,7 +230,7 @@ export class AsientoService {
       },
     })
 
-    // Agrupar por cuenta (Decimal â†’ number para aritmÃ©tica JS)
+    // Agrupar por cuenta (Decimal → number para aritmética JS)
     const cuentas = new Map<string, { debe: number; haber: number; saldo: number }>()
 
     movimientos.forEach((m) => {
@@ -254,7 +254,7 @@ export class AsientoService {
   async exportarAsientosCSV(fechaDesde: Date, fechaHasta: Date): Promise<string> {
     const asientos = await this.obtenerLibroDiario(fechaDesde, fechaHasta)
 
-    let csv = "NÃºmero,Fecha,DescripciÃ³n,Cuenta,Debe,Haber\n"
+    let csv = "Número,Fecha,Descripción,Cuenta,Debe,Haber\n"
 
     asientos.forEach((asiento) => {
       asiento.movimientos.forEach((mov) => {
@@ -271,7 +271,7 @@ export class AsientoService {
       where: { id: ncId },
       include: { cliente: true, factura: { select: { empresaId: true } } },
     })
-    if (!nc) throw new Error("Nota de crÃ©dito no encontrada")
+    if (!nc) throw new Error("Nota de crédito no encontrada")
 
     const resolvedEmpresaId = (empresaId ?? nc.factura?.empresaId) as number
     const fechaNc = nc.createdAt
@@ -290,7 +290,7 @@ export class AsientoService {
         data: {
           fecha: fechaNc,
           numero,
-          descripcion: `NC ${nc.tipo} NÂº ${nc.numero.toString().padStart(8, "0")} - ${nc.motivo} - Cliente: ${nc.cliente.nombre}`,
+          descripcion: `NC ${nc.tipo} Nº ${nc.numero.toString().padStart(8, "0")} - ${nc.motivo} - Cliente: ${nc.cliente.nombre}`,
           tipo: "manual",
           tipoAsientoId: await resolveTipoAsientoId("NC", resolvedEmpresaId, tx),
           empresaId: resolvedEmpresaId,
@@ -307,11 +307,11 @@ export class AsientoService {
   }
 
   /**
-   * Asiento de Costo de MercaderÃ­a Vendida (CMV)
+   * Asiento de Costo de Mercadería Vendida (CMV)
    * Triggered on FACTURA_EMITIDA for each line that has productoId.
    *
    * DEBE  5.1 CMV                    (costo)
-   * HABER 1.4 MercaderÃ­as             (costo)
+   * HABER 1.4 Mercaderías             (costo)
    *
    * Uses weighted average cost (promedioPonderado) or product's costo field.
    */
@@ -368,8 +368,8 @@ export class AsientoService {
   }
 
   /**
-   * Reversa CMV por nota de crÃ©dito (B4.5).
-   * DEBE MercaderÃ­as / HABER CMV
+   * Reversa CMV por nota de crédito (B4.5).
+   * DEBE Mercaderías / HABER CMV
    */
   async generarAsientoCMVReversa(ncId: number, empresaId?: number): Promise<void> {
     const nc = await prisma.notaCredito.findUnique({
@@ -412,10 +412,10 @@ export class AsientoService {
   }
 
   /**
-   * Asiento de LiquidaciÃ³n de IVA mensual
+   * Asiento de Liquidación de IVA mensual
    *
    * Cierra las cuentas transitorias de IVA DF e IVA CF contra IVA a Pagar (o IVA a Favor).
-   * Se ejecuta una vez al mes al cierre del perÃ­odo fiscal.
+   * Se ejecuta una vez al mes al cierre del período fiscal.
    *
    * Si DF > CF:  DEBE IVA DF / HABER IVA CF / HABER IVA a Pagar
    * Si CF > DF:  DEBE IVA DF / DEBE IVA a Favor / HABER IVA CF
@@ -443,7 +443,7 @@ export class AsientoService {
     const fechaDesde = new Date(periodo.anio, periodo.mes - 1, 1)
     const fechaHasta = new Date(periodo.anio, periodo.mes, 0, 23, 59, 59)
 
-    // Sum IVA DF â€” use the resolved label to match existing movimientos
+    // Sum IVA DF — use the resolved label to match existing movimientos
     const movimientosDF = await prisma.movimientoContable.findMany({
       where: {
         cuenta: ctaIvaDF,
@@ -487,7 +487,7 @@ export class AsientoService {
           empresaId: resolvedEmpresaId,
           fecha: fechaHasta,
           numero,
-          descripcion: `LiquidaciÃ³n IVA ${mesStr}/${periodo.anio} â€” ${posicion === "a_pagar" ? "Saldo a pagar" : "Saldo a favor"}: $${saldo.toFixed(2)}`,
+          descripcion: `Liquidación IVA ${mesStr}/${periodo.anio} — ${posicion === "a_pagar" ? "Saldo a pagar" : "Saldo a favor"}: $${saldo.toFixed(2)}`,
           tipo: "liquidacion_iva",
           movimientos: { create: movimientos },
         },
@@ -534,7 +534,7 @@ export class AsientoService {
           empresaId: resolvedEmpresaId,
           fecha: new Date(),
           numero,
-          descripcion: `ANULACIÃ“N Asiento #${asiento.numero} â€” ${motivo}`,
+          descripcion: `ANULACIÓN Asiento #${asiento.numero} — ${motivo}`,
           tipo: "anulacion",
           movimientos: { create: movimientosReversos },
         },
@@ -546,7 +546,7 @@ export class AsientoService {
 
   /**
    * Genera asiento de cobro (Recibo).
-   * Delega en cobrosService que ya contiene la lÃ³gica inline.
+   * Delega en cobrosService que ya contiene la lógica inline.
    * Equivalente a:
    *   DEBE  Caja/Banco                  (netoRecibido)
    *   DEBE  Retenciones sufridas        (IVA/Ganancias/IIBB)

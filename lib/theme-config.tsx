@@ -178,6 +178,10 @@ export function ThemeConfigProvider({ children }: { children: React.ReactNode })
     }
 
     if (!temaConfigLoadPromise) {
+      if (typeof window !== "undefined" && !localStorage.getItem("token")) {
+        setLoading(false)
+        return
+      }
       temaConfigLoadPromise = authFetch("/api/config/tema")
         .then(async (res) => {
           if (!res.ok) return

@@ -63,7 +63,7 @@ const SERVICE_CORE = [
 /** Paths core por rubro (modo completo con oficio conocido) */
 export const NAV_PATHS_BY_RUBRO: Partial<Record<Rubro, string[]>> = {
   kiosco: [...RETAIL_CORE],
-  ferreteria: [...RETAIL_CORE, "/dashboard/almacen", "/dashboard/almacen/guia"],
+  ferreteria: [...RETAIL_CORE, "/dashboard/almacen"],
   farmacia: [...RETAIL_CORE],
   supermercado: [...RETAIL_CORE, "/dashboard/almacen"],
   ropa: [...RETAIL_CORE],
@@ -167,7 +167,6 @@ export const NAV_PATHS_BY_RUBRO: Partial<Record<Rubro, string[]>> = {
   ],
   reventa_tendencias: [
     ...NAV_SHARED_PATHS,
-    "/dashboard/reventas",
     "/dashboard/productos",
     "/dashboard/clientes",
     "/dashboard/ventas",

@@ -166,7 +166,59 @@ export async function pausarOReanudar(
   })
 }
 
-/** SKUs que disparan activación de Leo */
+/** SKUs que disparan activación de Leo (no el roster completo). */
 export function isLeoSku(sku: string): boolean {
-  return sku === LEO_COBRANZA_SKU || sku === LEO_LEGACY_SKU || !!getTemplateBySku(sku)
+  return sku === LEO_COBRANZA_SKU || sku === LEO_LEGACY_SKU
+}
+
+/** Activa cualquier template del catálogo (Sofía, Ramiro, Ana…). Idempotente. */
+export async function activarEmpleadoDesdeTemplate(
+  empresaId: number,
+  code: string,
+  opts?: { trial?: boolean },
+) {
+  if (code === LEO_COBRANZA_CODE) {
+    return activarLeoCobranza(empresaId, opts)
+  }
+  const trial = opts?.trial !== false
+  const def = getTemplateByCode(code)
+  if (!def) throw new Error(`Template ${code} no definido`)
+  const template = await ensureTemplateRow(code)
+
+  const existing = await prisma.empleadoDigital.findUnique({
+    where: { empresaId_sku: { empresaId, sku: def.sku } },
+  })
+  if (existing) {
+    return prisma.empleadoDigital.update({
+      where: { id: existing.id },
+      data: {
+        estado: trial ? "trial" : "activo",
+        activatedAt: existing.activatedAt ?? new Date(),
+        templateId: template.id,
+      },
+      include: { template: true },
+    })
+  }
+
+  return prisma.empleadoDigital.create({
+    data: {
+      empresaId,
+      templateId: template.id,
+      nombre: def.nombre,
+      estado: trial ? "trial" : "activo",
+      sku: def.sku,
+      cron: def.cronDefault,
+      config: def.politicaDefault as object,
+      activatedAt: new Date(),
+    },
+    include: { template: true },
+  })
+}
+
+export async function desactivarEmpleadoPorSku(empresaId: number, sku: string) {
+  await prisma.empleadoDigital.updateMany({
+    where: { empresaId, sku },
+    data: { estado: "pausado" },
+  })
+  return { ok: true }
 }

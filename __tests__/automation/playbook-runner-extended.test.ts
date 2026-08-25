@@ -5,6 +5,14 @@ vi.mock("@/lib/automation/emit-event", () => ({
   emitAutomationEvent: vi.fn().mockResolvedValue({ sent: true }),
 }))
 
+vi.mock("@/lib/marketplace/pedido-automatico-service", () => ({
+  procesarPedidosAutomaticosProveedores: vi.fn().mockResolvedValue({
+    ordenesCreadas: 1,
+    mensajesEncolados: 1,
+    detalles: [],
+  }),
+}))
+
 describe("playbook-runner extended", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -30,5 +38,18 @@ describe("playbook-runner extended", () => {
     const { runPlaybook } = await import("@/lib/automation/playbook-runner")
     const result = await runPlaybook(1, "cae_fallido_retry", {})
     expect(result.actions).toContain("sin_cae_pendiente")
+  })
+
+  it("stock_bajo_tarea crea OC borrador además de la tarea", async () => {
+    vi.mocked(prisma.producto.findMany).mockResolvedValue([
+      { id: 1, nombre: "Harina", stock: 1, stockMinimo: 10 },
+    ] as never)
+    vi.mocked(prisma.usuario.findFirst).mockResolvedValue({ id: 2, rol: "deposito" } as never)
+    vi.mocked(prisma.tareaPendiente.create).mockResolvedValue({ id: 1 } as never)
+
+    const { runPlaybook } = await import("@/lib/automation/playbook-runner")
+    const result = await runPlaybook(1, "stock_bajo_tarea", {})
+    expect(result.ok).toBe(true)
+    expect(result.actions.some((a) => a.startsWith("oc_borrador_creadas"))).toBe(true)
   })
 })

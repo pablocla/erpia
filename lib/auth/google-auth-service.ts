@@ -63,7 +63,7 @@ export async function verifyGoogleIdToken(idToken: string): Promise<
   | { ok: true; payload: GooglePayload }
   | { ok: false; error: string; status: number }
 > {
-  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
   if (!clientId) {
     return { ok: false, error: "Google Auth no está configurado en este servidor", status: 500 }
   }

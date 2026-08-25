@@ -84,6 +84,7 @@ export default function ClaverClienteLoginPage() {
             </div>
 
             <GoogleSignInButton
+              onError={setError}
               onCredential={async (idToken) => {
                 setError("")
                 setLoading(true)

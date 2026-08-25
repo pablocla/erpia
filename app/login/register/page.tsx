@@ -336,6 +336,7 @@ function RegisterPageContent() {
                   </div>
                 </div>
                 <GoogleSignInButton
+                  onError={setError}
                   onCredential={async (idToken) => {
                     setError("")
                     setCargando(true)

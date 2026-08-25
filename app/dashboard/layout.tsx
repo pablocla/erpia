@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Topbar } from "@/components/topbar"
 import { ImpersonationBanner } from "@/components/ops/impersonation-banner"
+import { PreviewExperienceBanner } from "@/components/ops/preview-experience-banner"
 import { OfflineBanner } from "@/components/ui/offline-banner"
 
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
@@ -196,6 +197,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="app-main-frame flex-1 flex flex-col overflow-hidden relative z-10 w-full min-w-0">
         <OfflineBanner />
+        <PreviewExperienceBanner />
         <ImpersonationBanner />
         <Topbar
           onMenuClick={isMobile ? () => setMobileSidebarOpen(true) : undefined}

@@ -65,6 +65,7 @@ export function useAuth() {
           headers: {
             Authorization: `Bearer ${tokenActual}`,
           },
+          signal: AbortSignal.timeout(8000),
         })
 
         // Login/demo concurrente: no tocar la sesión nueva
@@ -118,6 +119,7 @@ export function useAuth() {
       const res = await fetch("/api/auth/refresh", {
         method: "POST",
         headers: { Authorization: `Bearer ${tokenExpirado}` },
+        signal: AbortSignal.timeout(8000),
       })
       if (!res.ok) return false
       const data = await res.json()
@@ -168,6 +170,7 @@ export function useAuth() {
     sessionStorage.removeItem("claver-cloud-verified")
     sessionStorage.removeItem("claver_analyst_token")
     sessionStorage.removeItem("claver_analyst_user")
+    sessionStorage.removeItem("claver_preview_home")
     clearAuthTokenCookie()
     setToken(null)
     setUsuario(null)

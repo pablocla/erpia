@@ -33,6 +33,7 @@ export function clearClientSession(): void {
   sessionStorage.removeItem("claver-cloud-verified")
   sessionStorage.removeItem("claver_analyst_token")
   sessionStorage.removeItem("claver_analyst_user")
+  sessionStorage.removeItem("claver_preview_home")
   clearAuthTokenCookie()
 }
 

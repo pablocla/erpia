@@ -55,9 +55,9 @@ export function canRenderMenuItem(
 
   if (item.claverAnalystOnly && !isClaverAnalyst) return false
 
-  // SKU: si el ítem exige producto y el mapa está cargado, debe estar activo. Se respeta incluso para admin.
+  // SKU: si el ítem exige producto y el mapa está cargado (o es un SKU de nicho), debe estar activo.
   if (item.skuKey) {
-    if (productosSku && productosSku[item.skuKey] !== true) {
+    if ((productosSku && productosSku[item.skuKey] !== true) || (!productosSku && item.skuKey.startsWith("niche."))) {
       return false
     }
   }

@@ -50,6 +50,8 @@ describe("sidebar-filters — coherencia rubro", () => {
     expect(render(facturacion, "dueno", "kiosco")).toBe(true)
     expect(render(oficios, "administrador", "ferreteria", { "niche.oficios": true })).toBe(true)
     expect(render(oficios, "administrador", "kiosco", { "niche.oficios": false })).toBe(false)
+    expect(render(oficios, "dueno", "kiosco", null)).toBe(false)
+    expect(render(oficios, "dueno", "gimnasio", {})).toBe(false)
   })
 
   it("respeta allowedRubros aunque el rol sea dueño", () => {

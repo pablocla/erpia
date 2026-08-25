@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { listarPendientesPorRol } from "@/lib/pendientes/pendientes-service"
 import { resolveAutomationApiUser } from "./automation-service"
 import { emitAutomationEvent } from "./emit-event"
+import { procesarPedidosAutomaticosProveedores } from "@/lib/marketplace/pedido-automatico-service"
 
 export interface PlaybookResult {
   ok: boolean
@@ -101,7 +102,17 @@ async function runStockBajoTarea(
     "alta"
   )
 
-  return { ok: true, actions: [`tarea_creada_stock_bajo:${bajos.length}`] }
+  const actions = [`tarea_creada_stock_bajo:${bajos.length}`]
+  try {
+    const autoResult = await procesarPedidosAutomaticosProveedores(empresaId)
+    actions.push(`oc_borrador_creadas:${autoResult.ordenesCreadas}`)
+    actions.push(`wa_proveedor_encolados:${autoResult.mensajesEncolados}`)
+  } catch (err) {
+    console.error("[playbook stock_bajo] OC automática falló:", err)
+    actions.push("oc_borrador_error")
+  }
+
+  return { ok: true, actions }
 }
 
 async function runMorningBriefTasks(
@@ -472,7 +483,8 @@ async function runAgendaReminder(
     return { ok: true, actions: ["sin_turnos_manana"] }
   }
 
-  for (const t of turnos.slice(0, 5)) {
+  let waEncolados = 0
+  for (const t of turnos) {
     void emitAutomationEvent(
       empresaId,
       "TURNO_AGENDA_CREADO",
@@ -485,6 +497,22 @@ async function runAgendaReminder(
       },
       `turno-${t.id}`
     )
+    const tel = t.cliente?.telefono?.trim()
+    if (!tel) continue
+    const hora = t.horaInicio ?? ""
+    const profesional = t.profesional.nombre
+    await prisma.mensajePendienteWhatsApp.create({
+      data: {
+        empresaId,
+        destinatario: t.cliente?.nombre ?? "Cliente",
+        telefono: tel,
+        mensaje: `Hola ${t.cliente?.nombre ?? ""}, te recordamos tu turno mañana ${fecha} a las ${hora} con ${profesional}. Respondé SI para confirmar o pedí cambiar el horario.`,
+        tipo: "recordatorio_turno",
+        prioridad: 4,
+        estado: "pendiente",
+      },
+    })
+    waEncolados += 1
   }
 
   await crearTarea(
@@ -498,5 +526,5 @@ async function runAgendaReminder(
     "media"
   )
 
-  return { ok: true, actions: [`agenda:${turnos.length}`] }
+  return { ok: true, actions: [`agenda:${turnos.length}`, `wa_turnos:${waEncolados}`] }
 }

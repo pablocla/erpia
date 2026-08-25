@@ -1,5 +1,6 @@
 # Cola Gemini — tickets assignee=gemini | pair (fase docs)
 
+> **Prompt único para cerrar el core (recomendado):** [`PROMPT_GEMINI_CERRAR_TODO.md`](./PROMPT_GEMINI_CERRAR_TODO.md) — empleados = extra, no el norte.  
 > Generado para pegar en Gemini. Estados vivos: `backlog-status.json`.  
 > Criterio: `ASSIGNMENT.md`.
 

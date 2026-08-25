@@ -35,6 +35,7 @@ function LoginPageContent() {
   const [error, setError] = useState("")
   const [enviandoLogin, setEnviandoLogin] = useState(false)
   const [enviandoGoogle, setEnviandoGoogle] = useState(false)
+  const [sesionColgada, setSesionColgada] = useState(false)
 
   async function goAfterAuth(sessionToken: string, rol: string, email?: string | null, goldenPath?: string) {
     setAuthTokenCookie(sessionToken)
@@ -60,6 +61,15 @@ function LoginPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargandoSesion, autenticado, token, usuario, nextPath, router, activarParam, activarIntent, logout])
 
+  useEffect(() => {
+    if (!(cargandoSesion || (autenticado && token))) {
+      setSesionColgada(false)
+      return
+    }
+    const t = window.setTimeout(() => setSesionColgada(true), 12000)
+    return () => window.clearTimeout(t)
+  }, [cargandoSesion, autenticado, token])
+
   if (cargandoSesion || (autenticado && token)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -67,11 +77,28 @@ function LoginPageContent() {
           <CardHeader className="space-y-3">
             <BrandLogo size="md" variant="group-full" className="mb-1" />
             <CardDescription className="text-sm">
-              Validando sesión y abriendo tu panel…
+              {sesionColgada
+                ? "La sesión tardó demasiado. Podés reintentar o entrar de nuevo."
+                : "Validando sesión y abriendo tu panel…"}
             </CardDescription>
-            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden" aria-hidden>
-              <div className="h-full w-1/3 rounded-full bg-primary/70 animate-pulse" />
-            </div>
+            {!sesionColgada && (
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden" aria-hidden>
+                <div className="h-full w-1/3 rounded-full bg-primary/70 animate-pulse" />
+              </div>
+            )}
+            {sesionColgada && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[44px]"
+                onClick={() => {
+                  logout()
+                  setSesionColgada(false)
+                }}
+              >
+                Volver al inicio de sesión
+              </Button>
+            )}
           </CardHeader>
         </Card>
       </div>
@@ -187,6 +214,7 @@ function LoginPageContent() {
 
               <GoogleSignInButton
                 onCredential={handleGoogleLogin}
+                onError={setError}
                 disabled={enviandoGoogle}
               />
 

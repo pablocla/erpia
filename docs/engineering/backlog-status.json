@@ -45,6 +45,9 @@
     "PV-02": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "health score" },
     "INF-02": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "purge 90d" },
     "MKT-01": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "tab Empleados apps" },
-    "ED-27": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "product-registry + checkout SKU" }
+    "ED-27": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "product-registry + checkout SKU" },
+    "ED-25": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Sofía v1: template + runEmpleado→agenda_reminder + WA pendiente al cliente" },
+    "ED-26": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Ramiro v1: template + runEmpleado→stock_bajo (OC borrador)" },
+    "ED-29": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Ana/Clara/Pedro en catálogo + hooks SKU + despacho playbook" }
   }
 }

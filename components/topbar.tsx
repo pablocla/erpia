@@ -44,6 +44,8 @@ import { useAuthFetch } from "@/hooks/use-auth-fetch"
 import { NotificationCenter, type Notification } from "@/components/notification-center"
 import { TrialTopbarPill } from "@/components/dashboard/trial-topbar-pill"
 import { ProductContextPill } from "@/components/dashboard/product-context-pill"
+import { ExperienceSwitcher } from "@/components/ops/experience-switcher"
+import { PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
 
 interface TopbarProps {
   onSearchClick?: () => void
@@ -56,6 +58,7 @@ interface TopbarProps {
 export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: TopbarProps) {
   const toggleCommandPalette = useUIStore((s) => s.toggleCommandPalette)
   const toggleChatWidget = useUIStore((s) => s.toggleChatWidget)
+  const userRol = useAuthStore((s) => s.user?.rol)
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([])
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([])
 
@@ -187,6 +190,8 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
         </Button>
 
         <div className="h-4 w-px bg-border mx-0.5 hidden md:block" />
+
+        <ExperienceSwitcher />
 
         <div className="hidden md:flex items-center gap-0.5 sm:gap-1">
           {isClaverAnalyst && (
@@ -402,6 +407,17 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
                 Mi Perfil
               </Link>
             </DropdownMenuItem>
+            {(isClaverAnalyst || ["administrador", "admin", "dueno"].includes(userRol ?? "")) && (
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  window.dispatchEvent(new Event(PREVIEW_OPEN_EVENT))
+                }}
+              >
+                Probar como actor / rubro
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuSeparator />
             <DropdownMenuItem

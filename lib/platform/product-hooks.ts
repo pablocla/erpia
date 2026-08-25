@@ -3,6 +3,8 @@ import { activarSecretariaCobranzas } from "@/lib/marketplace/cobranzas-wa-servi
 import {
   activarLeoCobranza,
   desactivarLeoCobranza,
+  activarEmpleadoDesdeTemplate,
+  desactivarEmpleadoPorSku,
 } from "@/lib/empleados-digitales/activate"
 import {
   activarGuardianPos,
@@ -68,6 +70,26 @@ const HOOKS: Record<string, { onActivate?: ProductHook; onDeactivate?: ProductHo
   "empleado.leo_cobranza": {
     onActivate: (empresaId) => activarLeoCobranza(empresaId),
     onDeactivate: (empresaId) => desactivarLeoCobranza(empresaId),
+  },
+  "empleado.sofia_turnos": {
+    onActivate: (empresaId) => activarEmpleadoDesdeTemplate(empresaId, "sofia_turnos"),
+    onDeactivate: (empresaId) => desactivarEmpleadoPorSku(empresaId, "empleado.sofia_turnos"),
+  },
+  "empleado.ramiro_stock": {
+    onActivate: (empresaId) => activarEmpleadoDesdeTemplate(empresaId, "ramiro_stock"),
+    onDeactivate: (empresaId) => desactivarEmpleadoPorSku(empresaId, "empleado.ramiro_stock"),
+  },
+  "empleado.ana_reposicion": {
+    onActivate: (empresaId) => activarEmpleadoDesdeTemplate(empresaId, "ana_reposicion"),
+    onDeactivate: (empresaId) => desactivarEmpleadoPorSku(empresaId, "empleado.ana_reposicion"),
+  },
+  "empleado.clara_afip": {
+    onActivate: (empresaId) => activarEmpleadoDesdeTemplate(empresaId, "clara_afip"),
+    onDeactivate: (empresaId) => desactivarEmpleadoPorSku(empresaId, "empleado.clara_afip"),
+  },
+  "empleado.pedro_picking": {
+    onActivate: (empresaId) => activarEmpleadoDesdeTemplate(empresaId, "pedro_picking"),
+    onDeactivate: (empresaId) => desactivarEmpleadoPorSku(empresaId, "empleado.pedro_picking"),
   },
   "intang.guardian_pos": {
     onActivate: activarGuardianPos,

@@ -6,6 +6,7 @@ import { AlertTriangle, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { parseJwtPayload } from "@/lib/auth/session-client"
 import { useAuthStore } from "@/lib/stores"
+import { hasPreviewHome } from "@/lib/auth/preview-session-client"
 
 export function ImpersonationBanner() {
   const token = useAuthStore((s) => s.token)
@@ -18,6 +19,10 @@ export function ImpersonationBanner() {
     const t = token ?? (typeof window !== "undefined" ? localStorage.getItem("token") : null)
     if (!t) return
     const payload = parseJwtPayload(t)
+    if (hasPreviewHome() || payload?.previewKind === "rol") {
+      setMeta(null)
+      return
+    }
     if (payload?.impersonating === true) {
       setMeta({
         by: String(payload.impersonatedBy ?? payload.analystEmail ?? "analista"),

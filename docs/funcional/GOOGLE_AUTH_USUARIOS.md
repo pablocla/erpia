@@ -71,3 +71,9 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 ```
 
 Configurar en Vercel/local para cada entorno (demo, staging, producción). El Client ID de GSI debe autorizar los orígenes de todas las instancias Claver.
+
+## Popup de Google que queda cargando
+
+El botón GSI usa `window.opener.postMessage`. Si el header `Cross-Origin-Opener-Policy` es `same-origin`, Chrome corta el opener y el login **nunca recibe el token** (consola: `COOP policy would block the window.postMessage call`).
+
+La app envía `Cross-Origin-Opener-Policy: same-origin-allow-popups` y habilita FedCM (`identity-credentials-get`). No cambiar COOP a `same-origin`.

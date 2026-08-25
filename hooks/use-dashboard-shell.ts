@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { isImpersonatingSession, performLogoutAndRedirect } from "@/lib/auth/session-client"
+import { hasPreviewHome } from "@/lib/auth/preview-session-client"
 import { shouldRedirectAnalystToCloud } from "@/lib/auth/home-redirect"
 import { getAuthHeaders, getToken, useAuthStore } from "@/lib/stores/auth-store"
 import { getCountryFeatures, type CountryFeatures } from "@/lib/country/country-features"
@@ -134,7 +135,7 @@ export function useDashboardShell() {
 
   useEffect(() => {
     if (!mounted || !isClaverAnalyst) return
-    if (isImpersonatingSession()) return
+    if (isImpersonatingSession() || hasPreviewHome()) return
     // Solo redirigir al analista si está en la raíz /dashboard, no en sub-rutas como /dashboard/cerebro
     if (pathname !== "/dashboard") return
     if (
@@ -288,6 +289,8 @@ export function useDashboardShell() {
     cargarProductosSku,
   ])
 
+  const previewingActor = isImpersonatingSession()
+  const analystForNav = isClaverAnalyst && !previewingActor
   const isAdmin = ["administrador", "admin", "dueno"].includes(role || "")
   const effectiveRubro = industryTemplate?.rubro ?? rubro
 
@@ -317,7 +320,7 @@ export function useDashboardShell() {
               productosSku,
               userId,
               effectiveRubro,
-              isClaverAnalyst,
+              analystForNav,
               countryFeatures,
               condicionIva,
             )
@@ -331,7 +334,7 @@ export function useDashboardShell() {
             return false
           }
           // Ocultar verticales no vendibles en menú comercial
-          if (shouldHideHrefForGoLive(item.href, { showNoVender: isClaverAnalyst })) {
+          if (shouldHideHrefForGoLive(item.href, { showNoVender: analystForNav })) {
             return false
           }
           return true
@@ -353,7 +356,7 @@ export function useDashboardShell() {
       featuresActivas,
       productosSku,
       userId,
-      isClaverAnalyst,
+      analystForNav,
       countryFeatures,
       modoLite,
       sidebarAllowlist,

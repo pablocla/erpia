@@ -5,6 +5,8 @@ function getEncodedSecret(): Uint8Array {
   return getEncodedJwtSecret()
 }
 
+export type PreviewKind = "rol" | "rubro" | "tenant"
+
 export interface ImpersonationTokenPayload {
   userId: number
   email: string
@@ -14,6 +16,9 @@ export interface ImpersonationTokenPayload {
   impersonatedBy: string
   analystUserId: number
   analystEmail: string
+  /** rol = actor interno; rubro = demo industria; tenant = Cloud → ERP */
+  previewKind?: PreviewKind
+  previewLabel?: string
 }
 
 export async function generarTokenImpersonacion(

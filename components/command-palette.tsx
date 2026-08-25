@@ -42,6 +42,7 @@ import {
   Globe,
   ClipboardList,
   Cloud,
+  Drama,
   Sprout,
   Leaf,
   Building,
@@ -56,6 +57,7 @@ import {
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { useTheme } from "next-themes"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
+import { PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
 import { useUIStore } from "@/lib/stores/ui-store"
 import { useTranslations } from "next-intl"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
@@ -283,6 +285,16 @@ export function CommandPalette() {
               <CommandShortcut>AT</CommandShortcut>
             </CommandItem>
           )}
+          <CommandItem
+            value="probar como actor rol rubro experiencia"
+            onSelect={() => {
+              setCommandPaletteOpen(false)
+              window.dispatchEvent(new Event(PREVIEW_OPEN_EVENT))
+            }}
+          >
+            <Drama className="mr-2 h-4 w-4 text-violet-500" />
+            <span>Probar como actor / rubro</span>
+          </CommandItem>
           <CommandItem value="nuevo pedido de venta accion rapida" onSelect={() => navigate("/dashboard/ventas/pedidos")}>
             <ShoppingCart className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>{t("actions.newSalesOrder")}</span>

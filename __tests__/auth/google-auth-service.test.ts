@@ -72,9 +72,18 @@ describe("admin roles (Grupo Claver)", () => {
 describe("verifyGoogleIdToken", () => {
   it("rechaza sin client id", async () => {
     delete process.env.GOOGLE_CLIENT_ID
+    delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     const r = await verifyGoogleIdToken("tok")
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.status).toBe(500)
+  })
+
+  it("usa NEXT_PUBLIC_GOOGLE_CLIENT_ID si falta GOOGLE_CLIENT_ID", async () => {
+    delete process.env.GOOGLE_CLIENT_ID
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = "test-client-id"
+    mockGoogleTicket()
+    const r = await verifyGoogleIdToken("tok")
+    expect(r.ok).toBe(true)
   })
 
   it("rechaza email no verificado", async () => {

@@ -5,6 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ExternalLink, LayoutDashboard, LogOut, Menu, Server } from "lucide-react"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
+import { ExperienceSwitcher } from "@/components/ops/experience-switcher"
+import { PreviewExperienceBanner } from "@/components/ops/preview-experience-banner"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -101,6 +103,7 @@ export function CloudShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col">
+      <PreviewExperienceBanner />
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -132,6 +135,7 @@ export function CloudShell({ children }: { children: React.ReactNode }) {
             <CloudBreadcrumbs />
           </div>
 
+          <ExperienceSwitcher forceShow className="shrink-0" />
           <LocaleFlagToggle />
           <TenantSearch className="ml-auto w-full max-w-[360px]" />
         </div>

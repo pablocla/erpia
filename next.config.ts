@@ -82,6 +82,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/ecommerce", destination: "/claver/ecommerce", permanent: true },
       { source: "/claver/claverp/ecommerce", destination: "/claver/ecommerce", permanent: true },
+      { source: "/favicon.ico", destination: "/icon.svg", permanent: false },
     ]
   },
 

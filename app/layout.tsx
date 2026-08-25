@@ -11,10 +11,29 @@ import { getEffectiveLocale } from '@/lib/i18n/request-locale'
 import { I18nProvider } from '@/components/i18n-provider'
 import './globals.css'
 
-const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+})
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+  preload: false,
+})
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+  preload: false,
+})
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: false,
+})
 
 export const viewport = {
   themeColor: '#2563eb',

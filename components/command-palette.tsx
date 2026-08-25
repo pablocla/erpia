@@ -53,6 +53,8 @@ import {
   KeyRound,
   Handshake,
   Bug,
+  Wrench,
+  Plus,
 } from "lucide-react"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { useTheme } from "next-themes"

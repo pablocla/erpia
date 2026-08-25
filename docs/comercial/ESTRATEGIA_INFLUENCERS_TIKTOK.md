@@ -30,3 +30,21 @@ Cuando el usuario final se registra con su link, el sistema ya viene pre-configu
 
 ### D. Pago Diario o Semanal (Instant Payouts)
 La retención de los afiliados muere si pagan a los 30 días. Integrar Claver con la API de MercadoPago o transferencias masivas para que el Influencer tenga un botón de **"Retirar mis ganancias ahora"** y la plata le llegue en el acto. Poder mostrar en TikTok cómo aprietan un botón y reciben $100.000 en su MercadoPago es la mejor publicidad del mundo.
+
+## 4. Mecánicas de Viralidad Integradas (Product-Led Growth)
+
+Para que el software se venda solo una vez que la gente empiece a usarlo, debemos inyectar viralidad dentro del producto mismo:
+
+### A. La Marca de Agua en Facturas y Links de Cobro
+Cada vez que un negocio use Claver para cobrar con QR, mandar un link de pago por WhatsApp o enviar un presupuesto, el cliente final verá un mensaje sutil en el pie de página: 
+> *"⚡ Cobrado de forma segura con Claver ERP. [¿Tenés un negocio? Probá Claver Gratis]"*
+Miles de clientes finales son también dueños de otros comercios. El software se convierte en su propia valla publicitaria.
+
+### B. El "Roast" Financiero con IA (Lead Magnet)
+Crear una herramienta gratuita en la web (`claver.com.ar/roast`) donde un comerciante conecta su MercadoPago o sube su Excel de ventas, y la Inteligencia Artificial de Claver le hace un "Roast" (una crítica dura pero cómica) de cuánta plata está perdiendo por no tener control de su stock ni cobrar recargos correctamente. Al final, le dice: *"Estás perdiendo $800.000 al mes. Claver te arregla esto por $30.000. Clic acá para empezar."* ¡Esto en TikTok es 100% viral!
+
+### C. Escasez en las Pruebas Gratuitas (VIP Trials)
+En lugar de dar 14 días gratis a cualquiera, Claver da 0 días gratis en la página principal. Pero si entras con el link de una "Sede" o Influencer, te dice: *"Juan te ha regalado 30 días VIP y configuración gratuita."* Esto obliga a la gente a buscar los links de los afiliados, aumentando el tráfico de las Sedes.
+
+### D. Certificación "Claver Academy"
+Crear un mini-curso gratuito de gestión de negocios. Al terminarlo, el usuario obtiene un certificado digital (estilo LinkedIn) de "Experto en Gestión con Claver ERP". Los usuarios lo comparten en sus redes para buscar empleo o mostrar estatus, generando exposición de marca gratuita.

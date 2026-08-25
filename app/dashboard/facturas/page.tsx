@@ -160,19 +160,33 @@ export default function FacturasPage() {
           </span>
         }
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void reintentarCae()}
-            disabled={reintentando || reintentandoId !== null}
-          >
-            {reintentando ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Reintentar CAE
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/ventas">
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" />
+                Nueva Factura
+              </Button>
+            </Link>
+            <Link href="/dashboard/notas-credito">
+              <Button variant="outline" size="sm" className="gap-1">
+                <ReceiptText className="h-4 w-4" />
+                Notas de Crédito
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void reintentarCae()}
+              disabled={reintentando || reintentandoId !== null}
+            >
+              {reintentando ? (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+              )}
+              Reintentar CAE
+            </Button>
+          </div>
         }
       />
 
@@ -271,7 +285,28 @@ export default function FacturasPage() {
               {
                 key: "acciones" as any, header: "", cell: (f) => (
                   <div className="flex gap-1 justify-end">
-                    <Link href={`/dashboard/facturas/${f.id}`}><Button variant="ghost" size="icon" title="Ver detalle"><Eye className="h-4 w-4" /></Button></Link>
+                    <Link href={`/dashboard/facturas/${f.id}`}>
+                      <Button variant="ghost" size="icon" title="Ver detalle"><Eye className="h-4 w-4" /></Button>
+                    </Link>
+                    <a
+                      href={getWhatsAppShareUrl(
+                        f.cliente?.telefono || "",
+                        `Hola ${f.cliente?.nombre ?? "Cliente"}, te compartimos el comprobante ${formatComprobante(f)} por ${formatCurrency(f.total)}. ¡Muchas gracias!`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="ghost" size="icon" title="Enviar por WhatsApp">
+                        <MessageSquare className="h-4 w-4 text-emerald-600" />
+                      </Button>
+                    </a>
+                    {f.estado !== "anulada" && (
+                      <Link href={`/dashboard/notas-credito?facturaId=${f.id}`}>
+                        <Button variant="ghost" size="icon" title="Emitir Nota de Crédito">
+                          <FileMinus2 className="h-4 w-4 text-amber-600" />
+                        </Button>
+                      </Link>
+                    )}
                     {f.estado !== "anulada" && (
                       <Button variant="ghost" size="icon" title="Anular venta" onClick={() => anularFactura(f.id)}>
                         <Ban className="h-4 w-4 text-red-500" />

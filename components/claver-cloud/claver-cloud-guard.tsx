@@ -2,17 +2,18 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Loader2 } from "lucide-react"
-import { setAuthTokenCookie, clearAuthTokenCookie } from "@/lib/auth/token-cookie"
+import { Loader2, ShieldOff } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { setAuthTokenCookie } from "@/lib/auth/token-cookie"
+import { clearClientSession } from "@/lib/auth/session-client"
+import {
+  decideClaverCloudAccess,
+  isCloudSessionVerified,
+  markCloudSessionVerified,
+  clearCloudSessionVerified,
+} from "@/lib/auth/claver-cloud-access"
 
-const VERIFIED_KEY = "claver-cloud-verified"
-
-type GuardState = "loading" | "ok" | "denied"
-
-function readVerified(): boolean {
-  if (typeof window === "undefined") return false
-  return sessionStorage.getItem(VERIFIED_KEY) === "1" && !!localStorage.getItem("token")
-}
+type GuardState = "loading" | "ok" | "denied" | "unavailable"
 
 export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -20,9 +21,14 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
   const loginNextRef = useRef(pathname || "/claver-cloud")
   const [state, setState] = useState<GuardState>("loading")
   const [message, setMessage] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
-    if (readVerified()) {
+    if (state !== "loading") return
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (token && isCloudSessionVerified(token)) {
+      setAuthTokenCookie(token)
       setState("ok")
       return
     }
@@ -30,7 +36,6 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
     let cancelled = false
 
     async function check() {
-      const token = localStorage.getItem("token")
       if (!token) {
         const next = encodeURIComponent(loginNextRef.current)
         router.replace(`/login?next=${next}`)
@@ -44,36 +49,51 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
           headers: { Authorization: `Bearer ${token}` },
         })
 
-        if (!res.ok) {
-          if (!cancelled) {
-            sessionStorage.removeItem(VERIFIED_KEY)
-            clearAuthTokenCookie()
-            localStorage.removeItem("token")
-            router.replace(`/login?next=${encodeURIComponent(loginNextRef.current)}`)
-          }
-          return
+        const data = (await res.json().catch(() => ({}))) as {
+          authenticated?: boolean
+          isAnalyst?: boolean
+          email?: string
         }
 
-        const data = (await res.json()) as { isAnalyst?: boolean; email?: string }
-        if (!data.isAnalyst) {
-          if (!cancelled) {
-            sessionStorage.removeItem(VERIFIED_KEY)
-            setMessage(
-              `Tu usuario (${data.email ?? "sin email"}) no es analista Claver. Pedí acceso con tu email en CLAVER_ANALYST_EMAILS.`,
-            )
-            setState("denied")
-          }
-          return
-        }
+        const decision = decideClaverCloudAccess({
+          hasToken: true,
+          httpStatus: res.status,
+          authenticated: data.authenticated,
+          isAnalyst: data.isAnalyst,
+          email: data.email,
+        })
 
-        if (!cancelled) {
-          sessionStorage.setItem(VERIFIED_KEY, "1")
+        if (cancelled) return
+
+        if (decision.action === "ok") {
+          markCloudSessionVerified(token)
           setState("ok")
+          return
         }
+
+        if (decision.action === "login") {
+          clearClientSession()
+          router.replace(`/login?next=${encodeURIComponent(loginNextRef.current)}`)
+          return
+        }
+
+        if (decision.action === "unavailable") {
+          setMessage("No se pudo verificar el acceso a Claver Cloud. Probá de nuevo.")
+          setState("unavailable")
+          return
+        }
+
+        clearCloudSessionVerified()
+        setMessage(
+          decision.email
+            ? `Tu usuario (${decision.email}) no tiene acceso de analista Claver. Pedí que te habiliten la cuenta.`
+            : "Tu usuario no tiene acceso de analista Claver. Pedí que te habiliten la cuenta.",
+        )
+        setState("denied")
       } catch {
         if (!cancelled) {
-          setMessage("No se pudo verificar el acceso a Claver Cloud.")
-          setState("denied")
+          setMessage("No se pudo verificar el acceso a Claver Cloud. Probá de nuevo.")
+          setState("unavailable")
         }
       }
     }
@@ -82,7 +102,7 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [router, state])
+  }, [router, state, retryKey])
 
   if (state === "loading") {
     return (
@@ -93,18 +113,50 @@ export function ClaverCloudGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
+  if (state === "unavailable") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 bg-background text-foreground max-w-md mx-auto text-center">
+        <p className="text-lg font-semibold tracking-tight">No pudimos verificar el acceso</p>
+        <p className="text-sm text-muted-foreground">{message}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button
+            type="button"
+            onClick={() => {
+              setState("loading")
+              setRetryKey((k) => k + 1)
+            }}
+          >
+            Reintentar
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>
+            Ir al dashboard
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (state === "denied") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 bg-background text-foreground max-w-md mx-auto text-center">
-        <p className="text-lg font-semibold">Acceso restringido</p>
+        <ShieldOff className="h-8 w-8 text-muted-foreground" aria-hidden />
+        <p className="text-lg font-semibold tracking-tight">Acceso restringido</p>
         <p className="text-sm text-muted-foreground">{message}</p>
-        <button
-          type="button"
-          className="text-sm text-primary underline"
-          onClick={() => router.push("/dashboard")}
-        >
-          Volver al dashboard
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>
+            Volver al dashboard
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              clearClientSession()
+              router.replace(`/login?next=${encodeURIComponent(loginNextRef.current)}`)
+            }}
+          >
+            Ingresar con otra cuenta
+          </Button>
+        </div>
       </div>
     )
   }

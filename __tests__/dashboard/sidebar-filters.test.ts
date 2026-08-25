@@ -21,46 +21,64 @@ function render(
   return canRenderMenuItem(item, role, null, null, skus, null, rubro, false, ar)
 }
 
+describe("sidebar-filters — Claver Cloud", () => {
+  const cloudItem = DASHBOARD_SIDEBAR_MODULOS.flatMap((m) => m.items).find(
+    (i) => i.href === "/claver-cloud",
+  )!
+
+  it("oculta Torre a dueños que no son analistas", () => {
+    expect(
+      canRenderMenuItem(cloudItem, "dueno", null, null, null, null, "kiosco", false, ar),
+    ).toBe(false)
+  })
+
+  it("muestra Torre a analistas Claver", () => {
+    expect(
+      canRenderMenuItem(cloudItem, "dueno", null, null, null, null, "kiosco", true, ar),
+    ).toBe(true)
+  })
+})
+
 describe("sidebar-filters — coherencia rubro", () => {
-  const ventas = DASHBOARD_SIDEBAR_MODULOS.find((m) => m.label === "Ventas")!
-  const pos = ventas.items.find((i) => i.href === "/dashboard/pos")!
-  const vetItem = DASHBOARD_SIDEBAR_MODULOS.flatMap((m) => m.items).find(
-    (i) => i.href === "/dashboard/veterinaria",
-  )!
-  const agroItem = DASHBOARD_SIDEBAR_MODULOS.flatMap((m) => m.items).find(
-    (i) => i.href === "/dashboard/agro/balanza",
+  const ventas = DASHBOARD_SIDEBAR_MODULOS.find((m) => m.moduloKey === "ventas")!
+  const facturacion = ventas.items.find((i) => i.href === "/dashboard/ventas")!
+  const oficios = DASHBOARD_SIDEBAR_MODULOS.flatMap((m) => m.items).find(
+    (i) => i.href === "/dashboard/oficios",
   )!
 
-  it("dueño de kiosco VE el POS", () => {
-    expect(render(pos, "dueno", "kiosco")).toBe(true)
-    expect(render(pos, "administrador", "kiosco")).toBe(true)
+  it("dueño ve facturación y oficios se condiciona por SKU/rubro", () => {
+    expect(render(facturacion, "dueno", "kiosco")).toBe(true)
+    expect(render(oficios, "administrador", "ferreteria", { "niche.oficios": true })).toBe(true)
+    expect(render(oficios, "administrador", "kiosco", { "niche.oficios": false })).toBe(false)
   })
 
-  it("dueño de kiosco NO ve veterinaria ni balanza agro", () => {
-    expect(render(vetItem, "dueno", "kiosco")).toBe(false)
-    expect(render(agroItem, "dueno", "kiosco")).toBe(false)
-  })
-
-  it("dueño de veterinaria VE historia clínica / vet", () => {
-    expect(render(vetItem, "dueno", "veterinaria")).toBe(true)
-  })
-
-  it("dueño de veterinaria NO ve balanza agro", () => {
-    expect(render(agroItem, "dueno", "veterinaria")).toBe(false)
+  it("respeta allowedRubros aunque el rol sea dueño", () => {
+    const soloVet = {
+      ...facturacion,
+      href: "/dashboard/veterinaria",
+      allowedRubros: ["veterinaria" as const],
+    }
+    expect(render(soloVet, "dueno", "kiosco")).toBe(false)
+    expect(render(soloVet, "dueno", "veterinaria")).toBe(true)
   })
 
   it("SKU requerido oculta ítem si el mapa está cargado y false", () => {
-    const platform = DASHBOARD_SIDEBAR_MODULOS.find((m) => m.label === "Claver Platform")!
-    const contador = platform.items.find((i) => i.href === "/dashboard/contador")!
+    const contador = {
+      ...facturacion,
+      href: "/dashboard/contador",
+      skuKey: "core.claver",
+    }
     expect(render(contador, "dueno", "kiosco", { "core.claver": false })).toBe(false)
     expect(render(contador, "dueno", "kiosco", { "core.claver": true })).toBe(true)
   })
 
-  it("ordena Principal antes que Configuración", () => {
+  it("módulos con moduloKey de ventas quedan antes que secciones sin key", () => {
     const ordenados = ordenarModulosPorRubro(DASHBOARD_SIDEBAR_MODULOS, "kiosco")
-    const idxPrincipal = ordenados.findIndex((m) => m.label === "Principal")
-    const idxConfig = ordenados.findIndex((m) => m.label === "Configuración")
-    expect(idxPrincipal).toBeLessThan(idxConfig)
+    const idxVentas = ordenados.findIndex((m) => m.moduloKey === "ventas")
+    const idxCloud = ordenados.findIndex((m) => m.label === "Claver Cloud & Admin")
+    expect(idxVentas).toBeGreaterThanOrEqual(0)
+    expect(idxCloud).toBeGreaterThanOrEqual(0)
+    expect(idxVentas).toBeLessThan(idxCloud)
   })
 })
 

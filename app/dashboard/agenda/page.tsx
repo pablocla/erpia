@@ -321,13 +321,30 @@ export default function AgendaPage() {
         ? (getIndustryExperience(demoIndustryId) ?? getNicheExperience(demoIndustryId))
         : null) ?? getConfirmaExperience()
 
-  const avisarWhatsAppTurno = (t: Turno) => {
+  const avisarWhatsAppTurno = async (t: Turno) => {
+    let linkAutogestion: string | undefined = undefined
+    
+    // Attempt to generate public link
+    try {
+      const res = await authFetch(`/api/agenda/${t.id}/public-link`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.url) {
+          linkAutogestion = data.url
+        }
+      }
+    } catch (e) {
+      console.warn("Could not generate public link for turno", e)
+    }
+
     const texto = messageConfirmarTurno({
       nombre: t.cliente?.nombre,
       fecha: t.fecha,
       hora: t.horaInicio,
       motivo: t.motivo,
+      linkAutogestion,
     })
+    
     const wa = buildWaMeUrl(t.cliente?.telefono, texto)
     void navigator.clipboard.writeText(texto).catch(() => {})
     if (wa) {
@@ -607,7 +624,7 @@ export default function AgendaPage() {
                   <Button
                     size="sm"
                     className="min-h-[40px]"
-                    onClick={() => avisarWhatsAppTurno(turnoSeleccionado)}
+                    onClick={() => { void avisarWhatsAppTurno(turnoSeleccionado) }}
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Confirmar por WhatsApp

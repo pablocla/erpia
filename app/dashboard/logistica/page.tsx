@@ -284,7 +284,7 @@ export default function LogisticaPage() {
                         title="Notificar por WhatsApp"
                         onClick={() => {
                           const text = `Hola! Tu pedido #${e.numero} está ${envioEstadoLabel(e.estado)} con destino a ${e.direccionDestino}.`
-                          window.open(getWhatsAppShareUrl(e.transportista?.telefono ?? "5491100000000", text), "_blank")
+                          window.open(getWhatsAppShareUrl(e.transportista?.telefono, text), "_blank")
                         }}
                       >
                         <MessageSquare className="h-3.5 w-3.5" />

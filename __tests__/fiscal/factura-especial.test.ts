@@ -2,9 +2,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { mockPrismaClient } from "../setup"
 
 // Hoist mock functions
-const { mockAuthenticate, mockConsultarUltimoComprobante } = vi.hoisted(() => ({
+const {
+  mockAuthenticate,
+  mockConsultarUltimoComprobante,
+  mockWsfexGetLastCmp,
+  mockWsfexGetLastId,
+  mockWsfexAuthorize,
+} = vi.hoisted(() => ({
   mockAuthenticate: vi.fn().mockResolvedValue({ token: "mockToken", sign: "mockSign" }),
   mockConsultarUltimoComprobante: vi.fn().mockResolvedValue(100),
+  mockWsfexGetLastCmp: vi.fn().mockResolvedValue(100),
+  mockWsfexGetLastId: vi.fn().mockResolvedValue(1),
+  mockWsfexAuthorize: vi.fn().mockResolvedValue({
+    ok: true,
+    cae: "MOCK-CAE-WSFEX",
+    caeFchVto: "20261231",
+  }),
 }))
 
 // Mock the soap client
@@ -23,6 +36,17 @@ vi.mock("@/lib/afip/soap-client", () => {
         }
       })
     }
+  }
+})
+
+vi.mock("@/lib/afip/wsfex-client", () => {
+  return {
+    WSFEXClient: class {
+      getLastCmp = mockWsfexGetLastCmp
+      getLastId = mockWsfexGetLastId
+      authorize = mockWsfexAuthorize
+    },
+    UMED_UNIDADES: 7,
   }
 })
 
@@ -170,12 +194,12 @@ describe("FacturaService - Regímenes Especiales de Facturación", () => {
     expect(res.error).toBeUndefined()
     expect(res.success).toBe(true)
     
-    // Debe haber consultado el último comprobante para 19 (Factura E de Exportación)
-    expect(mockConsultarUltimoComprobante).toHaveBeenCalledWith(
+    // Debe haber consultado el último comprobante para 19 (Factura E de Exportación) vía WSFEX
+    expect(mockWsfexGetLastCmp).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      1,
       19,
+      1,
     )
   })
 
@@ -218,12 +242,12 @@ describe("FacturaService - Regímenes Especiales de Facturación", () => {
     expect(res.error).toBeUndefined()
     expect(res.success).toBe(true)
     
-    // Debe consultar con el punto de venta configurado en la Serie (8) en lugar del original (1)
-    expect(mockConsultarUltimoComprobante).toHaveBeenCalledWith(
+    // Debe consultar con el punto de venta configurado en la Serie (8) en lugar del original (1) vía WSFEX
+    expect(mockWsfexGetLastCmp).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      8, // puntoVenta resuelto por Serie
       19, // tipoCbte de exportación
+      8, // puntoVenta resuelto por Serie
     )
   })
 })

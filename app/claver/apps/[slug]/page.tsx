@@ -16,6 +16,7 @@ import { marketAppAsSubSaas, getMarketCatalogApp } from "@/lib/comercial/market-
 import { US_SAAS_SLUGS, fmtPrecioUsd, getUsSaasApp } from "@/lib/comercial/us-saas-catalog"
 import { getSiteUrl } from "@/lib/marketing/landing-seo"
 import { getEffectiveMarketId } from "@/lib/i18n/request-market"
+import { getSkinOficio } from "@/lib/comercial/skins-oficios"
 
 export async function generateStaticParams() {
   const ar = SUB_SAAS_SLUGS.map((slug) => ({ slug }))
@@ -85,10 +86,13 @@ const US_LANDING_COPY = {
 
 export default async function SubSaasLandingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams?: Promise<{ oficio?: string }>
 }) {
   const { slug } = await params
+  const sp = searchParams ? await searchParams : {}
   const marketId = await getEffectiveMarketId()
   const usDirect = getUsSaasApp(slug)
 
@@ -120,11 +124,40 @@ export default async function SubSaasLandingPage({
     }
   }
 
-  const app = getSubSaasApp(slug)
-  if (!app) notFound()
+  const baseApp = getSubSaasApp(slug)
+  if (!baseApp) notFound()
+
+  let app = baseApp
+  if (slug === "oficios" && sp.oficio) {
+    const skin = getSkinOficio(sp.oficio)
+    if (skin) {
+      app = {
+        ...baseApp,
+        marca: skin.nombre,
+        nombre: skin.nombre,
+        lema: skin.lema,
+        descripcion: skin.descripcion,
+        pains: skin.pains,
+        outcomes: skin.outcomes,
+      }
+    }
+  }
 
   const entry = getProductEntry(slug)
-  if (entry) return <CombateProductLanding app={app} entry={entry} />
+  if (entry) {
+    let customEntry = entry
+    if (slug === "oficios" && sp.oficio) {
+      const skin = getSkinOficio(sp.oficio)
+      if (skin) {
+        customEntry = {
+          ...entry,
+          heroH1: skin.h1,
+          heroSub: skin.descripcion,
+        }
+      }
+    }
+    return <CombateProductLanding app={app} entry={customEntry} />
+  }
 
   return <SubSaasLanding app={app} />
 }

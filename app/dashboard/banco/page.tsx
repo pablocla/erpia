@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Landmark, Search, RefreshCw, CheckCircle2, XCircle, Plus, Sparkles, ArrowLeftRight, Upload } from "lucide-react"
+import { Landmark, Search, RefreshCw, CheckCircle2, XCircle, Plus, Sparkles, ArrowLeftRight, Upload, Building2 } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
@@ -98,6 +98,16 @@ export default function BancoPage() {
   const [resultadoConciliacion, setResultadoConciliacion] = useState<ReconciliacionResult | null>(null)
   const { toast } = useToast()
 
+  // Modal nueva cuenta bancaria
+  const [modalCuenta, setModalCuenta] = useState(false)
+  const [cBancoNombre, setCBancoNombre] = useState("")
+  const [cTipo, setCTipo] = useState<"CC" | "CA" | "virtual">("CC")
+  const [cCbu, setCCbu] = useState("")
+  const [cAlias, setCAlias] = useState("")
+  const [cNumeroCuenta, setCNumeroCuenta] = useState("")
+  const [creandoCuenta, setCreandoCuenta] = useState(false)
+  const [errorCuenta, setErrorCuenta] = useState("")
+
   const authHeaders = useCallback((): Record<string, string> => {
     const token = localStorage.getItem("token")
     return token ? { Authorization: `Bearer ${token}` } : {}
@@ -122,7 +132,43 @@ export default function BancoPage() {
     void cargar()
   }, [cargar])
 
-  useKeyboardShortcuts(erpShortcuts({ onRefresh: cargar, onNew: () => setModalNuevo(true) }))
+  const crearCuenta = async () => {
+    setErrorCuenta("")
+    if (!cBancoNombre.trim()) {
+      setErrorCuenta("El nombre del banco o billetera es obligatorio")
+      return
+    }
+    setCreandoCuenta(true)
+    try {
+      const res = await fetch("/api/banco/cuentas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          bancoNombre: cBancoNombre.trim(),
+          tipo: cTipo,
+          cbu: cCbu.trim() || undefined,
+          alias: cAlias.trim() || undefined,
+          numeroCuenta: cNumeroCuenta.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setErrorCuenta(data.error || "Error al crear cuenta")
+        return
+      }
+      setModalCuenta(false)
+      setCBancoNombre("")
+      setCCbu("")
+      setCAlias("")
+      setCNumeroCuenta("")
+      await cargar()
+      toast({ title: "Cuenta bancaria creada", description: `Se registró la cuenta ${data.alias ?? data.banco?.nombre ?? ""}` })
+    } catch {
+      setErrorCuenta("Error de conexión al servidor")
+    } finally {
+      setCreandoCuenta(false)
+    }
+  }
 
   const movsFiltrados = movimientos.filter((m) =>
     m.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -287,10 +333,14 @@ export default function BancoPage() {
           <h1 className="text-3xl font-bold tracking-tight">Cuenta Bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">Movimientos, conciliación y control de saldos</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={cargar} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Actualizar
+          </Button>
+          <Button variant="outline" onClick={() => setModalCuenta(true)}>
+            <Building2 className="h-4 w-4 mr-2" />
+            Nueva cuenta
           </Button>
           <Button variant="outline" onClick={abrirExtracto} disabled={cuentas.length === 0}>
             <Upload className="h-4 w-4 mr-2" />
@@ -380,14 +430,84 @@ export default function BancoPage() {
             searchKeys={["descripcion", "referencia"]}
             selectable
             exportFilename="movimientos-banco"
-            loading={loading}
-            emptyMessage="No hay movimientos bancarios"
-            emptyIcon={<EmptyStateIllustration type="generico" compact title="Sin movimientos" description="Cargá movimientos o sincronizá con el banco." />}
+            emptyIcon={
+              <div className="py-6 text-center space-y-3 flex flex-col items-center">
+                <EmptyStateIllustration type="generico" compact title="Sin movimientos bancarios" description="Creá tu primera cuenta corriente, caja de ahorro o CVU para registrar movimientos." />
+                <Button size="sm" onClick={() => setModalCuenta(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Crear cuenta bancaria
+                </Button>
+              </div>
+            }
             defaultPageSize={25}
             compact
           />
         </CardContent>
       </Card>
+
+      {/* Modal nueva cuenta bancaria */}
+      <Dialog open={modalCuenta} onOpenChange={setModalCuenta}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Nueva Cuenta Bancaria / Billetera</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            {errorCuenta && <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">{errorCuenta}</div>}
+            <div className="space-y-1.5">
+              <Label htmlFor="cBancoNombre">Banco / Entidad *</Label>
+              <Input
+                id="cBancoNombre"
+                placeholder="Ej: Banco Galicia, BBVA, Mercado Pago..."
+                value={cBancoNombre}
+                onChange={(e) => setCBancoNombre(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Tipo de cuenta</Label>
+                <Select value={cTipo} onValueChange={(v) => setCTipo(v as "CC" | "CA" | "virtual")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CC">Cuenta Corriente (CC)</SelectItem>
+                    <SelectItem value="CA">Caja de Ahorro (CA)</SelectItem>
+                    <SelectItem value="virtual">Billetera Virtual / CVU</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cNumeroCuenta">N° de cuenta</Label>
+                <Input
+                  id="cNumeroCuenta"
+                  placeholder="Ej: 1234-5678"
+                  value={cNumeroCuenta}
+                  onChange={(e) => setCNumeroCuenta(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cCbu">CBU / CVU (22 dígitos)</Label>
+              <Input
+                id="cCbu"
+                placeholder="0720123488000001234567"
+                maxLength={22}
+                value={cCbu}
+                onChange={(e) => setCCbu(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cAlias">Alias CBU / CVU</Label>
+              <Input
+                id="cAlias"
+                placeholder="empresa.cobros.mp"
+                value={cAlias}
+                onChange={(e) => setCAlias(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalCuenta(false)}>Cancelar</Button>
+            <Button onClick={crearCuenta} disabled={creandoCuenta}>{creandoCuenta ? "Guardando..." : "Crear cuenta"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal nuevo movimiento */}
       <Dialog open={modalNuevo} onOpenChange={setModalNuevo}>

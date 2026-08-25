@@ -74,6 +74,7 @@ export function messageConfirmarTurno(opts: {
   fecha: string
   hora: string
   motivo?: string | null
+  linkAutogestion?: string | null
 }): string {
   const name = opts.nombre?.trim() || "hola"
   const fecha = new Date(opts.fecha).toLocaleDateString("es-AR", {
@@ -82,8 +83,12 @@ export function messageConfirmarTurno(opts: {
     month: "2-digit",
   })
   const motivo = opts.motivo ? ` (${opts.motivo})` : ""
-  return (
-    `Hola ${name}, te confirmo tu turno el ${fecha} a las ${opts.hora}${motivo}. ` +
-    `¿Me confirmás que venís? Respondé SI o NO. ¡Gracias!`
-  )
+  let msg = `Hola ${name}, te confirmo tu turno el ${fecha} a las ${opts.hora}${motivo}. ` +
+    `¿Me confirmás que venís? Respondé SI o NO.`
+    
+  if (opts.linkAutogestion) {
+    msg += `\n\nSi necesitás CANCELAR tu turno, podés hacerlo automáticamente ingresando a este enlace (así le damos el lugar a otra persona): ${opts.linkAutogestion}`
+  }
+  
+  return msg + `\n\n¡Gracias!`
 }

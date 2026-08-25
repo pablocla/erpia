@@ -74,6 +74,7 @@ export default function LibretaFiadoPage() {
   const [opMonto, setOpMonto] = useState("")
   const [opConcepto, setOpConcepto] = useState("")
   const [opSaving, setOpSaving] = useState(false)
+  const [opMedioPago, setOpMedioPago] = useState("efectivo")
   const [clientesFiado, setClientesFiado] = useState<Deudor[]>([])
   const [pickClienteId, setPickClienteId] = useState<string>("")
   const [qDeudor, setQDeudor] = useState("")
@@ -194,7 +195,7 @@ export default function LibretaFiadoPage() {
           clienteId,
           monto,
           concepto: opConcepto || undefined,
-          medioPago: "efectivo",
+          medioPago: opMedioPago,
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -515,6 +516,20 @@ export default function LibretaFiadoPage() {
                             <Banknote className="h-4 w-4 mr-1" />
                             <span className="hidden sm:inline">Cobrar</span>
                           </Button>
+                          {d.deuda > 0 && (
+                            <a
+                              href={getWhatsAppShareUrl(
+                                d.telefono || "",
+                                `Hola ${d.nombre}, te recordamos que tenés un saldo pendiente de fiado de ${fmt(d.deuda)}. Podés pasar a regularizarlo cuando quieras. ¡Muchas gracias!`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center min-h-10 px-2.5 rounded-md text-xs font-medium border border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                              title="Enviar recordatorio por WhatsApp"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -592,17 +607,32 @@ export default function LibretaFiadoPage() {
               {opMode === "cobrar" && opCliente && (
                 <p className="text-xs text-muted-foreground mt-1">Deuda actual: {fmt(opCliente.deuda)}</p>
               )}
-              {opMode === "anotar" && opCliente && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Disponible:{" "}
-                  {fmt(
-                    !Number.isFinite(opCliente.disponible) || opCliente.disponible === Infinity
-                      ? 0
-                      : opCliente.disponible,
-                  )}
-                </p>
-              )}
             </div>
+            {opMode === "cobrar" && (
+              <div>
+                <Label>Medio de pago</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                  value={opMedioPago}
+                  onChange={(e) => setOpMedioPago(e.target.value)}
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia / CVU</option>
+                  <option value="qr">QR / Mercado Pago</option>
+                  <option value="tarjeta_debito">Tarjeta de Débito</option>
+                </select>
+              </div>
+            )}
+            {opMode === "anotar" && opCliente && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Disponible:{" "}
+                {fmt(
+                  !Number.isFinite(opCliente.disponible) || opCliente.disponible === Infinity
+                    ? 0
+                    : opCliente.disponible,
+                )}
+              </p>
+            )}
             <Button type="submit" className="w-full" disabled={opSaving}>
               {opSaving ? "Guardando…" : opMode === "anotar" ? "Anotar fiado" : "Cobrar y emitir recibo"}
             </Button>

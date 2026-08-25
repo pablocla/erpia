@@ -11,9 +11,9 @@ global.fetch = vi.fn(() =>
 ) as unknown as typeof fetch
 
 describe("PresupuestosPage", () => {
-  it("renders correctly", () => {
+  it("renders correctly", async () => {
     render(<PresupuestosPage />)
-    expect(screen.getByText("Presupuestos")).toBeInTheDocument()
-    expect(screen.getByText(/Gestión de presupuestos/i)).toBeInTheDocument()
+    expect(await screen.findByText("Presupuestos")).toBeInTheDocument()
+    expect(await screen.findByText(/Armá ofertas/i)).toBeInTheDocument()
   })
 })

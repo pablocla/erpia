@@ -18,11 +18,27 @@ export const metadata: Metadata = {
   },
 }
 
-export default function ClaverContactoPage() {
+export default async function ClaverContactoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ pack?: string }>
+}) {
+  const sp = searchParams ? await searchParams : {}
+  const isImplementacion = sp.pack === "implementacion"
+
   return (
     <ClaverShell context="matrix" theme="light">
       <div className="pt-24">
-        <ClaverVentasContacto pagina="/claver/contacto" variant="light" />
+        <ClaverVentasContacto
+          pagina={isImplementacion ? "/claver/contacto?pack=implementacion" : "/claver/contacto"}
+          defaultTipo={isImplementacion ? "demo" : "contacto"}
+          waMessage={
+            isImplementacion
+              ? "Hola Claver, quiero consultar por el pack de horas de implementación y puesta en marcha asistida para mi negocio."
+              : undefined
+          }
+          variant="light"
+        />
       </div>
     </ClaverShell>
   )

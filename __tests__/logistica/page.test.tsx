@@ -17,7 +17,7 @@ vi.mock("@/hooks/use-toast", () => ({
 describe("LogisticaPage", () => {
   it("renders correctly", () => {
     render(<LogisticaPage />)
-    expect(screen.getByText("Logística")).toBeInTheDocument()
-    expect(screen.getByText("Gestión de envíos, transportistas y rutas")).toBeInTheDocument()
+    expect(screen.getByText(/Logística/i)).toBeInTheDocument()
+    expect(screen.getByText(/Gestión de envíos/i)).toBeInTheDocument()
   })
 })

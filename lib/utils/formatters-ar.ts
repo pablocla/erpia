@@ -69,9 +69,11 @@ export function normalizeTelefonoWA(phoneRaw: string | null | undefined): string
 /**
  * Genera el enlace directo a WhatsApp Web / App con mensaje preconfigurado
  */
-export function getWhatsAppShareUrl(phone: string, text: string): string {
+export function getWhatsAppShareUrl(phone: string | null | undefined, text: string): string {
   const normalizedPhone = normalizeTelefonoWA(phone)
-  if (!normalizedPhone) return "#"
+  if (!normalizedPhone) {
+    return `https://wa.me/?text=${encodeURIComponent(text)}`
+  }
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(text)}`
 }
 

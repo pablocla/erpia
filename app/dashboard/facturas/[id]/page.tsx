@@ -51,7 +51,7 @@ interface FacturaDetalle {
   vencimientoCAE?: string | null
   qrBase64?: string | null
   observaciones?: string | null
-  cliente?: { id: number; nombre: string; cuit?: string | null; condicionIva?: string }
+  cliente?: { id: number; nombre: string; cuit?: string | null; condicionIva?: string; telefono?: string | null }
   lineas: LineaFactura[]
 }
 
@@ -156,7 +156,7 @@ export default function FacturaDetallePage({
               className="bg-green-600 hover:bg-green-700 text-white border-green-700 font-medium"
               onClick={() => {
                 const text = `Hola ${data.cliente?.nombre ?? "Cliente"}, te enviamos el comprobante fiscal ${comprobante} por un total de ${fmt(Number(data.total))}. CAE: ${data.cae ?? "En proceso"}.`
-                const url = getWhatsAppShareUrl("5491100000000", text)
+                const url = getWhatsAppShareUrl(data.cliente?.telefono, text)
                 window.open(url, "_blank")
               }}
             >

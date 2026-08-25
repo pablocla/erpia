@@ -19,7 +19,7 @@ import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 import {
   Plus, Send, CheckCircle2, XCircle, Copy, FileText,
-  ArrowRightCircle, Trash2, Filter,
+  ArrowRightCircle, Trash2, Filter, Share2
 } from "lucide-react"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
@@ -88,6 +88,25 @@ export default function PresupuestosPage() {
 
   // Detail view
   const [detalle, setDetalle] = useState<Presupuesto | null>(null)
+  const [generandoLink, setGenerandoLink] = useState<number | null>(null)
+
+  async function generarLinkPublico(presupuestoId: number, e?: React.MouseEvent) {
+    if (e) e.stopPropagation()
+    setGenerandoLink(presupuestoId)
+    try {
+      const res = await fetch(`/api/ventas/presupuestos/${presupuestoId}/public-link`, { headers: getAuthHeaders() })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Error al generar enlace")
+      
+      await navigator.clipboard.writeText(json.publicLink)
+      toast({ title: "Enlace copiado", description: "El enlace público se copió al portapapeles." })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error"
+      toast({ variant: "destructive", title: "Error", description: msg })
+    } finally {
+      setGenerandoLink(null)
+    }
+  }
 
   useEffect(() => {
     cargar()
@@ -300,6 +319,9 @@ export default function PresupuestosPage() {
               },
               { key: "acciones" as any, header: "Acciones", cell: (p) => (
                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" title="Copiar link público" onClick={(e) => generarLinkPublico(p.id, e)} disabled={generandoLink === p.id}>
+                    <Share2 className="h-4 w-4 text-primary" />
+                  </Button>
                   {p.estado === "borrador" && <Button size="sm" variant="outline" onClick={() => ejecutarAccion("enviar", p.id)}><Send className="h-3 w-3 mr-1" /> Enviar</Button>}
                   {(p.estado === "enviado" || p.estado === "borrador") && <><Button size="sm" variant="outline" className="text-[var(--status-success-foreground)]" onClick={() => ejecutarAccion("aceptar", p.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Aceptar</Button><Button size="sm" variant="outline" className="text-[var(--status-error-foreground)]" onClick={() => ejecutarAccion("rechazar", p.id)}><XCircle className="h-3 w-3 mr-1" /> Rechazar</Button></>}
                   {p.estado === "aceptado" && <AlertDialog><AlertDialogTrigger asChild><Button size="sm" variant="default"><ArrowRightCircle className="h-3 w-3 mr-1" /> Convertir a Pedido</Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Convertir presupuesto {p.numero}</AlertDialogTitle><AlertDialogDescription>Se creará un Pedido de Venta con las mismas líneas y condiciones. El presupuesto pasará a estado &quot;facturado&quot;.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => ejecutarAccion("convertir", p.id)}>Convertir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
@@ -346,7 +368,13 @@ export default function PresupuestosPage() {
               {detalle.numero}
               <Badge className={ESTADOS_COLOR[detalle.estado]}>{detalle.estado}</Badge>
             </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setDetalle(null)}>✕</Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => generarLinkPublico(detalle.id)} disabled={generandoLink === detalle.id}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Copiar Link
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDetalle(null)}>✕</Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">

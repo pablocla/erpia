@@ -126,7 +126,6 @@ export default function CajaPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           saldoInicial: parseFloat(saldoInicial || "0"),
-          empresaId: 1,
           turno: turno || undefined,
         }),
       })

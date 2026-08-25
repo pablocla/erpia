@@ -290,6 +290,10 @@ export default function POSPage() {
   const [modalMesasOpen, setModalMesasOpen] = useState(false)
   const [cartSheetOpen, setCartSheetOpen] = useState(false)
   const [numpadAbierto, setNumpadAbierto] = useState(false)
+  const [abrirCajaSaldoInicial, setAbrirCajaSaldoInicial] = useState("0")
+  const [abrirCajaTurno, setAbrirCajaTurno] = useState<"mañana" | "tarde" | "noche">("mañana")
+  const [abrirCajaLoading, setAbrirCajaLoading] = useState(false)
+  const [abrirCajaError, setAbrirCajaError] = useState("")
 
   // ── Error ───────────────────────────────────────────────────
   const [error, setError] = useState("")
@@ -351,6 +355,33 @@ export default function POSPage() {
       setTicketLegal(null)
     }
   }, [authH])
+
+  const abrirCajaInSitu = async () => {
+    setAbrirCajaLoading(true)
+    setAbrirCajaError("")
+    try {
+      const res = await fetch("/api/caja", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authH() },
+        body: JSON.stringify({
+          saldoInicial: parseFloat(abrirCajaSaldoInicial) || 0,
+          turno: abrirCajaTurno,
+          observaciones: "Apertura rápida desde POS",
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAbrirCajaError(data.error || "No se pudo abrir la caja")
+        return
+      }
+      toast({ title: "Caja abierta", description: `Turno ${abrirCajaTurno} iniciado con éxito` })
+      await verificarCaja()
+    } catch {
+      setAbrirCajaError("Error de conexión al abrir caja")
+    } finally {
+      setAbrirCajaLoading(false)
+    }
+  }
 
   const verificarCaja = useCallback(async () => {
     try {
@@ -1561,20 +1592,78 @@ export default function POSPage() {
   return (
     <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
       {cajaOk === false && cajaMotivo === "cerrada" && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-md">
-          <div className="p-8 max-w-md w-full bg-card border rounded-2xl shadow-2xl text-center space-y-6">
-            <div className="h-20 w-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="h-10 w-10" />
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-md p-4">
+          <div className="p-6 sm:p-8 max-w-md w-full bg-card border rounded-2xl shadow-2xl space-y-5 text-left">
+            <div className="text-center space-y-1.5">
+              <div className="h-14 w-14 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
+                <Unlock className="h-7 w-7" />
+              </div>
+              <h2 className="text-2xl font-extrabold tracking-tight">Apertura de Caja</h2>
+              <p className="text-muted-foreground text-xs sm:text-sm">Iniciá el turno para comenzar a cobrar y emitir tickets en el Punto de Venta.</p>
             </div>
-            <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">Caja Cerrada</h2>
-              <p className="text-muted-foreground mt-2 text-sm">Para facturar o usar el Punto de Venta, primero tenés que abrir tu caja del turno actual.</p>
+
+            {abrirCajaError && (
+              <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+                {abrirCajaError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="pos-saldo-inicial" className="text-xs font-semibold">Fondo inicial en efectivo ($ ARS)</Label>
+                <Input
+                  id="pos-saldo-inicial"
+                  type="number"
+                  min={0}
+                  step="100"
+                  placeholder="0.00"
+                  value={abrirCajaSaldoInicial}
+                  onChange={(e) => setAbrirCajaSaldoInicial(e.target.value)}
+                  className="font-bold text-base h-11"
+                />
+                <div className="flex gap-1.5 pt-1">
+                  {["0", "5000", "10000", "20000"].map((s) => (
+                    <Button
+                      key={s}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs flex-1"
+                      onClick={() => setAbrirCajaSaldoInicial(s)}
+                    >
+                      ${parseInt(s).toLocaleString("es-AR")}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Turno de trabajo</Label>
+                <Select value={abrirCajaTurno} onValueChange={(v) => setAbrirCajaTurno(v as "mañana" | "tarde" | "noche")}>
+                  <SelectTrigger className="h-10 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mañana">Turno Mañana</SelectItem>
+                    <SelectItem value="tarde">Turno Tarde</SelectItem>
+                    <SelectItem value="noche">Turno Noche</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Link href="/dashboard/caja" className="block w-full">
-              <Button size="lg" className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20">
-                Abrir Caja Ahora
-              </Button>
-            </Link>
+
+            <Button
+              size="lg"
+              className="w-full h-12 text-sm font-bold shadow-lg shadow-primary/20"
+              onClick={abrirCajaInSitu}
+              disabled={abrirCajaLoading}
+            >
+              {abrirCajaLoading ? "Abriendo caja..." : "Abrir Caja y Comenzar a Vender"}
+            </Button>
+
+            <div className="text-center">
+              <Link href="/dashboard/caja" className="text-xs text-muted-foreground hover:text-foreground underline">
+                Ver módulo completo de Caja & Arqueo
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -1728,6 +1817,18 @@ export default function POSPage() {
           <Button variant="ghost" size="sm" onClick={verificarCaja} className="h-7 w-7 p-0">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
+          <Link href="/dashboard/pos/cierre" className="shrink-0">
+            <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
+              <Lock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Cierre X/Z</span>
+            </Button>
+          </Link>
+          <Link href="/dashboard/caja" className="shrink-0">
+            <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
+              <Wallet className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Arqueo</span>
+            </Button>
+          </Link>
           <Link href="/dashboard/almacen" className="shrink-0">
             <Button variant="outline" size="sm" className="h-8 sm:h-7 text-xs gap-1">
               <Store className="h-3.5 w-3.5" />
@@ -1884,9 +1985,17 @@ export default function POSPage() {
                   <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
                 ))
               ) : productosFiltrados.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
-                  <ScanLine className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Sin productos{busqueda ? ` para "${busqueda}"` : ""}</p>
+                <div className="col-span-full text-center py-12 text-muted-foreground space-y-3">
+                  <ScanLine className="h-10 w-10 mx-auto opacity-40 text-primary" />
+                  <p className="text-sm font-medium">Sin productos{busqueda ? ` para "${busqueda}"` : ""}</p>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <Link href="/dashboard/productos">
+                      <Button variant="outline" size="sm" className="text-xs gap-1">
+                        <Plus className="h-3.5 w-3.5" />
+                        Crear / Importar Productos
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 productosFiltrados.map((p) => (

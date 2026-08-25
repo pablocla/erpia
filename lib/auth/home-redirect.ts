@@ -90,19 +90,36 @@ async function fetchWithTimeout(
   }
 }
 
-export async function fetchIsClaverAnalyst(token: string): Promise<boolean> {
+export async function fetchClaverAnalystStatus(token: string): Promise<{
+  authenticated: boolean
+  isAnalyst: boolean
+  email?: string
+}> {
   try {
     const res = await fetchWithTimeout(
       "/api/claver/analista/status",
       { headers: { Authorization: `Bearer ${token}` } },
       4000,
     )
-    if (!res.ok) return false
-    const data = (await res.json()) as { isAnalyst?: boolean }
-    return Boolean(data.isAnalyst)
+    if (!res.ok) return { authenticated: false, isAnalyst: false }
+    const data = (await res.json()) as {
+      authenticated?: boolean
+      isAnalyst?: boolean
+      email?: string
+    }
+    return {
+      authenticated: Boolean(data.authenticated),
+      isAnalyst: Boolean(data.isAnalyst),
+      email: typeof data.email === "string" ? data.email : undefined,
+    }
   } catch {
-    return false
+    return { authenticated: false, isAnalyst: false }
   }
+}
+
+export async function fetchIsClaverAnalyst(token: string): Promise<boolean> {
+  const status = await fetchClaverAnalystStatus(token)
+  return status.isAnalyst
 }
 
 async function fetchEmpresaRubro(token: string): Promise<string | null> {
@@ -130,18 +147,34 @@ export async function resolvePostLoginPathAsync(
   const resolvedEmail =
     email ?? (typeof payload?.email === "string" ? String(payload.email) : undefined)
 
-  // nextPath válido (ej. goldenPath de demo) — no hacer round-trips extra
   const next = nextPath?.trim()
-  if (next && next.startsWith("/") && !next.startsWith("//")) {
-    return next
-  }
+  const nextIsInternal = Boolean(next && next.startsWith("/") && !next.startsWith("//"))
 
   // Demos públicas: nunca van a Claver Cloud; home por rol
   if (isPublicDemoEmail(resolvedEmail)) {
+    if (nextIsInternal && next && !next.startsWith("/claver-cloud")) return next
     return getHomePathForRol(rol)
   }
 
-  const isAnalyst = await fetchIsClaverAnalyst(token)
+  // nextPath interno (ej. goldenPath) — no hacer round-trips extra,
+  // salvo /claver-cloud: hay que saber si el token es válido (si no, el
+  // middleware redirige a /login?next=… y se arma un loop).
+  if (nextIsInternal && next && !next.startsWith("/claver-cloud")) {
+    return next
+  }
+
+  const status = await fetchClaverAnalystStatus(token)
+  if (nextIsInternal && next?.startsWith("/claver-cloud")) {
+    if (status.authenticated) return next
+    return getHomePathForRol(rol)
+  }
+
   const rubro = await fetchEmpresaRubro(token)
-  return resolvePostLoginPath({ rol, email: resolvedEmail, nextPath, isAnalyst, rubro })
+  return resolvePostLoginPath({
+    rol,
+    email: resolvedEmail,
+    nextPath,
+    isAnalyst: status.isAnalyst,
+    rubro,
+  })
 }

@@ -37,6 +37,26 @@ describe("Claver analyst guard", () => {
     expect(isClaverAnalyst("otro@test.com")).toBe(false)
   })
 
+  it("siempre incluye al owner aunque CLAVER_ANALYST_EMAILS tenga otros", async () => {
+    process.env.CLAVER_ANALYST_EMAILS = "analista@claver.com"
+    const { isClaverAnalyst, getClaverAnalystEmails } = await import("@/lib/auth/claver-analyst")
+
+    expect(isClaverAnalyst("analista@claver.com")).toBe(true)
+    expect(isClaverAnalyst(CLAVER_OWNER_EMAIL)).toBe(true)
+    expect(isClaverAnalyst(CLAVER_OWNER_EMAIL.toUpperCase())).toBe(true)
+    expect(getClaverAnalystEmails()).toEqual(
+      expect.arrayContaining(["analista@claver.com", CLAVER_OWNER_EMAIL.toLowerCase()]),
+    )
+  })
+
+  it("rechaza email vacío aunque el env tenga analistas", async () => {
+    process.env.CLAVER_ANALYST_EMAILS = "analista@claver.com"
+    const { isClaverAnalyst } = await import("@/lib/auth/claver-analyst")
+    expect(isClaverAnalyst("")).toBe(false)
+    expect(isClaverAnalyst(null)).toBe(false)
+    expect(isClaverAnalyst(undefined)).toBe(false)
+  })
+
   it("scopes analyst to assigned empresas when assignments exist", async () => {
     vi.doMock("@/lib/prisma", () => ({
       prisma: {

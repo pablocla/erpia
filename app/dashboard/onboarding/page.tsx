@@ -101,7 +101,6 @@ export default function OnboardingPage() {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders() },
           body: JSON.stringify({
-            empresaId: 1,
             rubro: respuestas.rubro,
             condicionAfip: respuestas.condicionAfip,
             modulosActivos: config.modulosActivos,

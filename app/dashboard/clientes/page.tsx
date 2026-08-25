@@ -24,8 +24,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight,
   Building2, FileText, MapPin, DollarSign, ShoppingCart, Eye, Download, ToggleRight, Sparkles,
-  CalendarPlus, PlayCircle,
+  CalendarPlus, PlayCircle, Receipt, BookOpen,
 } from "lucide-react"
+import { useAuthStore } from "@/lib/stores/auth-store"
 import { PageShell, PageHeader, StatusBadge } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { parseApiList } from "@/lib/api/parse-list-response"
@@ -182,6 +183,8 @@ function MaestroSelect({ tabla, value, onChange, label }: { tabla: string; value
 /* ========== MAIN COMPONENT ========== */
 export default function ClientesPage() {
   const router = useRouter()
+  const user = useAuthStore((s) => s.user)
+  const isFumigacion = user?.empresaRubro === "fumigacion" || user?.empresaModoLite === "fumigacion"
   const [clientes, setClientes] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [busqueda, setBusqueda] = useState("")
@@ -439,21 +442,29 @@ export default function ClientesPage() {
                 </div>
               ) },
               { key: "cuit", header: "CUIT", sortable: true, cell: (c: any) => c.cuit || "-" },
-              { key: "ultimaVisita", header: "Última Visita", sortable: true, sortFn: (a: any, b: any) => {
-                const da = a.turnos?.[0]?.fecha ? new Date(a.turnos[0].fecha).getTime() : 0
-                const db = b.turnos?.[0]?.fecha ? new Date(b.turnos[0].fecha).getTime() : 0
-                return db - da
-              }, cell: (c: any) => {
-                const turno = c.turnos?.[0]
-                if (!turno) return <span className="text-muted-foreground">-</span>
-                const days = Math.floor((new Date().getTime() - new Date(turno.fecha).getTime()) / (1000 * 3600 * 24))
-                return (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium">{new Date(turno.fecha).toLocaleDateString("es-AR")}</span>
-                    <span className="text-[10px] text-muted-foreground">Hace {days} {days === 1 ? "día" : "días"}</span>
-                  </div>
-                )
-              } },
+              ...(isFumigacion
+                ? [{
+                    key: "ultimaVisita",
+                    header: "Última Visita",
+                    sortable: true,
+                    sortFn: (a: any, b: any) => {
+                      const da = a.turnos?.[0]?.fecha ? new Date(a.turnos[0].fecha).getTime() : 0
+                      const db = b.turnos?.[0]?.fecha ? new Date(b.turnos[0].fecha).getTime() : 0
+                      return db - da
+                    },
+                    cell: (c: any) => {
+                      const turno = c.turnos?.[0]
+                      if (!turno) return <span className="text-muted-foreground">-</span>
+                      const days = Math.floor((new Date().getTime() - new Date(turno.fecha).getTime()) / (1000 * 3600 * 24))
+                      return (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium">{new Date(turno.fecha).toLocaleDateString("es-AR")}</span>
+                          <span className="text-[10px] text-muted-foreground">Hace {days} {days === 1 ? "día" : "días"}</span>
+                        </div>
+                      )
+                    },
+                  }]
+                : []),
               { key: "condicionIva", header: "Cond. IVA", cell: (c: any) => <span className="text-xs">{(c.condicionIva ?? "").replace(/_/g, " ")}</span> },
               { key: "provincia", header: "Provincia", cell: (c: any) => <span className="text-xs">{c.provincia?.nombre || "-"}</span>, exportFn: (c: any) => c.provincia?.nombre ?? "" },
               { key: "limiteCredito", header: "Lím. Crédito", align: "right" as const, sortable: true, cell: (c: any) => c.limiteCredito != null ? Number(c.limiteCredito).toLocaleString("es-AR", { style: "currency", currency: "ARS" }) : "-" },
@@ -461,9 +472,17 @@ export default function ClientesPage() {
               {
                 key: "acciones" as any, header: "Acciones", align: "right" as const,
                 cell: (c: any) => (
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion/calendario?clienteId=${c.id}`) }} title="Agendar visita en calendario"><CalendarPlus className="h-4 w-4 text-emerald-600" /></Button>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion?action=new_visit&clienteId=${c.id}`) }} title="Visita rápida (Hoy)"><PlayCircle className="h-4 w-4 text-blue-600" /></Button>
+                  <div className="flex justify-end items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/ventas?clienteId=${c.id}`) }} title="Emitir Factura AFIP"><Receipt className="h-4 w-4 text-emerald-600" /></Button>
+                    {c.fiadoHabilitado && (
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fiado?clienteId=${c.id}`) }} title="Libreta de Fiado"><BookOpen className="h-4 w-4 text-blue-600" /></Button>
+                    )}
+                    {isFumigacion && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion/calendario?clienteId=${c.id}`) }} title="Agendar visita"><CalendarPlus className="h-4 w-4 text-emerald-600" /></Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/fumigacion?action=new_visit&clienteId=${c.id}`) }} title="Visita rápida"><PlayCircle className="h-4 w-4 text-blue-600" /></Button>
+                      </>
+                    )}
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); verDetalle(c) }} title="Ver detalle"><Eye className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); editarCliente(c) }} title="Editar"><Pencil className="h-4 w-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); eliminarCliente(c.id) }} title="Desactivar"><Trash2 className="h-4 w-4" /></Button>
@@ -489,6 +508,8 @@ export default function ClientesPage() {
                 <Button variant="outline" size="sm" onClick={async () => {
                   const activos = selected.filter((c: any) => c.activo !== false)
                   if (!activos.length) return
+                  const confirmBulk = window.confirm(`¿Está seguro de que desea desactivar ${activos.length} clientes seleccionados?`)
+                  if (!confirmBulk) return
                   await Promise.all(activos.map((c: any) => fetch(`/api/clientes/${c.id}`, { method: "DELETE", headers: authHeaders() })))
                   cargarClientes(); clear()
                 }}>
@@ -530,13 +551,13 @@ export default function ClientesPage() {
           </DialogHeader>
           {vistaDetalle && (
             <Tabs defaultValue="general" className="mt-2">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className={`grid w-full ${isFumigacion ? "grid-cols-6" : "grid-cols-5"}`}>
                 <TabsTrigger value="general">General</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
                 <TabsTrigger value="contacto">Contacto</TabsTrigger>
                 <TabsTrigger value="financiero">Financiero</TabsTrigger>
                 <TabsTrigger value="comercial">Comercial</TabsTrigger>
-                <TabsTrigger value="fumigacion"><Bug className="w-3.5 h-3.5 mr-1"/> Fumigación</TabsTrigger>
+                {isFumigacion && <TabsTrigger value="fumigacion"><Bug className="w-3.5 h-3.5 mr-1"/> Fumigación</TabsTrigger>}
               </TabsList>
               <TabsContent value="general" className="space-y-2 mt-4">
                 <DatoRO label="Código" value={vistaDetalle.codigo} />
@@ -597,9 +618,11 @@ export default function ClientesPage() {
                 <DatoRO label="Lista Precio" value={vistaDetalle.listaPrecio?.nombre} />
                 <DatoRO label="Zona Geográfica" value={vistaDetalle.zonaGeografica?.nombre} />
               </TabsContent>
-              <TabsContent value="fumigacion" className="mt-4">
-                <HistorialFumigacion clienteId={vistaDetalle.id} />
-              </TabsContent>
+              {isFumigacion && (
+                <TabsContent value="fumigacion" className="mt-4">
+                  <HistorialFumigacion clienteId={vistaDetalle.id} />
+                </TabsContent>
+              )}
             </Tabs>
           )}
         </DialogContent>
@@ -614,13 +637,13 @@ export default function ClientesPage() {
           </DialogHeader>
 
           <Tabs defaultValue="general" className="mt-2">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className={`grid w-full ${isFumigacion ? "grid-cols-6" : "grid-cols-5"}`}>
               <TabsTrigger value="general"><Building2 className="h-3.5 w-3.5 mr-1" />General</TabsTrigger>
               <TabsTrigger value="fiscal"><FileText className="h-3.5 w-3.5 mr-1" />Fiscal</TabsTrigger>
               <TabsTrigger value="contacto"><MapPin className="h-3.5 w-3.5 mr-1" />Contacto</TabsTrigger>
               <TabsTrigger value="financiero"><DollarSign className="h-3.5 w-3.5 mr-1" />Financiero</TabsTrigger>
               <TabsTrigger value="comercial"><ShoppingCart className="h-3.5 w-3.5 mr-1" />Comercial</TabsTrigger>
-              <TabsTrigger value="fumigacion"><Bug className="h-3.5 w-3.5 mr-1" />Visitas</TabsTrigger>
+              {isFumigacion && <TabsTrigger value="fumigacion"><Bug className="h-3.5 w-3.5 mr-1" />Visitas</TabsTrigger>}
             </TabsList>
 
             {/* ----- TAB: General ----- */}

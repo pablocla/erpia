@@ -24,10 +24,9 @@ export default function HoteleriaPMS() {
   const handleEmitirLlave = async (habId: number) => {
     setLoadingKey(habId)
     try {
-      // Usamos un reservaId de prueba "1" y se emite la llave
       const res = await authFetch("/api/hoteleria/llaves", {
         method: "POST",
-        body: JSON.stringify({ action: "emitir", reservaId: 1, habitacionId: habId })
+        body: JSON.stringify({ action: "emitir", habitacionId: habId })
       })
 
       if (res.ok) {

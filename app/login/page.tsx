@@ -19,6 +19,7 @@ import { activarRegisterHref, mensajeActivarTrial, resolveActivarIntent } from "
 import { activarProductoDesdeIntent } from "@/lib/comercial/activar-intent-client"
 import { LocaleFlagToggle } from "@/components/locale-flag-toggle"
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
+import { setAuthTokenCookie } from "@/lib/auth/token-cookie"
 
 function LoginPageContent() {
   const router = useRouter()
@@ -26,7 +27,7 @@ function LoginPageContent() {
   const activarParam = searchParams.get("activar")
   const activarIntent = resolveActivarIntent(activarParam)
   const nextPath = activarIntent?.landingPath ?? searchParams.get("next")
-  const { login, loginConToken, loginConGoogle, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
+  const { login, loginConToken, loginConGoogle, logout, cargando: cargandoSesion, autenticado, token, usuario } = useAuth()
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -35,18 +36,29 @@ function LoginPageContent() {
   const [enviandoLogin, setEnviandoLogin] = useState(false)
   const [enviandoGoogle, setEnviandoGoogle] = useState(false)
 
+  async function goAfterAuth(sessionToken: string, rol: string, email?: string | null, goldenPath?: string) {
+    setAuthTokenCookie(sessionToken)
+    let dest = goldenPath ?? nextPath
+    if (activarParam && activarIntent) {
+      const r = await activarProductoDesdeIntent(sessionToken, activarParam)
+      if (r.landingPath) dest = r.landingPath
+    }
+    const final = await resolvePostLoginPathAsync(sessionToken, rol, dest, email)
+    router.replace(final)
+  }
+
   useEffect(() => {
     if (cargandoSesion || !autenticado || !token || !usuario) return
     void (async () => {
-      let dest = nextPath
-      if (activarParam && activarIntent) {
-        const r = await activarProductoDesdeIntent(token, activarParam)
-        if (r.landingPath) dest = r.landingPath
+      try {
+        await goAfterAuth(token, usuario.rol, usuario.email)
+      } catch {
+        logout()
       }
-      const final = await resolvePostLoginPathAsync(token, usuario.rol, dest)
-      router.replace(final)
     })()
-  }, [cargandoSesion, autenticado, token, usuario, nextPath, router, activarParam, activarIntent])
+    // goAfterAuth cierra sobre next/activar; el efecto solo dispara al hidratar sesión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargandoSesion, autenticado, token, usuario, nextPath, router, activarParam, activarIntent, logout])
 
   if (cargandoSesion || (autenticado && token)) {
     return (
@@ -66,16 +78,6 @@ function LoginPageContent() {
     )
   }
 
-  async function redirectAfterLogin(token: string, rol: string, goldenPath?: string) {
-    let dest = goldenPath ?? nextPath
-    if (activarParam && activarIntent) {
-      const r = await activarProductoDesdeIntent(token, activarParam)
-      if (r.landingPath) dest = r.landingPath
-    }
-    const final = await resolvePostLoginPathAsync(token, rol, dest)
-    router.push(final)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -93,7 +95,7 @@ function LoginPageContent() {
         const data = await res.json()
         if (data.success && data.token) {
           loginConToken(data.token, data.usuario)
-          await redirectAfterLogin(data.token, data.usuario.rol, data.goldenPath)
+          await goAfterAuth(data.token, data.usuario.rol, data.usuario.email, data.goldenPath)
           return
         }
       } catch {
@@ -102,7 +104,7 @@ function LoginPageContent() {
     }
 
     if (resultado.success && resultado.usuario && resultado.token) {
-      await redirectAfterLogin(resultado.token, resultado.usuario.rol)
+      await goAfterAuth(resultado.token, resultado.usuario.rol, resultado.usuario.email)
     } else {
       setError(resultado.error || "Error al iniciar sesión")
       setEnviandoLogin(false)
@@ -115,7 +117,7 @@ function LoginPageContent() {
     try {
       const result = await loginConGoogle(idToken)
       if (result.success && result.usuario && result.token) {
-        await redirectAfterLogin(result.token, result.usuario.rol)
+        await goAfterAuth(result.token, result.usuario.rol, result.usuario.email)
       } else if (result.needsEmpresa) {
         // Solo alta de dueño (empresa nueva). Subusuarios deben estar invitados.
         const params = new URLSearchParams()

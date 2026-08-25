@@ -108,4 +108,12 @@ const nextConfig: NextConfig = {
 
 }
 
-export default withNextIntl(nextConfig)
+import withSerwistInit from "@serwist/next"
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+  reloadOnOnline: true,
+})
+
+export default withSerwist(withNextIntl(nextConfig))

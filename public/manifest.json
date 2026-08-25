@@ -1,45 +1,17 @@
 {
-  "name": "ClavERP by Claver",
-  "short_name": "ClavERP",
-  "description": "ClavERP — ERP del grupo Claver. Facturación AFIP, stock, caja, ventas y 40+ módulos.",
-  "start_url": "/dashboard",
+  "name": "Claver POS",
+  "short_name": "Claver",
+  "description": "Sistema ERP y Punto de Venta Claver",
+  "start_url": "/dashboard/pos",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#2563eb",
-  "orientation": "any",
-  "lang": "es-AR",
-  "categories": ["business", "finance", "productivity"],
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/brand/claverp-icon.svg",
-      "sizes": "48x48",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Nueva Venta",
-      "short_name": "Venta",
-      "url": "/dashboard/caja",
-      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Clientes",
-      "short_name": "Clientes",
-      "url": "/dashboard/clientes"
-    },
-    {
-      "name": "Productos",
-      "short_name": "Productos",
-      "url": "/dashboard/productos"
+      "src": "/icon.svg?v=4",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
     }
   ]
 }

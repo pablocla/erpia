@@ -10,14 +10,15 @@ global.fetch = vi.fn(() =>
   })
 ) as unknown as typeof fetch
 
+const mockToast = vi.fn()
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: mockToast }),
 }))
 
 describe("ComprasPage", () => {
-  it("renders correctly", () => {
+  it("renders correctly", async () => {
     render(<ComprasPage />)
-    expect(screen.getByText("Compras")).toBeInTheDocument()
-    expect(screen.getAllByText(/Órdenes de compra/i)[0]).toBeInTheDocument()
+    expect(await screen.findByText("Compras")).toBeInTheDocument()
+    expect(await screen.findByText("Órdenes de Compra")).toBeInTheDocument()
   })
 })

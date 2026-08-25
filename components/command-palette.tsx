@@ -77,12 +77,19 @@ interface RouteItem {
 const ROUTES: RouteItem[] = [
   // Principal
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, section: "Principal", keywords: ["inicio", "home", "panel"] },
-  // Ventas
-  { href: "/dashboard/ventas", label: "Facturación", icon: Receipt, section: "Ventas", keywords: ["factura", "venta", "cbte"] },
-  { href: "/dashboard/ventas/presupuestos", label: "Presupuestos", icon: FileText, section: "Ventas", keywords: ["cotización", "propuesta"] },
-  { href: "/dashboard/clientes", label: "Clientes", icon: Users, section: "Ventas", keywords: ["cliente", "customer"] },
+  // Ventas & Mostrador
+  { href: "/dashboard/pos", label: "Punto de Venta (POS)", icon: ShoppingCart, section: "Ventas", keywords: ["pos", "caja", "ticket", "mostrador", "cajero", "venta rapida"] },
+  { href: "/dashboard/pos/cierre", label: "Cierre de Turno / Z POS", icon: BarChart3, section: "Ventas", keywords: ["cierre", "pos", "cierre z", "cierre x", "turno"] },
+  { href: "/dashboard/ventas", label: "Facturación AFIP", icon: Receipt, section: "Ventas", keywords: ["factura", "venta", "cbte", "emitir", "afip"] },
+  { href: "/dashboard/facturas", label: "Historial de Facturas", icon: FileText, section: "Ventas", keywords: ["facturas", "comprobantes", "historial", "emitidas", "cae"] },
+  { href: "/dashboard/fiado", label: "Libreta de Fiado", icon: BookOpen, section: "Ventas", keywords: ["fiado", "cuenta corriente", "libreta", "deuda", "cliente"] },
+  { href: "/dashboard/ventas/presupuestos", label: "Presupuestos Comerciales", icon: FileText, section: "Ventas", keywords: ["cotización", "propuesta", "presupuesto"] },
+  { href: "/dashboard/clientes", label: "Clientes", icon: Users, section: "Ventas", keywords: ["cliente", "customer", "directorio"] },
   { href: "/dashboard/listas-precio", label: "Listas de Precio", icon: FileText, section: "Ventas", keywords: ["precio", "tarifa"] },
-  { href: "/dashboard/notas-credito", label: "Notas Crédito/Débito", icon: FileText, section: "Ventas", keywords: ["NC", "ND", "nota"] },
+  { href: "/dashboard/notas-credito", label: "Notas de Crédito / Débito", icon: FileText, section: "Ventas", keywords: ["NC", "ND", "nota", "anular"] },
+  // Oficios
+  { href: "/dashboard/oficios", label: "Trabajos & Obras", icon: Wrench, section: "Oficios", keywords: ["oficios", "obras", "presupuesto obra", "cuadrilla"] },
+  { href: "/dashboard/oficios/nuevo", label: "Nuevo Presupuesto de Obra (3 Niv)", icon: Plus, section: "Oficios", keywords: ["presupuesto obra", "3 niveles", "oficios"] },
   // Compras
   { href: "/dashboard/compras", label: "Facturas de Compra", icon: ShoppingCart, section: "Compras", keywords: ["compra", "proveedor", "FC"] },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Building2, section: "Compras", keywords: ["proveedor", "supplier"] },

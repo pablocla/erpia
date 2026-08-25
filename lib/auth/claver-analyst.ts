@@ -9,31 +9,29 @@ function parseAnalystEmails(): Set<string> {
   return new Set(getClaverAnalystEmails())
 }
 
-/** Emails que reciben alertas comerciales y de operaciones Claver Cloud */
+/** Emails con acceso a Claver Cloud y alertas comerciales. El owner siempre entra. */
 export function getClaverAnalystEmails(): string[] {
   const raw = process.env.CLAVER_ANALYST_EMAILS ?? ""
-  const emails = raw
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  if (emails.length === 0) {
-    emails.push(CLAVER_OWNER_EMAIL.toLowerCase())
-  }
-
-  return emails
+  const emails = new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean),
+  )
+  emails.add(CLAVER_OWNER_EMAIL.toLowerCase())
+  return [...emails]
 }
 
-export function isClaverAnalyst(email: string, rol?: string): boolean {
+export function isClaverAnalyst(email?: string | null, rol?: string): boolean {
   if (rol === ANALYST_ROLE) return true
+  if (!email) return false
   return parseAnalystEmails().has(email.trim().toLowerCase())
 }
 
 export async function getAnalystEmpresaScope(
   email: string,
 ): Promise<{ mode: "all" } | { mode: "assigned"; empresaIds: number[] } | { mode: "none" }> {
-  const db = prisma as any
-  const asignaciones = await db.analistaAsignacion.findMany({
+  const asignaciones = await prisma.analistaAsignacion.findMany({
     where: { analistaEmail: email.trim().toLowerCase(), activo: true },
     select: { empresaId: true },
   })
@@ -44,7 +42,7 @@ export async function getAnalystEmpresaScope(
     }
     return { mode: "none" }
   }
-  return { mode: "assigned", empresaIds: asignaciones.map((a: { empresaId: number }) => a.empresaId) }
+  return { mode: "assigned", empresaIds: asignaciones.map((a) => a.empresaId) }
 }
 
 export async function canAnalystAccessEmpresa(email: string, empresaId: number): Promise<boolean> {

@@ -55,8 +55,8 @@ const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
   fiado: "fiado",
   cobranza: "cobra",
   pos: "pos",
-  niche: "oficios",
-  servicios: "oficios",
+  niche: "turnos",
+  servicios: "turnos",
   fumigacion: "fumigacion",
   prestamista: "prestamista",
 }

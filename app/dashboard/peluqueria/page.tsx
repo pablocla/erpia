@@ -168,7 +168,28 @@ export default function PeluqueriaMobilePage() {
                 <Calendar className="h-4 w-4 mr-2" /> Ver agenda completa
               </Button>
             </Link>
-            <Button className="w-full justify-start" variant="outline">
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              onClick={() => {
+                const turnosHoy = getTurnosForDay()
+                const proximoConTel = turnosHoy.find((t) => t.cliente?.telefono)
+                if (proximoConTel?.cliente?.telefono) {
+                  enviarWhatsApp(proximoConTel.cliente.telefono, proximoConTel)
+                } else if (turnosHoy.length > 0) {
+                  toast({
+                    title: "Sin teléfono registrado",
+                    description: "Los turnos del día no tienen número telefónico asignado.",
+                    variant: "destructive",
+                  })
+                } else {
+                  toast({
+                    title: "Sin turnos para este día",
+                    description: "No hay citas programadas para la fecha seleccionada.",
+                  })
+                }
+              }}
+            >
               <MessageSquare className="h-4 w-4 mr-2" /> Enviar WhatsApp de cita
             </Button>
           </CardContent>

@@ -356,7 +356,7 @@ export default function MantenimientoPage() {
                           className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white border-green-700 font-medium"
                           onClick={() => {
                             const msg = `Hola! Te informamos sobre el estado de la Orden OT #${ot.numero}: se encuentra ${mantenimientoEstadoLabel(ot.estado)}.`
-                            window.open(getWhatsAppShareUrl("5491100000000", msg), "_blank")
+                            window.open(getWhatsAppShareUrl("", msg), "_blank")
                           }}
                         >
                           <MessageSquare className="h-3.5 w-3.5 mr-1" />

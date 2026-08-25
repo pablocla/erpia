@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "opo", "_backup_rutas_rotas", "__tests__"]
+  "exclude": ["node_modules", "opo", "_backup_rutas_rotas", "__tests__", "poui-ai"]
 }

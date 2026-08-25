@@ -168,8 +168,6 @@ export const NAV_PATHS_BY_RUBRO: Partial<Record<Rubro, string[]>> = {
   reventa_tendencias: [
     ...NAV_SHARED_PATHS,
     "/dashboard/reventas",
-    "/dashboard/reventas/links",
-    "/dashboard/reventas/stock",
     "/dashboard/productos",
     "/dashboard/clientes",
     "/dashboard/ventas",
@@ -183,8 +181,9 @@ export const NAV_PATHS_BY_RUBRO: Partial<Record<Rubro, string[]>> = {
   textil_fabrica: [
     ...RETAIL_CORE,
     "/dashboard/industria",
-    "/dashboard/industria/corte",
-    "/dashboard/industria/talleres",
+    "/dashboard/productos",
+    "/dashboard/compras",
+    "/dashboard/caja",
   ],
 }
 

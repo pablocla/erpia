@@ -60,4 +60,13 @@ describe("resolvePostLoginPath", () => {
       resolvePostLoginPath({ rol: "gerente", nextPath: "//evil.com", isAnalyst: false }),
     ).toBe("/dashboard")
   })
+
+  it("respeta ?next=/claver-cloud", () => {
+    expect(
+      resolvePostLoginPath({ rol: "gerente", nextPath: "/claver-cloud", isAnalyst: false }),
+    ).toBe("/claver-cloud")
+    expect(
+      resolvePostLoginPath({ rol: "administrador", nextPath: "/claver-cloud/tenants", isAnalyst: true }),
+    ).toBe("/claver-cloud/tenants")
+  })
 })

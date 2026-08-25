@@ -80,7 +80,9 @@ export async function middleware(request: NextRequest) {
       } catch {
         const loginUrl = new URL("/login", request.url)
         loginUrl.searchParams.set("next", pathname)
-        return NextResponse.redirect(loginUrl)
+        const response = NextResponse.redirect(loginUrl)
+        response.cookies.set(AUTH_TOKEN_COOKIE, "", { path: "/", maxAge: 0 })
+        return response
       }
     }
 

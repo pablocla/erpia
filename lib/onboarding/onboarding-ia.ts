@@ -699,6 +699,11 @@ const RUBRO_ALIASES: Record<string, Rubro> = {
   tendencias: "reventa_tendencias",
   quimica: "quimica",
   fabrica: "quimica",
+  canchas: "canchas",
+  futbol: "canchas",
+  padel: "canchas",
+  tenis: "canchas",
+  complejo_deportivo: "canchas",
   textil: "textil_fabrica",
   ropa_fabrica: "textil_fabrica",
 }
@@ -938,6 +943,23 @@ const RUBRO_UX: any = {
       { tabla: "rubros", label: "Rubros", descripcion: "Planes y servicios." },
     ],
     flujosCriticos: ["Alta socio -> membresia -> cobro", "Renovacion -> control de acceso"],
+  },
+  canchas: {
+    nombre: "Canchas / Complejo Deportivo",
+    foco: ["Ocupación por cancha", "Señas y reservas", "Consumo cantina", "Turnos fijos"],
+    alertas: ["Turnos sin seña", "Superposición de horarios", "Caja turno sin cerrar"],
+    quickActions: [
+      { label: "Reservas", href: "/dashboard/agenda" },
+      { label: "Punto de Venta", href: "/dashboard/pos" },
+      { label: "Caja y Turno", href: "/dashboard/caja" },
+    ],
+    sidebarPrioridad: ["agenda", "pos", "caja", "ventas", "clientes"],
+    maestrosCriticos: [
+      { tabla: "formas-pago", label: "Formas de pago", descripcion: "Mercado Pago, transferencias, efectivo." },
+      { tabla: "condiciones-pago", label: "Condiciones de pago", descripcion: "Seña previa, pago total, abono mensual." },
+      { tabla: "rubros", label: "Rubros", descripcion: "Alquiler canchas, buffet, indumentaria/paletas." },
+    ],
+    flujosCriticos: ["Reserva cancha -> seña -> WhatsApp recordatorio -> cobro restante", "Venta cantina -> POS -> caja"],
   },
   prestamista: {
     nombre: "Prestamista",

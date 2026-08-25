@@ -27,6 +27,7 @@ export function mapCondicionIvaReceptor(condicion?: string | null): number {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/_/g, " ")
     .trim()
 
   if (

@@ -325,7 +325,8 @@ export default function POSPage() {
     }
     return "price"
   })
-  const empresaNombre = useAuthStore((s) => s.user?.empresaNombre ?? "Comercio")
+  const authUser = useAuthStore((s) => s.user)
+  const empresaNombre = authUser?.empresaNombre ?? "Comercio"
 
   // ── Modal mesas (modo mesa) ─────────────────────────────────
   const [modalMesasOpen, setModalMesasOpen] = useState(false)
@@ -519,26 +520,29 @@ export default function POSPage() {
         }
       })
       .catch(() => { /* silencioso */ })
+    const draftKey = authUser?.empresaId ? `erp:pos:draft:${authUser.empresaId}:${authUser.id}` : null
     try {
-      const raw = localStorage.getItem(POS_DRAFT_KEY)
-      if (raw) {
-        const draft = JSON.parse(raw) as {
-          items: ItemCarrito[]
-          clienteId: number | null
-          mesaId: number | null
-          descuentoGlobal: number
-          tipoFactura: TipoFactura
-        }
-        if (draft.items?.length) {
-          setCarrito(draft.items)
-          setClienteId(draft.clienteId)
-          setMesaId(draft.mesaId)
-          setDescuentoGlobal(draft.descuentoGlobal ?? 0)
-          if (draft.tipoFactura) setTipoFactura(draft.tipoFactura)
+      if (draftKey) {
+        const raw = localStorage.getItem(draftKey)
+        if (raw) {
+          const draft = JSON.parse(raw) as {
+            items: ItemCarrito[]
+            clienteId: number | null
+            mesaId: number | null
+            descuentoGlobal: number
+            tipoFactura: TipoFactura
+          }
+          if (draft.items?.length) {
+            setCarrito(draft.items)
+            setClienteId(draft.clienteId)
+            setMesaId(draft.mesaId)
+            setDescuentoGlobal(draft.descuentoGlobal ?? 0)
+            if (draft.tipoFactura) setTipoFactura(draft.tipoFactura)
+          }
         }
       }
     } catch { /* silencioso */ }
-  }, [verificarCaja, cargarCategorias, cargarProductos, cargarClientes, cargarMesas, modo, authH])
+  }, [verificarCaja, cargarCategorias, cargarProductos, cargarClientes, cargarMesas, modo, authH, authUser?.empresaId, authUser?.id])
 
   useEffect(() => {
     if (clienteId && !tipoManual) {
@@ -547,13 +551,16 @@ export default function POSPage() {
     }
   }, [clienteId, clientes, tipoManual])
 
+  const currentDraftKey = authUser?.empresaId ? `erp:pos:draft:${authUser.empresaId}:${authUser.id}` : null
+
   useEffect(() => {
+    if (!currentDraftKey) return
     if (carrito.length === 0) {
-      localStorage.removeItem(POS_DRAFT_KEY)
+      localStorage.removeItem(currentDraftKey)
       return
     }
     localStorage.setItem(
-      POS_DRAFT_KEY,
+      currentDraftKey,
       JSON.stringify({
         items: carrito,
         clienteId,
@@ -562,7 +569,7 @@ export default function POSPage() {
         tipoFactura,
       }),
     )
-  }, [carrito, clienteId, mesaId, descuentoGlobal, tipoFactura])
+  }, [currentDraftKey, carrito, clienteId, mesaId, descuentoGlobal, tipoFactura])
 
   useEffect(() => { cargarProductos(busqueda) }, [busqueda, categoriaActiva, cargarProductos])
 
@@ -1234,21 +1241,41 @@ export default function POSPage() {
 
     try {
       const itemsVenta = carritoActivo
+      if (!itemsVenta || itemsVenta.length === 0) {
+        setError("El carrito está vacío. Agregá al menos un producto antes de cobrar.")
+        setProcesando(false)
+        return
+      }
+
+      const pagosValidos = pagos
+        .filter((p) => Number(p.monto) > 0)
+        .map((p) => ({
+          medio: p.medio,
+          monto: Number(p.monto),
+          numeroVale: p.numeroVale || undefined,
+        }))
+
+      if (pagosValidos.length === 0) {
+        setError("Ingresá al menos un medio de pago con un monto válido.")
+        setProcesando(false)
+        return
+      }
+
       const body = {
-        clienteId: clienteId ?? undefined,
-        mesaId: indicesCobro ? undefined : (mesaId ?? undefined),
+        clienteId: clienteId ? Number(clienteId) : undefined,
+        mesaId: indicesCobro ? undefined : (mesaId ? Number(mesaId) : undefined),
         tipoFactura,
         lineas: itemsVenta.map((i) => ({
-          productoId: i.productoId,
-          descripcion: i.descripcion,
-          cantidad: i.cantidad,
-          precioUnitario: i.precio,
-          porcentajeIva: i.porcentajeIva,
-          descuento: i.descuento,
+          productoId: i.productoId ? Number(i.productoId) : undefined,
+          descripcion: i.descripcion || "Producto",
+          cantidad: Number(i.cantidad || 1),
+          precioUnitario: Number(i.precio || 0),
+          porcentajeIva: Number(i.porcentajeIva ?? 21),
+          descuento: Number(i.descuento ?? 0),
         })),
-        pagos,
-        descuentoGlobal,
-        propina: indicesCobro ? 0 : propina,
+        pagos: pagosValidos,
+        descuentoGlobal: Number(descuentoGlobal ?? 0),
+        propina: indicesCobro ? 0 : Number(propina ?? 0),
       }
 
       let res
@@ -1268,7 +1295,14 @@ export default function POSPage() {
               data.disponible != null
                 ? ` (disponible: ${Number(data.disponible).toLocaleString("es-AR")})`
                 : ""
-            setError((data.error ?? "Error al procesar la venta") + extra)
+            const errorMsg = data.error || (data.detalles ? JSON.stringify(data.detalles) : "Error al procesar la venta")
+            setError(errorMsg + extra)
+            toast({
+              variant: "destructive",
+              title: "No se pudo realizar el cobro",
+              description: errorMsg + extra,
+            })
+            setProcesando(false)
             return
           }
         } catch {

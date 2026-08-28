@@ -4,8 +4,8 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { evaluarProductoParaPos } from "@/lib/almacen-rosario/evaluar-producto-pos"
 
 const schema = z.object({
-  productoId: z.number().int().positive(),
-  precioLista: z.number().nonnegative().optional(),
+  productoId: z.coerce.number().int().positive(),
+  precioLista: z.coerce.number().nonnegative().optional(),
 })
 
 export async function POST(request: NextRequest) {

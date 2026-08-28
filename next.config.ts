@@ -37,7 +37,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://*.cartocdn.com https://*.cartodb.com https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com",
       "font-src 'self' https://fonts.gstatic.com",
       // Analytics beacons + Supabase + Vercel insights + Google Auth + OpenStreetMap + Nominatim
-      "connect-src 'self' https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://nominatim.openstreetmap.org https://*.cartocdn.com https://*.cartodb.com https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com",
+      "connect-src 'self' https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://nominatim.openstreetmap.org https://*.cartocdn.com https://*.cartodb.com https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com https://lh3.googleusercontent.com https://*.googleusercontent.com",
       "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",

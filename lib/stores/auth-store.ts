@@ -43,7 +43,25 @@ export const useAuthStore = create<AuthState>()(
 
       login: (token, user) => {
         if (typeof window !== "undefined") {
+          const prevUserStr = localStorage.getItem("user")
+          try {
+            if (prevUserStr) {
+              const prevUser = JSON.parse(prevUserStr)
+              if (prevUser.empresaId !== user.empresaId || prevUser.id !== user.id) {
+                // Tenant changed — wipe tenant-sensitive local caches to prevent cross-tenant leakage
+                localStorage.removeItem("caja-pos-storage")
+                localStorage.removeItem("erp:pos:draft:v1")
+                Object.keys(localStorage).forEach((key) => {
+                  if (key.startsWith("erp:pos:draft:") || key.startsWith("pos_")) {
+                    localStorage.removeItem(key)
+                  }
+                })
+              }
+            }
+          } catch { /* ignore */ }
+
           localStorage.setItem("token", token)
+          localStorage.setItem("user", JSON.stringify(user))
           setAuthTokenCookie(token)
         }
         set({ token, user, isAuthenticated: true })
@@ -55,6 +73,13 @@ export const useAuthStore = create<AuthState>()(
           localStorage.removeItem("token")
           localStorage.removeItem("user")
           localStorage.removeItem("erp-auth")
+          localStorage.removeItem("caja-pos-storage")
+          localStorage.removeItem("erp:pos:draft:v1")
+          Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith("erp:pos:draft:") || key.startsWith("pos_")) {
+              localStorage.removeItem(key)
+            }
+          })
           sessionStorage.removeItem("claver-cloud-verified")
           sessionStorage.removeItem("claver_analyst_token")
           sessionStorage.removeItem("claver_analyst_user")

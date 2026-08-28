@@ -37,7 +37,12 @@ const temaUpdateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
-  if (!ctx.ok) return ctx.response
+  if (!ctx.ok) {
+    return NextResponse.json({
+      config: mergeTemaConfig({}),
+      canEdit: false,
+    })
+  }
 
   const config = await getEmpresaTema(ctx.auth.empresaId)
   return NextResponse.json({

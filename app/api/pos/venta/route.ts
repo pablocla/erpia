@@ -36,13 +36,19 @@ import { z } from "zod"
 // Schemas
 // ──────────────────────────────────────────────────────────────
 
+const sanitizeId = (val: unknown) => {
+  if (val === null || val === undefined || val === "" || val === "null" || val === "undefined") return undefined
+  const num = Number(val)
+  return isNaN(num) || num <= 0 ? undefined : num
+}
+
 const lineaSchema = z.object({
-  productoId: z.number().int().positive().optional(),
-  descripcion: z.string().min(1),
-  cantidad: z.number().positive(),
-  precioUnitario: z.number().nonnegative().optional(),
-  porcentajeIva: z.number().min(0).max(105).default(21),
-  descuento: z.number().min(0).max(100).default(0),
+  productoId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
+  descripcion: z.string().min(1, "La descripción del ítem es requerida"),
+  cantidad: z.coerce.number().positive("La cantidad debe ser mayor a 0"),
+  precioUnitario: z.coerce.number().nonnegative("El precio unitario no puede ser negativo").optional(),
+  porcentajeIva: z.coerce.number().min(0).max(105).default(21),
+  descuento: z.coerce.number().min(0).max(100).default(0),
 })
 
 const pagoSchema = z.object({
@@ -56,22 +62,22 @@ const pagoSchema = z.object({
     "cuenta_corriente",
     "vale",
   ]),
-  monto: z.number().positive(),
+  monto: z.coerce.number().positive("El monto a pagar debe ser mayor a 0"),
   numeroVale: z.string().min(1).optional(),
 })
 
 const ventaPosSchema = z.object({
-  clienteId: z.number().int().positive().optional(),
-  mesaId: z.number().int().positive().optional(),
+  clienteId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
+  mesaId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
   /** "A" | "B" | "C" | "ticket" (sin CAE) */
   tipoFactura: z.enum(["A", "B", "C", "ticket"]).default("B"),
-  puntoVenta: z.number().int().positive().default(1),
-  lineas: z.array(lineaSchema).min(1),
+  puntoVenta: z.coerce.number().int().positive().default(1),
+  lineas: z.array(lineaSchema).min(1, "Debe incluir al menos un producto en la venta"),
   /** Array de pagos — permite split payment */
-  pagos: z.array(pagoSchema).min(1),
-  descuentoGlobal: z.number().min(0).max(100).default(0),
+  pagos: z.array(pagoSchema).min(1, "Debe seleccionar al menos un medio de pago"),
+  descuentoGlobal: z.coerce.number().min(0).max(100).default(0),
   /** Propina opcional (gastronomía) — se suma al total sin IVA adicional */
-  propina: z.number().min(0).default(0),
+  propina: z.coerce.number().min(0).default(0),
   /** Si true (default), resuelve precio desde listas del cliente/empresa */
   usarListaPrecios: z.boolean().default(true),
   observaciones: z.string().optional(),
@@ -110,8 +116,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = ventaPosSchema.safeParse(body)
     if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0]
+      const msg = firstIssue ? `${firstIssue.path.join(".")}: ${firstIssue.message}` : "Datos de venta inválidos"
       return NextResponse.json(
-        { error: "Datos inválidos", detalles: parsed.error.flatten() },
+        { error: `Datos de venta inválidos (${msg})`, detalles: parsed.error.flatten() },
         { status: 400 },
       )
     }

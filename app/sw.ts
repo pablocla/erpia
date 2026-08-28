@@ -20,8 +20,11 @@ const serwist = new Serwist({
   runtimeCaching: [
     {
       matcher: ({ request, url }: any) => {
+        if (!url.origin.includes(self.location?.origin || "") && !url.hostname.includes("supabase.co")) {
+          return true
+        }
         if (url.pathname.startsWith("/api/")) return true
-        if (url.hostname.includes("supabase.co")) return true
+        if (url.pathname.startsWith("/login")) return true
         if (
           request.mode === "navigate" &&
           url.pathname.startsWith("/dashboard") &&

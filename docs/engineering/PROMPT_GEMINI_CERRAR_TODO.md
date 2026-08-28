@@ -2,7 +2,8 @@
 
 > Pegá **esta sección “PROMPT”** (desde el bloque hasta “FIN PROMPT”) en Gemini.  
 > El resto del archivo es el contrato de entregables.  
-> Owner: **gemini** (solo `docs/**` + Markdown). Código = Grok. Precio/piloto/legal = humano.
+> Owner: **gemini** (solo `docs/**` + Markdown). Código = Grok. Precio/piloto/legal = humano.  
+> **Oferta free (ancla $0 + item shop):** si tramitás eso, usá [`PROMPT_GEMINI_FREE.md`](./PROMPT_GEMINI_FREE.md) — manda en copy comercial. Este prompt sigue siendo el cierre de honestidad / UAT / soporte del core.
 
 ---
 

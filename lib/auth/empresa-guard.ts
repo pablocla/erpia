@@ -58,6 +58,7 @@ export async function getAuthContext(
     pathname.startsWith("/api/auth/") ||
     pathname.startsWith("/api/billing/") ||
     pathname.startsWith("/api/comercial/activar-intent") ||
+    pathname.startsWith("/api/comercial/implementacion-arca") ||
     pathname.startsWith("/api/marketplace/checkout") ||
     pathname.startsWith("/api/config/empresa")
 

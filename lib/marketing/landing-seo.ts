@@ -59,6 +59,34 @@ export const LANDING_FAQ = [
   },
 ] as const
 
+export const LANDING_FAQ_US = [
+  {
+    question: "What is Claver and who is it built for?",
+    answer:
+      "Claver is all-in-one business software for local businesses: digital house tabs, automated SMS collections, appointment booking, POS, and inventory. Manage sales, receivables, and operations from your phone or PC.",
+  },
+  {
+    question: "Can I try it before paying?",
+    answer:
+      "Yes. 14-day free trial with no credit card required across most apps. You can also explore live interactive industry demos at claver.com.ar/demo.",
+  },
+  {
+    question: "How does billing and pricing work?",
+    answer:
+      "Digital House Tabs are free forever. Add-on modules like SMS Collections, Booking, and POS have transparent monthly subscription pricing. You only pay for what you activate.",
+  },
+  {
+    question: "Is my business data isolated and secure?",
+    answer:
+      "Yes. Every business gets dedicated multi-tenant isolation with encrypted storage, automated backups, and complete data privacy.",
+  },
+  {
+    question: "Do I need to install any hardware or software?",
+    answer:
+      "No. It works seamlessly in any browser on mobile, tablet, or desktop. POS registers can easily connect to standard receipt printers and barcode scanners.",
+  },
+] as const
+
 export const LANDING_FEATURED_DEMOS = [
   { id: "almacen", label: "Fiado de barrio", hint: "Libreta + deudores", emoji: "🏪" },
   { id: "prestamista", label: "Préstamos", hint: "Cuotas y morosos", emoji: "💵" },

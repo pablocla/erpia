@@ -12,6 +12,16 @@ describe("product-auto-subscribe", () => {
     expect(d.owner).toBe("system")
   })
 
+  it("alta ancla no auto-trial de extras de pago", () => {
+    const d = resolveAutoSubscribe("core.claver", {
+      context: "activar_intent",
+      engancheId: "pos.fiado_barrio",
+      modoLite: "fiado",
+    })
+    expect(d.mode).toBe("auto_paid")
+    expect(d.canAutoActivate).toBe(false)
+  })
+
   it("demo industry auto-activa el enganche en trial", () => {
     const d = resolveAutoSubscribe("niche.gimnasio_barrio", { context: "industry_demo" })
     expect(d.canAutoActivate).toBe(true)

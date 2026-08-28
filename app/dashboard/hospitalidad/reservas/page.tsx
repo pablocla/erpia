@@ -47,11 +47,13 @@ export default function ReservasPage() {
   }
 
   return (
-    <PageShell
-      title="Gestión de Reservas y Llaves"
-      subtitle="Administra check-in, check-out y generación de pines para cerraduras IoT"
-      icon={Calendar}
-    >
+    <PageShell>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Calendar className="h-6 w-6" /> Gestión de Reservas y Llaves
+        </h1>
+        <p className="text-muted-foreground">Administra check-in, check-out y generación de pines para cerraduras IoT</p>
+      </div>
       <div className="bg-background border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>

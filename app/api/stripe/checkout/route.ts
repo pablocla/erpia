@@ -21,7 +21,7 @@ import { marketFromCountry } from "@/lib/comercial/markets"
  * }
  */
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   if (!isStripeConfigured() && process.env.FORCE_MOCK_STRIPE_PROD !== "true") {

@@ -104,8 +104,9 @@ function MatrixHubInner({ isUs = false, initialDolor }: { isUs?: boolean; initia
     <ClaverShell context="matrix" isUs={isUs}>
       <ProductHeroSection
         entry={entry}
-        secondaryCtaHref={`#${GTM_VITRINE_COPY.combateHeadingId}`}
-        chips={<HeroDolorChips active={dolor} onChange={onDolorChange} />}
+        isUs={isUs}
+        secondaryCtaHref={`#${(isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY).combateHeadingId}`}
+        chips={<HeroDolorChips active={dolor} onChange={onDolorChange} isUs={isUs} />}
       />
 
       <CommercialTrustBar isUs={isUs} />
@@ -130,11 +131,11 @@ function MatrixHubInner({ isUs = false, initialDolor }: { isUs?: boolean; initia
               id="faq-heading"
               className="font-[var(--font-fraunces)] text-2xl font-semibold text-slate-900 sm:text-3xl"
             >
-              Preguntas frecuentes
+              {isUs ? "Frequently Asked Questions" : "Preguntas frecuentes"}
             </h2>
           </ScrollReveal>
           <div className="mt-8 rounded-2xl border border-slate-200/80 bg-[#f8fafc] px-4 py-2 shadow-sm sm:px-6">
-            <ClaverLandingFaq />
+            <ClaverLandingFaq isUs={isUs} />
           </div>
         </div>
       </section>
@@ -163,7 +164,12 @@ function MatrixHubFallback({ isUs = false, initialDolor }: { isUs?: boolean; ini
   const entry = (entries as any)[slug] ?? entries.fiado
   return (
     <ClaverShell context="matrix" isUs={isUs}>
-      <ProductHeroSection entry={entry} secondaryCtaHref={`#${GTM_VITRINE_COPY.combateHeadingId}`} />
+      <ProductHeroSection
+        entry={entry}
+        isUs={isUs}
+        secondaryCtaHref={`#${(isUs ? GTM_VITRINE_COPY_US : GTM_VITRINE_COPY).combateHeadingId}`}
+        chips={<HeroDolorChips active={slug} onChange={() => {}} isUs={isUs} />}
+      />
       <CommercialTrustBar isUs={isUs} />
       <CombateHomeSection highlightSlug={slug} isUs={isUs} />
       <ProductAppPreviewSection entry={entry} isUs={isUs} />

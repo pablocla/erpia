@@ -16,7 +16,7 @@ export async function getEffectiveLocale(): Promise<AppLocale> {
   // Market cookie set by middleware (IP geo) when locale not yet chosen
   const marketCookie = cookieStore.get(MARKET_COOKIE)?.value;
   if (marketCookie && isMarketId(marketCookie)) {
-    return localeFromMarketId(marketCookie);
+    return localeFromMarketId(marketCookie) as AppLocale;
   }
 
   // Si no hay cookie de override, buscar en DB por empresa

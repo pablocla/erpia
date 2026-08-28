@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         where: { empresaId: ctx.auth.empresaId, activo: true },
         include: {
           banco: { select: { id: true, nombre: true, codigoBcra: true } },
-          moneda: { select: { id: true, codigo: true, nombre: true, simbolo: true } },
+          moneda: { select: { id: true, codigo: true, descripcion: true, simbolo: true } },
         },
         orderBy: { id: "asc" },
       }),
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           effectiveMonedaId = anyMoneda.id
         } else {
           const created = await prisma.moneda.create({
-            data: { codigo: "ARS", nombre: "Peso Argentino", simbolo: "$", decimales: 2, cotizacion: 1 },
+            data: { codigo: "ARS", descripcion: "Peso Argentino", simbolo: "$" },
           })
           effectiveMonedaId = created.id
         }

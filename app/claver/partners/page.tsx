@@ -33,14 +33,14 @@ export default async function PartnersProgramPage() {
       <section className="relative overflow-hidden bg-[#0B1220] pt-28 pb-16 text-white sm:pt-32">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(37,99,235,0.35),transparent)]" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-          <Badge className="mb-4 border-emerald-400/30 bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider animate-pulse">
-            {isUs ? "🔥 EARN RECURRING COMMISSIONS + LEVEL 2 BONUSES" : "🔥 GANÁ MÁS DE $50.000 POR REFERIDO + INGRESOS RECURRENTES"}
+          <Badge className="mb-4 border-emerald-400/30 bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider">
+            {program.heroBadge}
           </Badge>
           <h1 className="max-w-3xl font-[var(--font-fraunces)] text-4xl font-semibold leading-tight sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-emerald-400">
-            {PARTNER_PROGRAM.name}
+            {program.name}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-slate-300 font-medium">{PARTNER_PROGRAM.tagline}</p>
-          <p className="mt-3 max-w-2xl text-sm text-slate-400">{PARTNER_PROGRAM.oneLiner}</p>
+          <p className="mt-4 max-w-2xl text-lg text-slate-300 font-medium">{program.tagline}</p>
+          <p className="mt-3 max-w-2xl text-sm text-slate-400">{program.oneLiner}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" className="bg-emerald-500 font-bold text-slate-950 hover:bg-emerald-400 px-8 py-6 text-md rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-105" asChild>
               <Link href={program.ctaLogin}>
@@ -65,7 +65,7 @@ export default async function PartnersProgramPage() {
               <Wallet className="h-5 w-5 text-emerald-400" /> {r.sellerN1}% {isUs ? "Level 1" : "Nivel 1"} · {r.sellerN2}% {isUs ? "Level 2" : "Nivel 2"}
             </li>
             <li className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-emerald-400" /> {isUs ? "No Pyramid Scheme" : "100% Setup al Implementador ($50.000)"}
+              <Shield className="h-5 w-5 text-emerald-400" /> {isUs ? "Setup 100% to the implementer · no membership" : "Setup 100% a quien implementa · sin membresía"}
             </li>
           </ul>
         </div>
@@ -117,9 +117,9 @@ export default async function PartnersProgramPage() {
             ))}
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            {isUs 
-              ? "Example: client pays $39/mo (Collect) → N1 seller earns ~$11.70/mo; N2 lead ~$1.95/mo. Paid only when the client pays."
-              : "Ejemplo: cliente paga $40.000/mes → seller N1 cobra ~$12.000; si hay padre N2, ~$2.000. Solo si el mes está pagado."}
+            {isUs
+              ? "Illustration only: 50 free ledgers × 10% turn on an extra → 5 paying shops. You earn on those extras, not on the free hook."
+              : "Ilustración: 50 libretas gratis × 10% prenden extra → 5 pagos. Cobrás esos extras, no el gancho $0. Usá el simulador abajo."}
           </p>
         </div>
       </section>
@@ -166,7 +166,7 @@ export default async function PartnersProgramPage() {
         <p className="mx-auto mt-3 max-w-xl text-slate-400">
           {isUs 
             ? "Activate your portal, copy your link and share it with local businesses in your area."
-            : "Activá el portal, copiá tu link y compartilo en calle, WhatsApp o TikTok con demos de fiado/POS reales."}
+            : "Activá el portal, copiá claver.com.ar/f?ref=TUCODIGO y dejalo en el local. La comisión llega cuando prenden un extra."}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button size="lg" className="bg-emerald-500 text-slate-950 hover:bg-emerald-400" asChild>

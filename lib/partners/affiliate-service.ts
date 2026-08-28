@@ -4,11 +4,12 @@
 
 import { prisma } from "@/lib/prisma"
 import {
+  corteRetiroCash,
   normalizeReferralCode,
   tasaNivel1,
   tasaNivel2,
 } from "@/lib/partners/affiliate-config"
-import { buildReferralRegisterUrl } from "@/lib/partners/program-copy"
+import { buildReferralStreetUrl } from "@/lib/partners/program-copy"
 import {
   countReferidosPagos,
   getPartnerSaldo,
@@ -192,7 +193,7 @@ export async function getPartnerDashboard(usuarioId: number) {
   if (!partner) return null
 
   const saldo = await getPartnerSaldo(partner.id)
-  const referidosPagos = await countReferidosPagos(partner.id)
+  const referidosPagosCount = await countReferidosPagos(partner.id)
 
   const code = partner.referralCode ?? `P${partner.id}`
   // Preferir código persistido; si faltaba, lo guardamos
@@ -206,7 +207,10 @@ export async function getPartnerDashboard(usuarioId: number) {
       /* unique race — ignore */
     }
   }
-  const referralUrl = buildReferralRegisterUrl(code)
+  const referralUrl = buildReferralStreetUrl(code)
+  const referidosTotal = partner.empresasReferidas.length
+  const referidosPagos = referidosPagosCount
+  const referidosAncla = Math.max(0, referidosTotal - referidosPagos)
 
   return {
     partner: {
@@ -221,6 +225,11 @@ export async function getPartnerDashboard(usuarioId: number) {
     parent: partner.parentPartner,
     subAfiliados: partner.childPartners,
     empresas: partner.empresasReferidas,
+    kpis: {
+      referidosTotal,
+      referidosPagos,
+      referidosAncla,
+    },
     comisiones: partner.comisiones.map((c) => ({
       id: c.id,
       monto: Number(c.monto),
@@ -241,8 +250,8 @@ export async function getPartnerDashboard(usuarioId: number) {
     },
     contadorGratis: {
       minClientes: CONTADOR_GRATIS_MIN_CLIENTES,
-      clientesPagos: referidosPagos,
-      elegible: referidosPagos >= CONTADOR_GRATIS_MIN_CLIENTES,
+      clientesPagos: referidosPagosCount,
+      elegible: referidosPagosCount >= CONTADOR_GRATIS_MIN_CLIENTES,
     },
   }
 }
@@ -251,8 +260,13 @@ export async function solicitarRetiroComisiones(usuarioId: number): Promise<{ ok
   const partner = await prisma.partnerProfile.findUnique({ where: { usuarioId } })
   if (!partner) return { ok: false, actualizadas: 0 }
 
+  const corte = corteRetiroCash()
   const res = await prisma.comisionPartner.updateMany({
-    where: { partnerId: partner.id, estado: "pendiente" },
+    where: {
+      partnerId: partner.id,
+      estado: "pendiente",
+      fecha: { lte: corte },
+    },
     data: { estado: "solicitado" },
   })
   return { ok: true, actualizadas: res.count }

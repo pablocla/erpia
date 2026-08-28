@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowUpRight, Banknote, BookPlus, Plus, RefreshCw, Settings, Users, Wallet } from "lucide-react"
+import { ArrowUpRight, Banknote, BookPlus, Plus, RefreshCw, Settings, Users, Wallet, MessageSquare } from "lucide-react"
+import { getWhatsAppShareUrl } from "@/lib/utils/formatters-ar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -308,12 +309,11 @@ export default function LibretaFiadoPage() {
               )}
             </DialogContent>
           </Dialog>
-          <PaywallModal 
-            open={showPaywall} 
-            onOpenChange={setShowPaywall} 
-            title="Suscripción Requerida" 
-            description="El envío automático de WhatsApp requiere el módulo 'Claver Cobrá'." 
-            requiredSku="channel.whatsapp" 
+          <PaywallModal
+            open={showPaywall}
+            onOpenChange={setShowPaywall}
+            disparoKey="whatsapp_outbound"
+            requiredSku="channel.whatsapp"
           />
           <Button variant="outline" onClick={() => void cargar()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -429,22 +429,24 @@ export default function LibretaFiadoPage() {
         </CardHeader>
         <CardContent>
           {deudores.length === 0 ? (
-            <div className="text-center py-10 space-y-3">
-              <p className="font-medium">Tu primera libreta en 2 pasos</p>
-              <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-                <li>Creá un cliente fiado</li>
-                <li>Anotá el primer fiado o cobrá desde acá</li>
-              </ol>
-              <div className="flex flex-wrap gap-2 justify-center pt-2">
-                <Button onClick={() => setOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Cliente fiado
-                </Button>
-                <Button variant="secondary" onClick={() => void abrirAnotarLibre()}>
-                  <BookPlus className="h-4 w-4 mr-2" />
-                  Anotar fiado
-                </Button>
+            <div className="text-center py-12 space-y-4 max-w-sm mx-auto">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                <BookPlus className="h-6 w-6" />
               </div>
+              <div>
+                <h3 className="font-semibold text-base">Libreta de fiados vacía</h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Anotá tu primer fiado en segundos. Si el cliente no existe, se guarda automáticamente.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                onClick={() => void abrirAnotarLibre()}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 font-semibold text-white shadow-sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Anotar fiado
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">

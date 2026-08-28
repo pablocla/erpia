@@ -17,6 +17,11 @@ export async function GET(request: NextRequest) {
   const fechaDesde = new Date(y, m, 1);
   const fechaHasta = new Date(y, m + 1, 0, 23, 59, 59);
 
+  const { anclaPuedeVerRango, PAYLOAD_CAP_REPORTES } = await import("@/lib/comercial/caps-ancla")
+  if (!(await anclaPuedeVerRango(auth.auth.empresaId, fechaDesde, fechaHasta))) {
+    return NextResponse.json(PAYLOAD_CAP_REPORTES, { status: 402 })
+  }
+
   const baseWhere = rlsFacturas({
     empresaId: auth.auth.empresaId,
     rol: auth.auth.rol,

@@ -2,36 +2,52 @@
 
 import { useMemo, useState } from "react"
 import { Slider } from "@/components/ui/slider"
-import { DollarSign, Percent, Users } from "lucide-react"
+import { CalendarRange, DollarSign, Percent, Users } from "lucide-react"
 import { AFILIADO_RATES } from "@/lib/partners/affiliate-config"
+import {
+  EXTRA_PRECIO_ILUSTRATIVO_ARS,
+  simularComisionPartner,
+} from "@/lib/partners/commission-simulator"
 
 type RoleMode = "seller" | "implementer"
 
+const money = (n: number) =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n)
+
 export function CommissionCalculator() {
-  const [clients, setClients] = useState(10)
-  const [avgTicket, setAvgTicket] = useState(40000)
+  const [referidos, setReferidos] = useState(50)
+  const [upsellPct, setUpsellPct] = useState(10)
+  const [extraArs, setExtraArs] = useState(EXTRA_PRECIO_ILUSTRATIVO_ARS)
+  const [retencionPct, setRetencionPct] = useState(40)
   const [role, setRole] = useState<RoleMode>("seller")
 
-  const commissionPct = useMemo(
-    () =>
-      role === "implementer"
-        ? Math.round(AFILIADO_RATES.implementerNivel1 * 100)
-        : Math.round(AFILIADO_RATES.sellerNivel1 * 100),
+  const n1 = useMemo(
+    () => (role === "implementer" ? AFILIADO_RATES.implementerNivel1 : AFILIADO_RATES.sellerNivel1),
     [role],
   )
 
-  const mrr = clients * avgTicket
-  const myCommission = (mrr * commissionPct) / 100
-  const n2Pct = Math.round(AFILIADO_RATES.sellerNivel2 * 100)
+  const sim = useMemo(
+    () =>
+      simularComisionPartner({
+        referidos,
+        upsellPct,
+        extraArs,
+        n1Rate: n1,
+        retencionMes6: retencionPct / 100,
+      }),
+    [referidos, upsellPct, extraArs, n1, retencionPct],
+  )
+
+  const commissionPct = Math.round(n1 * 100)
 
   return (
     <div className="mx-auto my-8 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <h3 className="mb-2 text-center text-xl font-bold text-slate-900 sm:text-2xl">
-        Simulador de comisión (MRR)
+        Simulador: extras pagos, no altas gratis
       </h3>
       <p className="mb-6 text-center text-xs text-slate-500">
-        Solo si los clientes <strong>pagan</strong> el abono. No es ingreso garantizado por reclutar
-        gente.
+        La libreta $0 no te deja comisión. Mové cuántos prenden un extra (Cobrá / AFIP / 2ª caja). El
+        precio del extra es <strong>ilustrativo</strong> hasta que HUM firme lista.
       </p>
 
       <div className="mb-6 flex justify-center gap-2">
@@ -59,65 +75,77 @@ export function CommissionCalculator() {
         <div>
           <div className="mb-2 flex justify-between">
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Users className="h-4 w-4" /> Clientes que pagan al día
+              <Users className="h-4 w-4" /> Comercios con tu link (ancla gratis)
             </label>
-            <span className="font-bold text-blue-600">{clients}</span>
+            <span className="font-bold text-blue-600">{referidos}</span>
+          </div>
+          <Slider min={1} max={200} step={1} value={[referidos]} onValueChange={(val) => setReferidos(val[0])} />
+        </div>
+
+        <div>
+          <div className="mb-2 flex justify-between">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <Percent className="h-4 w-4" /> % que prende un extra a 60 días
+            </label>
+            <span className="font-bold text-blue-600">{upsellPct}%</span>
+          </div>
+          <Slider min={1} max={40} step={1} value={[upsellPct]} onValueChange={(val) => setUpsellPct(val[0])} />
+        </div>
+
+        <div>
+          <div className="mb-2 flex justify-between">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <DollarSign className="h-4 w-4" /> Precio extra / mes (ilustración)
+            </label>
+            <span className="font-bold text-blue-600">{money(extraArs)}</span>
           </div>
           <Slider
-            min={1}
+            min={5000}
+            max={50000}
+            step={1000}
+            value={[extraArs]}
+            onValueChange={(val) => setExtraArs(val[0])}
+          />
+        </div>
+
+        <div>
+          <div className="mb-2 flex justify-between">
+            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <CalendarRange className="h-4 w-4" /> Retención a mes 6 de quienes pagaron
+            </label>
+            <span className="font-bold text-blue-600">{retencionPct}%</span>
+          </div>
+          <Slider
+            min={10}
             max={100}
-            step={1}
-            value={[clients]}
-            onValueChange={(val) => setClients(val[0])}
+            step={5}
+            value={[retencionPct]}
+            onValueChange={(val) => setRetencionPct(val[0])}
           />
-        </div>
-
-        <div>
-          <div className="mb-2 flex justify-between">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <DollarSign className="h-4 w-4" /> Ticket promedio / mes (ARS)
-            </label>
-            <span className="font-bold text-blue-600">${avgTicket.toLocaleString("es-AR")}</span>
-          </div>
-          <Slider
-            min={10000}
-            max={200000}
-            step={5000}
-            value={[avgTicket]}
-            onValueChange={(val) => setAvgTicket(val[0])}
-          />
-        </div>
-
-        <div>
-          <div className="mb-2 flex justify-between">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <Percent className="h-4 w-4" /> Tu % Nivel 1
-            </label>
-            <span className="font-bold text-blue-600">{commissionPct}%</span>
-          </div>
-          <p className="text-xs text-slate-500">
-            N2 (quien te invitó como partner) recibiría {n2Pct}% extra del mismo abono — no lo
-            pagás vos; lo paga el pool del producto.
-          </p>
         </div>
       </div>
 
-      <div className="mt-10 flex flex-col items-center justify-between gap-6 rounded-xl border border-slate-100 bg-slate-50 p-6 md:flex-row">
+      <p className="mt-6 text-center text-sm text-slate-600">
+        {sim.pagadores} comercios pagarían extra · tu N1 {commissionPct}% · bounty mes 1{" "}
+        {Math.round(AFILIADO_RATES.bountyPrimerMes * 100)}%
+      </p>
+
+      <div className="mt-4 grid gap-4 rounded-xl border border-slate-100 bg-slate-50 p-6 sm:grid-cols-2">
         <div>
-          <p className="text-sm text-slate-500">MRR de tus clientes (pagado)</p>
-          <p className="text-2xl font-bold text-slate-900">${mrr.toLocaleString("es-AR")}</p>
+          <p className="text-sm text-slate-500">Mes 1 (bounty 100% del extra)</p>
+          <p className="text-3xl font-extrabold text-blue-600">{money(sim.mes1Bounty)}</p>
         </div>
-        <div className="text-center md:text-right">
-          <p className="text-sm font-bold text-blue-600">Tu comisión estimada N1</p>
-          <p className="text-4xl font-extrabold text-blue-600">
-            ${myCommission.toLocaleString("es-AR")}{" "}
-            <span className="text-sm font-medium text-slate-500">/ mes</span>
+        <div>
+          <p className="text-sm text-slate-500">Mes 6 (recurrente × retención)</p>
+          <p className="text-3xl font-extrabold text-slate-900">{money(sim.mes6)}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Si retuvieran todos: {money(sim.mensualRecurrente)} / mes
           </p>
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-slate-400">
-        Simulación educativa. No es promesa legal de ingresos. Comisión sujeta a pago real del
-        cliente y reglas del Programa Partner Claver.
+        Simulación educativa. No es promesa de ingresos. Comisión sujeta a pago real del extra y reglas
+        del programa. Precio ilustrativo, no lista.
       </p>
     </div>
   )

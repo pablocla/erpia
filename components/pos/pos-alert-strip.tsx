@@ -9,7 +9,7 @@ export interface PosAlertItem {
   id: string
   severity: "error" | "warning" | "info"
   mensaje: string
-  accion?: { label: string; href: string }
+  accion?: { label: string; href?: string; onClick?: () => void }
   inline?: React.ReactNode
 }
 
@@ -47,11 +47,22 @@ export function PosAlertStrip({ alertas }: PosAlertStripProps) {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {principal.accion && (
-            <Link href={principal.accion.href}>
-              <Button size="sm" variant={principal.severity === "error" ? "destructive" : "outline"} className="h-7 text-[10px] sm:text-xs px-2">
+            principal.accion.href ? (
+              <Link href={principal.accion.href}>
+                <Button size="sm" variant={principal.severity === "error" ? "destructive" : "outline"} className="h-7 text-[10px] sm:text-xs px-2">
+                  {principal.accion.label}
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                size="sm"
+                variant={principal.severity === "error" ? "destructive" : "outline"}
+                className="h-7 text-[10px] sm:text-xs px-2"
+                onClick={principal.accion.onClick}
+              >
                 {principal.accion.label}
               </Button>
-            </Link>
+            )
           )}
           {resto.length > 0 && (
             <button
@@ -74,11 +85,22 @@ export function PosAlertStrip({ alertas }: PosAlertStripProps) {
           >
             <span className="text-[11px] sm:text-xs min-w-0">{a.mensaje}</span>
             {a.accion && (
-              <Link href={a.accion.href}>
-                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 shrink-0">
+              a.accion.href ? (
+                <Link href={a.accion.href}>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 shrink-0">
+                    {a.accion.label}
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-[10px] px-2 shrink-0"
+                  onClick={a.accion.onClick}
+                >
                   {a.accion.label}
                 </Button>
-              </Link>
+              )
             )}
             {a.inline}
           </div>

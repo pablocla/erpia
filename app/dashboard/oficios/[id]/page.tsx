@@ -25,6 +25,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authFetch } from "@/lib/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
+import { PaywallModal } from "@/components/billing/paywall-modal"
+import { DISPAROS_CONFIG, type DisparoKey, tieneDisparoHabilitado } from "@/lib/comercial/paywall-disparo"
+import { useProductEntitlements } from "@/hooks/use-product-entitlements"
 
 const fmt = (n: number) =>
   n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })
@@ -32,12 +35,17 @@ const fmt = (n: number) =>
 export default function TrabajoFichaPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const { toast } = useToast()
+  const { mapa } = useProductEntitlements()
+  const skusActivos = Object.entries(mapa)
+    .filter(([, on]) => on)
+    .map(([sku]) => sku)
 
   const [trabajo, setTrabajo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [nuevoGastoMonto, setNuevoGastoMonto] = useState("")
   const [nuevoGastoProveedor, setNuevoGastoProveedor] = useState("")
   const [cargandoGasto, setCargandoGasto] = useState(false)
+  const [disparoModal, setDisparoModal] = useState<DisparoKey | null>(null)
 
   async function cargarFicha() {
     setLoading(true)
@@ -162,10 +170,44 @@ export default function TrabajoFichaPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={copiarLinkWhatsApp} className="gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!tieneDisparoHabilitado("whatsapp_outbound", skusActivos)) {
+                setDisparoModal("whatsapp_outbound")
+                return
+              }
+              const tel = String(trabajo.clienteTelefono ?? "").replace(/\D/g, "")
+              const texto = `Presupuesto ${trabajo.titulo}: ${window.location.origin}/p/trabajo/${trabajo.tokenPublico}`
+              window.open(
+                tel
+                  ? `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`
+                  : `https://wa.me/?text=${encodeURIComponent(texto)}`,
+                "_blank",
+              )
+            }}
+            className="gap-2 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+          >
             <Share2 className="h-4 w-4" />
-            Compartir Link
+            Enviar WhatsApp
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!tieneDisparoHabilitado("sena_link_mp", skusActivos)) {
+                setDisparoModal("sena_link_mp")
+                return
+              }
+              window.location.href = DISPAROS_CONFIG.sena_link_mp.checkoutHref
+            }}
+            className="gap-2 text-blue-600 border-blue-500/30 hover:bg-blue-500/10"
+          >
+            <DollarSign className="h-4 w-4" />
+            Link Seña MP
           </Button>
 
           <Link href={`/p/trabajo/${trabajo.tokenPublico}`} target="_blank">
@@ -181,7 +223,7 @@ export default function TrabajoFichaPage({ params }: { params: Promise<{ id: str
               onClick={() => cambiarEstado("CONFIRMADO")}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              Marcar Señado
+              Marcar Señado (Manual)
             </Button>
           )}
 
@@ -206,6 +248,14 @@ export default function TrabajoFichaPage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
+
+      <PaywallModal
+        open={Boolean(disparoModal)}
+        onOpenChange={(open) => {
+          if (!open) setDisparoModal(null)
+        }}
+        disparoKey={disparoModal ?? undefined}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Columna 1 y 2: Información técnica, fotos y gastos */}

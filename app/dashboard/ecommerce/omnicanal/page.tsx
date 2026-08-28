@@ -43,7 +43,11 @@ export default function OmnicanalDashboardPage() {
   }) || []
 
   return (
-    <PageShell title="Dashboard Omnicanal" description="Centro de control unificado para pedidos de Ecommerce, Mercado Libre y Tienda Nube.">
+    <PageShell>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard Omnicanal</h1>
+        <p className="text-muted-foreground">Centro de control unificado para pedidos de Ecommerce, Mercado Libre y Tienda Nube.</p>
+      </div>
       <div className="flex justify-between items-center mb-6">
         <Input 
           placeholder="Filtrar por canal (Ej: ML, ONLINE, TN)..." 

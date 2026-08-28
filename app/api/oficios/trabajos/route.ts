@@ -4,7 +4,7 @@ import { getTrabajos, createTrabajo } from "@/lib/oficios/oficios-service"
 import type { EstadoTrabajoOficio } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   const { searchParams } = new URL(request.url)
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

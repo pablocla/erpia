@@ -122,6 +122,9 @@ const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
   reloadOnOnline: true,
+  // Disable SW in development: prevents stale Turbopack chunks from being
+  // served by the service worker cache after HMR updates or file deletions.
+  disable: process.env.NODE_ENV !== "production",
 })
 
 export default withSerwist(withNextIntl(nextConfig))

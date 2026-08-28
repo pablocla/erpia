@@ -40,7 +40,7 @@ const LOGO_VARIANT = {
 export function ClaverShell({ children, context = "matrix", theme = "dark-hero", isUs = false }: ClaverShellProps) {
   const [navOpen, setNavOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [registerHref, setRegisterHref] = useState("/login/register?trial=14")
+  const [registerHref, setRegisterHref] = useState("/login/register")
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -55,7 +55,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero",
       if (isHomeDolorSlug(slug)) {
         setRegisterHref(activarRegisterHref(slug))
       } else {
-        setRegisterHref("/login/register?trial=14")
+        setRegisterHref("/login/register")
       }
     }
     try {

@@ -29,6 +29,7 @@ import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
 import { listarVentasSuspendidas } from "@/lib/pos/ventas-suspendidas"
+import { PaywallModal } from "@/components/billing/paywall-modal"
 
 interface DashboardStats {
   resumenMes: {
@@ -767,7 +768,7 @@ export default function DashboardPage() {
   const rol = user?.rol
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [periodo, setPeriodo] = useState("mes")
+  const [periodo, setPeriodo] = useState("hoy")
   const [rubro, setRubro] = useState<Rubro>("otro")
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [usingDemo, setUsingDemo] = useState(false)
@@ -775,6 +776,7 @@ export default function DashboardPage() {
   const [demoIndustryId, setDemoIndustryId] = useState<string | null>(null)
   const [productosSku, setProductosSku] = useState<Record<string, boolean> | null>(null)
   const [analyticsOpen, setAnalyticsOpen] = useState(false)
+  const [reportesPaywallOpen, setReportesPaywallOpen] = useState(false)
 
   const authHeaders = useCallback((): HeadersInit => {
     const token = localStorage.getItem("token")
@@ -809,6 +811,11 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/estadisticas/dashboard?periodo=${periodo}`, { headers: authHeaders() })
       const data = await res.json()
+      if (res.status === 402 || data.codigo === "CAP_REPORTES_48H") {
+        setLoading(false)
+        setReportesPaywallOpen(true)
+        return
+      }
       const parsed: DashboardStats = {
         resumenMes: {
           totalVentas: data.ventas?.totalVentas ?? data.resumenMes?.totalVentas ?? 0,
@@ -904,7 +911,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const savedPeriodo = typeof window !== "undefined" ? window.localStorage.getItem("dashboard:periodo") : null
-    if (savedPeriodo && ["mes", "trimestre", "anio"].includes(savedPeriodo)) setPeriodo(savedPeriodo)
+    if (savedPeriodo && ["hoy", "ayer", "mes", "trimestre", "anio"].includes(savedPeriodo)) {
+      setPeriodo(savedPeriodo)
+    }
   }, [])
 
   useEffect(() => {
@@ -1032,6 +1041,8 @@ export default function DashboardPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="hoy">Hoy</SelectItem>
+                <SelectItem value="ayer">Hoy y ayer</SelectItem>
                 <SelectItem value="mes">Este mes</SelectItem>
                 <SelectItem value="trimestre">Trimestre</SelectItem>
                 <SelectItem value="anio">Este año</SelectItem>
@@ -1375,6 +1386,12 @@ export default function DashboardPage() {
       )}
         </CollapsibleContent>
       </Collapsible>
+
+      <PaywallModal
+        open={reportesPaywallOpen}
+        onOpenChange={setReportesPaywallOpen}
+        disparoKey="reportes_historicos"
+      />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getAfiliadoInfo } from "@/lib/afiliados/afiliados-service"
 
 export async function GET(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

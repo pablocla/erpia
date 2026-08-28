@@ -15,19 +15,21 @@ function db() {
   return prisma as any
 }
 
-export type FunnelOrigen = "web" | "web_register" | "industry_demo" | "calle" | "whatsapp"
+export type FunnelOrigen = "web" | "web_register" | "industry_demo" | "calle" | "whatsapp" | "upgrade-arca-wsp"
 
 export type FunnelEvento =
   | "consulta_web"
   | "trial_signup"
   | "demo_rubro"
   | "lead_provisionado"
+  | "upgrade_arca_certificado"
 
 const EVENTO_LABELS: Record<FunnelEvento, string> = {
   consulta_web: "Consulta comercial web",
   trial_signup: "Nuevo trial registrado",
   demo_rubro: "Demo por rubro abierta",
   lead_provisionado: "Lead provisionado en Cloud",
+  upgrade_arca_certificado: "Upgrade pendiente: certificado ARCA / WhatsApp",
 }
 
 function appUrl(path = ""): string {
@@ -63,7 +65,10 @@ export async function notifyAnalistasFunnel(
   if (emails.length === 0) return
 
   const label = EVENTO_LABELS[evento]
-  const panelUrl = appUrl("/claver-cloud/comercial")
+  const panelUrl =
+    evento === "upgrade_arca_certificado"
+      ? appUrl("/claver-cloud/comercial/upgrades-arca")
+      : appUrl("/claver-cloud/comercial")
   const tenantUrl = extra?.empresaId ? appUrl(`/claver-cloud/tenants/${extra.empresaId}`) : null
 
   const filas = [

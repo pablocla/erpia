@@ -82,6 +82,7 @@ type CommandCenterData = {
     demosRubro7d: number
     trialsPorVencer: number
     consultasWeb7d: number
+    upgradesArcaPendientes?: number
   }
   mando: Parameters<typeof CeoMissionPanel>[0]["mando"]
   comercial: {
@@ -109,6 +110,17 @@ type CommandCenterData = {
       proximaFecha: string | null
       localidad: string | null
       empresaId: number | null
+    }[]
+    upgradesArca?: {
+      id: number
+      nombre: string
+      negocio: string | null
+      email: string | null
+      telefono: string | null
+      proximaFecha: string | null
+      proximaAccion: string | null
+      empresaId: number | null
+      empresaNombre: string | null
     }[]
     consultasWeb: {
       id: number
@@ -181,6 +193,7 @@ const etapaColor: Record<PipelineEtapa, string> = {
 const quickActions = [
   { href: "/claver-cloud/registros", label: "Registros web y trials", icon: UserPlus, primary: true },
   { href: "/claver-cloud/comercial", label: "Pipeline ventas", icon: Users, primary: true },
+  { href: "/claver-cloud/comercial/upgrades-arca", label: "Certificados ARCA", icon: Calendar, primary: true },
   { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList, primary: true },
   { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map, primary: true },
   { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare },
@@ -317,9 +330,30 @@ export function CommandCenterDashboard() {
   }
 
   const { kpis, mando, comercial, operaciones } = data
+  const upgradesArca = comercial.upgradesArca ?? []
+  const upgradesCount = kpis.upgradesArcaPendientes ?? upgradesArca.length
 
   return (
     <div className="space-y-8">
+      {upgradesCount > 0 && (
+        <Link
+          href="/claver-cloud/comercial/upgrades-arca"
+          className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 hover:bg-amber-500/15 transition"
+        >
+          <Calendar className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-amber-100">
+              {upgradesCount} cliente{upgradesCount === 1 ? "" : "s"} quiere{upgradesCount === 1 ? "" : "n"} upgrade y sacar certificado ARCA
+            </p>
+            <p className="text-xs text-amber-200/80 mt-0.5">
+              {upgradesArca[0]?.proximaFecha
+                ? `Próximo turno: ${fmtFecha(upgradesArca[0].proximaFecha)} · ${upgradesArca[0].empresaNombre || upgradesArca[0].negocio || upgradesArca[0].nombre}`
+                : "Abrí la bandeja tipo Calendly para tomar el turno."}
+            </p>
+          </div>
+          <span className="text-xs text-amber-200 shrink-0 self-center">Ver pendientes →</span>
+        </Link>
+      )}
       <CloudPageHeader
         icon={TrendingUp}
         eyebrow="Claver Cloud"

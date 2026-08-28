@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
       include: {
         empresa: {
-          select: { nombre: true, logoUrl: true, cuit: true, telefono: true, direccion: true },
+          select: { nombre: true, cuit: true, telefono: true, direccion: true },
         },
         cliente: {
           select: { nombre: true, email: true, cuit: true, telefono: true, direccion: true },

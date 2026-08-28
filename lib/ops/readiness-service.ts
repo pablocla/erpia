@@ -33,7 +33,7 @@ function scoreFromItems(items: ReadinessItem[]): number {
 export async function getEmpresaReadiness(empresaId: number): Promise<ReadinessReport> {
   const db = prisma as any
 
-  const [empresa, usuarios, productos, clientes, onboardingParam, entornos, proyecto] =
+  const [empresa, usuarios, productos, clientes, onboardingParam, entornos] =
     await Promise.all([
       db.empresa.findUnique({
         where: { id: empresaId },
@@ -44,16 +44,21 @@ export async function getEmpresaReadiness(empresaId: number): Promise<ReadinessR
           certificadoCRT: true,
           planHosting: true,
         },
-      }),
-      db.usuario.count({ where: { empresaId, activo: true } }),
-      db.producto.count({ where: { empresaId } }),
-      db.cliente.count({ where: { empresaId } }),
+      }).catch(() => null),
+      db.usuario.count({ where: { empresaId, activo: true } }).catch(() => 0),
+      db.producto.count({ where: { empresaId } }).catch(() => 0),
+      db.cliente.count({ where: { empresaId } }).catch(() => 0),
       db.parametroFiscal.findFirst({
         where: { empresaId, clave: "onboarding_completado" },
-      }),
-      db.tenantEntorno.count({ where: { empresaId } }),
-      getProyectoPorEmpresa(empresaId),
+      }).catch(() => null),
+      db.tenantEntorno.count({ where: { empresaId } }).catch(() => 0),
     ])
+
+  const proyecto = await getProyectoPorEmpresa(empresaId, {
+    entornos,
+    onboardingCompletado: Number(onboardingParam?.valor) === 1,
+    entornoAfip: empresa?.entornoAfip,
+  })
 
   const items: ReadinessItem[] = []
 

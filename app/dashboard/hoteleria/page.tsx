@@ -44,10 +44,11 @@ export default function HoteleriaPMS() {
   }
 
   return (
-    <PageShell
-      title="Front-Desk & Reservas"
-      description="Property Management System (PMS) integrado con Cerraduras IoT."
-    >
+    <PageShell>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Front-Desk & Reservas</h1>
+        <p className="text-muted-foreground">Property Management System (PMS) integrado con Cerraduras IoT.</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
         {isLoading && <p>Cargando habitaciones...</p>}
         {habitaciones?.map((hab) => (

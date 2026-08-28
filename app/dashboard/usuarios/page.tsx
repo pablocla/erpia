@@ -12,10 +12,11 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Plus, Edit2, RefreshCw } from "lucide-react"
+import { authFetch } from "@/lib/stores"
+import { PaywallModal } from "@/components/billing/paywall-modal"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyStateIllustration } from "@/components/empty-state-illustration"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
-import { authFetch } from "@/lib/stores"
 
 interface Usuario {
   id: number
@@ -96,6 +97,7 @@ export default function UsuariosPage() {
   const [error, setError] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
   const [guardando, setGuardando] = useState(false)
+  const [paywallCapOpen, setPaywallCapOpen] = useState(false)
 
   const cargarUsuarios = useCallback(async () => {
     setLoading(true)
@@ -215,6 +217,11 @@ export default function UsuariosPage() {
         })
         const data = await res.json()
         if (!res.ok) {
+          if (res.status === 402 || data.codigo === "CAP_USUARIOS_EXCEDIDO") {
+            setDialogOpen(false)
+            setPaywallCapOpen(true)
+            return
+          }
           setError(data.error || "Error al invitar")
           return
         }
@@ -240,6 +247,11 @@ export default function UsuariosPage() {
       })
       const data = await res.json()
       if (!res.ok) {
+        if (res.status === 402 || data.codigo === "CAP_USUARIOS_EXCEDIDO") {
+          setDialogOpen(false)
+          setPaywallCapOpen(true)
+          return
+        }
         setError(data.error || "Error al guardar")
         return
       }
@@ -343,7 +355,7 @@ export default function UsuariosPage() {
                   key: "nombre",
                   header: "Usuario",
                   sortable: true,
-                  cell: (u) => (
+                  cell: (u: Usuario) => (
                     <div className="flex items-center gap-2">
                       {u.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -366,18 +378,18 @@ export default function UsuariosPage() {
                   key: "email",
                   header: "Email",
                   sortable: true,
-                  cell: (u) => <span className="text-muted-foreground">{u.email}</span>,
+                  cell: (u: Usuario) => <span className="text-muted-foreground">{u.email}</span>,
                 },
                 {
                   key: "authProvider",
                   header: "Login",
-                  cell: (u) => <AuthBadge u={u} />,
-                  exportFn: (u) => u.authProvider ?? "credentials",
+                  cell: (u: Usuario) => <AuthBadge u={u} />,
+                  exportFn: (u: Usuario) => u.authProvider ?? "credentials",
                 },
                 {
                   key: "rol",
                   header: "Rol",
-                  cell: (u) => {
+                  cell: (u: Usuario) => {
                     const rol = ROLES.find((r) => r.value === u.rol)
                     return <Badge className={rol?.color ?? ""}>{rol?.label ?? u.rol}</Badge>
                   },
@@ -385,16 +397,16 @@ export default function UsuariosPage() {
                 {
                   key: "activo",
                   header: "Activo",
-                  cell: (u) => (
+                  cell: (u: Usuario) => (
                     <Switch checked={u.activo} onCheckedChange={() => toggleActivo(u)} />
                   ),
-                  exportFn: (u) => (u.activo ? "Sí" : "No"),
+                  exportFn: (u: Usuario) => (u.activo ? "Sí" : "No"),
                 },
                 {
                   key: "acciones" as keyof Usuario,
                   header: "Acciones",
                   align: "right",
-                  cell: (u) => (
+                  cell: (u: Usuario) => (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -559,6 +571,12 @@ export default function UsuariosPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PaywallModal
+        open={paywallCapOpen}
+        onOpenChange={setPaywallCapOpen}
+        disparoKey="tercer_usuario"
+      />
     </PageShell>
   )
 }

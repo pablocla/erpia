@@ -1,6 +1,9 @@
 # Cola Gemini — tickets assignee=gemini | pair (fase docs)
 
+> **Restante cara gratis (1 archivo, no reabrir MAX_PCT):** [`PROMPT_GEMINI_RESTANTE.md`](./PROMPT_GEMINI_RESTANTE.md) — vitrine, `/f` paridad, reportes UI 402.  
+> **Subir % (ola anterior, ya corrida):** [`PROMPT_GEMINI_MAX_PCT.md`](./PROMPT_GEMINI_MAX_PCT.md)  
 > **Prompt único para cerrar el core (recomendado):** [`PROMPT_GEMINI_CERRAR_TODO.md`](./PROMPT_GEMINI_CERRAR_TODO.md) — empleados = extra, no el norte.  
+> **Prompt para tramitar TODO lo free (ancla $0 + item shop + calle):** [`PROMPT_GEMINI_FREE.md`](./PROMPT_GEMINI_FREE.md) — manda en posicionamiento comercial si los dos corren.  
 > Generado para pegar en Gemini. Estados vivos: `backlog-status.json`.  
 > Criterio: `ASSIGNMENT.md`.
 

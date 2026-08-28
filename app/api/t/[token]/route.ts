@@ -23,8 +23,7 @@ export async function GET(
     include: {
       empresa: {
         select: {
-          nombreFantasia: true,
-          logoUrl: true,
+          nombre: true,
           telefono: true,
         },
       },

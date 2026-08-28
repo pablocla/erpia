@@ -129,37 +129,8 @@ export function DashboardAlertsHub() {
   }
 
   const alerts: AlertDef[] = []
-  const monetizadosEnTrial = (access?.monetizados ?? []).filter((m) => m.enTrial && !m.gratisPermanente)
   const monetizadosExpirados = (access?.monetizados ?? []).filter((m) => m.expirado && !m.gratisPermanente)
-  const showTrialAlert =
-    !access?.mpAutorizado &&
-    (Boolean(trial && (trial.activo || trial.expirado)) ||
-      monetizadosEnTrial.length > 0 ||
-      monetizadosExpirados.length > 0)
-
-  if (showTrialAlert && trial) {
-    const vencido = trial.expirado || monetizadosExpirados.length > 0
-    const urgente = !vencido && trial.diasRestantes <= 3
-    const titulo = vencido
-      ? access?.tieneAnclaGratis
-        ? "Trial de caja y stock finalizado"
-        : "Tu período de prueba terminó"
-      : access?.tieneAnclaGratis
-        ? `Libreta gratis · POS en trial — ${formatTrialCountdown(trial.diasRestantes)}`
-        : `Prueba gratis — ${formatTrialCountdown(trial.diasRestantes)}`
-
-    alerts.push({
-      id: "trial",
-      priority: vencido ? 100 : urgente ? 80 : 50,
-      title: titulo,
-      description:
-        access?.ofertaLema ??
-        (vencido
-          ? "Activá tu plan para seguir operando sin límites."
-          : `Vence el ${new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(trial.expiresAt))}.`),
-      tone: vencido ? "destructive" : urgente ? "warning" : "primary",
-    })
-  }
+  // Trial / extras: TrialBanner + ProductUpsellPanel en layout.
 
   if (cajasViejas > 0) {
     alerts.push({

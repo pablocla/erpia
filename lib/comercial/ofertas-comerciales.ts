@@ -25,6 +25,11 @@ export interface OfertaComercial {
   modoLiteEntrada: ModoLite
   trialDias: number
   trialScope: TrialScope
+  /**
+   * Si false, el alta del ancla NO activa SKUs de pago en trial.
+   * Los extras se prenden cuando el comercio los pide (paywall / Mi plan).
+   */
+  autoActivarMonetizados?: boolean
   engancheIds: string[]
 }
 
@@ -42,15 +47,31 @@ const OFERTA_CLASICO: OfertaComercial = {
 
 export const OFERTA_FIADO_ANCLA: OfertaComercial = {
   id: "fiado-ancla",
-  nombre: "Claver Fiado + POS",
-  lema: "Libreta gratis para siempre. Caja y stock en trial 14 días.",
+  nombre: "Claver Fiado + mostrador",
+  lema: "Libreta y 1 caja, gratis para siempre. WhatsApp, AFIP y 2ª caja cuando duelan.",
   anclaGratis: ["pos.fiado_barrio"],
   monetizar: ["core.claver"],
   precioPackArs: 12900,
   modoLiteEntrada: "fiado",
-  trialDias: 14,
+  trialDias: 0,
   trialScope: "monetizar",
+  autoActivarMonetizados: false,
   engancheIds: ["pos.fiado_barrio", "fiado"],
+}
+
+/** Presupuesto / trabajos en pantalla. Seña WA y MP son extra. */
+export const OFERTA_OFICIOS_ANCLA: OfertaComercial = {
+  id: "oficios-ancla",
+  nombre: "Claver Oficios",
+  lema: "Presupuesto en el celu, sin tarjeta. El link de seña y el WhatsApp se activan cuando cobrás.",
+  anclaGratis: ["niche.oficios"],
+  monetizar: ["intang.cobranzas_wa", "core.claver"],
+  precioPackArs: 29900,
+  modoLiteEntrada: "niche",
+  trialDias: 0,
+  trialScope: "monetizar",
+  autoActivarMonetizados: false,
+  engancheIds: ["niche.oficios", "oficios"],
 }
 
 export const OFERTA_POS_ANCLA: OfertaComercial = {
@@ -115,6 +136,7 @@ export const OFERTA_COBRANZA_AAS: OfertaComercial = {
 
 export const OFERTAS_COMERCIALES: OfertaComercial[] = [
   OFERTA_FIADO_ANCLA,
+  OFERTA_OFICIOS_ANCLA,
   OFERTA_POS_ANCLA,
   OFERTA_CONTADOR,
   OFERTA_HARDWARE_POS,
@@ -200,8 +222,13 @@ export function vigenciaParaSku(
 }
 
 export function skusAdicionalesOferta(oferta: OfertaComercial, yaActivados: string[]): string[] {
+  if (oferta.autoActivarMonetizados === false) return []
   if (oferta.trialScope !== "monetizar") return []
   return oferta.monetizar.filter((sku) => !yaActivados.includes(sku))
+}
+
+export function esAltaAnclaSinTrial(oferta: OfertaComercial): boolean {
+  return oferta.trialDias <= 0 || oferta.autoActivarMonetizados === false
 }
 
 const OFERTA_CLAVE = "oferta_comercial_id"

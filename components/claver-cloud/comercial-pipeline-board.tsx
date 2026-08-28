@@ -201,6 +201,12 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
               Actualizar
             </Button>
             <Button variant="outline" size="sm" asChild>
+              <Link href="/claver-cloud/comercial/upgrades-arca">
+                <Calendar className="mr-2 h-4 w-4" />
+                Certificados ARCA
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
               <Link href="/claver-cloud/comercial/relevamientos">
                 <ClipboardList className="mr-2 h-4 w-4" />
                 Relevamiento
@@ -333,6 +339,11 @@ export function ComercialPipelineBoard({ showHeader = true }: { showHeader?: boo
                               : lead.origen === "industry_demo"
                                 ? "Demo"
                                 : "Web"}
+                          </Badge>
+                        )}
+                        {lead.origen === "upgrade-arca-wsp" && (
+                          <Badge variant="outline" className="text-[10px] shrink-0 border-amber-500/40 text-amber-300">
+                            Upgrade ARCA
                           </Badge>
                         )}
                       </div>

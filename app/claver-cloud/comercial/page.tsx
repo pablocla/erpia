@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { PageShell, PageHeader } from "@/components/layout"
 import { EmptyState } from "@/components/ui/empty-state"
 import { ComercialPipelineBoard } from "@/components/claver-cloud/comercial-pipeline-board"
+import { UpgradesArcaInbox } from "@/components/claver-cloud/upgrades-arca-inbox"
 import {
   COMMERCIAL_OBJECTIONS,
   SALES_SCRIPT_15MIN,
@@ -94,7 +95,7 @@ export default function ComercialHubPage() {
       <PageHeader
         variant="surface"
         title="Centro comercial"
-        description="Pipeline, objeciones, ROI del prospecto y playbook de 15 minutos para el equipo de calle."
+        description="Pendientes ARCA, pipeline, objeciones, ROI del prospecto y playbook de 15 minutos para el equipo de calle."
         badge={
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Target className="h-3.5 w-3.5" />
@@ -113,7 +114,11 @@ export default function ComercialHubPage() {
 
       {/* Tabs Principales */}
       <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 max-w-4xl">
+          <TabsTrigger value="arca" className="gap-2">
+            <Clock className="h-4 w-4 text-amber-500" />
+            <span>ARCA</span>
+          </TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-2">
             <Target className="h-4 w-4" />
             <span>Pipeline</span>
@@ -131,6 +136,10 @@ export default function ComercialHubPage() {
             <span>Playbook 15 min</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="arca" className="m-0">
+          <UpgradesArcaInbox />
+        </TabsContent>
 
         {/* TAB 1: PIPELINE KANBAN */}
         <TabsContent value="pipeline" className="m-0">

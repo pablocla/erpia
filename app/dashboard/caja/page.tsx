@@ -24,6 +24,7 @@ import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useKeyboardShortcuts, erpShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { useToast } from "@/hooks/use-toast"
+import { PaywallModal } from "@/components/billing/paywall-modal"
 
 interface MovimientoCaja {
   id: number
@@ -88,6 +89,7 @@ export default function CajaPage() {
     sistemaQR: number
   } | null>(null)
   const [error, setError] = useState("")
+  const [paywallCajaOpen, setPaywallCajaOpen] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [cierreMensaje, setCierreMensaje] = useState("")
   const { toast } = useToast()
@@ -131,6 +133,11 @@ export default function CajaPage() {
       })
       if (!res.ok) {
         const data = await res.json()
+        if (res.status === 402 || data.codigo === "CAP_SEGUNDA_CAJA") {
+          setAbrirDialogOpen(false)
+          setPaywallCajaOpen(true)
+          return
+        }
         setError(data.error)
         return
       }
@@ -492,6 +499,12 @@ export default function CajaPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PaywallModal
+        open={paywallCajaOpen}
+        onOpenChange={setPaywallCajaOpen}
+        disparoKey="segunda_caja"
+      />
 
       {/* Dialog nuevo movimiento */}
       <Dialog open={movimientoDialogOpen} onOpenChange={setMovimientoDialogOpen}>

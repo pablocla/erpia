@@ -56,11 +56,11 @@ const PLAN_COLORS = [
   "bg-[var(--status-error)]",
 ]
 
-const ESTADO_VARIANT: Record<string, "success" | "warning" | "error" | "neutral" | "default"> = {
+const ESTADO_VARIANT: Record<string, "success" | "warning" | "error" | "neutral" | "info"> = {
   activa: "success",
   por_vencer: "warning",
   vencida: "error",
-  parcial: "default", // Violeta/Primario
+  parcial: "info", // Violeta/Primario
   suspendida: "neutral",
 }
 

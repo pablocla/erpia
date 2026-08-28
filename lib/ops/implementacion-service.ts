@@ -31,49 +31,70 @@ function parseFases(raw: unknown): FasesMap {
   return base
 }
 
-async function detectarSenalesAutomaticas(empresaId: number): Promise<Partial<FasesMap>> {
-  const db = prisma as any
-  const [entornos, onboardingParam, empresa] = await Promise.all([
-    db.tenantEntorno.count({ where: { empresaId } }),
-    db.parametroFiscal.findFirst({
-      where: { empresaId, clave: "onboarding_completado" },
-    }),
-    db.empresa.findUnique({
-      where: { id: empresaId },
-      select: { entornoAfip: true },
-    }),
-  ])
+async function detectarSenalesAutomaticas(
+  empresaId: number,
+  prefetched?: { entornos?: number; onboardingCompletado?: boolean; entornoAfip?: string | null },
+): Promise<Partial<FasesMap>> {
+  try {
+    const db = prisma as any
+    let entornos = prefetched?.entornos
+    let onboarding = prefetched?.onboardingCompletado
+    let entornoAfip = prefetched?.entornoAfip
 
-  const senales: Partial<FasesMap> = {}
-
-  if (entornos >= 3) {
-    senales["CCA-030"] = {
-      completado: true,
-      fecha: new Date().toISOString(),
-      notas: "Entornos dev/val/prd detectados",
-      auto: true,
+    if (entornos === undefined || onboarding === undefined || entornoAfip === undefined) {
+      const [eCount, onbParam, emp] = await Promise.all([
+        entornos === undefined ? db.tenantEntorno.count({ where: { empresaId } }).catch(() => 0) : entornos,
+        onboarding === undefined
+          ? db.parametroFiscal.findFirst({
+              where: { empresaId, clave: "onboarding_completado" },
+              select: { valor: true },
+            }).catch(() => null)
+          : null,
+        entornoAfip === undefined
+          ? db.empresa.findUnique({
+              where: { id: empresaId },
+              select: { entornoAfip: true },
+            }).catch(() => null)
+          : null,
+      ])
+      if (entornos === undefined) entornos = eCount
+      if (onboarding === undefined) onboarding = Number(onbParam?.valor) === 1
+      if (entornoAfip === undefined) entornoAfip = emp?.entornoAfip
     }
-  }
 
-  if (onboardingParam && Number(onboardingParam.valor) === 1) {
-    senales["CCA-040"] = {
-      completado: true,
-      fecha: new Date().toISOString(),
-      notas: "Wizard onboarding aplicado en tenant",
-      auto: true,
+    const senales: Partial<FasesMap> = {}
+
+    if ((entornos ?? 0) >= 3) {
+      senales["CCA-030"] = {
+        completado: true,
+        fecha: new Date().toISOString(),
+        notas: "Entornos dev/val/prd detectados",
+        auto: true,
+      }
     }
-  }
 
-  if (empresa?.entornoAfip === "produccion") {
-    senales["CCA-070"] = {
-      completado: true,
-      fecha: new Date().toISOString(),
-      notas: "Entorno AFIP en producción",
-      auto: true,
+    if (onboarding) {
+      senales["CCA-040"] = {
+        completado: true,
+        fecha: new Date().toISOString(),
+        notas: "Wizard onboarding aplicado en tenant",
+        auto: true,
+      }
     }
-  }
 
-  return senales
+    if (entornoAfip === "produccion") {
+      senales["CCA-070"] = {
+        completado: true,
+        fecha: new Date().toISOString(),
+        notas: "Entorno AFIP en producción",
+        auto: true,
+      }
+    }
+
+    return senales
+  } catch {
+    return {}
+  }
 }
 
 function mergeFasesConSenales(fases: FasesMap, senales: Partial<FasesMap>): FasesMap {
@@ -113,7 +134,7 @@ async function fetchEmpresaProyecto(empresaId: number) {
   return db.empresa.findUnique({
     where: { id: empresaId },
     select: EMPRESA_PROYECTO_SELECT,
-  })
+  }).catch(() => null)
 }
 
 async function withEmpresa<T extends { empresaId: number }>(row: T) {
@@ -147,19 +168,26 @@ export async function listProyectosImplementacion(opts: {
 
 export async function getProyectoImplementacion(id: number) {
   const db = prisma as any
-  const row = await db.proyectoImplementacion.findUnique({ where: { id } })
+  const row = await db.proyectoImplementacion.findUnique({ where: { id } }).catch(() => null)
   if (!row) return null
   const senales = await detectarSenalesAutomaticas(row.empresaId)
   return enrichProyecto(await withEmpresa(row), senales)
 }
 
 /** Sin include empresa — ProyectoImplementacion no define relación en Prisma. */
-export async function getProyectoPorEmpresa(empresaId: number) {
-  const db = prisma as any
-  const row = await db.proyectoImplementacion.findUnique({ where: { empresaId } })
-  if (!row) return null
-  const senales = await detectarSenalesAutomaticas(empresaId)
-  return enrichProyecto(row, senales)
+export async function getProyectoPorEmpresa(
+  empresaId: number,
+  prefetched?: { entornos?: number; onboardingCompletado?: boolean; entornoAfip?: string | null },
+) {
+  try {
+    const db = prisma as any
+    const row = await db.proyectoImplementacion.findUnique({ where: { empresaId } }).catch(() => null)
+    if (!row) return null
+    const senales = await detectarSenalesAutomaticas(empresaId, prefetched)
+    return enrichProyecto(row, senales)
+  } catch {
+    return null
+  }
 }
 
 export async function crearProyectoImplementacion(input: {

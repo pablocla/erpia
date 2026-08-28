@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2, Sparkles, Ban } from "lucide-react"
+import { FileText, Search, ChevronLeft, ChevronRight, Eye, Download, RefreshCw, Loader2, Sparkles, Ban, Plus, ReceiptText, MessageSquare, FileMinus2 } from "lucide-react"
+import { getWhatsAppShareUrl } from "@/lib/utils/formatters-ar"
 import { PageShell, PageHeader, PageToolbar, KpiStrip, StatusBadge } from "@/components/layout"
 import { facturaEstadoLabel, facturaEstadoVariant } from "@/lib/ui/status-map"
 import Link from "next/link"
@@ -28,7 +29,7 @@ interface Factura {
   iva: number
   estado: string
   cae?: string
-  cliente?: { id: number; nombre: string; cuit?: string }
+  cliente?: { id: number; nombre: string; cuit?: string; telefono?: string }
   vendedor?: { id: number; nombre: string }
   _count?: { lineas: number; notasCredito: number }
 }

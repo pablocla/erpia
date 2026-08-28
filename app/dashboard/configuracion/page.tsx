@@ -59,6 +59,7 @@ import { AfipConnectionTest } from "@/components/fiscal/afip-connection-test"
 import { CaeaPanel } from "@/components/fiscal/caea-panel"
 import { CaeaConfigPanel } from "@/components/fiscal/caea-config-panel"
 import { FiscalEmisionConfigPanel } from "@/components/fiscal/fiscal-emision-config-panel"
+import { PactarImplementacionArca } from "@/components/comercial/pactar-implementacion-arca"
 import { type CountryFeatures } from "@/lib/country/country-features"
 
 type SectionKey =
@@ -824,6 +825,22 @@ function ConfiguracionPageContent() {
         {/* ── AFIP ── */}
         {seccionActiva === "afip" && (
           <div className="space-y-4">
+            <Card className="border-amber-500/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">¿Todavía no tenés el certificado ARCA?</CardTitle>
+                <CardDescription>
+                  Pactá un turno con quien tenga acceso a ARCA para emitir el certificado. Mientras tanto podés vender y emitir ticket interno, sin CAE.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PactarImplementacionArca
+                  triggerLabel="Pactar implementación ARCA / WhatsApp"
+                  pagina="/dashboard/configuracion?seccion=afip"
+                  defaultArca
+                  defaultWhatsapp
+                />
+              </CardContent>
+            </Card>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">{t("salePoint")} y Entorno</CardTitle>

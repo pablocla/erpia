@@ -29,6 +29,7 @@ const RUTAS_PUBLICAS = [
   "/api/health",
   "/api/onboarding",
   "/api/comercial/consultas",
+  "/api/comercial/implementacion-arca",
   "/api/webhooks/",
   "/api/webhooks/stripe",
   "/api/cron/",

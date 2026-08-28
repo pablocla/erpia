@@ -184,7 +184,7 @@ function MaestroSelect({ tabla, value, onChange, label }: { tabla: string; value
 export default function ClientesPage() {
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
-  const isFumigacion = user?.empresaRubro === "fumigacion" || user?.empresaModoLite === "fumigacion"
+  const isFumigacion = user?.empresaModoLite === "fumigacion"
   const [clientes, setClientes] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [busqueda, setBusqueda] = useState("")

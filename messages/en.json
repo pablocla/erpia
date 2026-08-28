@@ -87,6 +87,7 @@
     "items": {
       "commandCenter": "Command Center",
       "salesPipeline": "Sales Pipeline",
+      "upgradesArca": "ARCA certificates",
       "fieldSurvey": "Field Survey",
       "mapAndRoute": "Map & Route",
       "superAdmin": "Super Admin",

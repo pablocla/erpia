@@ -94,7 +94,19 @@ export function useAuth() {
           window.location.href = "/login"
         }
       } catch (error) {
-        console.error("Error al cargar usuario:", error)
+        // Fallback a usuario cacheado en Zustand para soporte offline / recargas rápidas
+        const cachedUser = useAuthStore.getState().user
+        if (cachedUser && tokenActual) {
+          setUsuario({
+            id: Number(cachedUser.id) || 0,
+            email: cachedUser.email,
+            nombre: cachedUser.nombre,
+            rol: cachedUser.rol,
+            empresaId: cachedUser.empresaId,
+            empresaNombre: cachedUser.empresaNombre,
+            empresaModoLite: cachedUser.empresaModoLite,
+          })
+        }
       } finally {
         if (gen === sessionGenRef.current) setCargando(false)
       }

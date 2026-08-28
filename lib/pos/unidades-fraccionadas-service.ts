@@ -27,7 +27,7 @@ export function calcularVentaFraccionada(
   const cantidadFinal = input.cantidadSolicitada + mermaCantidad
   const precioTotal = cantidadFinal * input.precioBase
 
-  let labelUnidad = input.unidadBase
+  let labelUnidad: string = input.unidadBase
   if (input.unidadBase === "m") labelUnidad = "mts"
   if (input.unidadBase === "m2") labelUnidad = "m²"
 

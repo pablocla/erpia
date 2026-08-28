@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import type { EstadoTrabajoOficio, TipoOficio, Prisma } from "@prisma/client"
+import { Prisma, type EstadoTrabajoOficio, type TipoOficio } from "@prisma/client"
 
 export interface OpcionPresupuestoItem {
   nombre: string

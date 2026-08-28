@@ -459,10 +459,10 @@ export function ProductFinalCtaSection({
     >
       <div className="mx-auto max-w-4xl text-center">
         <h2 id="product-cta-heading" className="font-[var(--font-fraunces)] text-3xl font-semibold">
-          {gtmCopy.finalCtaTitle}
+          {entry.finalCta?.title || (gtmCopy as any).finalCtaTitle || "Empieza hoy sin costo"}
         </h2>
         <p className="mt-2 text-slate-300">
-          {isUs ? `Full operations for ${fmtPrecioArs(entry.precioArs)}.` : `Toda la operación resuelta por ${fmtPrecioArs(entry.precioArs)}.`}
+          {entry.finalCta?.subtitle || (isUs ? "Start your 14-day free trial now. No credit card required." : "Probá 14 días gratis sin tarjeta. Cancelás cuando quieras.")}
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
@@ -559,10 +559,10 @@ export function EcosistemaCollapsibleSection({ className, isUs = false }: { clas
             >
               <span>
                 <span className="block font-semibold text-slate-900">
-                  {gtmCopy.socialProofTitle}
+                  {(gtmCopy as any).socialProofTitle || "Historias de éxito"}
                 </span>
                 <span className="mt-0.5 block text-sm font-normal text-slate-500">
-                  {gtmCopy.collapsibleSubtitle}
+                  {(gtmCopy as any).collapsibleSubtitle || "Ver más detalles"}
                 </span>
               </span>
               <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />

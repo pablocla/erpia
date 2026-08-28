@@ -8,7 +8,7 @@ export async function GET(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -27,7 +27,7 @@ export async function PUT(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {
@@ -44,7 +44,7 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> },
 ) {
   const params = await props.params
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

@@ -1198,3 +1198,16 @@
   margin-inline: auto;
   width: 100%;
 }
+
+/* Landings de calle (/, /f, /f/servicios) — no pisan el dashboard */
+[data-page="landing"] {
+  --landing-cta: oklch(0.75 0.18 55);
+  --landing-cta-hover: oklch(0.70 0.20 55);
+  --landing-cta-fg: oklch(0.18 0.04 55);
+  --landing-badge-free: oklch(0.92 0.06 155);
+  --landing-badge-free-fg: oklch(0.35 0.10 155);
+  --landing-accent: oklch(0.45 0.12 155);
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -8%, oklch(0.78 0.08 55 / 0.16), transparent 55%),
+    var(--background);
+}

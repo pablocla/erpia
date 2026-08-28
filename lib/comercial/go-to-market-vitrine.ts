@@ -716,7 +716,7 @@ export function fiadoLandingMetadata() {
 
 export const HOME_DOLOR_CHIPS_US: readonly { slug: HomeDolorSlug; label: string; hint: string }[] = [
   { slug: "fiado", label: "House Tabs", hint: "Free app" },
-  { slug: "cobra", label: "Collect", hint: "SMS Reminders" },
+  { slug: "oficios", label: "Collect", hint: "SMS Reminders" },
   { slug: "turnos", label: "Bookings", hint: "Public link" },
 ] as const
 

@@ -3,7 +3,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { emitirLlaveVirtual, revocarLlaveVirtual } from "@/lib/hoteleria/smart-locks-service"
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

@@ -32,8 +32,7 @@ import { useDashboardShell } from "@/hooks/use-dashboard-shell"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
 import { isPathInAnclaFiadoAllowlist } from "@/lib/comercial/lite-sidebar"
 import { AppChecklistWidget } from "@/components/marketing/app-checklist-widget"
-import { ProductUpsellPanel } from "@/components/comercial/product-upsell-panel"
-import { ProductContextBanner } from "@/components/comercial/product-context-banner"
+import { TrialBanner } from "@/components/trial-banner"
 import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
 import { getSubSaasExperience } from "@/lib/comercial/app-experience"
 
@@ -120,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={cn(
           "sidebar-container flex flex-col z-20 shrink-0 h-full overflow-hidden",
           "transition-[width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-          "hidden md:flex",
+          isPosShell ? "hidden" : "hidden md:flex",
           effectiveSidebarOpen ? "w-[17.5rem]" : "w-[4.5rem]",
         )}
       >
@@ -212,7 +211,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <div className="p-3 sm:p-6 dashboard-main-pb">
             {!isPosShell && !pathname.startsWith("/dashboard/fumigacion") && (
-              <div className="mx-auto w-full max-w-[1400px] mb-3">
+              <div className="mx-auto w-full max-w-[1400px] mb-3 space-y-3">
+                <TrialBanner />
                 <DashboardAlertsHub />
               </div>
             )}
@@ -231,9 +231,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isPosShell && "h-full",
               )}
             >
-              {isLiteShell && !isPosShell && !pathname.startsWith("/dashboard/fumigacion") && (
-                <ProductContextBanner modoLite={modoLite} productosSku={productosSku} className="mb-4" />
-              )}
               {operationalRoute ? (
                 <MotionPresenceLite>
                   <MotionPage
@@ -254,18 +251,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </main>
-        {!isPosShell && <MobileBottomNav modoLite={modoLite} productosSku={productosSku} />}
+        {!isPosShell && <MobileBottomNav />}
       </div>
 
-      <OnboardingTour
-        enabled={mounted && !!demoIndustryId}
-        industryId={demoIndustryId}
-        variant="demo"
-      />
-      <OnboardingTour enabled={mounted && !demoIndustryId && freshSignup} variant="web" />
-      <ProductTour />
+      {!isPosShell && (
+        <>
+          <OnboardingTour
+            enabled={mounted && !!demoIndustryId}
+            industryId={demoIndustryId}
+            variant="demo"
+          />
+          <OnboardingTour enabled={mounted && !demoIndustryId && freshSignup} variant="web" />
+          <ProductTour />
+        </>
+      )}
 
-      {subSaasExperience && modoLite !== "completo" && (
+      {subSaasExperience && modoLite !== "completo" && !isPosShell && (
         <AppChecklistWidget appId={activeShell!.slug} guide={subSaasExperience} />
       )}
 

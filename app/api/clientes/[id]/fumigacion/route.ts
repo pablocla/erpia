@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         titulo: ot.titulo,
         fechaCreacion: ot.fechaCreacion.toISOString(),
         fechaPrometida: ot.fechaPrometida ? ot.fechaPrometida.toISOString() : null,
-        tecnicoAsignado: ot.usuarioAsignado,
+        tecnicoAsignado: (ot as any).usuarioAsignado,
         metadata: meta
       }
     })

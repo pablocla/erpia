@@ -128,7 +128,7 @@ export const POST = withAuthAndTenant(async (request: NextRequest, auth) => {
         const client = new WSCDCClient("homologacion")
         // Attempt verification – non-blocking (log only)
         const wscdcResult = await client.constatar(
-          { token: "", sign: "", expirationTime: new Date() }, // Auth tokens injected by middleware in production
+          { token: "", sign: "", expirationTime: new Date(), service: "wscdc" }, // Auth tokens injected by middleware in production
           process.env.CUIT_EMPRESA ?? "",
           {
             cuitEmisor: (await prisma.proveedor.findFirst({

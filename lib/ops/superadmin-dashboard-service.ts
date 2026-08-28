@@ -20,30 +20,29 @@ export async function getSuperAdminFleetDashboard(analystEmail: string) {
     take: 50,
   })
 
-  const tenantRows = await Promise.all(
-    empresas.map(async (e: { id: number; nombre: string; rubro: string; planHosting: string | null }) => {
-      const [readiness, tareas, entornos, skusActivos] = await Promise.all([
-        getEmpresaReadiness(e.id),
-        db().marketplaceTareaAnalista.count({
-          where: { empresaId: e.id, estado: { in: ["pendiente", "en_curso", "escalada"] } },
-        }),
-        ensureTenantEntornos(e.id),
-        db().suscripcionModulo.count({ where: { empresaId: e.id, activo: true } }),
-      ])
-      const entornosError = entornos.filter((en: { estado: string }) => en.estado === "error").length
-      return {
-        id: e.id,
-        nombre: e.nombre,
-        rubro: e.rubro,
-        planHosting: e.planHosting,
-        readinessScore: readiness.score,
-        listoGoLive: readiness.listoGoLive,
-        tareasPendientes: tareas,
-        skusActivos,
-        entornosError,
-      }
-    }),
-  )
+  const tenantRows = []
+  for (const e of empresas) {
+    const [readiness, tareas, entornos, skusActivos] = await Promise.all([
+      getEmpresaReadiness(e.id),
+      db().marketplaceTareaAnalista.count({
+        where: { empresaId: e.id, estado: { in: ["pendiente", "en_curso", "escalada"] } },
+      }),
+      ensureTenantEntornos(e.id),
+      db().suscripcionModulo.count({ where: { empresaId: e.id, activo: true } }),
+    ])
+    const entornosError = entornos.filter((en: { estado: string }) => en.estado === "error").length
+    tenantRows.push({
+      id: e.id,
+      nombre: e.nombre,
+      rubro: e.rubro,
+      planHosting: e.planHosting,
+      readinessScore: readiness.score,
+      listoGoLive: readiness.listoGoLive,
+      tareasPendientes: tareas,
+      skusActivos,
+      entornosError,
+    })
+  }
 
   const totales = {
     tenants: tenantRows.length,

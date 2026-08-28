@@ -84,7 +84,7 @@ export function TrialBanner({ subscribeSlug = "fiado" }: TrialBannerProps) {
     }
   }
 
-  if (!trial || dismissed || access?.mpAutorizado) return null
+  if (!trial || dismissed || access?.mpAutorizado || access?.tieneAnclaGratis) return null
 
   const tieneAncla = Boolean(access?.tieneAnclaGratis)
   const urgente = trial.diasRestantes <= 3 && trial.activo

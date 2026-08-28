@@ -54,7 +54,11 @@ export function SidebarNavItem({
         {sidebarOpen && <span className="sidebar-label truncate">{label}</span>}
         {sidebarOpen && item.badge && (
           <Badge
-            className="ml-auto h-4 text-[10px] px-1 shrink-0"
+            className={cn(
+              "ml-auto h-4 text-[10px] px-1 shrink-0",
+              (item.badge === "Extra" || item.badge.includes("🔒") || item.badge.includes("Extra")) &&
+                "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium",
+            )}
             variant={
               item.badge === "Piloto"
                 ? "secondary"
@@ -62,14 +66,18 @@ export function SidebarNavItem({
                   ? "outline"
                   : item.badge === "No vender"
                     ? "destructive"
-                    : "secondary"
+                    : item.badge.includes("Extra") || item.badge.includes("🔒")
+                      ? "outline"
+                      : "secondary"
             }
             title={
               item.badge === "Piloto"
                 ? "Módulo en piloto: usable con limitaciones"
                 : item.badge === "Demo"
                   ? "Demo / incompleto: no vender como producto cerrado"
-                  : undefined
+                  : item.badge.includes("Extra")
+                    ? "Módulo Extra: requiere activación de pack o servicio"
+                    : undefined
             }
           >
             {item.badge}

@@ -9,23 +9,31 @@ export async function GET(request: NextRequest) {
     if (!ctx.ok) return ctx.response
 
     const searchParams = request.nextUrl.searchParams
-    const periodo = searchParams.get("periodo") || "mes" // "mes", "trimestre", "anio"
+    const periodo = searchParams.get("periodo") || "mes" // "hoy" | "ayer" | "mes" | "trimestre" | "anio"
 
     const estadisticasService = new EstadisticasService()
     const ivaService = new IVAService()
 
-    // Calcular fechas según el período
     const hoy = new Date()
     let fechaDesde: Date
     const fechaHasta: Date = hoy
 
-    if (periodo === "mes") {
+    if (periodo === "hoy") {
+      fechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+    } else if (periodo === "ayer") {
+      fechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1)
+    } else if (periodo === "mes") {
       fechaDesde = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
     } else if (periodo === "trimestre") {
       const mesInicio = Math.floor(hoy.getMonth() / 3) * 3
       fechaDesde = new Date(hoy.getFullYear(), mesInicio, 1)
     } else {
       fechaDesde = new Date(hoy.getFullYear(), 0, 1)
+    }
+
+    const { anclaPuedeVerRango, PAYLOAD_CAP_REPORTES } = await import("@/lib/comercial/caps-ancla")
+    if (!(await anclaPuedeVerRango(ctx.auth.empresaId, fechaDesde, fechaHasta))) {
+      return NextResponse.json(PAYLOAD_CAP_REPORTES, { status: 402 })
     }
 
     // Obtener estadísticas

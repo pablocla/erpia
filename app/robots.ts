@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
+          "/f",
+          "/f/servicios",
           "/claver/",
           "/claver/claverp/",
           "/demo/",

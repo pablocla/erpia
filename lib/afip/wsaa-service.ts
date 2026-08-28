@@ -90,7 +90,7 @@ export function signTRA(
     digestAlgorithm: forge.pki.oids.sha256,
     authenticatedAttributes: [
       { type: forge.pki.oids.contentType, value: forge.pki.oids.data },
-      { type: forge.pki.oids.signingTime, value: new Date() },
+      { type: forge.pki.oids.signingTime, value: new Date() as any },
       { type: forge.pki.oids.messageDigest },
     ],
   })

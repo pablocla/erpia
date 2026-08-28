@@ -12,11 +12,12 @@ export async function checkEcommerceStockSLA() {
   const conexiones = await prisma.conexionIntegracion.findMany({
     where: {
       integracionId: { in: ["mercado_libre", "tienda_nube", "shopify"] },
-      activa: true
+      activo: true,
+      estado: "conectado",
     },
     include: {
-      empresa: true
-    }
+      empresa: true,
+    },
   })
 
   let alertasGeneradas = 0
@@ -30,8 +31,8 @@ export async function checkEcommerceStockSLA() {
         conexionId: cx.id,
         entidad: "stock",
         estado: "ok",
-        createdAt: { gte: umbralSLA }
-      }
+        createdAt: { gte: umbralSLA },
+      },
     })
 
     // Buscar si hay errores recientes (últimas 24hs)
@@ -40,31 +41,41 @@ export async function checkEcommerceStockSLA() {
         conexionId: cx.id,
         entidad: "stock",
         estado: "error",
-        createdAt: { gte: umbralSLA }
-      }
+        createdAt: { gte: umbralSLA },
+      },
     })
 
     if (!recentSyncOk || erroresRecientes > 5) {
-      // Necesita alerta. Verificamos si ya hay una tarea pendiente abierta para evitar spam
+      // Buscar usuario admin/dueño para asignar la tarea
+      const usuarioAdmin = await prisma.usuario.findFirst({
+        where: { empresaId: cx.empresaId, activo: true },
+        select: { id: true },
+      })
+
+      if (!usuarioAdmin) continue
+
+      // Verificamos si ya hay una tarea pendiente abierta para evitar spam
       const alertaExistente = await prisma.tareaPendiente.findFirst({
         where: {
           empresaId: cx.empresaId,
           titulo: { contains: `Alerta SLA Sync: ${cx.integracionId}` },
-          estado: { not: "completada" }
-        }
+          completada: false,
+        },
       })
 
       if (!alertaExistente) {
         await prisma.tareaPendiente.create({
           data: {
             empresaId: cx.empresaId,
+            usuarioId: usuarioAdmin.id,
             titulo: `Alerta SLA Sync: ${cx.integracionId}`,
-            descripcion: !recentSyncOk 
+            descripcion: !recentSyncOk
               ? `Hace más de ${horasSLA} horas que no hay un sync de stock exitoso con ${cx.integracionId}.`
               : `Se detectaron ${erroresRecientes} errores al sincronizar stock con ${cx.integracionId} en las últimas 24 horas.`,
-            estado: "pendiente",
-            prioridad: 1 // Alta prioridad
-          }
+            completada: false,
+            prioridad: "alta",
+            origen: "system",
+          },
         })
         alertasGeneradas++
       }

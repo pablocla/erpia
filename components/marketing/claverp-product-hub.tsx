@@ -198,8 +198,8 @@ export function ClavERPProductHub() {
                   className="h-12 bg-blue-600 px-8 text-base font-semibold shadow-lg shadow-blue-600/25 hover:bg-blue-500"
                   asChild
                 >
-                  <Link href="/login/register?trial=14">
-                    Probar gratis 14 días
+                  <Link href="/login/register">
+                    Empezar gratis sin tarjeta
                     <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
                   </Link>
                 </Button>
@@ -755,7 +755,7 @@ export function ClavERPProductHub() {
             Empezá con el módulo que más te duele hoy
           </h2>
           <p className="mt-4 text-slate-400">
-            Registrate, probá 14 días y activá POS, fiado o stock cuando estés listo.
+            Registrate sin tarjeta. Tu caja, stock y fiado quedan gratis para siempre.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
@@ -763,7 +763,7 @@ export function ClavERPProductHub() {
               className="h-12 bg-blue-600 px-8 font-semibold hover:bg-blue-500"
               asChild
             >
-              <Link href="/login/register?trial=14">Crear cuenta gratis</Link>
+              <Link href="/login/register">Crear cuenta gratis</Link>
             </Button>
             <Button
               size="lg"

@@ -23,9 +23,18 @@ describe("ofertas-comerciales", () => {
     )
   })
 
-  it("sugiere SKUs monetizados adicionales al enganche", () => {
+  it("alta del ancla no activa SKUs de pago en trial", () => {
+    expect(OFERTA_FIADO_ANCLA.autoActivarMonetizados).toBe(false)
+    expect(OFERTA_FIADO_ANCLA.trialDias).toBe(0)
     const extra = skusAdicionalesOferta(OFERTA_FIADO_ANCLA, ["pos.fiado_barrio"])
-    expect(extra).toEqual(["core.claver"])
+    expect(extra).toEqual([])
+  })
+
+  it("resuelve oficios-ancla", () => {
+    const oferta = resolveOferta("niche.oficios", "niche")
+    expect(oferta.id).toBe("oficios-ancla")
+    expect(oferta.anclaGratis).toContain("niche.oficios")
+    expect(oferta.autoActivarMonetizados).toBe(false)
   })
 
   it("calcula precio del pack monetizado", () => {

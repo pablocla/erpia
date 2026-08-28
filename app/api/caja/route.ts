@@ -65,16 +65,9 @@ export async function POST(request: NextRequest) {
     const { saldoInicial, observaciones } = validacion.data
     const empresaId = ctx.auth.empresaId
 
-    // Verificar si hay una caja abierta para esta empresa
-    const cajaAbierta = await prisma.caja.findFirst({
-      where: { empresaId, estado: "abierta" },
-    })
-
-    if (cajaAbierta) {
-      return NextResponse.json(
-        { error: "Ya existe una caja abierta. Debe cerrarla antes de abrir una nueva." },
-        { status: 409 }
-      )
+    const { anclaPuedeAbrirOtraCaja, PAYLOAD_CAP_CAJA } = await import("@/lib/comercial/caps-ancla")
+    if (!(await anclaPuedeAbrirOtraCaja(empresaId))) {
+      return NextResponse.json(PAYLOAD_CAP_CAJA, { status: 402 })
     }
 
     const caja = await prisma.caja.create({

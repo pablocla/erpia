@@ -295,7 +295,7 @@ export default function FumigacionPage() {
       estado: p.estado as string,
       tecnicoAsignado: p.tecnicoAsignado || "",
       fechaPrometida: p.fechaPrometida?.substring(0, 10) || hoyIso(),
-      descripcion: p.descripcion || "",
+      descripcion: (p as any).descripcion || "",
       observacionesVisita: (meta.observacionesVisita as string) || "",
       montoCobrado: (meta.montoCobrado as string) || "",
       estadoPago: (meta.estadoPago as string) || "PENDIENTE_PAGO",

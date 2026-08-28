@@ -17,10 +17,26 @@ export const AFILIADO_RATES = {
   precioLicenciaCelulaArs: 500000,
   /** Cell license USD para mercado yankee */
   precioLicenciaCelulaUsd: 799,
-  /** Meta meritocrática: 20 comercios activos otorgados por mérito sin pagar canon */
+  /**
+   * Meta mérito célula: 20 comercios que PAGUEN extra (no 20 fiados $0).
+   * Consenso Grok+Claude §G E9.
+   */
   clientesRequeridosParaCelulaGratis: 20,
   skuLicenciaCelula: "partner.licencia_celula",
+  /** Reembolso del extra anula comisión si está dentro de esta ventana. Claude §F E14. */
+  clawbackDias: 30,
+  /** Crédito interno primero; cash recién después de esta antigüedad. Claude §F E13. */
+  retiroCashDesdeDias: 60,
 } as const
+
+export function dentroDeClawback(fechaPago: Date, now = new Date()): boolean {
+  const ms = AFILIADO_RATES.clawbackDias * 86_400_000
+  return now.getTime() - fechaPago.getTime() <= ms
+}
+
+export function corteRetiroCash(now = new Date()): Date {
+  return new Date(now.getTime() - AFILIADO_RATES.retiroCashDesdeDias * 86_400_000)
+}
 
 export type PartnerTipo = "dev" | "seller" | "implementer" | "hybrid"
 

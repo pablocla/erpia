@@ -75,13 +75,10 @@ export function PosVentasHoyDrawer({
   }, [authHeaders])
 
   useEffect(() => {
+    if (!open) return
     void cargar()
     const interval = setInterval(() => void cargar(), 60_000)
     return () => clearInterval(interval)
-  }, [cargar])
-
-  useEffect(() => {
-    if (open) void cargar()
   }, [open, cargar])
 
   const fmt = (n: number) =>

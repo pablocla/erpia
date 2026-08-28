@@ -517,7 +517,7 @@ export class FacturaService {
       let modoOffline = false
 
       try {
-        const resultado = await this.soapClient.emitirComprobante(auth, empresa.cuit, finalPuntoVenta, comprobante, empresa.id)
+        const resultado: any = await this.soapClient.emitirComprobante(auth, empresa.cuit, finalPuntoVenta, comprobante, empresa.id)
 
         // 9. Verificar respuesta AFIP
         if (resultado.FeDetResp?.FECAEDetResponse?.Resultado !== "A") {

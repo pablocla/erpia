@@ -80,16 +80,14 @@ export async function procesarPedidoRappi(
     data: {
       empresaId,
       clienteId: cliente.id,
-      tipo: "ticket",
-      numeroCompleto: `RAPPI-${payload.orderId}`,
+      tipo: "B",
+      tipoCbte: 6,
+      numero: 1,
       puntoVenta: 98, // Punto de venta dedicado a Rappi
       subtotal: payload.subtotal,
-      descuento: payload.discount,
+      iva: payload.subtotal - payload.subtotal / 1.21,
       total: payload.total,
-      netoGrabado: payload.subtotal / 1.21,
-      ivaTotal: payload.subtotal - payload.subtotal / 1.21,
       estado: "completada",
-      tipoComprobante: "ticket",
       observaciones: `Rappi Order #${payload.orderId}. Pago: ${payload.paymentMethod}. Dir: ${payload.customer.address || "Mostrador"}. Notas: ${payload.customer.notes || "Sin notas"}`,
       lineas: {
         create: lineas.map((l) => ({
@@ -97,9 +95,9 @@ export async function procesarPedidoRappi(
           cantidad: l.cantidad,
           precioUnitario: l.precioUnitario,
           subtotal: l.subtotal,
-          alicuotaIva: 21,
-          montoIva: l.subtotal - l.subtotal / 1.21,
-          neto: l.subtotal / 1.21,
+          porcentajeIva: 21,
+          iva: l.subtotal - l.subtotal / 1.21,
+          total: l.subtotal,
         })),
       },
     },

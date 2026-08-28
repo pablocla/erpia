@@ -27,6 +27,9 @@ export interface ProductShellTab {
   href: string
   icon: LucideIcon
   label: string
+  /** Visible en ancla: 🔒 Extra. Click abre paywall, no 404. */
+  badge?: string
+  disparo?: "whatsapp_outbound" | "factura_afip" | "sena_link_mp"
 }
 
 export type ProductKpiFormat = "currency" | "number" | "text"
@@ -51,12 +54,11 @@ export interface ProductShellConfig {
 const DEFAULT_MORE_TAB: ProductShellTab = { href: "#more", icon: MoreHorizontal, label: "Más" }
 
 const MODO_LITE_DEFAULT_SLUG: Partial<Record<ModoLite, SubSaasSlug>> = {
-  oficios: "oficios",
+  servicios: "oficios",
   fiado: "fiado",
   cobranza: "cobra",
   pos: "pos",
   niche: "turnos",
-  servicios: "turnos",
   fumigacion: "fumigacion",
   prestamista: "prestamista",
 }
@@ -71,6 +73,8 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       { href: "/dashboard/oficios/nuevo", icon: Plus, label: "Presupuesto" },
       { href: "/dashboard/oficios/cuadrilla", icon: Users, label: "Cuadrilla" },
       { href: "/dashboard/afiliados", icon: Gift, label: "Mi Red" },
+      { href: "/dashboard/oficios", icon: MessageSquare, label: "WhatsApp", badge: "Extra", disparo: "whatsapp_outbound" },
+      { href: "/dashboard/configuracion?seccion=afip", icon: FileText, label: "Factura ARCA", badge: "Extra", disparo: "factura_afip" },
       DEFAULT_MORE_TAB,
     ],
     kpis: [
@@ -91,6 +95,7 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       { href: "/dashboard/productos", icon: Package, label: "Productos" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       { href: "/dashboard/fiado", icon: BookOpen, label: "Fiado" },
+      { href: "/dashboard/configuracion?seccion=afip", icon: FileText, label: "Factura ARCA", badge: "Extra", disparo: "factura_afip" },
       DEFAULT_MORE_TAB,
     ],
     kpis: [
@@ -110,6 +115,8 @@ export const PRODUCT_SHELLS: Record<SubSaasSlug, ProductShellConfig> = {
       { href: "/dashboard/pos", icon: ShoppingBag, label: "Mostrador" },
       { href: "/dashboard/clientes", icon: Users, label: "Clientes" },
       { href: "/dashboard/configuracion", icon: Settings, label: "Ajustes" },
+      { href: "/dashboard/fiado", icon: MessageSquare, label: "WhatsApp cobro", badge: "Extra", disparo: "whatsapp_outbound" },
+      { href: "/dashboard/configuracion?seccion=afip", icon: FileText, label: "Factura ARCA", badge: "Extra", disparo: "factura_afip" },
       DEFAULT_MORE_TAB,
     ],
     kpis: [

@@ -60,7 +60,11 @@ describe("go-to-market-vitrine", () => {
       const href = activarRegisterHref(slug)
       expect(href).toContain("/login/register?")
       expect(href).toContain(`activar=${slug}`)
-      expect(href).toContain("trial=14")
+      if (slug === "fiado" || slug === "oficios") {
+        expect(href).not.toContain("trial=14")
+      } else {
+        expect(href).toContain("trial=14")
+      }
       expect(PRODUCT_ENTRIES[slug].ctaPrimaryActivar).toBe(slug)
     }
   })

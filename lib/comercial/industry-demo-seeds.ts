@@ -1454,27 +1454,29 @@ async function seedTallerMecanicoOTDemo(empresaId: number) {
 async function seedOficiosDemo(empresaId: number) {
   // 1. Crear operarios de cuadrilla
   const op1 = await prisma.oficioOperario.upsert({
-    where: { id: 1 },
+    where: { id: "demo-op-1" },
     update: {},
     create: {
+      id: "demo-op-1",
       empresaId,
       nombre: "Carlos Gómez",
       telefono: "11-4567-8901",
-      especialidad: "Oficial Gasista Matriculado",
-      costoJornal: 45000,
+      rol: "Oficial Gasista Matriculado",
+      valorJornal: 45000,
       activo: true,
     },
   }).catch(() => null)
 
   const op2 = await prisma.oficioOperario.upsert({
-    where: { id: 2 },
+    where: { id: "demo-op-2" },
     update: {},
     create: {
+      id: "demo-op-2",
       empresaId,
       nombre: "Mateo Rossi",
       telefono: "11-9876-5432",
-      especialidad: "Ayudante Albañil",
-      costoJornal: 30000,
+      rol: "Ayudante Albañil",
+      valorJornal: 30000,
       activo: true,
     },
   }).catch(() => null)
@@ -1514,7 +1516,7 @@ async function seedOficiosDemo(empresaId: number) {
         estado: "PRESUPUESTADO",
         tokenPublico: "demo-obra-plomeria",
         porcentajeSena: 30,
-        montoEstimado: 450000,
+        montoAcordado: 450000,
         opcionesPresupuesto: [
           {
             nombre: "Opción Básica (Económica)",
@@ -1562,10 +1564,12 @@ async function seedOficiosDemo(empresaId: number) {
         montoAcordado: 380000,
         porcentajeSena: 40,
         senaPagada: true,
-        gastosMateriales: [
-          { proveedor: "Electricidad Central", monto: 85000, comprobante: "FAC-B-0004-9876" },
-          { proveedor: "Ferretería La Tuerca", monto: 14500, comprobante: "TICKET-4521" },
-        ],
+        gastosMateriales: {
+          create: [
+            { proveedor: "Electricidad Central", monto: 85000 },
+            { proveedor: "Ferretería La Tuerca", monto: 14500 },
+          ],
+        },
         fotosAntes: [
           "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&q=80",
         ],

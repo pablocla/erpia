@@ -80,17 +80,17 @@ export default function DemoIndustryDeepLinkPage() {
   }, [industryId])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white flex flex-col items-center justify-center px-4">
-      <div className="max-w-md w-full text-center space-y-6">
+    <div data-page="landing" className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="w-full max-w-md space-y-6 text-center">
         <Link
           href="/demo"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Elegir otro rubro
         </Link>
 
-        <BrandLogo size="md" theme="dark" variant="group-full" showByClaver={false} />
+        <BrandLogo size="md" theme="light" variant="group-full" showByClaver={false} />
 
         {template ? (
           <div>
@@ -98,15 +98,15 @@ export default function DemoIndustryDeepLinkPage() {
             <h1 className="mt-2 font-[var(--font-fraunces)] text-2xl font-semibold">
               {template.label}
             </h1>
-            <p className="mt-2 text-slate-400">{template.tagline}</p>
+            <p className="mt-2 text-muted-foreground">{template.tagline}</p>
           </div>
         ) : null}
 
         {launching && !error && (
-          <div className="flex flex-col items-center gap-4 text-slate-300">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
-            <p className="font-medium text-white">Armando tu demo…</p>
-            <p className="text-sm text-slate-400">
+          <div className="flex flex-col items-center gap-4 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--landing-accent)]" />
+            <p className="font-medium text-foreground">Armando tu demo…</p>
+            <p className="text-sm">
               Suele demorar entre 10 y 40 segundos la primera vez.
             </p>
             <ol className="mt-2 w-full space-y-2 text-left text-sm">
@@ -118,18 +118,18 @@ export default function DemoIndustryDeepLinkPage() {
                     key={label}
                     className={`flex items-center gap-2 rounded-lg border px-3 py-2 ${
                       active
-                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
+                        ? "border-[var(--landing-accent)]/30 bg-[var(--landing-badge-free)] text-foreground"
                         : done
-                          ? "border-white/10 bg-white/5 text-slate-300"
-                          : "border-transparent text-slate-500"
+                          ? "border-[var(--border)] bg-[var(--card)] text-foreground"
+                          : "border-transparent text-muted-foreground"
                     }`}
                   >
                     {done ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--landing-accent)]" />
                     ) : active ? (
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                     ) : (
-                      <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-600 text-[10px]">
+                      <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-[10px]">
                         {i + 1}
                       </span>
                     )}
@@ -148,7 +148,7 @@ export default function DemoIndustryDeepLinkPage() {
             </Alert>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button
-                className="bg-emerald-600 hover:bg-emerald-500"
+                className="bg-[var(--landing-cta)] text-[var(--landing-cta-fg)] hover:bg-[var(--landing-cta-hover)]"
                 onClick={() => {
                   setError("")
                   setLaunching(true)
@@ -158,7 +158,7 @@ export default function DemoIndustryDeepLinkPage() {
               >
                 Reintentar
               </Button>
-              <Button variant="outline" className="border-white/20" asChild>
+              <Button variant="outline" asChild>
                 <Link href="/demo">Volver al sensor</Link>
               </Button>
             </div>

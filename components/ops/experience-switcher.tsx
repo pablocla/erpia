@@ -36,10 +36,11 @@ type ExperienceSwitcherProps = {
 
 export function ExperienceSwitcher({ forceShow = false, className }: ExperienceSwitcherProps) {
   const user = useAuthStore((s) => s.user)
+  const isHydrated = useAuthStore((s) => s.isHydrated)
   const { data: analystData } = useAuthFetch<{ isAnalyst?: boolean }>("/api/claver/analista/status")
   const isAnalyst = Boolean(analystData?.isAnalyst)
-  const canRoles = forceShow || isAnalyst || canManageUsers(user?.rol)
-  const canRubros = forceShow || isAnalyst
+  const canRoles = Boolean(forceShow || isAnalyst || (isHydrated && user?.rol && canManageUsers(user.rol)))
+  const canRubros = Boolean(forceShow || isAnalyst)
 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)

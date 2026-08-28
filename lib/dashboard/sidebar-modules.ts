@@ -63,7 +63,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     moduloKey: "ventas",
     items: [
       { href: "/dashboard/pos", icon: Store, label: "Punto de Venta (POS)", badge: "Caja" },
-      { href: "/dashboard/ventas", icon: Receipt, label: "Facturación AFIP" },
+      { href: "/dashboard/ventas", icon: Receipt, label: "Facturación AFIP", badge: "Extra" },
       { href: "/dashboard/facturas", icon: FileText, label: "Historial de Facturas" },
       { href: "/dashboard/notas-credito", icon: FileCheck, label: "Notas de Crédito / Débito" },
       { href: "/dashboard/ventas/presupuestos", icon: FilePlus, label: "Presupuestos Comerciales" },
@@ -80,7 +80,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     items: [
       { href: "/dashboard/caja", icon: Wallet, label: "Caja y Arqueo" },
       { href: "/dashboard/banco", icon: Landmark, label: "Bancos & Cuentas" },
-      { href: "/dashboard/mercadopago", icon: CreditCard, label: "Mercado Pago" },
+      { href: "/dashboard/mercadopago", icon: CreditCard, label: "Mercado Pago", badge: "Extra" },
       { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Cuentas a Cobrar (CxC)" },
       { href: "/dashboard/cuentas-pagar", icon: FileText, label: "Cuentas a Pagar (CxP)" },
       { href: "/dashboard/compras", icon: ShoppingCart, label: "Facturas de Compra" },
@@ -91,9 +91,9 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     label: "Impuestos & AFIP",
     color: "text-red-500",
     items: [
-      { href: "/dashboard/impuestos", icon: FileText, label: "IVA & Libros Fiscales" },
-      { href: "/dashboard/impuestos/padron", icon: Database, label: "Padrón ARBA / AGIP" },
-      { href: "/dashboard/impuestos/iibb", icon: FileSpreadsheet, label: "Convenio SIFERE CM03" },
+      { href: "/dashboard/impuestos", icon: FileText, label: "IVA & Libros Fiscales", badge: "Extra" },
+      { href: "/dashboard/impuestos/padron", icon: Database, label: "Padrón ARBA / AGIP", badge: "Extra" },
+      { href: "/dashboard/impuestos/iibb", icon: FileSpreadsheet, label: "Convenio SIFERE CM03", badge: "Extra" },
     ],
   },
   {

@@ -6,7 +6,7 @@ export async function POST(
   request: NextRequest,
   props: { params: Promise<{ id: string }> },
 ) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
   const params = await props.params
 

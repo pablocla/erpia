@@ -98,7 +98,15 @@ export function resolveActivarIntent(activar: string | null | undefined): Activa
 
 export function activarRegisterHref(activar: string | null | undefined): string {
   if (!activar?.trim()) return "/login/register?trial=14"
-  return `/login/register?activar=${encodeURIComponent(activar.trim())}&trial=14`
+  const raw = activar.trim()
+  const intent = resolveActivarIntent(raw)
+  const ancla =
+    intent?.engancheId === "pos.fiado_barrio" ||
+    intent?.modoLite === "fiado" ||
+    intent?.engancheId === "niche.oficios"
+  const params = new URLSearchParams({ activar: raw })
+  if (!ancla) params.set("trial", "14")
+  return `/login/register?${params.toString()}`
 }
 
 /** Copy de trial/registro según oferta comercial */
@@ -109,7 +117,12 @@ export function mensajeActivarTrial(activar: string | null | undefined, market: 
   if (!intent) return isUs ? "Start your 14-day free trial" : "Trial 14 días gratis"
   
   if (intent.engancheId === "pos.fiado_barrio" || intent.modoLite === "fiado") {
-    return isUs ? "Free house tabs · no card" : "Libreta gratis + POS 14 días de prueba"
+    return isUs ? "Free house tabs · no card, no trial clock" : "Libreta y caja, gratis para siempre. Sin tarjeta."
+  }
+  if (intent.engancheId === "niche.oficios" || activar === "oficios") {
+    return isUs
+      ? "Quotes on your phone. No card to start."
+      : "Presupuestos en el celu. Sin tarjeta para arrancar. La seña por link se activa cuando cobrás."
   }
   if (intent.modoLite === "pos") {
     return isUs ? "14-day free POS trial" : "POS 14 días de prueba — fiado cuando lo necesités"

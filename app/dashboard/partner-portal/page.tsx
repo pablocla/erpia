@@ -63,6 +63,11 @@ interface PartnerMeResponse {
     clientesPagos: number
     elegible: boolean
   }
+  kpis?: {
+    referidosTotal: number
+    referidosPagos: number
+    referidosAncla: number
+  }
 }
 
 const fmt = (n: number) =>
@@ -226,8 +231,8 @@ export default function PartnerPortalPage() {
         <CardHeader>
           <CardTitle className="text-lg">Tu link de referidos</CardTitle>
           <CardDescription>
-            Quien se registre con este link queda atado a tu comisión (30% sellers / 20% implementers
-            en N1; 5% N2).
+            QR de calle: claver.com.ar/f?ref=TUCODIGO. Comisión solo si el comercio paga un extra
+            (Cobrá, AFIP, 2ª caja), no por la libreta gratis.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -290,7 +295,7 @@ export default function PartnerPortalPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Contador gratis: {data.contadorGratis?.minClientes ?? 3} referidos con suscripción paga.
-            Retiro cash: un analista Claver liquida por transferencia (no es automático).
+            Retiro cash: comisiones con 60 días o más; un analista liquida (no es automático). Clawback 30 días si hay reembolso.
           </p>
         </CardContent>
       </Card>
@@ -305,31 +310,48 @@ export default function PartnerPortalPage() {
 
       {/* Catálogo de Premios & Viajes de Incentivo */}
       <PartnerRewardsCatalog
-        activeReferralsCount={data.empresas.length}
+        activeReferralsCount={data.kpis?.referidosPagos ?? data.contadorGratis?.clientesPagos ?? 0}
         currentCommissionsMonthly={data.comisiones.reduce((acc, c) => acc + c.monto, 0)}
       />
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Empresas referidas ({data.empresas.length})</CardTitle>
+            <CardTitle className="text-base">
+              Comercios que pagan ({data.kpis?.referidosPagos ?? 0}) · ancla $0 ({data.kpis?.referidosAncla ?? 0})
+            </CardTitle>
+            <CardDescription>
+              El número que importa es quién paga extra. Fiado gratis todavía no te genera comisión: ofrecele
+              Cobrá.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.empresas.length === 0 && (
               <p className="text-sm text-muted-foreground">Todavía no hay altas con tu link.</p>
             )}
-            {data.empresas.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
-              >
-                <div>
-                  <p className="font-medium">{e.nombre}</p>
-                  <p className="text-xs text-muted-foreground">{e.email ?? "—"}</p>
+            {data.empresas.map((e) => {
+              const paga =
+                e.mpSubscriptionStatus === "authorized" ||
+                e.mpSubscriptionStatus === "authorized_credito_partner"
+              return (
+                <div
+                  key={e.id}
+                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm"
+                >
+                  <div>
+                    <p className="font-medium">{e.nombre}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {paga
+                        ? "Te genera comisión"
+                        : "Fiado gratis — todavía no te genera. Ofrecele Cobrá."}
+                    </p>
+                  </div>
+                  <Badge variant={paga ? "default" : "outline"}>
+                    {paga ? "Paga extra" : "Ancla $0"}
+                  </Badge>
                 </div>
-                <Badge variant="outline">{e.mpSubscriptionStatus ?? "trial"}</Badge>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 

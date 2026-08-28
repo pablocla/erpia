@@ -3,13 +3,14 @@
  * Fuente de verdad para landing, docs Clavernet y portal.
  */
 
-import { AFILIADO_RATES } from "@/lib/partners/affiliate-config"
+import { AFILIADO_RATES, normalizeReferralCode } from "@/lib/partners/affiliate-config"
 
 export const PARTNER_PROGRAM = {
   name: "Red de Partners Claver",
-  tagline: "Construí tu propia red de ingresos pasivos recurrentes con el ERP N°1 de Argentina.",
+  heroBadge: "El gratis es tu gancho. La comisión es del extra.",
+  tagline: "Dejá la libreta gratis. Cobrás cuando el comercio activa Cobrá, AFIP o una 2ª caja.",
   oneLiner:
-    "Ganá comisiones todos los meses vendiendo el software que los comercios y distribuidoras necesitan para no perder plata. Si tus referidos crecen, vos cobrás más.",
+    "Entrás sin pagar. Te llevás el 100% del primer mes de cada extra que el comercio pague, y el 30% mientras siga pagando. La ancla $0 no genera comisión: es el gancho que nadie más puede regalar.",
   maxLevels: 2,
   rates: {
     sellerN1: Math.round(AFILIADO_RATES.sellerNivel1 * 100),
@@ -20,51 +21,52 @@ export const PARTNER_PROGRAM = {
   roles: [
     {
       id: "vendedor_campo",
-      title: "🔥 Vendedor de Campo (Directo en Calle)",
-      forWho: "Pibes de 18 a 30 años, comerciales de calle y vendedores independientes.",
-      earns: "100% del primer cobro por Mercado Pago en la mano + 30% recurrente de por vida por cada comercio que sumes (Nivel 1). Entrás 100% GRATIS bajo la línea directa de Claver.",
-      n2: "Tu foco es patear la calle, cerrar negocios (kioscos, almacenes, talleres) y cobrar al instante. Sin jefes ni inversión inicial.",
+      title: "Vendedor de campo",
+      forWho: "Comerciales de calle, independientes, gente con llegada a kioscos y almacenes.",
+      earns:
+        "100% del primer mes de cada extra pago (Cobrá, AFIP, 2ª caja) + 30% recurrente de esos extras. La libreta gratis no paga comisión: es tu gancho. Entrás $0.",
+      n2: "Tu laburo es dejar el QR en el local, que anoten fiados, y volver cuando duela el cobro. Sin jefes ni inversión.",
     },
     {
       id: "coordinador_celula",
-      title: "👑 Coordinador de Célula (Líder de Equipo)",
-      forWho: "Vendedores estrella con experiencia, dueños de agencias o líderes de equipo.",
-      earns: "5% pasivo de todo lo que vendan los vendedores de tu célula (Nivel 2) + tus comisiones directas.",
-      n2: "No podés ser coordinador 'cómodo': Para armar tu Célula tenés que demostrar mérito (20 comercios activos vendidos por vos) o abonar el Canon de Franquicia ($500.000 ARS). Tu trabajo es capacitar, bancar a tu equipo y hacer crecer la empresa de verdad.",
+      title: "Coordinador de célula",
+      forWho: "Quien arma equipo: agencia, líder de vendedores, implementador con gente a cargo.",
+      earns: "5% de lo que paguen los comercios de tu red (N2) + tus comisiones directas de extra.",
+      n2: "Célula = mérito (20 comercios que paguen extra) o canon $500.000 ARS. 20 fiados gratis no cuentan.",
     },
   ],
   rules: [
-    "Comisión real sobre suscripciones pagadas. Se liquida mes a mes cuando el cliente abona.",
-    "Estructura transparente de hasta 2 niveles. Cobrás por tu venta y por las ventas de tu red de invitados.",
-    "El cliente adquiere un software real de alta demanda (caja, stock, AFIP, Libreta Fiado).",
-    "Sin costo de ingreso. Convertirse en partner de Claver es gratis y se activa en 10 segundos.",
-    "Billetera de comisiones: primero podés pagar tu propia suscripción Claver con el crédito (sin Mercado Pago). También pedís retiro cash (liquidación manual).",
+    "Comisión solo cuando el comercio paga un extra o un setup. Fiado $0 = $0 para vos.",
+    "Hasta 2 niveles. N1 sobre el extra del comercio; N2 sobre lo que cierre quien vos invitaste.",
+    "Bounty: 100% del primer mes de cada extra nuevo. Después, 30% seller / 20% implementer mientras pague.",
+    "Sin membresía ni stock. Ser partner es gratis.",
+    "Crédito interno 60 días (pagás tu Claver sin MP). Después, retiro cash manual. Clawback 30 días si hay reembolso.",
   ],
   notThis: [
-    "No es una pirámide de humo: acá hay un producto real con valor y clientes reales.",
-    "No te cobramos membresía para ingresar, ni te obligamos a comprar stock inicial.",
-    "No dependés de promesas: si tu red vende y usa el sistema, vos cobrás plata de verdad.",
+    "No es pirámide: no se cobra por reclutar, se cobra si el comercio paga un extra real.",
+    "No hay $50.000 por pegar un QR. Ese número, si aparece, es setup de quien implementa AFIP/hardware.",
+    "No prometemos comisión sobre la libreta gratis. El gancho es tuyo; la plata, del extra.",
   ],
   howItWorks: [
     {
       step: 1,
       title: "Activá tu código",
-      body: "Entrás al portal y obtenés tu link de referidos único de forma inmediata.",
+      body: "Entrá al portal y copiá tu link: claver.com.ar/f?ref=TUCODIGO",
     },
     {
       step: 2,
-      title: "Armá tu red",
-      body: "Compartí tu link con comercios y sumá sub-partners bajo tu ala para ganar comisiones pasivas N2.",
+      title: "Dejá el gancho",
+      body: "Calco, QR o WhatsApp. El comercio arranca la libreta (y la caja) sin tarjeta.",
     },
     {
       step: 3,
-      title: "El cliente paga",
-      body: "Los comercios tienen 14 días de prueba. Cuando pagan su primera suscripción, tu comisión se acredita.",
+      title: "Cuando duele, cobra el extra",
+      body: "Cobrá, AFIP o 2ª caja. Ahí se acredita tu comisión — no antes.",
     },
     {
       step: 4,
-      title: "Cobrás (crédito o cash)",
-      body: "Usá el saldo para pagar tu Claver al instante, o solicitá retiro cash para que un analista te liquide por transferencia.",
+      title: "Crédito, después cash",
+      body: "Los primeros 60 días el saldo paga tu Claver. Después pedís retiro. Un analista liquida.",
     },
   ],
   ctaPortal: "/dashboard/partner-portal",
@@ -79,9 +81,10 @@ export const PARTNER_PROGRAM = {
 
 export const PARTNER_PROGRAM_US = {
   name: "Claver Partner Network",
-  tagline: "Build a recurring revenue stream selling software that US SMBs actually need.",
+  heroBadge: "Free House Tab is the hook. You earn on the paid extra.",
+  tagline: "Give shops a free ledger. Earn when they turn on Collect, invoicing, or a second register.",
   oneLiner:
-    "Earn commissions every month selling tools for local businesses. The lead magnet is free House Tab. When they upgrade and pay, you get paid.",
+    "Join free. You keep 100% of month 1 on each paid extra, then 30% while they keep paying. Free House Tab does not pay commission — it is the door.",
   maxLevels: 2,
   rates: {
     sellerN1: Math.round(AFILIADO_RATES.sellerNivel1 * 100),
@@ -94,7 +97,7 @@ export const PARTNER_PROGRAM_US = {
       id: "field_seller",
       title: "🔥 Field Seller (Street Direct)",
       forWho: "Independent sales reps, field agents, and local B2B hustlers.",
-      earns: "100% of the first Stripe payment + 30% recurring for life on every business you bring in (Level 1). Joining is 100% FREE under Claver direct.",
+      earns: "100% of month 1 on each paid extra (Collect, invoicing, extra register) + 30% recurring on those extras. Free House Tab pays $0 commission — it is your hook. Joining is free.",
       n2: "Your focus is hitting the streets, closing local shops (bars, salons, trades, gyms) and getting paid. No bosses, no upfront inventory.",
     },
     {
@@ -102,15 +105,15 @@ export const PARTNER_PROGRAM_US = {
       title: "👑 Cell Lead (Team Builder)",
       forWho: "Experienced sales pros, agency owners, or team builders.",
       earns: "5% passive on everything your cell (Level 2) sells + your direct commissions.",
-      n2: "No 'armchair' leads: To build a Cell, you must prove merit (20 active paid accounts closed by you) or purchase the Cell License ($799 USD). Your job is to train and back up your team.",
+      n2: "Cell = merit (20 shops that PAY an extra) or $799 cell license. Twenty free ledgers do not count.",
     },
   ],
   rules: [
-    "Real commission on paid subscriptions. Settled month-to-month as the client pays via Stripe.",
-    "Transparent 2-level structure. You earn on your sales and your invitees' sales.",
-    "The client buys a real software product (House Tab, Collect, Confirm).",
-    "Zero entry cost. Becoming a Claver partner is free and takes 10 seconds.",
-    "Payouts: Use your balance to pay your own Claver bill, or request a USD bank transfer (manual payout v1).",
+    "Commission only when the shop pays an extra or a setup fee. Free House Tab = $0 for you.",
+    "Two levels max. L1 on the shop extra; L2 on extras closed by partners you invited.",
+    "Bounty: 100% of month 1 on each new extra. Then 30% seller / 20% implementer while they pay.",
+    "No membership, no inventory. Joining is free.",
+    "Internal credit for 60 days (pay your own Claver). Then manual cash-out. 30-day clawback on refunds.",
   ],
   notThis: [
     "Not a pyramid scheme: this is a real product with real value and real customers.",
@@ -121,7 +124,7 @@ export const PARTNER_PROGRAM_US = {
     {
       step: 1,
       title: "Activate your code",
-      body: "Log into the portal and get your unique referral link instantly.",
+      body: "Open the portal and copy your street link: /f?ref=YOURCODE",
     },
     {
       step: 2,
@@ -130,8 +133,8 @@ export const PARTNER_PROGRAM_US = {
     },
     {
       step: 3,
-      title: "The client pays",
-      body: "Shops get a 14-day trial. When they pay their first subscription via Stripe, your commission is credited.",
+      title: "They pay the extra",
+      body: "House Tab starts free. Commission credits when they pay Collect, invoicing, or another extra — not before.",
     },
     {
       step: 4,
@@ -149,20 +152,26 @@ export const PARTNER_PROGRAM_US = {
   },
 } as const
 
+function appBaseUrl(baseUrl?: string): string {
+  return (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://claver.com.ar").replace(/\/$/, "")
+}
+
+/** QR de calle y link del portal: landing `/f`, no el formulario de alta. */
+export function buildReferralStreetUrl(code: string, opts?: { baseUrl?: string }): string {
+  const params = new URLSearchParams({ ref: normalizeReferralCode(code) })
+  return `${appBaseUrl(opts?.baseUrl)}/f?${params.toString()}`
+}
+
 export function buildReferralRegisterUrl(
   code: string,
   opts?: { baseUrl?: string; activar?: string; market?: string },
 ): string {
-  const base = (opts?.baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://claver.com.ar").replace(
-    /\/$/,
-    "",
-  )
   const isUs = opts?.market === "us"
-  const defaultActivar = isUs ? "house-tab" : "fiado"
+  const defaultActivar = isUs ? "house-tab" : "pos.fiado_barrio"
 
-  const params = new URLSearchParams({ ref: code })
+  const params = new URLSearchParams({ ref: normalizeReferralCode(code) })
   params.set("activar", opts?.activar ?? defaultActivar)
   if (isUs) params.set("market", "us")
-  
-  return `${base}/login/register?${params.toString()}`
+
+  return `${appBaseUrl(opts?.baseUrl)}/login/register?${params.toString()}`
 }

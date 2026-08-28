@@ -73,7 +73,7 @@ export async function sincronizarStockTN(empresaId: number) {
       id: true, 
       codigo: true, 
       stock: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["TN", "TIENDANUBE"] } } }
       }
     },
@@ -88,7 +88,7 @@ export async function sincronizarStockTN(empresaId: number) {
     if (!mapping) continue
 
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       await tnFetch(empresaId, `/products/${mapping.productId}/variants/${mapping.variantId}`, {
@@ -268,7 +268,7 @@ export async function publicarProductoMasivoTN(empresaId: number, productosIds: 
       precioVenta: true, 
       stock: true, 
       imagenUrl: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["TN", "TIENDANUBE"] } } }
       }
     }
@@ -279,7 +279,7 @@ export async function publicarProductoMasivoTN(empresaId: number, productosIds: 
 
   for (const prod of productos) {
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       const tnProduct = {

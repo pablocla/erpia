@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>CUIT / DNI:</Text>
-              <Text style={styles.value}>{ot.cliente.numeroDocumento || "N/A"}</Text>
+              <Text style={styles.value}>{ot.cliente.cuit || (ot.cliente as any).numeroDocumento || "N/A"}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Dirección:</Text>
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Técnico Asignado:</Text>
-              <Text style={styles.value}>{ot.usuarioAsignado || "No especificado"}</Text>
+              <Text style={styles.value}>{(ot as any).usuarioAsignado || "No especificado"}</Text>
             </View>
           </View>
 

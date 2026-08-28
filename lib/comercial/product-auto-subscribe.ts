@@ -114,6 +114,21 @@ export function resolveAutoSubscribe(
     }
   }
 
+  const altaAncla =
+    (context === "activar_intent" || context === "register") &&
+    oferta.autoActivarMonetizados === false
+  if (altaAncla) {
+    return {
+      sku,
+      mode: "auto_paid",
+      canAutoActivate: false,
+      reason: "Extra de pago — no se activa en el alta del ancla; paywall / Mi plan",
+      owner: "cliente",
+      requiresPayment: true,
+      trialEligible: false,
+    }
+  }
+
   // Demo / onboarding retail: todo el enganche va automático en trial
   if (
     context === "industry_demo" ||

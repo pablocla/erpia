@@ -21,11 +21,13 @@ export default function CerradurasPage() {
   const { data: cerraduras, isLoading } = useAuthFetch<Cerradura[]>("/api/hoteleria/cerraduras")
 
   return (
-    <PageShell
-      title="Cerraduras Inteligentes"
-      subtitle="Supervisión de cerraduras IoT y vinculación de habitaciones"
-      icon={Key}
-    >
+    <PageShell>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Key className="h-6 w-6" /> Cerraduras Inteligentes
+        </h1>
+        <p className="text-muted-foreground">Supervisión de cerraduras IoT y vinculación de habitaciones</p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           <p className="text-muted-foreground p-4">Cargando cerraduras...</p>

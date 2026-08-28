@@ -151,9 +151,9 @@ export default async function SubSaasLandingPage({
       if (skin) {
         customEntry = {
           ...entry,
-          heroH1: skin.h1,
-          heroSub: skin.descripcion,
-        }
+          heroTagline: skin.h1,
+          heroDescription: skin.descripcion,
+        } as any
       }
     }
     return <CombateProductLanding app={app} entry={customEntry} />

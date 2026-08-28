@@ -222,13 +222,8 @@ export async function procesarCheckoutEcommerce(input: CheckoutInput): Promise<C
       const pesoEstimado = lineas.reduce((acc, l) => acc + l.cantidad, 0)
       const cotizaciones = await cotizarMultiCarrier({
         empresaId,
-        origen: { cp: "2000", provincia: "Santa Fe" },
-        destinatario: {
-          cp: clienteData.codigoPostal,
-          direccion: clienteData.direccion || "",
-          localidad: "",
-          provincia: ""
-        },
+        cpOrigen: "2000",
+        cpDestino: clienteData.codigoPostal,
         pesoKg: pesoEstimado,
         valorDeclarado: lineasPedido.reduce((acc, l) => acc + (l.precioUnitario * l.cantidad), 0)
       }, input.carrierElegido ? [input.carrierElegido as any] : undefined)

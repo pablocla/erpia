@@ -37,6 +37,13 @@ export async function GET(request: NextRequest) {
     const desde = fechaDesde ? new Date(fechaDesde) : new Date()
     const hasta = fechaHasta ? new Date(fechaHasta) : new Date()
 
+    if (needsDates) {
+      const { anclaPuedeVerRango, PAYLOAD_CAP_REPORTES } = await import("@/lib/comercial/caps-ancla")
+      if (!(await anclaPuedeVerRango(ctx.auth.empresaId, desde, hasta))) {
+        return NextResponse.json(PAYLOAD_CAP_REPORTES, { status: 402 })
+      }
+    }
+
     let result
 
     switch (tipo) {

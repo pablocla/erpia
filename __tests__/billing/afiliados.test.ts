@@ -8,6 +8,11 @@ describe("affiliate-config", () => {
     expect(tasaNivel2("seller")).toBe(0.05)
   })
 
+  it("clawback 30d y retiro cash 60d (consenso Claude)", () => {
+    expect(AFILIADO_RATES.clawbackDias).toBe(30)
+    expect(AFILIADO_RATES.retiroCashDesdeDias).toBe(60)
+  })
+
   it("tasas implementer 20% / 5%", () => {
     expect(tasaNivel1("implementer")).toBe(0.2)
     expect(tasaNivel2("implementer")).toBe(0.05)

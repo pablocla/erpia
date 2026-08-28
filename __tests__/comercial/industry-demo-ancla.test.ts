@@ -27,7 +27,8 @@ describe("go-live ancla + shells", () => {
     expect(ANCLA_FIADO_ALLOWLIST).toContain("/dashboard/configuracion")
     expect(isPathInAnclaFiadoAllowlist("/dashboard/fiado")).toBe(true)
     expect(isPathInAnclaFiadoAllowlist("/dashboard/configuracion")).toBe(true)
-    expect(isPathInAnclaFiadoAllowlist("/dashboard/pos")).toBe(false)
+    expect(isPathInAnclaFiadoAllowlist("/dashboard/pos")).toBe(true)
+    expect(isPathInAnclaFiadoAllowlist("/dashboard/caja")).toBe(true)
   })
 
   it("modoLite pos usa shell POS no tienda", () => {

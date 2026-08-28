@@ -48,9 +48,8 @@ async function processImportInBackground(empresaId: number, jobId: number, csvCo
         estado: "Completado",
         progreso: 100,
         resultado: {
-          filasProcesadas: filas.length,
-          propuestasAplicadas: applyResult.actualizados,
-          productosNuevos: applyResult.creados
+          propuestasAplicadas: applyResult.aplicados,
+          productosNuevos: 0
         }
       }
     })

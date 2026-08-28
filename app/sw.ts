@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker"
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist"
-import { Serwist } from "serwist"
+import { Serwist, NetworkOnly, StaleWhileRevalidate } from "serwist"
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -8,37 +8,44 @@ declare global {
   }
 }
 
-declare const self: ServiceWorkerGlobalScope
+declare const self: any
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  // Preload de navegación + cache de /dashboard rompe rutas (oficios, etc.):
+  // FetchEvent rejected. Solo el POS usa cache de páginas.
+  navigationPreload: false,
   runtimeCaching: [
     {
-      // Ignorar llamadas API a supabase, auth, etc para evitar problemas de CORS/Auth en cache
-      matcher: ({ request, url }) => {
-        if (url.pathname.startsWith("/api/auth")) return true
+      matcher: ({ request, url }: any) => {
+        if (url.pathname.startsWith("/api/")) return true
         if (url.hostname.includes("supabase.co")) return true
+        if (
+          request.mode === "navigate" &&
+          url.pathname.startsWith("/dashboard") &&
+          !url.pathname.startsWith("/dashboard/pos")
+        ) {
+          return true
+        }
         return false
       },
-      handler: "NetworkOnly",
+      handler: new NetworkOnly(),
     },
     ...defaultCache,
     {
       // Estrategia StaleWhileRevalidate para páginas principales del POS
-      matcher: ({ url }) => url.pathname.startsWith("/dashboard/pos"),
-      handler: "StaleWhileRevalidate",
-      options: {
+      matcher: ({ url }: any) => url.pathname.startsWith("/dashboard/pos"),
+      handler: new StaleWhileRevalidate({
         cacheName: "pos-pages-cache",
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 60 * 60 * 24 * 30, // 30 días
         },
-      },
+      } as any),
     },
-  ],
+  ] as any,
 })
 
 serwist.addEventListeners()

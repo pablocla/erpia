@@ -139,12 +139,12 @@ export function CombateHomeSection({
                   </CardHeader>
                   <CardContent className="flex-1">
                     <p className="text-3xl font-bold text-slate-900">
-                      {isFree ? "Gratis" : fmtPrecioArs(app.precioArs)}
+                      {isFree ? (isUs ? "Free" : "Gratis") : fmtPrecioArs(app.precioArs)}
                     </p>
                     <p className="text-sm text-slate-500">
                       {isFree
-                        ? "para siempre · sin tarjeta"
-                        : `/ mes · ${app.trialDias} días de prueba`}
+                        ? (isUs ? "forever · no card required" : "para siempre · sin tarjeta")
+                        : (isUs ? `/ mo · ${app.trialDias}-day free trial` : `/ mes · ${app.trialDias} días de prueba`)}
                     </p>
                     {app.outcomes[0] && (
                       <p className="mt-3 text-sm font-medium text-emerald-800">
@@ -163,7 +163,7 @@ export function CombateHomeSection({
                       </Link>
                     </Button>
                     <Button variant="outline" className="w-full" asChild>
-                      <Link href={subSaasLandingHref(app.slug)}>Ver detalle</Link>
+                      <Link href={subSaasLandingHref(app.slug)}>{isUs ? "View details" : "Ver detalle"}</Link>
                     </Button>
                   </CardFooter>
                 </Card>

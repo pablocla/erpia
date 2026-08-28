@@ -1,10 +1,13 @@
 # 🛡️ Matriz Canónica de Objeciones de Venta: Claver ERP & Leo Cobranza
 
+> ⚠️ **Oferta vigente de calle = ancla $0 + item shop.** Manual de objeciones: [`OBJECIONES_FREE.md`](./OBJECIONES_FREE.md) · script 2 min: [`SCRIPT_CALLE_2MIN.md`](./SCRIPT_CALLE_2MIN.md).  
+> **Este archivo es la demo larga / extra (Leo, AFIP, precio `[HUM-01]`).** No lo uses en el kiosco el día 0. El cuerpo de abajo todavía habla de Leo como héroe y de offline como si fuera hecho: **eso no se promete en el gratis.**
+
 > **Manual de Respuestas y Cierre Comercial para Vendedores**  
 > **Ticket:** `COM-02` (Matriz de Objeciones)  
 > **Asignado a:** `gemini`  
 > **Estado:** `done`  
-> **Fecha:** Julio 2026  
+> **Fecha:** Julio 2026 / Actualizado 2026-08-25  
 > **Mercado:** PyMEs, Comercios de Cercanía, Almacenes, Kioscos y Servicios en Argentina (es-AR).
 
 ---

@@ -47,6 +47,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Rol no permitido: ${rol}` }, { status: 400 })
     }
 
+    const { anclaPuedeSumarUsuario, PAYLOAD_CAP_USUARIOS } = await import("@/lib/comercial/caps-ancla")
+    if (!(await anclaPuedeSumarUsuario(ctx.auth.empresaId))) {
+      return NextResponse.json(PAYLOAD_CAP_USUARIOS, { status: 402 })
+    }
+
     // ── Google invitation ──────────────────────────────────────────────────
     if (authMethod === "google") {
       const result = await provisionGoogleUser({

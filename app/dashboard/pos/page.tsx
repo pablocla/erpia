@@ -47,16 +47,14 @@ import {
   Banknote, Smartphone, Receipt, UtensilsCrossed, Store,
   Monitor, CheckCircle2, RefreshCw, X, ScanLine, Percent,
   ArrowLeft, Wallet, User, AlertTriangle, Printer, Settings,
-  BarChart3, Lock, BookOpen, ChevronDown, ChevronUp, Ticket, Package, Scale,
+  BarChart3, Lock, Unlock, BookOpen, ChevronDown, ChevronUp, Ticket, Package, Scale,
   WifiOff, CloudUpload, Wifi,
 } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
 import { PosPendientesPanel } from "@/components/pos/pos-pendientes-panel"
-import { PosPendientesDrawer } from "@/components/pos/pos-pendientes-drawer"
-import { PosVentasHoyDrawer } from "@/components/pos/pos-ventas-hoy-drawer"
 import { PosPluBar } from "@/components/pos/pos-plu-bar"
-import { PosCartSheet } from "@/components/pos/pos-cart-sheet"
 import { PosAlertStrip, type PosAlertItem } from "@/components/pos/pos-alert-strip"
 import {
   vibrarAgregarProducto, ordenarClientesPos, labelCajaBadge, mensajeCajaBloqueada,
@@ -71,15 +69,57 @@ import {
   guardarVentaSuspendida,
   type VentaSuspendida,
 } from "@/lib/pos/ventas-suspendidas"
-import { FiscalEmissionResult, type FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
-import { FiscalTicketView } from "@/components/fiscal/fiscal-ticket-view"
-import { FiscalOutputActions } from "@/components/fiscal/fiscal-output-actions"
-import { BalanzaNumpad } from "@/components/pos/balanza-numpad"
-import { PosBarcodeCamera } from "@/components/pos/pos-barcode-camera"
-import { PosTicketTermico } from "@/components/pos/ticket-termico"
-import { PosVariantePicker } from "@/components/pos/pos-variante-picker"
-import { PosEnvasesDialog } from "@/components/pos/pos-envases-dialog"
+import type { FiscalEmissionData } from "@/components/fiscal/fiscal-emission-result"
 import { PosSkuGateButton } from "@/components/pos/pos-sku-gate-button"
+
+const PactarImplementacionArca = dynamic(
+  () => import("@/components/comercial/pactar-implementacion-arca").then((m) => m.PactarImplementacionArca),
+  { ssr: false },
+)
+const PosPendientesDrawer = dynamic(
+  () => import("@/components/pos/pos-pendientes-drawer").then((m) => m.PosPendientesDrawer),
+  { ssr: false },
+)
+const PosVentasHoyDrawer = dynamic(
+  () => import("@/components/pos/pos-ventas-hoy-drawer").then((m) => m.PosVentasHoyDrawer),
+  { ssr: false },
+)
+const PosCartSheet = dynamic(
+  () => import("@/components/pos/pos-cart-sheet").then((m) => m.PosCartSheet),
+  { ssr: false },
+)
+const FiscalEmissionResult = dynamic(
+  () => import("@/components/fiscal/fiscal-emission-result").then((m) => m.FiscalEmissionResult),
+  { ssr: false },
+)
+const FiscalTicketView = dynamic(
+  () => import("@/components/fiscal/fiscal-ticket-view").then((m) => m.FiscalTicketView),
+  { ssr: false },
+)
+const FiscalOutputActions = dynamic(
+  () => import("@/components/fiscal/fiscal-output-actions").then((m) => m.FiscalOutputActions),
+  { ssr: false },
+)
+const BalanzaNumpad = dynamic(
+  () => import("@/components/pos/balanza-numpad").then((m) => m.BalanzaNumpad),
+  { ssr: false },
+)
+const PosBarcodeCamera = dynamic(
+  () => import("@/components/pos/pos-barcode-camera").then((m) => m.PosBarcodeCamera),
+  { ssr: false },
+)
+const PosTicketTermico = dynamic(
+  () => import("@/components/pos/ticket-termico").then((m) => m.PosTicketTermico),
+  { ssr: false },
+)
+const PosVariantePicker = dynamic(
+  () => import("@/components/pos/pos-variante-picker").then((m) => m.PosVariantePicker),
+  { ssr: false },
+)
+const PosEnvasesDialog = dynamic(
+  () => import("@/components/pos/pos-envases-dialog").then((m) => m.PosEnvasesDialog),
+  { ssr: false },
+)
 import type { TicketLegalData } from "@/lib/fiscal/ticket-legal"
 import type { SalidaComprobante } from "@/lib/fiscal/emission-config"
 import { resolvePosComprobante } from "@/lib/fiscal/pos-comprobante-policy"
@@ -254,6 +294,7 @@ export default function POSPage() {
   const [modoComprobante, setModoComprobante] = useState<"afip" | "cajero" | "ticket_solo">("afip")
   const [tipoDefaultAfip, setTipoDefaultAfip] = useState<"auto" | "A" | "B" | "C">("auto")
   const [permitirTicketSinAfip, setPermitirTicketSinAfip] = useState(true)
+  const [pactarArcaOpen, setPactarArcaOpen] = useState(false)
   const [tiposComprobantePermitidos, setTiposComprobantePermitidos] = useState<TipoFactura[]>([
     "A", "B", "C", "ticket",
   ])
@@ -371,6 +412,10 @@ export default function POSPage() {
       })
       const data = await res.json()
       if (!res.ok) {
+        if (res.status === 402 || data.codigo === "CAP_SEGUNDA_CAJA") {
+          setAbrirCajaError("Ya hay una caja abierta. La 2ª caja simultánea es extra.")
+          return
+        }
         setAbrirCajaError(data.error || "No se pudo abrir la caja")
         return
       }
@@ -1548,12 +1593,12 @@ export default function POSPage() {
             : undefined,
       })
     }
-    if (afipBloqueaFiscal) {
+    if (afipBloqueaFiscal || afipStatus?.certificadosConfigurados === false) {
       items.push({
         id: "afip",
-        severity: "error",
-        mensaje: "AFIP sin certificado — usá Ticket o configurá",
-        accion: { label: "Config AFIP", href: "/dashboard/configuracion?seccion=afip" },
+        severity: afipBloqueaFiscal ? "error" : "info",
+        mensaje: "Podés cobrar con ticket interno. La factura electrónica se pacta con quien tenga acceso a ARCA.",
+        accion: { label: "Pactar certificado ARCA", onClick: () => setPactarArcaOpen(true) },
       })
     }
     if (requiereFce) {
@@ -1584,13 +1629,21 @@ export default function POSPage() {
       })
     }
     return items
-  }, [cajaOk, cajaMotivo, afipBloqueaFiscal, requiereFce, tipoMismatch, tipoSugerido, umbralMipyme])
+  }, [cajaOk, cajaMotivo, afipBloqueaFiscal, afipStatus?.certificadosConfigurados, requiereFce, tipoMismatch, tipoSugerido, umbralMipyme])
 
   // ──────────────────────────────────────────────────────────────
   // RENDER
   // ──────────────────────────────────────────────────────────────
   return (
     <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${modo === "kiosko" ? "bg-black text-white" : ""}`}>
+      <PactarImplementacionArca
+        hideTrigger
+        open={pactarArcaOpen}
+        onOpenChange={setPactarArcaOpen}
+        defaultArca
+        defaultWhatsapp
+        pagina="/dashboard/pos"
+      />
       {cajaOk === false && cajaMotivo === "cerrada" && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-md p-4">
           <div className="p-6 sm:p-8 max-w-md w-full bg-card border rounded-2xl shadow-2xl space-y-5 text-left">

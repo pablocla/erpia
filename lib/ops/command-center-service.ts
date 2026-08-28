@@ -12,6 +12,7 @@ import { computeFocoHoy } from "@/lib/ops/ceo-focus-service"
 import { CEO_METAS_F1, CEO_RUTINA_DIARIA } from "@/lib/ops/ceo-roadmap-catalog"
 import { listWebRegistrations } from "@/lib/ops/web-registrations-service"
 import { countConsultasWeb7d, listConsultasWebRecientes } from "@/lib/comercial/ventas-consulta-service"
+import { countPendientesUpgradeArca, listPendientesUpgradeArca } from "@/lib/comercial/implementacion-arca"
 import { getPropiedadFleetKpis } from "@/lib/ops/tenant-propiedad-service"
 
 function db() {
@@ -89,7 +90,7 @@ export async function getCommandCenter(analystEmail: string) {
   ])
 
   // Batch 3: Registros web y consultas comerciales
-  const [altasWeb, consultasWeb7d, consultasWeb, propiedadKpis] = await Promise.all([
+  const [altasWeb, consultasWeb7d, consultasWeb, propiedadKpis, upgradesArca, upgradesArcaTotal] = await Promise.all([
     listWebRegistrations(analystEmail, { take: 12 }).catch(() => ({
       rows: [],
       resumen: {
@@ -108,6 +109,8 @@ export async function getCommandCenter(analystEmail: string) {
       checklistIncompleto: 0,
       morososActivos: 0,
     })),
+    listPendientesUpgradeArca().catch(() => []),
+    countPendientesUpgradeArca().catch(() => 0),
   ])
 
   const clientesPagos = contarClientesPagos(leads)
@@ -217,6 +220,7 @@ export async function getCommandCenter(analystEmail: string) {
       demosRubro7d: altasWeb.resumen.demos7d,
       trialsPorVencer: altasWeb.resumen.trialsPorVencer,
       consultasWeb7d,
+      upgradesArcaPendientes: upgradesArcaTotal,
       tenantsPropiedad: propiedadKpis.tenantsPropiedad,
       propiedadSinLiquidar: propiedadKpis.sinLiquidarMes,
       propiedadChecklistIncompleto: propiedadKpis.checklistIncompleto,
@@ -239,6 +243,17 @@ export async function getCommandCenter(analystEmail: string) {
     comercial: {
       resumen: pipelineResumen,
       leads,
+      upgradesArca: upgradesArca.slice(0, 8).map((u) => ({
+        id: u.id,
+        nombre: u.nombre,
+        negocio: u.negocio,
+        email: u.email,
+        telefono: u.telefono,
+        proximaFecha: u.proximaFecha,
+        proximaAccion: u.proximaAccion,
+        empresaId: u.empresaId,
+        empresaNombre: u.empresaNombre,
+      })),
       consultasWeb: consultasWeb.map((c) => ({
         id: c.id,
         nombre: c.nombre,

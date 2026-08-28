@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { resolveActivarIntent } from "@/lib/comercial/activar-intent"
 import { applyRetailOnboarding } from "@/lib/comercial/retail-onboarding-service"
 import { getTrialStatus, setTrialExpiresAt } from "@/lib/comercial/trial-service"
+import { esAltaAnclaSinTrial, resolveOferta } from "@/lib/comercial/ofertas-comerciales"
 import type { ApplyRetailOnboardingResult } from "@/lib/comercial/retail-onboarding-service"
 
 export interface ApplyActivarIntentInput {
@@ -40,10 +41,12 @@ export async function applyActivarIntent(
     },
   })
 
+  const oferta = resolveOferta(intent.engancheId, intent.modoLite)
+  const trialDias = esAltaAnclaSinTrial(oferta) ? 0 : (oferta.trialDias || 14)
   const trial = await getTrialStatus(input.empresaId)
-  if (!trial) {
-    const expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-    await setTrialExpiresAt(input.empresaId, expires, 14)
+  if (!trial && trialDias > 0) {
+    const expires = new Date(Date.now() + trialDias * 24 * 60 * 60 * 1000)
+    await setTrialExpiresAt(input.empresaId, expires, trialDias)
   }
 
   return applyRetailOnboarding({
@@ -52,7 +55,7 @@ export async function applyActivarIntent(
     engancheId: intent.engancheId,
     modoLite: intent.modoLite,
     productos: [],
-    trialDias: trial?.trialDias ?? 14,
+    trialDias,
     origen: input.origen ?? "activar_intent",
     skipSeed: Boolean(onboardingPrevio),
   })

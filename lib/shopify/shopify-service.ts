@@ -26,6 +26,7 @@ export async function obtenerConfigShopify(empresaId: number) {
   if (!credenciales.accessToken) return null
   return {
     shopDomain: credenciales.shopDomain,
+    accessToken: credenciales.accessToken,
     updatedAt: row?.updatedAt?.toISOString(),
   }
 }
@@ -86,7 +87,7 @@ export async function sincronizarStockShopify(empresaId: number) {
       id: true, 
       codigo: true, 
       stock: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["SHOPIFY", "SH"] } } }
       }
     },
@@ -101,7 +102,7 @@ export async function sincronizarStockShopify(empresaId: number) {
     if (!itemId) continue
 
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       await shopifyFetch(empresaId, "/inventory_levels/set.json", {
@@ -236,7 +237,7 @@ export async function publicarProductoMasivoShopify(empresaId: number, productos
       precioVenta: true, 
       stock: true, 
       imagenUrl: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["SHOPIFY", "SH"] } } }
       }
     }
@@ -247,7 +248,7 @@ export async function publicarProductoMasivoShopify(empresaId: number, productos
 
   for (const prod of productos) {
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       const shProduct = {

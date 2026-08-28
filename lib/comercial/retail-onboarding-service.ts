@@ -18,6 +18,7 @@ import {
 import {
   persistOfertaEmpresa,
   resolveOferta,
+  skuEsAnclaGratis,
   skusAdicionalesOferta,
   vigenciaParaSku,
 } from "@/lib/comercial/ofertas-comerciales"
@@ -88,13 +89,20 @@ async function activarEnganche(empresaId: number, engancheId: string, origen: st
   const pack = resolvePackCalle(engancheId)
   if (!pack) return []
 
-  if (pack.tipo === "pack" && getPackHorizontal(engancheId)) {
+  const oferta = resolveOferta(engancheId, pack.modoLite)
+  const limitarAncla = oferta.autoActivarMonetizados === false
+  const skusPermitidos = (skus: string[]) =>
+    limitarAncla
+      ? skus.filter((sku) => skuEsAnclaGratis(oferta, sku) || sku === engancheId)
+      : skus
+
+  if (pack.tipo === "pack" && getPackHorizontal(engancheId) && !limitarAncla) {
     await activarPack(empresaId, engancheId, origen)
     return pack.skus
   }
 
   const activados: string[] = []
-  for (const sku of skusParaActivar(engancheId)) {
+  for (const sku of skusPermitidos(skusParaActivar(engancheId))) {
     try {
       await activarProducto(empresaId, sku, origen)
       activados.push(sku)
@@ -149,7 +157,7 @@ export async function applyRetailOnboarding(
     },
   })
 
-  let skusActivados = await activarEnganche(empresaId, engancheId, origen)
+  const skusActivados = await activarEnganche(empresaId, engancheId, origen)
   const oferta = resolveOferta(engancheId, modoLite)
 
   for (const sku of skusAdicionalesOferta(oferta, skusActivados)) {
@@ -231,7 +239,7 @@ export async function applyRetailOnboarding(
     },
   })
 
-  if (oferta.trialScope !== "nada") {
+  if (oferta.trialScope !== "nada" && trialDias > 0) {
     await setTrialExpiresAt(empresaId, trialExpiresAt, trialDias)
   }
 

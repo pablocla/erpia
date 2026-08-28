@@ -3,7 +3,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { liquidarSemanaOperario } from "@/lib/oficios/cuadrilla-service"
 
 export async function POST(request: NextRequest) {
-  const auth = getAuthContext(request)
+  const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
   try {

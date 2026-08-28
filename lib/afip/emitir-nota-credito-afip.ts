@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Emisión AFIP de Notas de Crédito (WSFE + CbteAsoc).
  */
 import QRCode from "qrcode"
@@ -175,7 +175,7 @@ export async function emitirNotaCreditoAfip(notaCreditoId: number): Promise<Emit
       "wsfe",
     )
 
-    const resultado = await soapClient.emitirComprobante(
+    const resultado: any = await soapClient.emitirComprobante(
       auth,
       empresa.cuit,
       nc.puntoVenta,

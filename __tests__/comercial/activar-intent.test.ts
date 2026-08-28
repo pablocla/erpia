@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { activarRegisterHref, resolveActivarIntent } from "@/lib/comercial/activar-intent"
+import { activarRegisterHref, mensajeActivarTrial, resolveActivarIntent } from "@/lib/comercial/activar-intent"
 
 describe("activar-intent", () => {
   it("resuelve sub-saas por slug", () => {
@@ -46,7 +46,19 @@ describe("activar-intent", () => {
   })
 
   it("genera href de registro con activar", () => {
-    expect(activarRegisterHref("fiado")).toBe("/login/register?activar=fiado&trial=14")
+    expect(activarRegisterHref("fiado")).toBe("/login/register?activar=fiado")
+    expect(activarRegisterHref("oficios")).toBe("/login/register?activar=oficios")
     expect(activarRegisterHref(null)).toBe("/login/register?trial=14")
+  })
+
+  it("fiado en registro no dice trial 14 días", () => {
+    expect(mensajeActivarTrial("pos.fiado_barrio")).toMatch(/gratis para siempre/i)
+    expect(mensajeActivarTrial("pos.fiado_barrio")).not.toMatch(/14 d[ií]as/i)
+    expect(mensajeActivarTrial("fiado")).not.toMatch(/14 d[ií]as/i)
+  })
+
+  it("oficios en registro habla de presupuesto/seña, no trial 14", () => {
+    expect(mensajeActivarTrial("niche.oficios")).toMatch(/seña/i)
+    expect(mensajeActivarTrial("niche.oficios")).not.toMatch(/14 d[ií]as/i)
   })
 })

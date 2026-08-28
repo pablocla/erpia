@@ -34,4 +34,13 @@ describe("product-shell", () => {
     const shell = getActiveProductShell("fiado", null)!
     expect(productShellHomePath(shell)).toBe("/dashboard/fiado")
   })
+
+  it("ancla fiado y oficios muestran Extra con disparo WA/ARCA", () => {
+    const extrasFiado = PRODUCT_SHELLS.fiado.tabs.filter((t) => t.badge === "Extra")
+    expect(extrasFiado.length).toBeGreaterThanOrEqual(2)
+    expect(extrasFiado.some((t) => t.disparo === "whatsapp_outbound")).toBe(true)
+    expect(extrasFiado.some((t) => t.disparo === "factura_afip")).toBe(true)
+    const extrasOficios = PRODUCT_SHELLS.oficios.tabs.filter((t) => t.badge === "Extra")
+    expect(extrasOficios.some((t) => t.disparo === "factura_afip")).toBe(true)
+  })
 })

@@ -9,7 +9,7 @@ import { AlertTriangle, Clock, MapPin, Search } from "lucide-react"
 import Link from "next/link"
 
 export default function AlertasFumigacionPage() {
-  const { data, loading, error } = useAuthFetch<any>("/api/fumigacion/alertas")
+  const { data, isLoading, error } = useAuthFetch<any>("/api/fumigacion/alertas")
 
   const alertas = data?.alertas || []
 
@@ -31,13 +31,13 @@ export default function AlertasFumigacionPage() {
         </div>
       )}
 
-      {loading && (
+      {isLoading && (
         <div className="py-12 text-center text-muted-foreground">
           Calculando vencimientos...
         </div>
       )}
 
-      {!loading && alertas.length === 0 && !error && (
+      {!isLoading && alertas.length === 0 && !error && (
         <div className="py-20 text-center">
           <div className="bg-emerald-100 text-emerald-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="h-8 w-8" />
@@ -49,7 +49,7 @@ export default function AlertasFumigacionPage() {
         </div>
       )}
 
-      {!loading && alertas.length > 0 && (
+      {!isLoading && alertas.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
           {alertas.map((alerta: any) => (
             <Card key={alerta.clienteId} className="border-red-100 shadow-sm">

@@ -12,7 +12,7 @@ const MI_PLAN_HREF = "/dashboard/mi-plan"
 export function TrialTopbarPill() {
   const { trial, access, loading } = useComercialAccess()
 
-  if (loading || access?.mpAutorizado) return null
+  if (loading || access?.mpAutorizado || access?.tieneAnclaGratis) return null
 
   const monetizadosEnTrial = (access?.monetizados ?? []).filter((m) => m.enTrial && !m.gratisPermanente)
   const monetizadosExpirados = (access?.monetizados ?? []).filter((m) => m.expirado && !m.gratisPermanente)

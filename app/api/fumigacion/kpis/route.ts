@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   // Verificar si es admin o si simplemente queremos que lo vea cualquiera
-  const isAdmin = canManageUsers(auth.auth.usuarioId, auth.auth.rol)
+  const isAdmin = canManageUsers(auth.auth.rol)
 
   try {
     const hoyIso = new Date().toISOString().slice(0, 10)

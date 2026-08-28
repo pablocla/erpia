@@ -107,7 +107,7 @@ export async function sincronizarStock(empresaId: number) {
       id: true, 
       codigo: true, 
       stock: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["ML", "MERCADOLIBRE"] } } }
       }
     },
@@ -122,7 +122,7 @@ export async function sincronizarStock(empresaId: number) {
     if (!itemId) continue
 
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       await mlFetch(empresaId, `/items/${itemId}`, {
@@ -340,7 +340,7 @@ export async function publicarProductoMasivo(empresaId: number, productosIds: nu
       precioVenta: true, 
       stock: true, 
       imagenUrl: true,
-      reglasStockCanal: {
+      reglaStockCanals: {
         where: { canalVenta: { codigo: { in: ["ML", "MERCADOLIBRE"] } } }
       }
     }
@@ -351,7 +351,7 @@ export async function publicarProductoMasivo(empresaId: number, productosIds: nu
 
   for (const prod of productos) {
     try {
-      const buffer = prod.reglasStockCanal?.[0]?.bufferReserva || 0
+      const buffer = prod.reglaStockCanals?.[0]?.bufferReserva || 0
       const stockToSend = Math.max(0, Math.floor(prod.stock) - buffer)
 
       const mlItem = {

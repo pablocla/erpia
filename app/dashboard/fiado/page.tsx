@@ -24,6 +24,7 @@ import { InflacionFiadoPanel } from "@/components/fiado/inflacion-fiado-panel"
 import { useToast } from "@/hooks/use-toast"
 import { useProductEntitlements } from "@/hooks/use-product-entitlements"
 import { PaywallModal } from "@/components/billing/paywall-modal"
+import { PaywallTriggerBanner } from "@/components/billing/paywall-trigger-banner"
 
 type Deudor = {
   id: number
@@ -359,25 +360,15 @@ export default function LibretaFiadoPage() {
           </Dialog>
       </div>
 
-      {showUpsellCobra && (
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                Tenés {fmt(saldoTotal)} en fiado — cobrá sin llamar uno por uno
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Claver Cobrá manda recordatorios por WhatsApp. La libreta sigue gratis.
-              </p>
-            </div>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 shrink-0" asChild>
-              <Link href="/dashboard/apps?sku=intang.cobranzas_wa">
-                Activar Cobrá
-                <ArrowUpRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      {showUpsellCobra && !tieneSku("channel.whatsapp") && (
+        <PaywallTriggerBanner
+          disparoKey="whatsapp_outbound"
+          badgeText="Recuperación Automática"
+          headline={`Tenés ${fmt(saldoTotal)} en la calle en deudas de fiado`}
+          subheadline="Enviá recordatorios amistosos por WhatsApp con link de cobro digital (Mercado Pago). El cliente paga y se acredita al instante en su cuenta corriente."
+          ctaText="Recuperar con WhatsApp"
+          variant="amber"
+        />
       )}
 
       {resumen && (

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { PartnerTreeVisualizer } from "@/components/clavernet/partner-tree-visualizer"
 import { PartnerRewardsCatalog } from "@/components/clavernet/partner-rewards-catalog"
+import { PartnerQrCard } from "@/components/clavernet/partner-qr-card"
 
 interface PartnerMeResponse {
   partner: {
@@ -227,32 +228,40 @@ export default function PartnerPortalPage() {
         </Card>
       </div>
 
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-lg">Tu link de referidos</CardTitle>
-          <CardDescription>
-            QR de calle: claver.com.ar/f?ref=TUCODIGO. Comisión solo si el comercio paga un extra
-            (Cobrá, AFIP, 2ª caja), no por la libreta gratis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <code className="flex-1 truncate rounded-lg border bg-muted/40 px-3 py-2 text-xs sm:text-sm">
-            {data.referralUrl}
-          </code>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={copyLink}>
-              <Copy className="mr-2 h-4 w-4" />
-              Copiar
-            </Button>
-            <Button type="button" variant="outline" asChild>
-              <a href={data.referralUrl} target="_blank" rel="noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Abrir
-              </a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <PartnerQrCard
+          referralUrl={data.referralUrl}
+          referralCode={data.partner.referralCode}
+          partnerName={data.partner.nombreFantasia}
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Tu link de referidos</CardTitle>
+            <CardDescription>
+              QR de calle y link: claver.com.ar/f?ref={data.partner.referralCode}. Comisión del 30% recurrente
+              cuando el comercio activa un extra pago (Cobrá, AFIP, 2ª caja).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <code className="block w-full break-all rounded-lg border bg-muted/40 p-3 text-xs sm:text-sm">
+              {data.referralUrl}
+            </code>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={copyLink} className="flex-1">
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar Link
+              </Button>
+              <Button type="button" variant="outline" asChild className="flex-1">
+                <a href={data.referralUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Abrir Landing
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="mt-4 border-emerald-500/30 bg-emerald-500/5">
         <CardHeader className="pb-2">

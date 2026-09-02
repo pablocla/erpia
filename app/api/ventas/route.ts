@@ -19,6 +19,17 @@ export const POST = withAuthAndTenant(async (req, auth) => {
     const { clienteId, lineas } = parsed.data
     const factura = await crearVentaConStock(auth.empresaId, parsed.data)
 
+    // Track funnel de activación: first_sale
+    import("@/lib/analytics/tracking-service").then(({ trackFunnelStep }) => {
+      void trackFunnelStep({
+        sessionId: `empresa-${auth.empresaId}`,
+        empresaId: auth.empresaId,
+        usuarioId: auth.userId,
+        funnelId: "activacion",
+        stepName: "first_sale",
+      })
+    }).catch(() => {})
+
     return NextResponse.json(
       {
         venta: {

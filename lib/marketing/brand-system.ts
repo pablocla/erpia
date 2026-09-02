@@ -193,6 +193,7 @@ export const CLAVER_NAV = [
   { href: "/claver/apps", label: "Apps & Herramientas" },
   { href: "/claver/claverp", label: "ERP" },
   { href: "/demo", label: "Demos Interactivos" },
+  { href: "/claver/agent-city", label: "Agent City" },
   { href: "/claver/partners", label: "Partners" },
   { href: "/claver/claverp/precios", label: "Precios" },
   { href: "/claver/contacto", label: "Contacto" },

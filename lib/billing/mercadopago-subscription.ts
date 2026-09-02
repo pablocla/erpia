@@ -182,6 +182,17 @@ export async function handleMercadoPagoWebhook(payload: {
   // Pagos one-shot de deudores (fiado/cxc) — además de /api/mercadopago/webhook
   if ((payload.type === "payment" || payload.action?.includes("payment")) && payload.data?.id) {
     const paymentId = String(payload.data.id)
+    try {
+      const { confirmarPagoEspecialistaDesdeMp } = await import(
+        "@/lib/servicios-especialista/especialista-service"
+      )
+      const especialista = await confirmarPagoEspecialistaDesdeMp(paymentId)
+      if (especialista) {
+        return { received: true, kind: "especialista" as const }
+      }
+    } catch (err) {
+      console.warn("[MP webhook] especialista:", err)
+    }
     const configs = await prisma.mercadoPagoConfig.findMany({ where: { activo: true } })
     for (const config of configs) {
       try {

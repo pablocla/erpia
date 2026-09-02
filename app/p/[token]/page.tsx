@@ -1,8 +1,9 @@
 "use client"
 
 import { useParams } from "next/navigation"
+import Link from "next/link"
 import useSWR from "swr"
-import { Building2, CheckCircle2, FileText, Mail, MapPin, Phone, XCircle } from "lucide-react"
+import { Building2, CheckCircle2, FileText, Mail, MapPin, Phone, Sparkles, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -221,10 +222,10 @@ export default function PresupuestoPublicoPage() {
 
         {/* Action Button */}
         {!isAceptado && !isRechazadoOVencido && (
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 pb-8">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4 pb-4">
             <Button 
               size="lg" 
-              className="w-full sm:flex-1 h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+              className="w-full sm:flex-1 h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all bg-emerald-600 hover:bg-emerald-500 text-white"
               onClick={handleAceptar}
               disabled={isAccepting}
             >
@@ -236,6 +237,20 @@ export default function PresupuestoPublicoPage() {
             </Button>
           </div>
         )}
+
+        {/* Viral Growth Loop Footer */}
+        <footer className="pt-6 pb-10 border-t border-border/40 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span>Presupuesto gestionado con</span>
+            <Link href="/f" className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+              Claver ERP
+              <Sparkles className="h-3 w-3" />
+            </Link>
+          </div>
+          <Link href="/f" className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2">
+            ¿Tenés un negocio o comercio? Empezá gratis con Claver →
+          </Link>
+        </footer>
       </div>
     </div>
   )

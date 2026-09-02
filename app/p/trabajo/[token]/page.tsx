@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, use } from "react"
+import Link from "next/link"
 import {
   ShieldCheck,
   Clock,
@@ -356,6 +357,20 @@ export default function PortalClienteTrabajoPage({ params }: { params: Promise<{
                 </CardContent>
               </Card>
             )}
+
+            {/* Viral Growth Loop Footer */}
+            <footer className="mt-8 pt-4 pb-8 border-t border-border/40 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <span>Presupuesto y cobro gestionado con</span>
+                <Link href="/f/servicios" className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                  Claver Oficios
+                  <Sparkles className="h-3 w-3" />
+                </Link>
+              </div>
+              <Link href="/f/servicios" className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2">
+                ¿Sos técnico, electricista o instalador? Cotizá gratis →
+              </Link>
+            </footer>
           </div>
         )}
       </div>

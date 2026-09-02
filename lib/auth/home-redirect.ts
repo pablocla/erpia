@@ -5,6 +5,8 @@
 import { DEMO_ADMIN_EMAIL } from "@/lib/brand"
 import { parseJwtPayload } from "@/lib/auth/session-client"
 import { getGoldenPathForRubro } from "@/lib/comercial/industry-templates"
+import { isAdminRole } from "@/lib/auth/admin-roles"
+import { resolveRubroSignup } from "@/lib/comercial/rubro-signup"
 
 export const CLAVER_CLOUD_HOME = "/claver-cloud"
 
@@ -63,7 +65,9 @@ export function resolvePostLoginPath(opts: {
   }
   const isDemoAccount =
     opts.email?.trim().toLowerCase() === DEMO_ADMIN_EMAIL.toLowerCase()
-  if (isDemoAccount && opts.rubro) {
+  if (opts.rubro && (isDemoAccount || isAdminRole(opts.rol))) {
+    const door = resolveRubroSignup(opts.rubro)
+    if (door) return door.landingPath
     return getGoldenPathForRubro(opts.rubro)
   }
   return getHomePathForRol(opts.rol)

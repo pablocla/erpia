@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input"
 import { authFetch } from "@/lib/stores/auth-store"
 import { useToast } from "@/hooks/use-toast"
 
+import { PaywallTriggerBanner } from "@/components/billing/paywall-trigger-banner"
+
 const fmt = (n: number) =>
   n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })
 
@@ -146,6 +148,18 @@ export default function OficiosDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Paywall Contextual Upsell */}
+      {trabajos.length > 0 && (
+        <PaywallTriggerBanner
+          disparoKey="sena_link_mp"
+          badgeText="Máxima Conversión"
+          headline="Cobrá la seña online en tus presupuestos con tarjeta y débito"
+          subheadline="Tus clientes confirman el trabajo en 1 clic pagando la seña por Mercado Pago directo desde el link público."
+          ctaText="Activar Seña Online"
+          variant="indigo"
+        />
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

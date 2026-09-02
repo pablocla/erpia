@@ -8,12 +8,20 @@ const siteUrl = getSiteUrl()
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${CLAVER_GROUP.name} — Caja, fiado o presupuesto de obra. Sin tarjeta.`,
+    default: `${CLAVER_GROUP.name} — Sistema de Gestión y Cobro para Comercios, Talleres, Oficios y PyMEs`,
     template: `%s | ${CLAVER_GROUP.name}`,
   },
   description:
-    "Para el local: caja y quién te debe, gratis. Para el oficio: presupuesto en 3 niveles y seña. Sin tarjeta. Hecho para Argentina.",
-  keywords: [...LANDING_KEYWORDS],
+    "Software de gestión comercial para Argentina: Punto de Venta (POS), Libreta de Fiados, Talleres Mecánicos por Patente, Gimnasios y Presupuestos con Seña. 100% gratis para arrancar sin tarjeta.",
+  keywords: [
+    ...LANDING_KEYWORDS,
+    "sistema pos argentina",
+    "control de stock kiosco",
+    "taller mecanico software",
+    "gestion gimnasio socios",
+    "presupuestos con seña",
+    "factura electronica afip arca",
+  ],
   authors: [{ name: CLAVER_GROUP.name, url: siteUrl }],
   creator: CLAVER_GROUP.name,
   publisher: CLAVER_GROUP.name,
@@ -29,9 +37,9 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: "/" },
   openGraph: {
-    title: `${CLAVER_GROUP.name} — Caja, fiado o presupuesto de obra`,
+    title: `${CLAVER_GROUP.name} — Sistema de Gestión y Cobro para Comercios y PyMEs`,
     description:
-      "Local o oficio. Sin tarjeta para arrancar. Se paga cuando el sistema cierra un cobro o una factura.",
+      "Punto de venta, fiados con WhatsApp, órdenes de taller y presupuestos. Gratis para arrancar sin tarjeta de crédito.",
     type: "website",
     url: siteUrl,
     locale: "es_AR",
@@ -40,14 +48,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${CLAVER_GROUP.name} — Caja, fiado o presupuesto de obra`,
-    description: "Hecho para comercios de Argentina. Sin tarjeta para arrancar.",
+    title: `${CLAVER_GROUP.name} — Sistema de Gestión para Comercios y PyMEs`,
+    description: "Punto de venta rápido, libreta de fiados y presupuestos con seña. 100% gratis para arrancar.",
     images: ["/og-image.jpg"],
   },
   category: "technology",
 }
 
-/** Home de calle: Argentina primero. Sin hub US, sin precios, sin menú ERP. */
+/** Home Principal: Multi-Puerta Inteligente para todos los rubros comerciales */
 export default function HomePage() {
   return <LandingHomePuertas />
 }

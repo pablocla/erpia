@@ -14,6 +14,18 @@ vi.mock("google-auth-library", () => ({
   },
 }))
 
+vi.mock("@/lib/comercial/activar-producto-service", () => ({
+  applyActivarIntent: vi.fn().mockResolvedValue({
+    landingPath: "/dashboard/membresias",
+    rubro: "gimnasio",
+    modoLite: "niche",
+    engancheId: "niche.gimnasio_barrio",
+    productosCreados: 0,
+    skusActivados: [],
+    trialExpiresAt: new Date().toISOString(),
+  }),
+}))
+
 vi.mock("@/lib/auth/auth-service", () => {
   return {
     AuthService: class {
@@ -256,13 +268,23 @@ describe("authenticateWithGoogle", () => {
     const r = await authenticateWithGoogle({
       idToken: "tok",
       empresaNombre: "Mi Comercio",
+      activar: "gimnasio",
     })
     expect(r.success).toBe(true)
     if (r.success) {
       expect(r.isNewUser).toBe(true)
       expect(r.usuario.rol).toBe("dueno")
       expect(r.usuario.empresaId).toBe(100)
+      expect(r.onboarding?.landingPath).toBe("/dashboard/membresias")
     }
+    expect(mockPrismaClient.empresa.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          rubro: "gimnasio",
+          modoLite: "niche",
+        }),
+      }),
+    )
   })
 
   it("rechaza googleId distinto con mismo email", async () => {

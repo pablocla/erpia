@@ -39,4 +39,21 @@ describe("home-redirect — golden action demo", () => {
     })
     expect(path).toBe("/dashboard/pos")
   })
+
+  it("dueño con rubro de puerta va a su pantalla, no al ERP genérico", () => {
+    expect(
+      resolvePostLoginPath({
+        rol: "dueno",
+        email: "dueno@gimnasio.com",
+        rubro: "gimnasio",
+      }),
+    ).toBe("/dashboard/membresias")
+    expect(
+      resolvePostLoginPath({
+        rol: "administrador",
+        email: "admin@taller.com",
+        rubro: "taller_mecanico",
+      }),
+    ).toBe("/dashboard/nicho/taller")
+  })
 })

@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
     const { empresa: nombreEmpresa, nombre, email, password, activar, ref, acceptTerms } =
       validacion.data
 
+    const { resolveSignupProfile } = await import("@/lib/comercial/rubro-signup")
+    const { resolveActivarIntent } = await import("@/lib/comercial/activar-intent")
+    const signupProfile = resolveSignupProfile(activar)
+    const intentAlta = resolveActivarIntent(activar || signupProfile.activarKey)
+    const rubroAlta = signupProfile.rubroEmpresa
+    const modoLiteAlta = intentAlta?.modoLite ?? signupProfile.modoLite
+
     if (acceptTerms !== true) {
       return NextResponse.json(
         {
@@ -56,7 +63,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear empresa usando SQL crudo (evita problemas con columnas nuevas no migradas)
-    // modoLite=pos + rubro=kiosco: menú liviano, no ERP completo ruidoso
     const empresaCreada = await prisma.$queryRaw<{ id: number }[]>`
       INSERT INTO empresas ("nombre", "razonSocial", "cuit", "email", "rubro", "modoLite", "createdAt", "updatedAt")
       VALUES (
@@ -64,8 +70,8 @@ export async function POST(request: NextRequest) {
         ${nombreEmpresa},
         ${`DEMO-${Date.now()}`},
         ${email},
-        ${"kiosco"},
-        ${"pos"},
+        ${rubroAlta},
+        ${modoLiteAlta},
         NOW(), NOW()
       )
       RETURNING id
@@ -129,38 +135,47 @@ export async function POST(request: NextRequest) {
       notify: "trial_signup",
     }).catch((err) => console.error("Error sync pipeline signup:", err))
 
+    // Track funnel de adquisición: complete_signup
+    import("@/lib/analytics/tracking-service").then(({ trackFunnelStep }) => {
+      void trackFunnelStep({
+        sessionId: `signup-${empresaId}-${Date.now()}`,
+        empresaId,
+        usuarioId: usuario.id,
+        funnelId: "adquisicion",
+        stepName: "complete_signup",
+      })
+    }).catch(() => {})
+
     setSignupOrigen(empresaId, "web" as any)
 
-    let onboarding: { landingPath: string; ofertaId?: string } | null = null
+    let onboarding: { landingPath: string; ofertaId?: string } | null = {
+      landingPath: intentAlta?.landingPath ?? signupProfile.landingPath,
+    }
 
-    if (activar) {
+    const activarKey = activar || signupProfile.activarKey
+    if (activarKey && intentAlta) {
       try {
-        const { resolveActivarIntent } = await import("@/lib/comercial/activar-intent")
         const { applyActivarIntent } = await import("@/lib/comercial/activar-producto-service")
-        const intent = resolveActivarIntent(activar)
+        const result = await applyActivarIntent({
+          empresaId,
+          activar: activarKey,
+          origen: "web_register",
+        })
+        onboarding = { landingPath: result.landingPath || intentAlta.landingPath }
 
-        if (intent) {
-          const result = await applyActivarIntent({
-            empresaId,
-            activar,
-            origen: "web_register",
+        const { trackSubSaasSignup } = await import("@/lib/analytics/tracking")
+        trackSubSaasSignup(activarKey, empresaId)
+
+        const { emailService } = await import("@/lib/email/email-service")
+        const { emailSubSaasWelcome } = await import("@/lib/email/email-sub-saas-welcome")
+
+        if (emailService.isConfigured()) {
+          const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://claver.app"}/login?activar=${activarKey}`
+          await emailService.enviar({
+            to: email,
+            subject: `Bienvenido a ${intentAlta.marca} - Empezá en 3 pasos`,
+            html: emailSubSaasWelcome(intentAlta.marca, nombre, loginUrl),
           })
-          onboarding = { landingPath: result.landingPath }
-
-          const { trackSubSaasSignup } = await import("@/lib/analytics/tracking")
-          trackSubSaasSignup(activar, empresaId)
-
-          const { emailService } = await import("@/lib/email/email-service")
-          const { emailSubSaasWelcome } = await import("@/lib/email/email-sub-saas-welcome")
-
-          if (emailService.isConfigured()) {
-            const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://claver.app"}/login?activar=${activar}`
-            await emailService.enviar({
-              to: email,
-              subject: `Bienvenido a ${intent.marca} - Empezá en 3 pasos`,
-              html: emailSubSaasWelcome(intent.marca, nombre, loginUrl),
-            })
-          }
         }
       } catch (err) {
         console.error("Error en activación post-signup:", err)

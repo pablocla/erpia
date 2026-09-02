@@ -38,6 +38,7 @@ export type GoogleAuthSuccess = {
   }
   isNewUser: boolean
   activatedInvite?: boolean
+  onboarding?: { landingPath: string }
 }
 
 export type GoogleAuthNeedsEmpresa = {
@@ -222,6 +223,8 @@ export async function authenticateWithGoogle(input: {
   empresaNombre?: string
   /** @deprecated Free join by empresaId is disabled. Present only for clear error messaging. */
   empresaId?: number
+  /** Rubro / SKU de puerta (kiosco, taller, oficios, ?activar=) */
+  activar?: string
 }): Promise<GoogleAuthResult> {
   const verified = await verifyGoogleIdToken(input.idToken)
   if (!verified.ok) {
@@ -326,14 +329,19 @@ export async function authenticateWithGoogle(input: {
 
   const finalEmpresaNombre = input.empresaNombre.trim()
 
+  const { resolveSignupProfile } = await import("@/lib/comercial/rubro-signup")
+  const { resolveActivarIntent } = await import("@/lib/comercial/activar-intent")
+  const signupProfile = resolveSignupProfile(input.activar)
+  const intentAlta = resolveActivarIntent(input.activar || signupProfile.activarKey)
+
   const nuevaEmpresa = await prisma.empresa.create({
     data: {
       nombre: finalEmpresaNombre,
       razonSocial: finalEmpresaNombre,
       // CUIT único provisorio (se completa en onboarding) — igual que signup email
       cuit: `GOOGLE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      rubro: "kiosco",
-      modoLite: "pos",
+      rubro: signupProfile.rubroEmpresa,
+      modoLite: intentAlta?.modoLite ?? signupProfile.modoLite,
       email: google.email,
     },
   })
@@ -380,6 +388,22 @@ export async function authenticateWithGoogle(input: {
     empresaId: usuario.empresaId,
   })
 
+  let landingPath = intentAlta?.landingPath ?? signupProfile.landingPath
+  const activarKey = input.activar || signupProfile.activarKey
+  if (activarKey && intentAlta) {
+    try {
+      const { applyActivarIntent } = await import("@/lib/comercial/activar-producto-service")
+      const result = await applyActivarIntent({
+        empresaId: nuevaEmpresa.id,
+        activar: activarKey,
+        origen: "google_register",
+      })
+      landingPath = result.landingPath || landingPath
+    } catch (err) {
+      console.warn("[Google Auth] activar intent skip:", err)
+    }
+  }
+
   return {
     success: true,
     token,
@@ -393,6 +417,7 @@ export async function authenticateWithGoogle(input: {
       avatarUrl: usuario.avatarUrl,
     },
     isNewUser: true,
+    onboarding: { landingPath },
   }
 }
 

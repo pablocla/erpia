@@ -6,8 +6,24 @@
 import { ROLES_SISTEMA, type RolSistema } from "@/lib/auth/roles"
 import { getHomePathForRol } from "@/lib/auth/home-redirect"
 import { INDUSTRY_TEMPLATES } from "@/lib/comercial/industry-templates"
+import { canManageUsers } from "@/lib/auth/admin-roles"
 
 export const PREVIEW_OPEN_EVENT = "claver:open-experience-switcher"
+
+/**
+ * Botón / atajo "Actores": solo admin del tenant (dueño) o analista Claver.
+ * Cajero, mozo, vendedor y el resto de operadores no lo ven.
+ */
+export function canSeeActoresButton(opts: {
+  rol?: string | null
+  isAnalyst?: boolean
+  forceShow?: boolean
+}): boolean {
+  if (opts.forceShow) return true
+  if (opts.isAnalyst) return true
+  if (opts.rol === "analista_claver") return true
+  return canManageUsers(opts.rol)
+}
 
 export type PreviewActor = {
   codigo: string

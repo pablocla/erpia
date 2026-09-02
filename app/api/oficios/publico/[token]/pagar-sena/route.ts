@@ -31,6 +31,7 @@ export async function POST(
           empresaId: trabajo.empresaId,
           titulo: `Seña ${trabajo.porcentajeSena}% - ${trabajo.titulo.slice(0, 40)}`,
           monto: montoSena,
+          takeRatePercentage: 2.5,
           externalReference: `OFICIO_SENA_${trabajo.id}`,
           backUrls: {
             success: `${baseUrl}/p/trabajo/${trabajo.tokenPublico}?pago=exitoso`,

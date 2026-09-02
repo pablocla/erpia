@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react"
-import { PawPrint, Plus, Search, HeartPulse, Calendar, Stethoscope, Edit, ChevronDown, ChevronUp, Weight, Thermometer } from "lucide-react"
+import { PawPrint, Plus, Search, HeartPulse, Calendar, Stethoscope, Edit, ChevronDown, ChevronUp, Weight, Thermometer, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -346,6 +346,23 @@ function PacienteCard({
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                  onClick={async () => {
+                    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+                    const res = await fetch("/api/veterinaria/vacunas/recordatorios", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify({ pacienteId: paciente.id, tipoVacuna: "Vacunación anual / Antirrábica" }),
+                    })
+                    const data = await res.json()
+                    if (data.linkWhatsApp) window.open(data.linkWhatsApp, "_blank")
+                  }}
+                >
+                  <MessageSquare className="h-3 w-3" /> Recordar Vacuna
+                </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => onNuevaConsulta(paciente)}>
                   <Stethoscope className="h-3 w-3" /> Consulta
                 </Button>

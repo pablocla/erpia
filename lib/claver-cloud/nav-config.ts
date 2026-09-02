@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  BarChart3,
   BookOpen,
   Building2,
   CreditCard,
@@ -38,48 +39,49 @@ export type NavSection = {
 
 export const navSections: NavSection[] = [
   {
-    label: "ceo",
+    label: "negocio",
     items: [
       { name: "commandCenter", href: "/claver-cloud", icon: LayoutDashboard, exact: true },
+      { name: "analytics", href: "/claver-cloud/analytics", icon: BarChart3 },
       { name: "webRegistrations", href: "/claver-cloud/registros", icon: UserPlus },
-      { name: "salesPipeline", href: "/claver-cloud/comercial", icon: Target },
-      { name: "upgradesArca", href: "/claver-cloud/comercial/upgrades-arca", icon: CalendarClock },
-      { name: "marketingDigital", href: "/claver-cloud/marketing", icon: Megaphone },
-      { name: "fieldSurvey", href: "/claver-cloud/comercial/relevamientos", icon: ClipboardList },
-      { name: "mapAndRoute", href: "/claver-cloud/comercial/campo", icon: Map },
+      { name: "salesPipeline", href: "/claver-cloud/comercial", icon: Target,
+        matchPrefixes: ["/claver-cloud/comercial/upgrades-arca", "/claver-cloud/comercial/relevamientos", "/claver-cloud/comercial/campo"],
+      },
+      { name: "billing", href: "/claver-cloud/billing", icon: CreditCard },
+      { name: "partnersPayouts", href: "/claver-cloud/partners", icon: Users },
     ],
   },
   {
     label: "platform",
     items: [
-      { name: "superAdmin", href: "/claver-cloud/superadmin", icon: Shield },
       {
-        name: "tenants",
-        href: "/claver-cloud/organizations",
+        name: "fleet",
+        href: "/claver-cloud/operations",
         icon: Building2,
-        matchPrefixes: ["/claver-cloud/tenants"],
+        matchPrefixes: ["/claver-cloud/tenants", "/claver-cloud/organizations", "/claver-cloud/superadmin"],
       },
       { name: "provisioning", href: "/claver-cloud/provisioning", icon: PlusSquare },
-      { name: "demoHealth", href: "/claver-cloud/demo-health", icon: ShieldCheck },
-      { name: "goLive", href: "/claver-cloud/go-live", icon: Rocket },
-      { name: "partnersPayouts", href: "/claver-cloud/partners", icon: Users },
-      { name: "operations", href: "/claver-cloud/operations", icon: Server },
-      { name: "implementation", href: "/claver-cloud/implementation", icon: Target },
+      { name: "goLive", href: "/claver-cloud/go-live", icon: Rocket,
+        matchPrefixes: ["/claver-cloud/implementation"],
+      },
       { name: "marketplace", href: "/claver-cloud/marketplace", icon: Store },
+      { name: "platformHealth", href: "/claver-cloud/platform-health", icon: Shield,
+        matchPrefixes: ["/claver-cloud/demo-health"],
+      },
     ],
   },
   {
-    label: "protheus",
+    label: "integraciones",
     items: [
       { name: "setupProtheus", href: "/claver-cloud/protheus-setup", icon: Wrench },
-      { name: "opoConsole", href: "/claver-cloud/opo-console", icon: Network },
-      { name: "restApi", href: "/claver-cloud/protheus-api", icon: BookOpen },
+      { name: "opoConsole", href: "/claver-cloud/opo-console", icon: Network,
+        matchPrefixes: ["/claver-cloud/protheus-api"],
+      },
     ],
   },
   {
     label: "admin",
     items: [
-      { name: "billing", href: "/claver-cloud/billing", icon: CreditCard },
       { name: "settings", href: "/claver-cloud/settings", icon: Settings },
     ],
   },

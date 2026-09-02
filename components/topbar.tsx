@@ -45,7 +45,7 @@ import { NotificationCenter, type Notification } from "@/components/notification
 import { TrialTopbarPill } from "@/components/dashboard/trial-topbar-pill"
 import { ProductContextPill } from "@/components/dashboard/product-context-pill"
 import { ExperienceSwitcher } from "@/components/ops/experience-switcher"
-import { PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
+import { canSeeActoresButton, PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
 
 interface TopbarProps {
   onSearchClick?: () => void
@@ -407,7 +407,7 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
                 Mi Perfil
               </Link>
             </DropdownMenuItem>
-            {(isClaverAnalyst || ["administrador", "admin", "dueno"].includes(userRol ?? "")) && (
+            {canSeeActoresButton({ rol: userRol, isAnalyst: isClaverAnalyst }) && (
               <DropdownMenuItem
                 className="gap-2 cursor-pointer"
                 onSelect={(e) => {

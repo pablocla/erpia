@@ -2,10 +2,12 @@ import Link from "next/link"
 import {
   ArrowRight,
   BarChart3,
+  Building2,
   CheckCircle2,
   ChevronRight,
   ClipboardList,
   CreditCard,
+  Dumbbell,
   FileText,
   HelpCircle,
   Lock,
@@ -16,6 +18,8 @@ import {
   Smartphone,
   Sparkles,
   Store,
+  UtensilsCrossed,
+  Wrench,
   Users,
   Zap,
 } from "lucide-react"
@@ -235,6 +239,27 @@ export function LandingHomePuertas() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {[
+                { href: "/login/register?activar=kiosco", label: "Kiosco", hint: "Caja y fiado", Icon: Store },
+                { href: "/login/register?activar=taller", label: "Taller", hint: "Por patente", Icon: Wrench },
+                { href: "/login/register?activar=gimnasio", label: "Gimnasio", hint: "Socios", Icon: Dumbbell },
+                { href: "/login/register?activar=oficios", label: "Oficios", hint: "Presupuesto", Icon: ClipboardList },
+                { href: "/login/register?activar=gastronomia", label: "Restó", hint: "Mesas y KDS", Icon: UtensilsCrossed },
+                { href: "/login/register?activar=pyme", label: "Empresa", hint: "POS general", Icon: Building2 },
+              ].map((door) => (
+                <Link
+                  key={door.href}
+                  href={door.href}
+                  className="group rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-3 text-left hover:border-emerald-500/40 hover:bg-slate-900 transition"
+                >
+                  <door.Icon className="h-4 w-4 text-emerald-400 mb-2" />
+                  <p className="text-sm font-semibold text-white">{door.label}</p>
+                  <p className="text-[11px] text-slate-400">{door.hint}</p>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

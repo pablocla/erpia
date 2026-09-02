@@ -202,7 +202,7 @@ export function useAuth() {
 
   const loginConGoogle = async (
     idToken: string,
-    opts?: { empresaNombre?: string },
+    opts?: { empresaNombre?: string; activar?: string },
   ): Promise<{
     success: boolean
     error?: string
@@ -211,6 +211,7 @@ export function useAuth() {
     googleUser?: { email: string; nombre: string; avatarUrl?: string }
     usuario?: Usuario
     token?: string
+    onboarding?: { landingPath: string }
   }> => {
     try {
       const res = await fetch("/api/auth/google", {
@@ -220,6 +221,7 @@ export function useAuth() {
           idToken,
           // Never send empresaId — free join is disabled server-side
           empresaNombre: opts?.empresaNombre,
+          activar: opts?.activar,
         }),
       })
       const data = await res.json()
@@ -249,6 +251,7 @@ export function useAuth() {
         usuario: data.usuario,
         token: data.token,
         activatedInvite: data.activatedInvite === true,
+        onboarding: data.onboarding ?? undefined,
       }
     } catch {
       return { success: false, error: "Error de conexión con Google" }

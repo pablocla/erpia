@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  canSeeActoresButton,
   homePathForPreviewRol,
   isPreviewActorCodigo,
   labelForPreviewActor,
@@ -40,6 +41,19 @@ describe("preview experience permissions", () => {
     expect(canPreviewExperience({ email: CLAVER_OWNER_EMAIL, rol: "administrador" })).toBe(true)
     expect(canPreviewExperience({ email: "dueño@local.com", rol: "dueno" })).toBe(true)
     expect(canPreviewExperience({ email: "caja@local.com", rol: "cajero" })).toBe(false)
+  })
+
+  it("el botón Actores no lo ven cajero, mozo ni vendedor", () => {
+    expect(canSeeActoresButton({ rol: "administrador" })).toBe(true)
+    expect(canSeeActoresButton({ rol: "admin" })).toBe(true)
+    expect(canSeeActoresButton({ rol: "dueno" })).toBe(true)
+    expect(canSeeActoresButton({ rol: "cajero" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "mozo" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "vendedor" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "profesional" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "deposito" })).toBe(false)
+    expect(canSeeActoresButton({ rol: null })).toBe(false)
+    expect(canSeeActoresButton({ rol: "cajero", isAnalyst: true })).toBe(true)
   })
 
   it("solo analistas/owner arman demo de rubro", () => {

@@ -61,4 +61,13 @@ describe("activar-intent", () => {
     expect(mensajeActivarTrial("niche.oficios")).toMatch(/seña/i)
     expect(mensajeActivarTrial("niche.oficios")).not.toMatch(/14 d[ií]as/i)
   })
+
+  it("resuelve puertas de rubro del registro (kiosco/taller/gimnasio/pyme)", () => {
+    expect(resolveActivarIntent("kiosco")?.landingPath).toBe("/dashboard/fiado")
+    expect(resolveActivarIntent("kiosco")?.modoLite).toBe("fiado")
+    expect(resolveActivarIntent("taller")?.landingPath).toBe("/dashboard/nicho/taller")
+    expect(resolveActivarIntent("gimnasio")?.landingPath).toBe("/dashboard/membresias")
+    expect(resolveActivarIntent("pyme")?.landingPath).toBe("/dashboard/pos")
+    expect(resolveActivarIntent("pyme")?.modoLite).toBe("pos")
+  })
 })

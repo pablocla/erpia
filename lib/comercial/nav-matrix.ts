@@ -21,6 +21,7 @@ export const NAV_SHARED_PATHS = [
   "/dashboard/capacitacion",
   "/dashboard/trial-vencido",
   "/dashboard/soporte",
+  "/dashboard/especialista",
   "/dashboard/alertas",
   "/dashboard/centro-alertas",
 ] as const

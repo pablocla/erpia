@@ -7,7 +7,7 @@ import { checkRateLimit } from "@/lib/auth/rate-limiter"
  *
  * Grupo Claver — Google Sign-In for all product surfaces (ERP, portal cliente, etc.).
  *
- * Body: { idToken: string, empresaNombre?: string }
+ * Body: { idToken: string, empresaNombre?: string, activar?: string }
  *
  * - Existing active user (email/googleId) → JWT
  * - Invited inactive user with open invite → activate + JWT
@@ -21,10 +21,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { idToken, empresaNombre, empresaId } = body as {
+    const { idToken, empresaNombre, empresaId, activar } = body as {
       idToken?: string
       empresaNombre?: string
       empresaId?: number
+      activar?: string
     }
 
     if (!idToken) {
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       idToken,
       empresaNombre,
       empresaId,
+      activar,
     })
 
     if (!result.success) {
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
       usuario: result.usuario,
       isNewUser: result.isNewUser,
       activatedInvite: result.activatedInvite ?? false,
+      onboarding: result.onboarding ?? null,
     })
   } catch (error) {
     console.error("[Google Auth] Error:", error)

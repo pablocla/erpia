@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma"
 import { resolveActivarIntent } from "@/lib/comercial/activar-intent"
 import { applyRetailOnboarding } from "@/lib/comercial/retail-onboarding-service"
+import { resolveRubroSignup } from "@/lib/comercial/rubro-signup"
 import { getTrialStatus, setTrialExpiresAt } from "@/lib/comercial/trial-service"
 import { esAltaAnclaSinTrial, resolveOferta } from "@/lib/comercial/ofertas-comerciales"
 import type { ApplyRetailOnboardingResult } from "@/lib/comercial/retail-onboarding-service"
@@ -31,6 +32,9 @@ export async function applyActivarIntent(
     throw new Error("Empresa no encontrada")
   }
 
+  const door = resolveRubroSignup(input.activar)
+  const rubro = door?.rubroEmpresa ?? empresa.rubro ?? "kiosco"
+
   const onboardingPrevio = await prisma.parametroFiscal.findUnique({
     where: {
       empresaId_clave_pais: {
@@ -49,9 +53,9 @@ export async function applyActivarIntent(
     await setTrialExpiresAt(input.empresaId, expires, trialDias)
   }
 
-  return applyRetailOnboarding({
+  const result = await applyRetailOnboarding({
     empresaId: input.empresaId,
-    rubro: empresa.rubro ?? "otro",
+    rubro,
     engancheId: intent.engancheId,
     modoLite: intent.modoLite,
     productos: [],
@@ -59,4 +63,9 @@ export async function applyActivarIntent(
     origen: input.origen ?? "activar_intent",
     skipSeed: Boolean(onboardingPrevio),
   })
+
+  return {
+    ...result,
+    landingPath: intent.landingPath || result.landingPath,
+  }
 }

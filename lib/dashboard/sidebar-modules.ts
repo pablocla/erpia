@@ -26,6 +26,8 @@ import {
   Package,
   CalendarDays,
   FileCheck,
+  Gamepad2,
+  Bot,
 } from "lucide-react"
 
 export interface DashboardMenuItem {
@@ -107,6 +109,15 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
       { href: "/dashboard/oficios/alquileres", icon: Truck, label: "Alquiler Maquinaria", skuKey: "niche.oficios" },
       { href: "/dashboard/oficios/services", icon: Clock, label: "Services & Mantenimiento", skuKey: "niche.oficios" },
       { href: "/dashboard/afiliados", icon: Gift, label: "Mi Red & Ganancias", badge: "25%", skuKey: "niche.oficios" },
+    ],
+  },
+  {
+    label: "IA & Cuadrilla Digital",
+    color: "text-cyan-400",
+    items: [
+      { href: "/campus", icon: Gamepad2, label: "Campus 2D (Oficina Pixel)", badge: "Juego" },
+      { href: "/claver/agent-city/app", icon: Bot, label: "Agent City (Torre de Control)", badge: "Lab" },
+      { href: "/dashboard/empleados-digitales", icon: Users, label: "Empleados Digitales", badge: "Jobs" },
     ],
   },
   {

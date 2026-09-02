@@ -23,6 +23,8 @@ export type FunnelEvento =
   | "demo_rubro"
   | "lead_provisionado"
   | "upgrade_arca_certificado"
+  | "especialista_checkout"
+  | "especialista_pagado"
 
 const EVENTO_LABELS: Record<FunnelEvento, string> = {
   consulta_web: "Consulta comercial web",
@@ -30,6 +32,8 @@ const EVENTO_LABELS: Record<FunnelEvento, string> = {
   demo_rubro: "Demo por rubro abierta",
   lead_provisionado: "Lead provisionado en Cloud",
   upgrade_arca_certificado: "Upgrade pendiente: certificado ARCA / WhatsApp",
+  especialista_checkout: "Checkout pack especialista",
+  especialista_pagado: "Pack especialista pagado",
 }
 
 function appUrl(path = ""): string {

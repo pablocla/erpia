@@ -50,6 +50,8 @@ export interface PreferenciaInput {
     failure?: string
     pending?: string
   }
+  marketplaceFee?: number
+  takeRatePercentage?: number
 }
 
 export async function crearPreferenciaPago(input: PreferenciaInput) {
@@ -57,6 +59,17 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
   if (!config?.activo) throw new Error("MercadoPago no está configurado o está inactivo")
 
   const baseUrl = getPublicAppUrl()
+
+  // Calcular comisión / Take-rate de Claver (default 2.5% sobre la seña o pago)
+  const defaultTakeRate = Number(process.env.CLAVER_TAKE_RATE_PERCENT ?? "2.5") / 100
+  const marketplaceFee =
+    input.marketplaceFee !== undefined
+      ? input.marketplaceFee
+      : input.takeRatePercentage !== undefined
+        ? Math.round(input.monto * (input.takeRatePercentage / 100) * 100) / 100
+        : process.env.MP_MARKETPLACE_ACCESS_TOKEN || process.env.ENABLE_MARKETPLACE_TAKE_RATE === "true"
+          ? Math.round(input.monto * defaultTakeRate * 100) / 100
+          : undefined
 
   // Llamar a la API de MercadoPago para crear preferencia
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -74,6 +87,7 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
           currency_id: "ARS",
         },
       ],
+      ...(marketplaceFee && marketplaceFee > 0 ? { marketplace_fee: marketplaceFee } : {}),
       external_reference: input.externalReference ?? `fac-${input.facturaId ?? "manual"}`,
       payer: input.emailPagador ? { email: input.emailPagador } : undefined,
       back_urls: input.backUrls ?? {
@@ -91,7 +105,14 @@ export async function crearPreferenciaPago(input: PreferenciaInput) {
     throw new Error(`Error MercadoPago: ${err}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  return {
+    ...data,
+    initPoint: data.init_point ?? data.sandbox_init_point,
+    init_point: data.init_point,
+    sandbox_init_point: data.sandbox_init_point,
+    marketplaceFee,
+  }
 }
 
 // ─── Procesar webhook de notificación ───────────────────────────────────────

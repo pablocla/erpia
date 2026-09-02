@@ -6,6 +6,7 @@ import { ThemeConfigProvider } from '@/lib/theme-config'
 import { Toaster } from '@/components/ui/toaster'
 import { ReportErrorButton } from '@/components/report-error-button'
 import { CommandPalette } from '@/components/command-palette'
+import { PageTrackerProvider } from '@/components/page-tracker-provider'
 import { ChatWidget } from '@/components/chat-widget'
 import { getEffectiveLocale } from '@/lib/i18n/request-locale'
 import { I18nProvider } from '@/components/i18n-provider'
@@ -107,7 +108,9 @@ export default async function RootLayout({
         <I18nProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
             <ThemeConfigProvider>
-              {children}
+              <PageTrackerProvider>
+                {children}
+              </PageTrackerProvider>
               <CommandPalette />
               <ChatWidget />
               <ReportErrorButton />

@@ -35,6 +35,7 @@ import { AppChecklistWidget } from "@/components/marketing/app-checklist-widget"
 import { TrialBanner } from "@/components/trial-banner"
 import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
 import { getSubSaasExperience } from "@/lib/comercial/app-experience"
+import { EspecialistaLaunchBanner } from "@/components/servicios-especialista/especialista-launch-banner"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
@@ -213,6 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {!isPosShell && !pathname.startsWith("/dashboard/fumigacion") && (
               <div className="mx-auto w-full max-w-[1400px] mb-3 space-y-3">
                 <TrialBanner />
+                <EspecialistaLaunchBanner forceOpen={freshSignup} />
                 <DashboardAlertsHub />
               </div>
             )}

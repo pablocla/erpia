@@ -11,6 +11,7 @@ import {
 } from "@/lib/comercial/pack-calle-catalog"
 import { getSubSaasApp, SUB_SAAS_APPS } from "@/lib/comercial/sub-saas-catalog"
 import { resolveMarketProductIntent } from "@/lib/comercial/market-catalog"
+import { resolveRubroSignup } from "@/lib/comercial/rubro-signup"
 
 export interface ActivarIntent {
   engancheId: string
@@ -74,6 +75,19 @@ function fromSkuFallback(sku: string): ActivarIntent | null {
   }
 }
 
+function fromRubroSignup(raw: string): ActivarIntent | null {
+  const door = resolveRubroSignup(raw)
+  if (!door) return null
+  return {
+    engancheId: door.engancheId,
+    modoLite: door.modoLite,
+    landingPath: door.landingPath,
+    productName: door.label,
+    marca: door.marca,
+    lema: door.lema,
+  }
+}
+
 export function resolveActivarIntent(activar: string | null | undefined): ActivarIntent | null {
   const raw = activar?.trim()
   if (!raw) return null
@@ -88,6 +102,9 @@ export function resolveActivarIntent(activar: string | null | undefined): Activa
 
   const byPack = fromPackCalle(decoded)
   if (byPack) return byPack
+
+  const byRubro = fromRubroSignup(decoded)
+  if (byRubro) return byRubro
 
   if (decoded.includes(".") || decoded.startsWith("ECOM-") || decoded.startsWith("gen.")) {
     return fromSkuFallback(decoded)

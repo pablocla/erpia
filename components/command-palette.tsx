@@ -59,8 +59,9 @@ import {
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { useTheme } from "next-themes"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
-import { PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
+import { canSeeActoresButton, PREVIEW_OPEN_EVENT } from "@/lib/auth/preview-experience-catalog"
 import { useUIStore } from "@/lib/stores/ui-store"
+import { useAuthStore } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
 
@@ -168,6 +169,7 @@ const ROUTES: RouteItem[] = [
   { href: "/dashboard/documentacion/room/flujo-fiado-leo", label: "Flujo Fiado → Leo", icon: BookOpen, section: "Claver Docs", keywords: ["fiado", "leo", "cobranza", "whatsapp"] },
   { href: "/dashboard/capacitacion", label: "Centro de Capacitación", icon: BookOpen, section: "Claver Docs", keywords: ["capacitación", "manual", "usuario"] },
   // Config
+  { href: "/dashboard/especialista", label: "Especialista 1 a 1", icon: ClipboardList, section: "Configuración", keywords: ["implementación", "pack", "puesta a punto", "especialista", "setup"] },
   { href: "/dashboard/configuracion", label: "Parámetros", icon: Settings, section: "Configuración", keywords: ["config", "parámetro", "setting"] },
   { href: "/dashboard/usuarios", label: "Usuarios y Permisos", icon: Shield, section: "Configuración", keywords: ["usuario", "permiso", "rol"] },
   // Claver Interno (analistas)
@@ -183,6 +185,8 @@ export function CommandPalette() {
   const router = useRouter()
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
+  const userRol = useAuthStore((s) => s.user?.rol)
+  const canActores = canSeeActoresButton({ rol: userRol })
   const [docItems, setDocItems] = useState<any[]>([])
   const [modoLite, setModoLite] = useState<string>("completo")
 
@@ -287,16 +291,18 @@ export function CommandPalette() {
               <CommandShortcut>AT</CommandShortcut>
             </CommandItem>
           )}
-          <CommandItem
-            value="probar como actor rol rubro experiencia"
-            onSelect={() => {
-              setCommandPaletteOpen(false)
-              window.dispatchEvent(new Event(PREVIEW_OPEN_EVENT))
-            }}
-          >
-            <Drama className="mr-2 h-4 w-4 text-violet-500" />
-            <span>Probar como actor / rubro</span>
-          </CommandItem>
+          {canActores && (
+            <CommandItem
+              value="probar como actor rol rubro experiencia"
+              onSelect={() => {
+                setCommandPaletteOpen(false)
+                window.dispatchEvent(new Event(PREVIEW_OPEN_EVENT))
+              }}
+            >
+              <Drama className="mr-2 h-4 w-4 text-violet-500" />
+              <span>Probar como actor / rubro</span>
+            </CommandItem>
+          )}
           <CommandItem value="nuevo pedido de venta accion rapida" onSelect={() => navigate("/dashboard/ventas/pedidos")}>
             <ShoppingCart className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>{t("actions.newSalesOrder")}</span>

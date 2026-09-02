@@ -108,6 +108,7 @@ model Empresa {
   ordenesCompra               OrdenCompra[]
   pedidosVenta                PedidoVenta[]
   presupuestos                Presupuesto[]
+  agentApiKeys                AgentApiKey[]
   envios                      Envio[]
   tiposEnvase                 TipoEnvase[]
   movimientosEnvase           MovimientoEnvase[]
@@ -8569,4 +8570,60 @@ model OficioAlquilerContrato {
   @@index([empresaId, estado])
   @@index([clienteId])
   @@map("oficio_alquiler_contratos")
+}
+
+model AgentApiKey {
+  id          String    @id @default(cuid())
+  empresaId   Int
+  agentId     String
+  floorId     String
+  keyHash     String    @unique
+  permisos    String[]
+  activa      Boolean   @default(true)
+  creadaEn    DateTime  @default(now())
+  ultimoUso   DateTime?
+  empresa     Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  
+  @@index([empresaId, agentId])
+}
+
+// ─── Claver Analytics — PageView & Funnel Tracking ─────────────────────
+
+model PageView {
+  id         Int      @id @default(autoincrement())
+  sessionId  String   @db.VarChar(64)
+  empresaId  Int?
+  usuarioId  Int?
+  path       String   @db.VarChar(500)
+  referrer   String?  @db.VarChar(500)
+  userAgent  String?  @db.VarChar(500)
+  duracionMs Int?
+  evento     String   @default("pageview") @db.VarChar(100)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([empresaId])
+  @@index([path])
+  @@index([createdAt])
+  @@index([evento])
+  @@map("page_views")
+}
+
+model FunnelStep {
+  id         Int      @id @default(autoincrement())
+  sessionId  String   @db.VarChar(64)
+  empresaId  Int?
+  usuarioId  Int?
+  funnelId   String   @db.VarChar(50)
+  stepOrder  Int
+  stepName   String   @db.VarChar(100)
+  completed  Boolean  @default(false)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([funnelId, stepOrder])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("funnel_steps")
 }

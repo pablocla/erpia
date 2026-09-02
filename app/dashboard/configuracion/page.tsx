@@ -833,12 +833,17 @@ function ConfiguracionPageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PactarImplementacionArca
-                  triggerLabel="Pactar implementación ARCA / WhatsApp"
-                  pagina="/dashboard/configuracion?seccion=afip"
-                  defaultArca
-                  defaultWhatsapp
-                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <PactarImplementacionArca
+                    triggerLabel="Pactar implementación ARCA / WhatsApp"
+                    pagina="/dashboard/configuracion?seccion=afip"
+                    defaultArca
+                    defaultWhatsapp
+                  />
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard/especialista">Packs 1 a 1 (pago)</Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
             <Card>

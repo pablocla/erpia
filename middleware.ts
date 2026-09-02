@@ -34,6 +34,7 @@ const RUTAS_PUBLICAS = [
   "/api/webhooks/stripe",
   "/api/cron/",
   "/api/public/",
+  "/api/agent-city",
 ]
 
 // ─── Static asset extensions ──────────────────────────────────────────────────

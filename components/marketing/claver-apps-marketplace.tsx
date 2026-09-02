@@ -124,6 +124,9 @@ export function ClaverAppsMarketplace() {
               </li>
             </ul>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20" asChild>
+                <Link href="/claver/agent-city">Probar Agent City (lab)</Link>
+              </Button>
               <Button
                 size="lg"
                 className="h-12 bg-emerald-500 px-8 font-semibold text-slate-950 hover:bg-emerald-400"

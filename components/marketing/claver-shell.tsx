@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Menu, X, Cloud, LayoutGrid, MonitorPlay, Receipt, Mail, Server } from "lucide-react"
+import { ArrowRight, Menu, X, Cloud, LayoutGrid, MonitorPlay, Receipt, Mail, Server, Building2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CLAVER_NAV, CLAVER_GROUP } from "@/lib/marketing/brand-system"
 import { BrandLogo } from "@/components/marketing/brand-logo"
@@ -119,6 +119,7 @@ export function ClaverShell({ children, context = "matrix", theme = "dark-hero",
             {CLAVER_NAV.filter((item) => !item.href.includes("/claver/apps")).map((item) => {
               const Icon = 
                 item.href.includes("apps") ? LayoutGrid :
+                item.href.includes("agent-city") ? Building2 :
                 item.href.includes("claverp") && !item.href.includes("precios") ? Server :
                 item.href.includes("demo") ? MonitorPlay :
                 item.href.includes("precios") ? Receipt :

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
+import { RUBROS_SIGNUP } from "@/lib/comercial/rubro-signup"
 
 function RegisterPageContent() {
   const router = useRouter()
@@ -36,6 +37,7 @@ function RegisterPageContent() {
     avatarUrl?: string
     idToken: string
   } | null>(null)
+  const [selectedRubro, setSelectedRubro] = useState<string>("kiosco")
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
@@ -95,16 +97,21 @@ function RegisterPageContent() {
     try {
       // ── Flujo Google: crear empresa y usuario vía /api/auth/google ──────
       if (googleUser) {
+        const activarKey = activarParam || selectedRubro
         const result = await loginConGoogle(googleUser.idToken, {
           empresaNombre: form.empresa,
+          activar: activarKey,
         })
         if (!result.success) {
           setError(result.error ?? "Error al crear la cuenta con Google")
           return
         }
 
-        let dest = "/dashboard"
-        if (activarIntent && activarParam && result.token) {
+        let dest =
+          result.onboarding?.landingPath ??
+          resolveActivarIntent(activarKey)?.landingPath ??
+          "/dashboard"
+        if (activarIntent && activarParam && result.token && !result.onboarding?.landingPath) {
           const r = await activarProductoDesdeIntent(result.token, activarParam)
           if (r.landingPath) dest = r.landingPath
         }
@@ -129,7 +136,7 @@ function RegisterPageContent() {
           nombre: form.nombre,
           email: form.email,
           password: form.password,
-          activar: activarParam || undefined,
+          activar: activarParam || selectedRubro || undefined,
           ref: refParam || undefined,
           acceptTerms: true,
         }),
@@ -215,17 +222,39 @@ function RegisterPageContent() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="empresa">Nombre de la empresa</Label>
+              <Label htmlFor="empresa">Nombre de tu Negocio / Empresa</Label>
               <Input
                 id="empresa"
                 name="empresa"
                 value={form.empresa}
                 onChange={handleChange}
                 required
-                placeholder="Mi Empresa SRL"
+                placeholder="Ej: Kiosco Central / Taller San Martín"
                 autoComplete="organization"
               />
             </div>
+
+            {!activarParam && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Rubro principal (para personalizar tu pantalla inicial)</Label>
+                <div className="grid grid-cols-3 gap-1.5 text-xs">
+                  {RUBROS_SIGNUP.map((rubro) => (
+                    <button
+                      key={rubro.id}
+                      type="button"
+                      onClick={() => setSelectedRubro(rubro.id)}
+                      className={`p-2 rounded-lg border text-left text-[11px] font-medium transition-all ${
+                        selectedRubro === rubro.id
+                          ? "border-primary bg-primary/10 text-primary font-bold shadow-sm"
+                          : "border-border hover:bg-muted/50 text-muted-foreground"
+                      }`}
+                    >
+                      {rubro.emoji} {rubro.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="nombre">Tu nombre</Label>
@@ -341,11 +370,20 @@ function RegisterPageContent() {
                     setError("")
                     setCargando(true)
                     try {
+                      const activarKey = activarParam || selectedRubro
                       const result = await loginConGoogle(idToken, {
                         empresaNombre: form.empresa || undefined,
+                        activar: activarKey,
                       })
                       if (result.success && result.usuario) {
-                        router.push("/dashboard")
+                        try {
+                          localStorage.setItem("claver_fresh_signup", "1")
+                        } catch { /* ignore */ }
+                        const dest =
+                          result.onboarding?.landingPath ??
+                          resolveActivarIntent(activarKey)?.landingPath ??
+                          "/dashboard"
+                        router.push(dest)
                       } else if (result.needsEmpresa) {
                         setGoogleUser({ ...result.googleUser!, idToken })
                         setForm((prev) => ({

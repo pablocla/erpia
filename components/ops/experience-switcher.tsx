@@ -15,8 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { authFetch } from "@/lib/stores/auth-store"
 import { useAuthFetch } from "@/hooks/use-auth-fetch"
-import { canManageUsers } from "@/lib/auth/admin-roles"
 import {
+  canSeeActoresButton,
   listPreviewActors,
   listPreviewRubros,
   PREVIEW_OPEN_EVENT,
@@ -39,7 +39,11 @@ export function ExperienceSwitcher({ forceShow = false, className }: ExperienceS
   const isHydrated = useAuthStore((s) => s.isHydrated)
   const { data: analystData } = useAuthFetch<{ isAnalyst?: boolean }>("/api/claver/analista/status")
   const isAnalyst = Boolean(analystData?.isAnalyst)
-  const canRoles = Boolean(forceShow || isAnalyst || (isHydrated && user?.rol && canManageUsers(user.rol)))
+  const canRoles = canSeeActoresButton({
+    forceShow,
+    isAnalyst,
+    rol: isHydrated ? user?.rol : null,
+  })
   const canRubros = Boolean(forceShow || isAnalyst)
 
   const [open, setOpen] = useState(false)
@@ -47,10 +51,14 @@ export function ExperienceSwitcher({ forceShow = false, className }: ExperienceS
   const [error, setError] = useState("")
 
   useEffect(() => {
+    if (!canRoles) {
+      setOpen(false)
+      return
+    }
     const onOpen = () => setOpen(true)
     window.addEventListener(PREVIEW_OPEN_EVENT, onOpen)
     return () => window.removeEventListener(PREVIEW_OPEN_EVENT, onOpen)
-  }, [])
+  }, [canRoles])
 
   const enterRol = useCallback(async (rol: string) => {
     setError("")

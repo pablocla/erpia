@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { Lock, Sparkles, CheckCircle2, CalendarClock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DISPAROS_CONFIG, type DisparoKey } from "@/lib/comercial/paywall-disparo"
 import { PactarImplementacionArca } from "@/components/comercial/pactar-implementacion-arca"
+import { trackFunnel } from "@/hooks/use-page-tracker"
 
 export interface PaywallModalProps {
   open: boolean
@@ -33,6 +34,13 @@ export function PaywallModal({
 }: PaywallModalProps) {
   const router = useRouter()
   const [pactarOpen, setPactarOpen] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      trackFunnel("conversion", "hit_paywall")
+    }
+  }, [open])
+
   const config = disparoKey ? DISPAROS_CONFIG[disparoKey] : null
 
   const modalTitle = config?.titulo ?? title ?? "Función Premium"
@@ -68,6 +76,7 @@ export function PaywallModal({
               size="lg"
               className="w-full bg-emerald-600 hover:bg-emerald-500 font-semibold text-white shadow-sm"
               onClick={() => {
+                trackFunnel("conversion", "view_plans")
                 if (pactar) {
                   onOpenChange(false)
                   setPactarOpen(true)

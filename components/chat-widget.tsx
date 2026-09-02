@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useCallback } from "react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -12,6 +13,7 @@ import { AiChatPanel } from "@/components/ia/ai-chat-panel"
 import { useState } from "react"
 
 export function ChatWidget() {
+  const pathname = usePathname()
   const chatOpen = useUIStore((s) => s.chatWidgetOpen)
   const setChatOpen = useUIStore((s) => s.setChatWidgetOpen)
   const [expanded, setExpanded] = useState(false)
@@ -36,6 +38,7 @@ export function ChatWidget() {
   }, [chatOpen, setChatOpen])
 
 
+  if (pathname?.startsWith("/claver/agent-city/app")) return null
   if (!chatOpen) return null
 
   return (

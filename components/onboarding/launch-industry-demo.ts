@@ -127,7 +127,7 @@ async function provisionIndustryDemoOnce(
 export async function launchIndustryDemo(
   industryId: string,
   loginConToken: (token: string, usuario: DemoUsuario) => void,
-  options?: { present?: boolean; activar?: string | null },
+  options?: { present?: boolean; activar?: string | null; nextPath?: string | null },
 ): Promise<string> {
   const activar = options?.activar?.trim() || ""
   const cacheKey = `${industryId}::${activar}`
@@ -136,7 +136,8 @@ export async function launchIndustryDemo(
     // Persistir sesión ANTES de devolver el path (evita race con dashboard)
     persistDemoSession(result.token, result.usuario)
     loginConToken(result.token, result.usuario)
-    return appendPresentQuery(result.dest, options?.present)
+    const override = safeDashboardPath(options?.nextPath)
+    return appendPresentQuery(override ?? result.dest, options?.present)
   }
 
   const recent = recentByKey.get(cacheKey)

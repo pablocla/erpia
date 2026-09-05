@@ -57,6 +57,17 @@ export const FUNNEL_DEFINITIONS = {
       { order: 5, name: "renew_subscription", label: "Renueva suscripción" },
     ],
   },
+  facebook_erp: {
+    id: "facebook_erp",
+    label: "Facebook → ERP",
+    description: "Anuncio → /erp → entra al sistema",
+    steps: [
+      { order: 1, name: "visit_landing", label: "Entra a /erp" },
+      { order: 2, name: "click_modulo", label: "Toca un módulo CORE" },
+      { order: 3, name: "enter_demo", label: "Entra al ERP demo" },
+      { order: 4, name: "complete_signup", label: "Crea cuenta propia" },
+    ],
+  },
 } as const
 
 export type FunnelId = keyof typeof FUNNEL_DEFINITIONS
@@ -419,4 +430,103 @@ export async function getAnalyticsAlerts(): Promise<AnalyticsAlert[]> {
   }
 
   return alerts
+}
+
+function metaString(metadata: unknown, key: string): string | null {
+  if (!metadata || typeof metadata !== "object") return null
+  const value = (metadata as Record<string, unknown>)[key]
+  return typeof value === "string" && value.length > 0 ? value : null
+}
+
+export async function getFacebookCampaignPulse(days = 7) {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+
+  const hits = await prisma.pageView.findMany({
+    where: {
+      createdAt: { gte: since },
+      OR: [
+        { path: { startsWith: "/erp" } },
+        { evento: { startsWith: "fb_" } },
+        { metadata: { path: ["utmSource"], equals: "facebook" } },
+        { metadata: { path: ["ref"], equals: "fb" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    take: 2000,
+    select: {
+      id: true,
+      sessionId: true,
+      path: true,
+      evento: true,
+      referrer: true,
+      createdAt: true,
+      empresaId: true,
+      metadata: true,
+    },
+  })
+
+  const sessions = new Set(hits.map((h) => h.sessionId))
+  const landings = hits.filter((h) => h.path.startsWith("/erp") || h.evento === "fb_pulse")
+  const moduloClicks = hits.filter((h) => h.evento === "fb_click_modulo")
+  const enters = hits.filter((h) => h.evento === "fb_enter_erp")
+  const dashboardHits = hits.filter((h) => h.path.startsWith("/dashboard"))
+  const dashboardSessions = new Set(dashboardHits.map((h) => h.sessionId))
+
+  const byCampaign = new Map<string, { sessions: Set<string>; hits: number; enters: number }>()
+  const byPath = new Map<string, number>()
+  const byModulo = new Map<string, number>()
+
+  for (const hit of hits) {
+    const campaign = metaString(hit.metadata, "utmCampaign") ?? "sin-campaign"
+    let bucket = byCampaign.get(campaign)
+    if (!bucket) {
+      bucket = { sessions: new Set(), hits: 0, enters: 0 }
+      byCampaign.set(campaign, bucket)
+    }
+    bucket.sessions.add(hit.sessionId)
+    bucket.hits += 1
+    if (hit.evento === "fb_enter_erp") bucket.enters += 1
+
+    byPath.set(hit.path, (byPath.get(hit.path) ?? 0) + 1)
+
+    const modulo = metaString(hit.metadata, "modulo")
+    if (modulo) byModulo.set(modulo, (byModulo.get(modulo) ?? 0) + 1)
+  }
+
+  return {
+    periodo: { days, desde: since.toISOString() },
+    pulso: {
+      hits: hits.length,
+      sesiones: sessions.size,
+      landings: landings.length,
+      clicksModulo: moduloClicks.length,
+      entradasErp: enters.length,
+      sesionesEnDashboard: dashboardSessions.size,
+    },
+    porCampana: [...byCampaign.entries()]
+      .map(([id, b]) => ({
+        utmCampaign: id,
+        sesiones: b.sessions.size,
+        hits: b.hits,
+        entradasErp: b.enters,
+      }))
+      .sort((a, b) => b.sesiones - a.sesiones),
+    porSubpagina: [...byPath.entries()]
+      .map(([path, views]) => ({ path, views }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 20),
+    porModulo: [...byModulo.entries()]
+      .map(([modulo, clicks]) => ({ modulo, clicks }))
+      .sort((a, b) => b.clicks - a.clicks),
+    recientes: hits.slice(0, 40).map((h) => ({
+      id: h.id,
+      sessionId: h.sessionId.slice(0, 8),
+      path: h.path,
+      evento: h.evento,
+      utmCampaign: metaString(h.metadata, "utmCampaign"),
+      modulo: metaString(h.metadata, "modulo"),
+      createdAt: h.createdAt.toISOString(),
+    })),
+  }
 }

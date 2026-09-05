@@ -7,6 +7,10 @@
 
 import { useEffect, useRef, useCallback } from "react"
 import { usePathname } from "next/navigation"
+import {
+  attributionToMetadata,
+  captureCampaignAttribution,
+} from "@/lib/analytics/campaign-attribution"
 
 function getSessionId(): string {
   if (typeof window === "undefined") return ""
@@ -56,6 +60,7 @@ export function usePageTracker() {
     if (!sessionId) return
     const { empresaId, usuarioId } = getAuthContext()
 
+    const attribution = captureCampaignAttribution()
     sendTrackEvent({
       type: "pageview",
       sessionId,
@@ -67,9 +72,8 @@ export function usePageTracker() {
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
         language: navigator.language,
-        utmSource: new URLSearchParams(window.location.search).get("utm_source"),
-        utmMedium: new URLSearchParams(window.location.search).get("utm_medium"),
-        utmCampaign: new URLSearchParams(window.location.search).get("utm_campaign"),
+        search: window.location.search || null,
+        ...attributionToMetadata(attribution),
       },
     })
   }, [])
@@ -124,5 +128,29 @@ export function trackFunnel(funnelId: string, stepName: string) {
     usuarioId,
     funnelId,
     stepName,
+  })
+}
+
+/**
+ * Evento custom (pulso de campañas, clicks de módulo, entrada al ERP).
+ */
+export function trackEvent(evento: string, extra?: Record<string, unknown>) {
+  if (typeof window === "undefined") return
+  const sessionId = getSessionId()
+  if (!sessionId) return
+  const { empresaId, usuarioId } = getAuthContext()
+  const attribution = captureCampaignAttribution()
+
+  sendTrackEvent({
+    type: "event",
+    sessionId,
+    empresaId,
+    usuarioId,
+    path: window.location.pathname,
+    evento,
+    metadata: {
+      ...attributionToMetadata(attribution),
+      ...extra,
+    },
   })
 }

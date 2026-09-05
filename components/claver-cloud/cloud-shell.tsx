@@ -54,6 +54,7 @@ const ITEM_FALLBACKS: Record<string, string> = {
   setupProtheus: "Setup Protheus",
   opoConsole: "Consola OPO",
   settings: "Configuración",
+  facebookCampaigns: "Campañas Facebook",
   superAdmin: "Super Admin",
   operations: "Operaciones",
   implementation: "Implementación",

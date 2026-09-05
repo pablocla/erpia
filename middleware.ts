@@ -35,6 +35,7 @@ const RUTAS_PUBLICAS = [
   "/api/cron/",
   "/api/public/",
   "/api/agent-city",
+  "/api/analytics/track",
 ]
 
 // ─── Static asset extensions ──────────────────────────────────────────────────

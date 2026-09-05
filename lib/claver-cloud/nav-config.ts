@@ -49,6 +49,7 @@ export const navSections: NavSection[] = [
       },
       { name: "billing", href: "/claver-cloud/billing", icon: CreditCard },
       { name: "partnersPayouts", href: "/claver-cloud/partners", icon: Users },
+      { name: "facebookCampaigns", href: "/claver-cloud/campanas/facebook", icon: Megaphone },
     ],
   },
   {

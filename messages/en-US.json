@@ -110,7 +110,8 @@
       "opoConsole": "OPO Console",
       "restApi": "REST API",
       "billing": "Billing",
-      "settings": "Settings"
+      "settings": "Settings",
+      "facebookCampaigns": "Facebook campaigns"
     }
   },
   "CommandPalette": {

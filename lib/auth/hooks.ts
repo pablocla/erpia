@@ -19,6 +19,7 @@ interface Usuario {
 function isAuthOptionalPath(pathname: string): boolean {
   if (pathname.startsWith("/login")) return true
   if (pathname.startsWith("/demo")) return true
+  if (pathname.startsWith("/erp")) return true
   if (pathname.startsWith("/claver") && !pathname.startsWith("/claver-cloud")) return true
   if (pathname.startsWith("/marketing")) return true
   if (pathname.startsWith("/modulos")) return true

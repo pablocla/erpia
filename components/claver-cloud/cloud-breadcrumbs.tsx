@@ -23,6 +23,8 @@ const LABELS: Record<string, string> = {
   comercial: "Comercial",
   relevamientos: "Relevamiento calle",
   campo: "Mapa y ruta",
+  campanas: "Campañas",
+  facebook: "Facebook",
 }
 
 function segmentLabel(seg: string, index: number, segments: string[]) {

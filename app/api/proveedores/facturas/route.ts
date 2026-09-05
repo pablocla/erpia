@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getOpoConfig } from "@/lib/opo/opo-config-service"
 import { resolveErpAdapter } from "@/lib/legacy-bridge/adapter-registry"
 
 export async function POST(request: NextRequest) {
   try {
-    const { empresaId, cuitProveedor, facturaData } = await request.json()
+    const auth = await getAuthContext(request)
+    if (!auth.ok) return auth.response
 
-    if (!empresaId || !cuitProveedor || !facturaData) {
+    const body = await request.json()
+    const { cuitProveedor, facturaData } = body
+    const empresaId = auth.auth.empresaId
+
+    if (!cuitProveedor || !facturaData) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 })
     }
 

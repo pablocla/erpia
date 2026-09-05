@@ -22,12 +22,21 @@ import {
   Wrench,
   Users,
   Zap,
+  PartyPopper,
+  Home,
+  GraduationCap,
+  Car,
+  Droplets,
+  Stethoscope,
+  Truck,
 } from "lucide-react"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 import { PactarImplementacionArca } from "@/components/comercial/pactar-implementacion-arca"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { PUERTAS_ESCALA_RAPIDA } from "@/lib/comercial/puertas-catalog"
+import { PACKS_ESPECIALISTAS } from "@/lib/servicios-especialista/especialista-catalog"
 
 /**
  * Landing Home Corporativa para Comercios, Oficios y PyMEs de Argentina.
@@ -241,25 +250,72 @@ export function LandingHomePuertas() {
               </div>
             </div>
 
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {[
-                { href: "/login/register?activar=kiosco", label: "Kiosco", hint: "Caja y fiado", Icon: Store },
-                { href: "/login/register?activar=taller", label: "Taller", hint: "Por patente", Icon: Wrench },
-                { href: "/login/register?activar=gimnasio", label: "Gimnasio", hint: "Socios", Icon: Dumbbell },
-                { href: "/login/register?activar=oficios", label: "Oficios", hint: "Presupuesto", Icon: ClipboardList },
-                { href: "/login/register?activar=gastronomia", label: "Restó", hint: "Mesas y KDS", Icon: UtensilsCrossed },
-                { href: "/login/register?activar=pyme", label: "Empresa", hint: "POS general", Icon: Building2 },
-              ].map((door) => (
-                <Link
-                  key={door.href}
-                  href={door.href}
-                  className="group rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-3 text-left hover:border-emerald-500/40 hover:bg-slate-900 transition"
-                >
-                  <door.Icon className="h-4 w-4 text-emerald-400 mb-2" />
-                  <p className="text-sm font-semibold text-white">{door.label}</p>
-                  <p className="text-[11px] text-slate-400">{door.hint}</p>
-                </Link>
-              ))}
+            {/* ── Las 8 Puertas de Escala Rápida (Zero AFIP Día 1) ── */}
+            <div className="mt-16 pt-12 border-t border-slate-800/80">
+              <div className="text-center max-w-2xl mx-auto mb-8">
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs px-3 py-1 mb-2">
+                  Soluciones Rápidas por Rubro
+                </Badge>
+                <h3 className="text-2xl font-bold text-white font-[var(--font-fraunces)]">
+                  Elegí tu actividad y empezá a cobrar en 30 segundos
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Gratis anotar · Sin AFIP el día uno · Pagás solo cuando cobrás o cuando el cliente te deja colgado.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {PUERTAS_ESCALA_RAPIDA.map((puerta) => {
+                  const iconMap: Record<string, any> = {
+                    PartyPopper,
+                    Home,
+                    Sparkles,
+                    GraduationCap,
+                    Car,
+                    Droplets,
+                    Stethoscope,
+                    Truck,
+                  }
+                  const IconComp = iconMap[puerta.icono] || Store
+
+                  return (
+                    <Link
+                      key={puerta.id}
+                      href={`/login/register?activar=${puerta.id}`}
+                      className="group relative flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-left hover:border-emerald-500/50 hover:bg-slate-900 transition-all shadow-md hover:shadow-emerald-950/20"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                            <IconComp className="h-4 w-4" />
+                          </div>
+                          <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            {puerta.badge}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                            {puerta.nombre}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mt-0.5">
+                            {puerta.tagline}
+                          </p>
+                        </div>
+                        <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800/60">
+                          <p className="text-[10px] text-slate-300 italic line-clamp-2">
+                            &quot;{puerta.dolor5Segundos}&quot;
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-semibold text-emerald-400">
+                        <span>Empezar gratis</span>
+                        <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </section>

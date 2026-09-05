@@ -989,27 +989,57 @@ export default function DashboardPage() {
       <BuenDiaHome modoLite={modoLite} rubro={rubro} />
       <RubroSetupChecklist rubro={rubro} />
 
-      {/* Banner de Demostración de ROI (El sistema se paga solo) */}
-      <div className="flex items-center justify-between p-4 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent text-emerald-950 dark:text-emerald-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-            <Sparkles className="h-5 w-5" />
+      {/* Banner de Onboarding y Contexto Real vs Demo */}
+      {usingDemo ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-950 dark:text-violet-100 shadow-sm gap-3">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-500/20 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5 sm:mt-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold flex items-center gap-1.5">
+                👋 ¡Bienvenido a Claver ERP! Estás explorando con datos de referencia
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Cargá tu catálogo de productos o hacé tu primera venta en el punto de venta para ver tus métricas reales.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-bold flex items-center gap-1.5">
-              🎉 ¡Esta semana recuperaste $48.500 en fiados con WhatsApp Cobrá!
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Tu Claver ERP se pagó solo por los próximos 4 meses gracias al cobro automático de deudas.
-            </p>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Link href="/dashboard/stock">
+              <Button size="sm" variant="outline" className="text-xs h-8">
+                Cargar Productos
+              </Button>
+            </Link>
+            <Link href="/dashboard/pos">
+              <Button size="sm" className="bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs h-8 shadow-sm">
+                Ir a Caja / POS
+              </Button>
+            </Link>
           </div>
         </div>
-        <Link href="/dashboard/cuentas-cobrar">
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm">
-            Ver Plata que te deben
-          </Button>
-        </Link>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between p-4 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent text-emerald-950 dark:text-emerald-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold flex items-center gap-1.5">
+                🎉 Cobros automáticos activos en tu negocio
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tus cuentas corrientes y recordatorios automáticos por WhatsApp están operativos.
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/cuentas-cobrar">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm">
+              Ver Cuentas a Cobrar
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <MotionFadeDown>
         <div className="glass-panel border-border/40 relative overflow-hidden rounded-xl p-5 sm:p-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between shadow-sm">
@@ -1023,6 +1053,11 @@ export default function DashboardPage() {
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gradient">Dashboard Ejecutivo</h1>
             <p className="text-muted-foreground text-sm mt-1.5 max-w-xl">
               Resumen ejecutivo consolidado del negocio. Perfil activo: <span className="font-semibold text-foreground">{rubroConfig.nombre}</span>
+              {usingDemo && (
+                <span className="ml-2 text-xs font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                  Modo Referencia
+                </span>
+              )}
               {lastUpdate && (
                 <span className="ml-2 text-xs opacity-60">
                   — Actualizado {lastUpdate.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}

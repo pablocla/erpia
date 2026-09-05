@@ -113,7 +113,8 @@ export const BRAND_ASSETS = {
 
 /** Cuenta pública de testing / demos del ERP (no es analista Cloud) */
 export const DEMO_ADMIN_EMAIL = "testing@claver.com.ar"
-export const DEMO_ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD || "admin1234"
+export const DEMO_ADMIN_PASSWORD =
+  process.env.DEMO_ADMIN_PASSWORD || (process.env.NODE_ENV !== "production" ? "admin1234" : "")
 
 /** Admin real de plataforma Claver (Cloud, torre, CEO) */
 export const CLAVER_OWNER_EMAIL = "pabloclavero03@gmail.com"

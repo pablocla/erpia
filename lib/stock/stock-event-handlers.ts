@@ -1,36 +1,13 @@
 import { eventBus } from "@/lib/events/event-bus";
-import { prisma } from "@/lib/prisma";
 import type { FacturaEmitidaPayload } from "@/lib/events/types";
 
-// Handler for FACTURA_EMITIDA
+/**
+ * Handler de auditoría para FACTURA_EMITIDA en el módulo de stock.
+ * Se evita la duplicación de MovimientoStock delegando la deducción real exclusivamente
+ * a stockService.decrementarStockPorFactura (registrado bajo el handler "stock_por_venta").
+ */
 eventBus.on<FacturaEmitidaPayload>("FACTURA_EMITIDA", "audit_stock_por_venta", async (event) => {
-  console.info(`[EVENT] FACTURA_EMITIDA -> facturaId=${event.payload.facturaId}`);
-
-  try {
-    const factura = await prisma.factura.findUnique({
-      where: { id: event.payload.facturaId },
-      include: { lineas: true },
-    });
-
-    if (!factura) {
-      console.error(`[EVENT] FACTURA_EMITIDA -> Factura no encontrada: ${event.payload.facturaId}`);
-      return;
-    }
-
-    for (const item of factura.lineas) {
-      if (!item.productoId) continue;
-      await prisma.movimientoStock.create({
-        data: {
-          productoId: item.productoId,
-          tipo: "salida",
-          cantidad: item.cantidad,
-          motivo: "Venta",
-        },
-      });
-    }
-
-    console.info(`[EVENT] FACTURA_EMITIDA -> Movimientos de stock creados para facturaId=${event.payload.facturaId}`);
-  } catch (error) {
-    console.error(`[EVENT] FACTURA_EMITIDA -> Error procesando evento:`, error);
-  }
+  console.info(
+    `[STOCK AUDIT] FACTURA_EMITIDA verificada para facturaId=${event.payload.facturaId} (empresaId=${event.payload.empresaId})`
+  );
 });

@@ -7,15 +7,26 @@ import {
 import { resolveActivarIntent } from "@/lib/comercial/activar-intent"
 
 describe("rubro-signup", () => {
-  it("tiene las 6 puertas del registro", () => {
-    expect(RUBROS_SIGNUP.map((r) => r.id)).toEqual([
-      "kiosco",
-      "taller",
-      "gimnasio",
-      "oficios",
-      "gastronomia",
-      "pyme",
-    ])
+  it("tiene las puertas del registro", () => {
+    const ids = RUBROS_SIGNUP.map((r) => r.id)
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        "kiosco",
+        "taller",
+        "gimnasio",
+        "oficios",
+        "gastronomia",
+        "pyme",
+        "sena_eventos",
+        "alquileres",
+        "estetica",
+        "academia",
+        "gomeria",
+        "lavadero",
+        "honorarios",
+        "mayorista_fiado",
+      ]),
+    )
   })
 
   it("aliases resuelven a la misma puerta", () => {

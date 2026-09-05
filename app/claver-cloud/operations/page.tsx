@@ -10,6 +10,8 @@ import {
   BarChart3,
   Search,
   Activity,
+  LogIn,
+  ExternalLink,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { PageShell, PageHeader, KpiStrip, StatusBadge } from "@/components/layout"
 import { PageSkeleton } from "@/components/layout/page-skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
+import { useAuthStore } from "@/lib/stores"
 import type { StatusVariant } from "@/lib/ui/status-map"
 
 type ClienteCard = {
@@ -57,6 +60,40 @@ export default function ClaverOperationsSelectorPage() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState("")
   const [loadError, setLoadError] = useState("")
+  const [impersonatingId, setImpersonatingId] = useState<number | null>(null)
+  const login = useAuthStore((s) => s.login)
+
+  const impersonar = async (empresaId: number, targetPath = "/dashboard") => {
+    setImpersonatingId(empresaId)
+    try {
+      const analystToken = localStorage.getItem("token")
+      const analystUser = useAuthStore.getState().user
+      if (analystToken) sessionStorage.setItem("claver_analyst_token", analystToken)
+      if (analystUser) sessionStorage.setItem("claver_analyst_user", JSON.stringify(analystUser))
+
+      const res = await fetch(`/api/claver/tenants/${empresaId}/impersonate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ targetPath }),
+      })
+      if (!res.ok) {
+        alert("No se pudo iniciar sesión en el tenant seleccionado.")
+        return
+      }
+      const session = await res.json()
+      login(session.token, {
+        id: String(analystUser?.id ?? "0"),
+        email: analystUser?.email ?? "",
+        nombre: `Analista → ${session.empresa.nombre}`,
+        rol: "administrador",
+        empresaId: session.empresa.id,
+        empresaNombre: session.empresa.nombre,
+      })
+      window.location.href = session.redirectUrl || targetPath
+    } finally {
+      setImpersonatingId(null)
+    }
+  }
 
   const cargar = async () => {
     setLoading(true)
@@ -296,15 +333,32 @@ export default function ClaverOperationsSelectorPage() {
                     </span>
                   </div>
 
-                  <Button asChild className="w-full min-h-[40px]">
-                    <Link
-                      href={`/claver-cloud/operations/${c.id}`}
-                      className="flex items-center justify-center gap-2"
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      size="sm"
+                      className="w-full min-h-[38px] text-xs bg-violet-600 hover:bg-violet-500 font-medium"
+                      onClick={() => void impersonar(c.id)}
+                      disabled={impersonatingId === c.id}
                     >
-                      Administrar operaciones
-                      <ArrowRight className="h-4 w-4" />
+                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                      {impersonatingId === c.id ? "Entrando..." : "Ingresar ERP"}
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="w-full min-h-[38px] text-xs">
+                      <Link href={`/claver-cloud/operations/${c.id}`} className="flex items-center justify-center gap-1.5">
+                        Consola Ops
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                    <Link href={`/claver-cloud/tenants/${c.id}`} className="hover:text-foreground transition-colors flex items-center gap-1">
+                      Ficha Técnica →
                     </Link>
-                  </Button>
+                    <Link href={`/claver-cloud/go-live?empresaId=${c.id}`} className="hover:text-emerald-400 transition-colors flex items-center gap-1">
+                      Go-Live Checklist
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             )

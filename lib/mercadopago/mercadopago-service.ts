@@ -5,15 +5,71 @@
  * procesamiento de webhooks, conciliación automática con CxC.
  */
 
+import crypto from "crypto"
 import { prisma } from "@/lib/prisma"
 import { getPublicAppUrl } from "@/lib/config/public-app-url"
+
+// ─── Criptografía en reposo para credenciales de pago ───────────────────────
+
+function getMpEncryptionKey(): Buffer {
+  const raw =
+    process.env.MP_ENCRYPTION_SECRET?.trim() ||
+    process.env.ENCRYPTION_SECRET?.trim() ||
+    process.env.AFIP_CERT_SECRET?.trim() ||
+    process.env.JWT_SECRET?.trim() ||
+    (process.env.NODE_ENV !== "production" ? "pos-argentina-dev-mp-encryption-secret-32b" : null)
+
+  if (!raw) {
+    throw new Error(
+      "MP_ENCRYPTION_SECRET o JWT_SECRET no configurado para cifrar credenciales de pago en producción.",
+    )
+  }
+  return crypto.createHash("sha256").update(raw).digest()
+}
+
+export function encryptMpSecret(value: string): string {
+  if (!value) return value
+  if (value.startsWith("enc:v1:")) return value // already encrypted
+  const key = getMpEncryptionKey()
+  const iv = crypto.randomBytes(12)
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv)
+  const enc = Buffer.concat([cipher.update(Buffer.from(value, "utf8")), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return `enc:v1:${iv.toString("base64")}:${tag.toString("base64")}:${enc.toString("base64")}`
+}
+
+export function decryptMpSecret(stored?: string | null): string {
+  if (!stored) return ""
+  if (!stored.startsWith("enc:v1:")) return stored // retrocompatibilidad con tokens planos
+  const parts = stored.split(":")
+  if (parts.length < 5) return stored
+  try {
+    const key = getMpEncryptionKey()
+    const iv = Buffer.from(parts[2], "base64")
+    const tag = Buffer.from(parts[3], "base64")
+    const data = Buffer.from(parts[4], "base64")
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv)
+    decipher.setAuthTag(tag)
+    const dec = Buffer.concat([decipher.update(data), decipher.final()])
+    return dec.toString("utf8")
+  } catch (err) {
+    console.error("[MercadoPago Crypto] Error al descifrar token:", err)
+    return stored
+  }
+}
 
 // ─── Configuración ──────────────────────────────────────────────────────────
 
 export async function obtenerConfigMP(empresaId: number) {
-  return prisma.mercadoPagoConfig.findUnique({
+  const config = await prisma.mercadoPagoConfig.findUnique({
     where: { empresaId },
   })
+  if (!config) return null
+  return {
+    ...config,
+    accessToken: decryptMpSecret(config.accessToken),
+    webhookSecret: config.webhookSecret ? decryptMpSecret(config.webhookSecret) : null,
+  }
 }
 
 export async function guardarConfigMP(
@@ -28,11 +84,21 @@ export async function guardarConfigMP(
     checkoutHabilitado?: boolean
   },
 ) {
-  return prisma.mercadoPagoConfig.upsert({
+  const dataToStore = {
+    ...data,
+    accessToken: encryptMpSecret(data.accessToken),
+    webhookSecret: data.webhookSecret ? encryptMpSecret(data.webhookSecret) : data.webhookSecret,
+  }
+  const saved = await prisma.mercadoPagoConfig.upsert({
     where: { empresaId },
-    create: { empresaId, ...data },
-    update: data,
+    create: { empresaId, ...dataToStore },
+    update: dataToStore,
   })
+  return {
+    ...saved,
+    accessToken: decryptMpSecret(saved.accessToken),
+    webhookSecret: saved.webhookSecret ? decryptMpSecret(saved.webhookSecret) : null,
+  }
 }
 
 // ─── Crear preferencia de pago (Checkout Pro) ───────────────────────────────

@@ -37,19 +37,29 @@ export class AsientoService {
   async generarAsientoVenta(facturaId: number, empresaId?: number): Promise<void> {
     const factura = await prisma.factura.findUnique({
       where: { id: facturaId },
-      include: { lineas: true, cliente: true },
+      include: { lineas: true, cliente: true, condicionPago: true },
     })
     if (!factura) throw new Error("Factura no encontrada")
 
     const resolvedEmpresaId = empresaId ?? factura.empresaId
     await periodoFiscalService.validarPeriodoAbierto(factura.createdAt, resolvedEmpresaId)
 
-    const [ctaCaja, ctaVentas, ctaIvaDF, ctaPercepciones] = await Promise.all([
+    const esVentaCredito = Boolean(
+      factura.condicionPago &&
+      (factura.condicionPago.diasVencimiento > 0 ||
+       factura.condicionPago.cuotas > 1 ||
+       /cuenta\s*corriente|cta\s*cte|cr[eé]dito/i.test(factura.condicionPago.nombre ?? ""))
+    )
+
+    const [ctaCaja, ctaDeudores, ctaVentas, ctaIvaDF, ctaPercepciones] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "venta", "caja", "1.1", "Caja"),
+      getCuentaLabel(resolvedEmpresaId, "venta", "deudores", "1.1.2", "Deudores por Ventas"),
       getCuentaLabel(resolvedEmpresaId, "venta", "ingreso", "4.1", "Ventas"),
       getCuentaLabel(resolvedEmpresaId, "venta", "iva_df", "2.2", "IVA Débito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "venta", "percepciones", "2.3", "Percepciones a Pagar"),
     ])
+
+    const ctaCobro = esVentaCredito ? ctaDeudores : ctaCaja
 
     await prisma.$transaction(async (tx) => {
       const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)
@@ -65,7 +75,7 @@ export class AsientoService {
           empresaId: resolvedEmpresaId,
           movimientos: {
             create: await buildMovimientosConCentro(resolvedEmpresaId, [
-              { cuentaLabel: ctaCaja, debe: Number(factura.total) + Number(factura.totalPercepciones ?? 0), haber: 0 },
+              { cuentaLabel: ctaCobro, debe: Number(factura.total) + Number(factura.totalPercepciones ?? 0), haber: 0 },
               { cuentaLabel: ctaVentas, debe: 0, haber: Number(factura.subtotal) },
               { cuentaLabel: ctaIvaDF, debe: 0, haber: Number(factura.iva) },
               ...((Number(factura.totalPercepciones ?? 0) > 0)
@@ -88,17 +98,29 @@ export class AsientoService {
     const resolvedEmpresaId = empresaId ?? compra.empresaId
     await periodoFiscalService.validarPeriodoAbierto(compra.fecha, resolvedEmpresaId)
 
-    const [ctaMercaderia, ctaIvaCF, ctaProveedores] = await Promise.all([
+    const [ctaMercaderia, ctaIvaCF, ctaProveedores, ctaPercepciones] = await Promise.all([
       getCuentaLabel(resolvedEmpresaId, "compra", "mercaderia", "1.4", "Mercaderías"),
       getCuentaLabel(resolvedEmpresaId, "compra", "iva_cf", "1.6", "IVA Crédito Fiscal"),
       getCuentaLabel(resolvedEmpresaId, "compra", "proveedores", "2.1", "Proveedores"),
+      getCuentaLabel(resolvedEmpresaId, "compra", "percepciones", "1.1.7", "Percepciones Sufridas"),
     ])
 
-    const movimientos = await buildMovimientosConCentro(resolvedEmpresaId, [
+    const lineasMovimientos = [
       { cuentaLabel: ctaMercaderia, debe: Number(compra.subtotal), haber: 0 },
       { cuentaLabel: ctaIvaCF, debe: Number(compra.iva), haber: 0 },
+      ...((Number((compra as any).totalPercepciones ?? 0) > 0)
+        ? [{ cuentaLabel: ctaPercepciones, debe: Number((compra as any).totalPercepciones), haber: 0 }]
+        : []),
+      ...((Number((compra as any).netoNoGravado ?? 0) > 0)
+        ? [{ cuentaLabel: ctaMercaderia, debe: Number((compra as any).netoNoGravado), haber: 0 }]
+        : []),
+      ...((Number((compra as any).netoExento ?? 0) > 0)
+        ? [{ cuentaLabel: ctaMercaderia, debe: Number((compra as any).netoExento), haber: 0 }]
+        : []),
       { cuentaLabel: ctaProveedores, debe: 0, haber: Number(compra.total) },
-    ])
+    ]
+
+    const movimientos = await buildMovimientosConCentro(resolvedEmpresaId, lineasMovimientos)
 
     const execute = async (tx: TxClient) => {
       const numero = await nextNumeroAsiento(tx, resolvedEmpresaId)

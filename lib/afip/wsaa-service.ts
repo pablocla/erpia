@@ -7,6 +7,7 @@
 
 import soap from "soap"
 import forge from "node-forge"
+import { decryptPrivateKeyIfNeeded } from "./cert-utils"
 
 export type AfipEntorno = "homologacion" | "produccion"
 
@@ -75,8 +76,9 @@ export function signTRA(
   certificadoBase64: string,
   privateKeyBase64: string,
 ): string {
+  const decryptedKeyBase64 = decryptPrivateKeyIfNeeded(privateKeyBase64)
   const certPem = Buffer.from(certificadoBase64, "base64").toString("utf8")
-  const keyPem = Buffer.from(privateKeyBase64, "base64").toString("utf8")
+  const keyPem = Buffer.from(decryptedKeyBase64, "base64").toString("utf8")
 
   const cert = forge.pki.certificateFromPem(certPem)
   const pkey = forge.pki.privateKeyFromPem(keyPem)

@@ -56,9 +56,9 @@ export const navSections: NavSection[] = [
     items: [
       {
         name: "fleet",
-        href: "/claver-cloud/operations",
+        href: "/claver-cloud/tenants",
         icon: Building2,
-        matchPrefixes: ["/claver-cloud/tenants", "/claver-cloud/organizations", "/claver-cloud/superadmin"],
+        matchPrefixes: ["/claver-cloud/operations", "/claver-cloud/organizations", "/claver-cloud/superadmin"],
       },
       { name: "provisioning", href: "/claver-cloud/provisioning", icon: PlusSquare },
       { name: "goLive", href: "/claver-cloud/go-live", icon: Rocket,

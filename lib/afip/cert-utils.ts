@@ -125,7 +125,17 @@ export function normalizePemToStorage(pemOrBase64: string): string {
  */
 export function encryptPrivateKeyIfConfigured(keyBase64: string): string {
   const secret = process.env.AFIP_CERT_SECRET
-  if (!secret || secret.length < 16) return keyBase64
+  if (process.env.NODE_ENV === "production" && (!secret || secret.length < 16)) {
+    throw new Error(
+      "AFIP_CERT_SECRET no está configurado o tiene menos de 16 caracteres en producción. Se requiere obligatoriamente para cifrar claves privadas fiscales.",
+    )
+  }
+  if (!secret || secret.length < 16) {
+    console.warn(
+      "[AFIP Security Warning] AFIP_CERT_SECRET no configurado. La clave se almacenará sin cifrar (solo permitido en desarrollo).",
+    )
+    return keyBase64
+  }
 
   // lazy require para no romper edge
   // eslint-disable-next-line @typescript-eslint/no-require-imports

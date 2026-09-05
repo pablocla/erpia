@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { z } from "zod"
 
 const crearPedidoSchema = z.object({
-  empresaId: z.number().int().positive(),
+  empresaId: z.number().int().positive().optional(),
   clienteId: z.number().int().positive(),
   observaciones: z.string().optional(),
   lineas: z.array(z.object({
@@ -24,16 +25,27 @@ const crearPedidoSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const auth = await getAuthContext(request)
+    if (!auth.ok) return auth.response
+
     const { searchParams } = new URL(request.url)
     const clienteId = parseInt(searchParams.get("clienteId") || "0")
-    const empresaId = parseInt(searchParams.get("empresaId") || "0")
+    const requestedEmpresaId = parseInt(searchParams.get("empresaId") || "0")
 
-    if (!clienteId || !empresaId) {
-      return NextResponse.json({ error: "clienteId y empresaId son requeridos" }, { status: 400 })
+    const empresaId = auth.auth.empresaId
+    if (requestedEmpresaId && requestedEmpresaId !== empresaId) {
+      return NextResponse.json(
+        { error: "No autorizado para consultar datos de otra empresa" },
+        { status: 403 },
+      )
+    }
+
+    if (!clienteId) {
+      return NextResponse.json({ error: "clienteId es requerido" }, { status: 400 })
     }
 
     const pedidos = await prisma.pedidoVenta.findMany({
-      where: { clienteId, empresaId,  },
+      where: { clienteId, empresaId },
       include: {
         lineas: {
           select: {
@@ -56,13 +68,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthContext(request)
+    if (!auth.ok) return auth.response
+
     const body = await request.json()
     const parsed = crearPedidoSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { empresaId, clienteId, observaciones, lineas, usarListaPrecios } = parsed.data
+    const empresaId = auth.auth.empresaId
+    const { clienteId, lineas, usarListaPrecios } = parsed.data
 
     // Validate cliente belongs to empresa
     const cliente = await prisma.cliente.findFirst({

@@ -51,7 +51,7 @@ describe("AsientoService", () => {
 
       expect(mockPrismaClient.factura.findUnique).toHaveBeenCalledWith({
         where: { id: 1 },
-        include: { lineas: true, cliente: true },
+        include: { lineas: true, cliente: true, condicionPago: true },
       })
 
       const createCall = mockPrismaClient.asientoContable.create.mock.calls[0][0]
@@ -116,6 +116,41 @@ describe("AsientoService", () => {
 
       await expect(service.generarAsientoVenta(999)).rejects.toThrow("Factura no encontrada")
     })
+    it("should debit Deudores por Ventas when sale is on credit (cuenta corriente)", async () => {
+      const mockFactura = {
+        id: 3,
+        tipo: "A",
+        numero: 3,
+        subtotal: 10000,
+        iva: 2100,
+        total: 12100,
+        totalPercepciones: 0,
+        totalRetenciones: 0,
+        createdAt: new Date(),
+        cliente: { nombre: "Cliente Mayorista" },
+        lineas: [],
+        condicionPago: {
+          id: 1,
+          nombre: "Cuenta Corriente 30 días",
+          diasVencimiento: 30,
+          cuotas: 1,
+        },
+      }
+
+      mockPrismaClient.factura.findUnique.mockResolvedValue(mockFactura)
+      mockPrismaClient.asientoContable.findFirst.mockResolvedValue(null)
+      mockPrismaClient.asientoContable.create.mockResolvedValue({ id: 1, numero: 1 })
+
+      await service.generarAsientoVenta(3)
+
+      const createCall = mockPrismaClient.asientoContable.create.mock.calls[0][0]
+      const movs = createCall.data.movimientos.create
+
+      // Debe: Deudores por Ventas (not Caja)
+      expect(movs[0].cuenta).toBe("1.1.2 Deudores por Ventas")
+      expect(movs[0].debe).toBe(12100)
+    })
+
   })
 
   // ─── generarAsientoCompra ─────────────────────────────────────────────────
@@ -164,6 +199,44 @@ describe("AsientoService", () => {
 
       await expect(service.generarAsientoCompra(999)).rejects.toThrow("Compra no encontrada")
     })
+    it("should include percepciones sufridas in purchase entry and maintain Debe == Haber", async () => {
+      const mockCompra = {
+        id: 2,
+        tipo: "A",
+        numero: "00000002",
+        subtotal: 10000,
+        iva: 2100,
+        totalPercepciones: 350,
+        total: 12450,
+        fecha: new Date("2026-03-22"),
+        proveedor: { nombre: "Proveedor con Percepcion" },
+        lineas: [],
+      }
+
+      mockPrismaClient.compra.findUnique.mockResolvedValue(mockCompra)
+      mockPrismaClient.asientoContable.findFirst.mockResolvedValue(null)
+      mockPrismaClient.asientoContable.create.mockResolvedValue({ id: 2, numero: 2 })
+
+      await service.generarAsientoCompra(2)
+
+      const createCall = mockPrismaClient.asientoContable.create.mock.calls[0][0]
+      const movs = createCall.data.movimientos.create
+
+      const totalDebe = movs.reduce((s, m) => s + m.debe, 0)
+      const totalHaber = movs.reduce((s, m) => s + m.haber, 0)
+      expect(totalDebe).toBeCloseTo(totalHaber, 2)
+      expect(totalDebe).toBe(12450)
+
+      expect(movs[0].cuenta).toBe("1.4 Mercaderías")
+      expect(movs[0].debe).toBe(10000)
+      expect(movs[1].cuenta).toBe("1.6 IVA Crédito Fiscal")
+      expect(movs[1].debe).toBe(2100)
+      expect(movs[2].cuenta).toBe("1.1.7 Percepciones Sufridas")
+      expect(movs[2].debe).toBe(350)
+      expect(movs[3].cuenta).toBe("2.1 Proveedores")
+      expect(movs[3].haber).toBe(12450)
+    })
+
   })
 
   // ─── crearAsientoManual ───────────────────────────────────────────────────

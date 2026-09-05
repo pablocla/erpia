@@ -49,15 +49,16 @@ export async function POST(request: NextRequest) {
 
     // Generate secure reset token (valid 1 hour)
     const token = crypto.randomBytes(32).toString("hex")
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex")
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
-    // Store token in DB (using LogActividad as a generic store since no dedicated table)
+    // Store token hash in DB (using LogActividad as a generic store since no dedicated table)
     await prisma.logActividad.create({
       data: {
         accion: "password_reset_token",
         modulo: "auth",
         detalle: JSON.stringify({
-          token,
+          tokenHash,
           userId: usuario.id,
           expiresAt: expiresAt.toISOString(),
         }),

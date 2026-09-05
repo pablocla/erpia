@@ -79,19 +79,24 @@
   },
   "cloudNav": {
     "sections": {
-      "ceo": "CEO",
-      "platform": "Platform",
-      "protheus": "Protheus / OPO",
-      "admin": "Administration"
+      "negocio": "Business & Sales",
+      "platform": "Platform & Fleet",
+      "integraciones": "Integrations & OPO",
+      "admin": "Administration",
+      "ceo": "Executive / CEO",
+      "protheus": "Protheus / OPO"
     },
     "items": {
       "commandCenter": "Command Center",
+      "analytics": "Metrics & MRR",
+      "webRegistrations": "Web Signups",
       "salesPipeline": "Sales Pipeline",
       "upgradesArca": "ARCA certificates",
       "fieldSurvey": "Field Survey",
       "mapAndRoute": "Map & Route",
       "superAdmin": "Super Admin",
-      "tenants": "Tenants",
+      "tenants": "Tenants & Fleet",
+      "fleet": "Tenant Fleet",
       "provisioning": "Provisioning",
       "demoHealth": "Demo health",
       "goLive": "Go-live PRD",
@@ -99,6 +104,7 @@
       "operations": "Operations",
       "implementation": "Implementation",
       "marketplace": "Marketplace",
+      "platformHealth": "Platform Health",
       "setupProtheus": "Setup Protheus",
       "opoConsole": "OPO Console",
       "restApi": "REST API",

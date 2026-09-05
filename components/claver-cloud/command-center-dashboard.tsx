@@ -23,12 +23,17 @@ import {
   UserPlus,
   Users,
   Terminal,
-  RefreshCw
+  RefreshCw,
+  LogIn,
+  Rocket
 } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { LiveDeploymentStatusBar } from "@/components/claver-cloud/live-deployment-status"
+import { CustomerLifecyclePipeline } from "@/components/claver-cloud/customer-lifecycle-pipeline"
+import { useAuthStore } from "@/lib/stores"
 import {
   Dialog,
   DialogContent,
@@ -191,18 +196,18 @@ const etapaColor: Record<PipelineEtapa, string> = {
 }
 
 const quickActions = [
+  { href: "/claver-cloud/tenants", label: "Flota de tenants", icon: Building2, primary: true },
   { href: "/claver-cloud/registros", label: "Registros web y trials", icon: UserPlus, primary: true },
   { href: "/claver-cloud/comercial", label: "Pipeline ventas", icon: Users, primary: true },
+  { href: "/claver-cloud/go-live", label: "Go-Live PRD", icon: Rocket, primary: true },
   { href: "/claver-cloud/comercial/upgrades-arca", label: "Certificados ARCA", icon: Calendar, primary: true },
-  { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList, primary: true },
-  { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map, primary: true },
+  { href: "/claver-cloud/comercial/relevamientos", label: "Relevamiento visita", icon: ClipboardList },
+  { href: "/claver-cloud/comercial/campo", label: "Mapa y hoja de ruta", icon: Map },
   { href: "/claver-cloud/provisioning/new", label: "Nueva organización", icon: PlusSquare },
-  { href: "/claver-cloud/superadmin", label: "Super Admin", icon: Shield },
   { href: "/claver-cloud/platform-health", label: "Salud y seguridad", icon: Shield },
   { href: "/claver-cloud/billing", label: "Facturación MRR", icon: CreditCard },
-  { href: "/claver-cloud/marketplace", label: "Marketplace", icon: Store },
   { href: "/claver-cloud/implementation", label: "Implementación", icon: Target },
-  { href: "/claver-cloud/organizations", label: "Tenants", icon: Building2 },
+  { href: "/claver-cloud/superadmin", label: "Super Admin", icon: Shield },
 ]
 
 const KANBAN_ETAPAS: PipelineEtapa[] = ["prospecto", "visita", "trial", "cerrado"]
@@ -314,6 +319,37 @@ export function CommandCenterDashboard() {
     }
   }
 
+  async function impersonarTenant(empresaId: number, targetPath = "/dashboard") {
+    try {
+      const analystToken = localStorage.getItem("token")
+      const analystUser = useAuthStore.getState().user
+      if (analystToken) sessionStorage.setItem("claver_analyst_token", analystToken)
+      if (analystUser) sessionStorage.setItem("claver_analyst_user", JSON.stringify(analystUser))
+
+      const res = await fetch(`/api/claver/tenants/${empresaId}/impersonate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...cloudAuthHeaders() },
+        body: JSON.stringify({ targetPath }),
+      })
+      if (!res.ok) {
+        alert("No se pudo iniciar sesión en ese tenant.")
+        return
+      }
+      const session = await res.json()
+      useAuthStore.getState().login(session.token, {
+        id: String(analystUser?.id ?? "0"),
+        email: analystUser?.email ?? "",
+        nombre: `Analista → ${session.empresa.nombre}`,
+        rol: "administrador",
+        empresaId: session.empresa.id,
+        empresaNombre: session.empresa.nombre,
+      })
+      window.location.href = session.redirectUrl || targetPath
+    } catch {
+      alert("Error al conectar con la sesión del tenant")
+    }
+  }
+
   if (!data && loading) {
     return <p className="text-sm text-muted-foreground p-6">Cargando centro de mando…</p>
   }
@@ -415,6 +451,9 @@ export function CommandCenterDashboard() {
           </Dialog>
         }
       />
+
+      {/* Estado de Despliegue & Producción en vivo */}
+      <LiveDeploymentStatusBar onRefresh={cargar} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <Card className="xl:col-span-2 border-violet-500/30 bg-violet-500/5">
@@ -531,6 +570,9 @@ export function CommandCenterDashboard() {
 
       <CeoMissionPanel mando={mando} onRefresh={cargar} />
 
+      {/* Ciclo de vida del cliente interactivo */}
+      <CustomerLifecyclePipeline onRefresh={cargar} />
+
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -556,12 +598,13 @@ export function CommandCenterDashboard() {
                     <th className="px-4 py-2">Trial</th>
                     <th className="px-4 py-2">SKUs</th>
                     <th className="px-4 py-2 text-right">MRR</th>
+                    <th className="px-4 py-2 text-right">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
                   {operaciones.altasRecientes.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                      <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                         Sin altas recientes en tu alcance
                       </td>
                     </tr>
@@ -599,6 +642,17 @@ export function CommandCenterDashboard() {
                         </td>
                         <td className="px-4 py-2.5 tabular-nums">{a.skusActivos}</td>
                         <td className="px-4 py-2.5 text-right tabular-nums">{fmt(a.mrrArs)}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-6 text-[10px] px-2 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 font-medium"
+                            onClick={() => void impersonarTenant(a.empresaId)}
+                          >
+                            <LogIn className="h-3 w-3 mr-1" />
+                            Entrar ERP
+                          </Button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -827,7 +881,15 @@ export function CommandCenterDashboard() {
                       {t.tareasPendientes > 0 && ` · ${t.tareasPendientes} tareas`}
                     </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-6 text-[10px] px-2 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 font-medium"
+                      onClick={() => void impersonarTenant(t.id)}
+                    >
+                      <LogIn className="h-3 w-3 mr-1" /> Entrar ERP
+                    </Button>
                     <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-amber-500 hover:text-amber-600" onClick={() => accionarTenantRiesgo(t.id, "diagnosticar")}>
                       <Terminal className="h-3 w-3 mr-1" /> Diagnosticar
                     </Button>

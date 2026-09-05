@@ -4,11 +4,10 @@
  * Uses jose (Edge-compatible) — consistent with the rest of the auth system.
  */
 import { type NextRequest, NextResponse } from "next/server"
-import { decodeJwt, SignJWT } from "jose"
+import { decodeJwt, SignJWT, jwtVerify } from "jose"
 import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/auth/rate-limiter"
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "")
+import { getEncodedJwtSecret } from "@/lib/auth/jwt-secret"
 
 export async function POST(request: NextRequest) {
   // Rate limit refresh attempts
@@ -16,6 +15,7 @@ export async function POST(request: NextRequest) {
   if (rlResponse) return rlResponse
 
   try {
+    const jwtSecret = getEncodedJwtSecret()
     const authHeader = request.headers.get("authorization")
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Token requerido" }, { status: 401 })
@@ -26,8 +26,7 @@ export async function POST(request: NextRequest) {
     // Verify signature first, allow if it's just expired
     let decoded: any
     try {
-      const { jwtVerify } = await import("jose")
-      const result = await jwtVerify(token, JWT_SECRET)
+      const result = await jwtVerify(token, jwtSecret)
       decoded = result.payload
     } catch (error: any) {
       if (error?.code === "ERR_JWT_EXPIRED") {
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("24h")
-      .sign(JWT_SECRET)
+      .sign(jwtSecret)
 
     return NextResponse.json({
       token: newToken,

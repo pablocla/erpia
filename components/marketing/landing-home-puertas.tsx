@@ -1,37 +1,16 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowRight,
-  BarChart3,
-  Building2,
-  CheckCircle2,
-  ChevronRight,
   ClipboardList,
   CreditCard,
   Dumbbell,
-  FileText,
-  HelpCircle,
-  Lock,
-  MessageSquare,
-  Package,
   Receipt,
   ShieldCheck,
   Smartphone,
-  Sparkles,
   Store,
-  UtensilsCrossed,
-  Wrench,
-  Users,
-  Zap,
-  PartyPopper,
-  Home,
-  GraduationCap,
-  Car,
-  Droplets,
-  Stethoscope,
-  Truck,
   Menu,
   X,
 } from "lucide-react"
@@ -138,7 +117,7 @@ export function LandingHomePuertas() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">Buscá por código, vendé rápido y anotá quién te debe en cuenta corriente simple.</p>
                 <p className="mt-4 text-xs text-slate-400">1 minuto · Mostrador + stock + cuenta corriente</p>
                 <Button size="lg" className="mt-8 min-h-12 w-full bg-emerald-500 font-semibold text-slate-950 shadow-md hover:bg-emerald-400" asChild>
-                  <Link href="/login/register?activar=pos.core">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link href="/demo/ferreteria">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
               </div>
 

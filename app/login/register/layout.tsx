@@ -1,22 +1,22 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Libreta de fiados gratis \u00b7 Claver",
+  title: "Software de gestión para PyMEs · Claver",
   description:
-    "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
+    "Stock, ventas y cobros simples para comercios, oficios y gimnasios. Empezá gratis, sin tarjeta.",
   alternates: { canonical: "https://claver.com.ar/login/register" },
   openGraph: {
-    title: "Libreta de fiados gratis \u00b7 Claver",
+    title: "Software de gestión para PyMEs · Claver",
     description:
-      "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
+      "Stock, ventas y cobros simples para comercios, oficios y gimnasios. Empezá gratis, sin tarjeta.",
     url: "https://claver.com.ar/login/register",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Libreta de fiados gratis \u00b7 Claver",
+    title: "Software de gestión para PyMEs · Claver",
     description:
-      "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
+      "Stock, ventas y cobros simples para comercios, oficios y gimnasios. Empezá gratis, sin tarjeta.",
   },
 }
 

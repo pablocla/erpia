@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import Link from "next/link"
@@ -81,7 +81,7 @@ export function LandingHomePuertas() {
               className="min-h-12 bg-emerald-500 font-semibold text-slate-950 shadow-sm hover:bg-emerald-400"
               asChild
             >
-              <Link href="/f">
+              <Link href="/login/register?activar=pos.core">
                 Empezar gratis
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
@@ -98,253 +98,78 @@ export function LandingHomePuertas() {
               <a href="#como-funciona" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Cómo funciona</a>
               <a href="#seguridad" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Seguridad</a>
               <Link href="/login" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Ya tengo cuenta</Link>
-              <Link href="/f" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg bg-emerald-500 px-3 py-3 text-center text-sm font-semibold text-slate-950">Empezar gratis</Link>
+              <Link href="/login/register?activar=pos.core" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg bg-emerald-500 px-3 py-3 text-center text-sm font-semibold text-slate-950">Empezar gratis</Link>
             </div>
           </nav>
         )}
       </header>
 
       <main>
-        {/* ── Hero Principal de Alto Impacto ── */}
-        <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-12 pb-20 sm:pt-16 sm:pb-24 lg:pt-20 lg:pb-28">
-          {/* Luz ambiental sutil */}
+        {/* ── Hero Tier A: ferretería → servicios → gym ── */}
+        <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-12 pb-16 sm:pt-16 sm:pb-20 lg:pt-20 lg:pb-24">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.15),transparent)]" aria-hidden />
-
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                Gratis para arrancar · Sin tarjeta
-              </div>
-
-              <h1 className="mt-6 font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Quién te debe, en pantalla.
-              </h1>
-
-              <p className="mt-5 text-lg text-slate-300 leading-relaxed sm:text-xl">
-                Arrancás con la libreta de fiados del local. Caja, stock y factura oficial (AFIP) los sumás después, cuando te hagan falta.
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                Software para PyMEs de mostrador y servicios · Sin tarjeta
               </p>
-              <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-                <Button size="lg" className="min-h-12 bg-emerald-500 px-8 font-semibold text-slate-950 hover:bg-emerald-400" asChild>
-                  <Link href="/f">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <h1 className="mt-6 font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Stock, venta y cobro. Sin planilla eterna.
+              </h1>
+              <p className="mt-5 text-lg leading-relaxed text-slate-300 sm:text-xl">
+                Empezá por ferretería, oficios o gym. El resto lo sumás después.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-400">
+                <span>1 minuto</span><span aria-hidden>·</span><span>Sin tarjeta</span><span aria-hidden>·</span><span>Sin promesa ERP full</span>
+              </div>
+              <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm text-slate-300">
+                <a href="#puerta-servicios" className="underline decoration-slate-600 underline-offset-4 hover:text-white">¿Sos oficios?</a>
+                <a href="#puerta-gym" className="underline decoration-slate-600 underline-offset-4 hover:text-white">¿Tenés gym?</a>
+              </div>
+            </div>
+
+            <div id="soluciones" className="mt-12 grid gap-6 md:grid-cols-3">
+              <div id="puerta-ferreteria" className="group flex flex-col rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl backdrop-blur transition hover:border-emerald-500/50 sm:p-8">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"><Store className="h-6 w-6" /></div>
+                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-xs font-medium text-emerald-300">Ferretería</Badge>
+                </div>
+                <h2 className="mt-5 font-[var(--font-fraunces)] text-2xl font-semibold text-white">Stock y venta en el mostrador</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">Buscá por código, vendé rápido y anotá quién te debe en cuenta corriente simple.</p>
+                <p className="mt-4 text-xs text-slate-400">1 minuto · Mostrador + stock + cuenta corriente</p>
+                <Button size="lg" className="mt-8 min-h-12 w-full bg-emerald-500 font-semibold text-slate-950 shadow-md hover:bg-emerald-400" asChild>
+                  <Link href="/login/register?activar=pos.core">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
-                <p className="text-xs text-slate-400">1 minuto · Sin tarjeta · Empezás por el fiado</p>
-              </div>
-            </div>
-
-            {/* ── Dos Puertas de Entrada Comerciales ── */}
-            <div id="soluciones" className="mt-12 grid gap-6 sm:gap-8 lg:grid-cols-2 lg:items-stretch">
-              {/* Tarjeta 1: Comercios & Retail */}
-              <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl backdrop-blur transition hover:border-emerald-500/50 hover:shadow-emerald-950/20 sm:p-8">
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <Store className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-medium">
-                      Gratis para arrancar
-                    </Badge>
-                  </div>
-
-                  <h2 className="mt-5 font-[var(--font-fraunces)] text-2xl font-semibold text-white sm:text-3xl">
-                    Comercios, Kioscos & Almacenes
-                  </h2>
-                  <p className="mt-2 text-sm text-slate-300 sm:text-base leading-relaxed">
-                    Chau cuaderno de papel. Controlá tus ventas, el stock en tiempo real y sabé exactamente quién te debe desde el celular o la computadora.
-                  </p>
-
-                  {/* Preview de Libreta / Caja */}
-                  <div className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/80 text-xs sm:text-sm">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/50 px-4 py-2 text-slate-400 font-medium">
-                      <span>Libreta de Fiados Digital</span>
-                      <span className="text-emerald-400 text-xs">● En vivo</span>
-                    </div>
-                    <div className="divide-y divide-slate-800/60 font-mono">
-                      <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-slate-200">García, M. (Almacén)</span>
-                        <span className="font-semibold text-emerald-400 tabular-nums">$12.500</span>
-                      </div>
-                      <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-slate-200">Pérez, J. (Kiosco)</span>
-                        <span className="font-semibold text-slate-300 tabular-nums">$4.200</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <ul className="mt-6 space-y-2 text-xs text-slate-400 sm:text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      Punto de venta rápido con lectora o código de barras
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      Quién te debe, en pantalla. El aviso por WhatsApp se pacta cuando lo necesites.
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      Control de caja por turno
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="mt-8 pt-4 border-t border-slate-800/80">
-                  <Button
-                    size="lg"
-                    className="min-h-12 w-full bg-emerald-500 font-semibold text-slate-950 hover:bg-emerald-400 shadow-md transition"
-                    asChild
-                  >
-                    <Link href="/f">
-                      Empezar gratis
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <p className="mt-2 text-center text-xs text-slate-400">
-                    Sin tarjeta · Listo en 1 minuto en tu celular
-                  </p>
-                </div>
               </div>
 
-              {/* Tarjeta 2: Oficios, Obras & Servicios */}
-              <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl backdrop-blur transition hover:border-blue-500/50 hover:shadow-blue-950/20 sm:p-8">
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                      <ClipboardList className="h-6 w-6" />
-                    </div>
-                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs font-medium">
-                      Presupuestos Profesionales
-                    </Badge>
-                  </div>
-
-                  <h2 className="mt-5 font-[var(--font-fraunces)] text-2xl font-semibold text-white sm:text-3xl">
-                    Oficios, Instaladores & Obras
-                  </h2>
-                  <p className="mt-2 text-sm text-slate-300 sm:text-base leading-relaxed">
-                    Cotizá en 30 segundos en 3 niveles, anotá la seña cobrada y gestioná a tu cuadrilla sin discusiones. El link de Mercado Pago se activa aparte.
-                  </p>
-
-                  {/* Preview de Presupuesto con Seña */}
-                  <div className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/80 text-xs sm:text-sm">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/50 px-4 py-2 text-slate-400 font-medium">
-                      <span>Presupuesto Digital · 3 Opciones</span>
-                      <span className="text-blue-400 text-xs">● Aprobado</span>
-                    </div>
-                    <div className="divide-y divide-slate-800/60">
-                      <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-slate-200">Depto 4B · Instalación Eléctrica</span>
-                        <span className="font-semibold text-emerald-400 text-xs bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">Seña $45.000 Cobrada</span>
-                      </div>
-                      <div className="flex items-center justify-between px-4 py-2.5">
-                        <span className="text-slate-200">Casa López · Cañería Sanitaria</span>
-                        <span className="font-medium text-blue-300 text-xs">Opción Recomendada</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <ul className="mt-6 space-y-2 text-xs text-slate-400 sm:text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                      Presupuestos claros en 3 opciones (Básico, Recomendado, Premium)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                      Seña anotada en el presupuesto (el link de cobro es extra)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                      Fotos antes/después y liquidación de jornales los viernes
-                    </li>
-                  </ul>
+              <div id="puerta-servicios" className="group flex flex-col rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl backdrop-blur transition hover:border-blue-500/50 sm:p-8">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400"><ClipboardList className="h-6 w-6" /></div>
+                  <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-xs font-medium text-blue-300">Servicios</Badge>
                 </div>
-
-                <div className="mt-8 pt-4 border-t border-slate-800/80">
-                  <Button
-                    size="lg"
-                    className="min-h-12 w-full bg-blue-500 font-semibold text-slate-950 hover:bg-blue-400 shadow-md transition"
-                    asChild
-                  >
-                    <Link href="/f/servicios">
-                      Crear Presupuesto con Seña
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <p className="mt-2 text-center text-xs text-slate-400">
-                    Desde la obra o el taller · Sin descargar aplicaciones
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Las 8 Puertas de Escala Rápida (Zero AFIP Día 1) ── */}
-            <div className="mt-16 pt-12 border-t border-slate-800/80">
-              <div className="text-center max-w-2xl mx-auto mb-8">
-                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs px-3 py-1 mb-2">
-                  Soluciones Rápidas por Rubro
-                </Badge>
-                <h3 className="text-2xl font-bold text-white font-[var(--font-fraunces)]">
-                  Elegí tu actividad y empezá a cobrar en 30 segundos
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Gratis anotar · Sin AFIP el día uno · Pagás solo cuando cobrás o cuando el cliente te deja colgado.
-                </p>
+                <h2 className="mt-5 font-[var(--font-fraunces)] text-2xl font-semibold text-white">Cotizá, anotás la seña y cobrá</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">Presupuesto en minutos, seña registrada y cuentas por cobrar. El link de cobro lo sumás cuando haga falta.</p>
+                <p className="mt-4 text-xs text-slate-400">Presupuesto + seña + cobranza · No es OT de campo</p>
+                <Button size="lg" className="mt-8 min-h-12 w-full bg-blue-500 font-semibold text-slate-950 shadow-md hover:bg-blue-400" asChild>
+                  <Link href="/claver/apps/servicios">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {PUERTAS_ESCALA_RAPIDA.map((puerta) => {
-                  const iconMap: Record<string, any> = {
-                    PartyPopper,
-                    Home,
-                    Sparkles,
-                    GraduationCap,
-                    Car,
-                    Droplets,
-                    Stethoscope,
-                    Truck,
-                  }
-                  const IconComp = iconMap[puerta.icono] || Store
-
-                  return (
-                    <Link
-                      key={puerta.id}
-                      href={`/login/register?activar=${puerta.id}`}
-                      className="group relative flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-left hover:border-emerald-500/50 hover:bg-slate-900 transition-all shadow-md hover:shadow-emerald-950/20"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
-                            <IconComp className="h-4 w-4" />
-                          </div>
-                          <span className="text-[10px] font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                            {puerta.badge}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
-                            {puerta.nombre}
-                          </h4>
-                          <p className="text-[11px] text-slate-400 font-medium line-clamp-1 mt-0.5">
-                            {puerta.tagline}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-slate-950/60 p-2 border border-slate-800/60">
-                          <p className="text-[10px] text-slate-300 italic line-clamp-2">
-                            &quot;{puerta.dolor5Segundos}&quot;
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-semibold text-emerald-400">
-                        <span>Empezar gratis</span>
-                        <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </Link>
-                  )
-                })}
+              <div id="puerta-gym" className="group flex flex-col rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl backdrop-blur transition hover:border-purple-500/50 sm:p-8">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-purple-500/20 bg-purple-500/10 text-purple-400"><Dumbbell className="h-6 w-6" /></div>
+                  <Badge variant="outline" className="border-purple-500/30 bg-purple-500/10 text-xs font-medium text-purple-300">Gym</Badge>
+                </div>
+                <h2 className="mt-5 font-[var(--font-fraunces)] text-2xl font-semibold text-white">Socios, cuotas y morosos</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">Planes claros, quién no pagó este mes y cobro manual cuando corresponda.</p>
+                <p className="mt-4 text-xs text-slate-400">Membresías + morosos · Cobro manual</p>
+                <Button size="lg" className="mt-8 min-h-12 w-full bg-purple-500 font-semibold text-slate-950 shadow-md hover:bg-purple-400" asChild>
+                  <Link href="/demo/gimnasio">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
-
         {/* ── Franja de Confianza & Seguridad Corporativa ── */}
         <section id="seguridad" className="border-b border-slate-800/80 bg-slate-900/60 py-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -452,7 +277,7 @@ export function LandingHomePuertas() {
                 className="h-12 border-slate-700 bg-slate-900/60 px-8 text-slate-200 hover:bg-slate-800 hover:text-white"
                 asChild
               >
-                <Link href="/f">Empezar con ticket interno</Link>
+                <Link href="/login/register?activar=pos.core">Empezar con ticket interno</Link>
               </Button>
             </div>
           </div>
@@ -527,7 +352,7 @@ export function LandingHomePuertas() {
                 className="min-h-12 h-12 bg-emerald-500 px-8 text-base font-semibold text-slate-950 hover:bg-emerald-400 shadow-lg"
                 asChild
               >
-                <Link href="/f">
+                <Link href="/login/register?activar=pos.core">
                   Empezar gratis
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -559,4 +384,5 @@ export function LandingHomePuertas() {
     </div>
   )
 }
+
 

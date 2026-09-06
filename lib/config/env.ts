@@ -14,6 +14,19 @@ function first(...keys: string[]): string {
   return ""
 }
 
+export function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production"
+}
+
+/** Mock override flags are never valid in a production runtime. */
+export function hasProductionMockFlags(): boolean {
+  return isProductionRuntime() && [
+    process.env.FORCE_MOCK_MP_PROD,
+    process.env.FORCE_MOCK_STRIPE_PROD,
+    process.env.ALLOW_DEMO,
+  ].some((value) => value === "true" || value === "1")
+}
+
 /** true si corre en Vercel (build o runtime) */
 export function isVercel(): boolean {
   return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV)
@@ -120,6 +133,7 @@ export function getEnvPresenceChecklist() {
       vercel: isVercel(),
       vercelEnv: process.env.VERCEL_ENV ?? null,
       nodeEnv: process.env.NODE_ENV,
+      productionMockFlags: hasProductionMockFlags(),
     },
     required: {
       DATABASE_URL: Boolean(getDatabaseUrl()),

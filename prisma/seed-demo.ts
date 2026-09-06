@@ -37,6 +37,9 @@ async function ensureDemoEmpresa() {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("El seed de demos está deshabilitado en producción")
+  }
   const args = process.argv.slice(2).filter(Boolean)
   const industries =
     args.length > 0

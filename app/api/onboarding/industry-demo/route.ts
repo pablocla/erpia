@@ -20,6 +20,12 @@ export async function POST(request: NextRequest) {
   let empresaIdCreada: number | null = null
 
   try {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "Las demos de industria están deshabilitadas en producción", code: "DEMO_DISABLED" },
+        { status: 403 },
+      )
+    }
     const body = await request.json().catch(() => ({}))
     const demoSecret = typeof body.demo_secret === "string" ? body.demo_secret.trim() : ""
     

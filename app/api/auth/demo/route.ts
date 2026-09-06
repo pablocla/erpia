@@ -18,8 +18,8 @@ export const dynamic = "force-dynamic"
  */
 export async function POST(request: NextRequest) {
   try {
-    // Production: demo deshabilitado salvo ALLOW_DEMO=1
-    if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO !== "1") {
+    // Production nunca provisiona empresas ni datos de demo.
+    if (process.env.NODE_ENV === "production") {
       const { recordPlatformEvent } = await import("@/lib/ops/platform-events")
       void recordPlatformEvent({
         severity: "sev3",

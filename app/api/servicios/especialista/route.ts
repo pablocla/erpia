@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
   const mockConfirm = request.nextUrl.searchParams.get("confirmar_mock")
   const ordenId = Number(request.nextUrl.searchParams.get("orden") ?? "")
-  if (mockConfirm === "1" && isMpMockMode() && Number.isFinite(ordenId)) {
+  if (mockConfirm === "1" && process.env.NODE_ENV !== "production" && isMpMockMode() && Number.isFinite(ordenId)) {
     const orden = await marcarOrdenPagada(ordenId)
     return NextResponse.json({
       ok: true,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       confirmarMock?: boolean
     }
 
-    if (confirmarMock && isMpMockMode()) {
+    if (confirmarMock && process.env.NODE_ENV !== "production" && isMpMockMode()) {
       const leadId = Number(body?.ordenId)
       if (!Number.isFinite(leadId)) {
         return NextResponse.json({ error: "Orden inválida" }, { status: 400 })

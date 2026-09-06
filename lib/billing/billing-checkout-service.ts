@@ -16,6 +16,7 @@ import {
 import { tryPayWithPartnerCredit } from "@/lib/partners/partner-wallet-service"
 import { activarProducto } from "@/lib/platform/product-lifecycle"
 import { isSkuProvisionable } from "@/lib/marketplace/sku-availability"
+import { isProductionRuntime } from "@/lib/config/env"
 
 export async function createPlanSubscriptionCheckout(params: {
   empresaId: number
@@ -159,6 +160,9 @@ export async function confirmMockSubscription(params: {
   empresaId: number
   ref?: string | null
 }) {
+  if (isProductionRuntime()) {
+    throw new Error("Confirmación de suscripción mock deshabilitada en producción; esperá el webhook de Mercado Pago.")
+  }
   await prisma.empresa.update({
     where: { id: params.empresaId },
     data: {

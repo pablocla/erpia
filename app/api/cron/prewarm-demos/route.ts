@@ -11,6 +11,13 @@ const TARGET_PREWARMED_COUNT = 3
 const CRITICAL_INDUSTRIES = ["almacen", "kiosco", "pos", "servicios"]
 
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "El prewarm de demos está deshabilitado en producción", code: "DEMO_DISABLED" },
+      { status: 403 },
+    )
+  }
+
   const denied = requireCronAuth(request)
   if (denied) {
     void recordPlatformEvent({
@@ -36,7 +43,7 @@ export async function GET(request: NextRequest) {
     let generated = 0
     if (count < TARGET_PREWARMED_COUNT) {
       const needed = TARGET_PREWARMED_COUNT - count
-      // Crear hasta `needed` empresas pre-calentadas, pero para evitar timeout de Vercel (60s)
+      // Crear empresas pre-calentadas, pero para evitar timeout de Vercel (60s)
       // s�lo generaremos 1 o 2 demos por llamada al cron (la pr�xima llamada crear� m�s).
       const toGenerate = Math.min(needed, 2)
 

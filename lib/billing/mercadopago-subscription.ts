@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { getSiteUrl } from "@/lib/marketing/landing-seo"
 import { getOfertaEmpresa } from "@/lib/comercial/ofertas-comerciales"
 import { aplicarPisoPrecioSuscripcion } from "@/lib/comercial/precio-minimo"
-import { getMpAccessToken, isMpMockMode } from "@/lib/config/env"
+import { getMpAccessToken, isMpMockMode, isProductionRuntime } from "@/lib/config/env"
 
 function mpToken() {
   return getMpAccessToken()
@@ -33,14 +33,10 @@ export async function createMercadoPagoSubscription(params: CreateSubscriptionPa
   }
 
   if (mpMock()) {
-    // Oleada 0: en production no se simula cobro salvo FORCE_MOCK_MP_PROD=true
-    if (
-      process.env.NODE_ENV === "production" &&
-      process.env.FORCE_MOCK_MP_PROD !== "true"
-    ) {
-      throw new Error(
-        "Mercado Pago no está configurado en producción (MP_ACCESS_TOKEN). " +
-          "No se puede simular cobro. Configurá el token en Vercel Environment Variables.",
+    // Production must always use Mercado Pago real; no flag can override this.
+    if (isProductionRuntime()) {
+      throw new Error("Mercado Pago no está configurado en producción (MP_ACCESS_TOKEN). " +
+        "No se puede simular cobro. Configurá el token en Vercel Environment Variables.",
       )
     }
     const mockSubscriptionId = `mp_sub_${Date.now()}`
@@ -118,6 +114,9 @@ export async function syncMercadoPagoSubscription(empresaId: number) {
   }
 
   if (mpMock()) {
+    if (isProductionRuntime()) {
+      throw new Error("Mercado Pago no está configurado en producción; no se puede sincronizar una suscripción mock.")
+    }
     return { synced: false, reason: "mock_mode", status: empresa.mpSubscriptionStatus }
   }
 

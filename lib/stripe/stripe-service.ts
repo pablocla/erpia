@@ -11,6 +11,7 @@ import {
   type PaymentProviderId,
 } from "@/lib/stripe/stripe-config"
 import type { MarketId } from "@/lib/comercial/markets"
+import { isProductionRuntime } from "@/lib/config/env"
 
 export interface StripeCheckoutInput {
   empresaId: number
@@ -91,7 +92,7 @@ export async function createStripeCheckoutSession(
     `${site}/dashboard/cuentas-cobrar?stripe=cancel&ref=${encodeURIComponent(input.externalReference)}`
 
   if (cfg.mock) {
-    if (process.env.NODE_ENV === "production" && process.env.FORCE_MOCK_STRIPE_PROD !== "true") {
+    if (isProductionRuntime()) {
       throw new Error(
         "Stripe no está configurado en producción (STRIPE_SECRET_KEY). " +
           "Agregá la key en .env / Vercel Environment Variables.",

@@ -51,7 +51,9 @@ function RegisterPageContent() {
   const passwordNoCoincide = !googleUser && form.confirmar.length > 0 && form.password !== form.confirmar
 
   const trackSignupEvents = (activarKey: string | null | undefined) => {
-    trackMetaEvent("CompleteRegistration", { content_name: "Claver Fiado", status: true })
+    const activarIntent = resolveActivarIntent(activarKey)
+    const contentName = activarIntent?.productName?.trim() || activarIntent?.marca?.trim() || "Claver PyME"
+    trackMetaEvent("CompleteRegistration", { content_name: contentName, status: true })
     if (resolveActivarIntent(activarKey)?.engancheId === "pos.fiado_barrio") {
       trackMetaEvent("StartTrial", { currency: "ARS" })
     }
@@ -231,7 +233,7 @@ function RegisterPageContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4 [&_input]:min-h-12">
+          <form method="post" onSubmit={handleSubmit} className="space-y-4 [&_input]:min-h-12">
             {activarIntent && (
               <Alert className="border-emerald-500/30 bg-emerald-500/5">
                 <AlertDescription className="text-sm text-muted-foreground">

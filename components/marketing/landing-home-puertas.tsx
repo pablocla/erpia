@@ -182,7 +182,7 @@ export function LandingHomePuertas() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      Arqueo ciego y control de caja por turno
+                      Control de caja por turno
                     </li>
                   </ul>
                 </div>
@@ -190,7 +190,7 @@ export function LandingHomePuertas() {
                 <div className="mt-8 pt-4 border-t border-slate-800/80">
                   <Button
                     size="lg"
-                    className="w-full bg-emerald-500 font-semibold text-slate-950 hover:bg-emerald-400 shadow-md transition"
+                    className="min-h-12 w-full bg-emerald-500 font-semibold text-slate-950 hover:bg-emerald-400 shadow-md transition"
                     asChild
                   >
                     <Link href="/f">
@@ -260,7 +260,7 @@ export function LandingHomePuertas() {
                 <div className="mt-8 pt-4 border-t border-slate-800/80">
                   <Button
                     size="lg"
-                    className="w-full bg-blue-500 font-semibold text-slate-950 hover:bg-blue-400 shadow-md transition"
+                    className="min-h-12 w-full bg-blue-500 font-semibold text-slate-950 hover:bg-blue-400 shadow-md transition"
                     asChild
                   >
                     <Link href="/f/servicios">
@@ -359,8 +359,8 @@ export function LandingHomePuertas() {
               <div className="flex items-start gap-3">
                 <Receipt className="h-6 w-6 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-sm text-white">Ticket interno ya. ARCA cuando lo pactés.</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Vendé sin CAE desde el día uno. El certificado se agenda con quien tenga clave ARCA.</p>
+                  <h3 className="font-semibold text-sm text-white">Factura oficial AFIP cuando la necesites.</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Vendé con ticket interno desde el día uno. La factura oficial AFIP se agenda cuando la necesitás.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -486,7 +486,7 @@ export function LandingHomePuertas() {
                     ¿Cómo funciona la facturación electrónica AFIP?
                   </AccordionTrigger>
                   <AccordionContent className="text-slate-300 leading-relaxed text-sm">
-                    El sistema emite tickets internos de control de forma ilimitada, sin CAE. Cuando necesitás Factura A, B o C, pactás un turno con quien tenga acceso a ARCA para emitir el certificado. Mientras tanto seguís vendiendo.
+                    El sistema emite tickets internos de control de forma ilimitada. Cuando necesitás una factura oficial AFIP (A, B o C), pactás un turno para emitirla. Mientras tanto seguís vendiendo.
                   </AccordionContent>
                 </AccordionItem>
 
@@ -524,7 +524,7 @@ export function LandingHomePuertas() {
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 size="lg"
-                className="h-12 bg-emerald-500 px-8 text-base font-semibold text-slate-950 hover:bg-emerald-400 shadow-lg"
+                className="min-h-12 h-12 bg-emerald-500 px-8 text-base font-semibold text-slate-950 hover:bg-emerald-400 shadow-lg"
                 asChild
               >
                 <Link href="/f">
@@ -535,7 +535,7 @@ export function LandingHomePuertas() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-12 border-slate-700 bg-slate-900/60 px-8 text-base text-slate-200 hover:bg-slate-800 hover:text-white"
+                className="min-h-12 h-12 border-slate-700 bg-slate-900/60 px-8 text-base text-slate-200 hover:bg-slate-800 hover:text-white"
                 asChild
               >
                 <Link href="/claver/apps">Ver catálogo completo de apps</Link>

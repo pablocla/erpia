@@ -107,7 +107,7 @@ export function ReportErrorButton() {
     }
   }
 
-  if (!hasToken || chatOpen) return null
+  if (!hasToken || chatOpen || isMarketingLanding) return null
 
   return (
     <>

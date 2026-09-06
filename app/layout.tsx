@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { ReportErrorButton } from '@/components/report-error-button'
 import { CommandPalette } from '@/components/command-palette'
 import { PageTrackerProvider } from '@/components/page-tracker-provider'
+import { MetaPixel } from '@/components/meta-pixel'
 import { ChatWidget } from '@/components/chat-widget'
 import { getEffectiveLocale } from '@/lib/i18n/request-locale'
 import { I18nProvider } from '@/components/i18n-provider'
@@ -111,6 +112,7 @@ export default async function RootLayout({
               <PageTrackerProvider>
                 {children}
               </PageTrackerProvider>
+              <MetaPixel />
               <CommandPalette />
               <ChatWidget />
               <ReportErrorButton />

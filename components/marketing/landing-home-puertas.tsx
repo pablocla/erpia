@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -29,6 +32,8 @@ import {
   Droplets,
   Stethoscope,
   Truck,
+  Menu,
+  X,
 } from "lucide-react"
 import { BrandLogo } from "@/components/marketing/brand-logo"
 import { PactarImplementacionArca } from "@/components/comercial/pactar-implementacion-arca"
@@ -43,8 +48,10 @@ import { PACKS_ESPECIALISTAS } from "@/lib/servicios-especialista/especialista-c
  * Diseño estructurado, de alta credibilidad, con llamadas a la acción claras y foco en resolución de problemas reales.
  */
 export function LandingHomePuertas() {
+  const [navOpen, setNavOpen] = useState(false)
+
   return (
-    <div data-page="landing" className="min-h-screen bg-slate-950 text-slate-50 antialiased">
+    <div data-page="landing" className="min-h-screen overflow-x-hidden bg-slate-950 text-slate-50 antialiased">
       {/* ── Top Header Corporativo ── */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -65,13 +72,13 @@ export function LandingHomePuertas() {
             <a href="#faq" className="hover:text-white transition">Preguntas</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-slate-300 hover:text-white hover:bg-slate-900" asChild>
+          <div className="hidden items-center gap-3 md:flex">
+            <Button variant="ghost" size="lg" className="min-h-12 text-slate-300 hover:text-white hover:bg-slate-900" asChild>
               <Link href="/login">Ya tengo cuenta</Link>
             </Button>
             <Button
-              size="sm"
-              className="bg-emerald-500 font-semibold text-slate-950 shadow-sm hover:bg-emerald-400"
+              size="lg"
+              className="min-h-12 bg-emerald-500 font-semibold text-slate-950 shadow-sm hover:bg-emerald-400"
               asChild
             >
               <Link href="/f">
@@ -80,7 +87,21 @@ export function LandingHomePuertas() {
               </Link>
             </Button>
           </div>
+          <button type="button" className="ml-auto inline-flex min-h-12 min-w-12 items-center justify-center rounded-lg text-white md:hidden" onClick={() => setNavOpen((open) => !open)} aria-expanded={navOpen} aria-label={navOpen ? "Cerrar menú" : "Abrir menú"}>
+            {navOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
+        {navOpen && (
+          <nav className="border-t border-slate-800 bg-slate-950 px-4 py-3 md:hidden" aria-label="Menú móvil">
+            <div className="flex flex-col gap-1">
+              <a href="#soluciones" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Soluciones</a>
+              <a href="#como-funciona" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Cómo funciona</a>
+              <a href="#seguridad" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Seguridad</a>
+              <Link href="/login" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg px-3 py-3 text-sm text-slate-200">Ya tengo cuenta</Link>
+              <Link href="/f" onClick={() => setNavOpen(false)} className="min-h-12 rounded-lg bg-emerald-500 px-3 py-3 text-center text-sm font-semibold text-slate-950">Empezar gratis</Link>
+            </div>
+          </nav>
+        )}
       </header>
 
       <main>
@@ -93,18 +114,22 @@ export function LandingHomePuertas() {
             <div className="mx-auto max-w-3xl text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
                 <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                Software de gestión y cobro para Argentina · Sin tarjeta
+                Gratis para arrancar · Sin tarjeta
               </div>
 
               <h1 className="mt-6 font-[var(--font-fraunces)] text-4xl font-semibold leading-[1.12] tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Tu negocio organizado.
-                <span className="block text-emerald-400">Tus cobros asegurados.</span>
+                Quién te debe, en pantalla.
               </h1>
 
               <p className="mt-5 text-lg text-slate-300 leading-relaxed sm:text-xl">
-                Punto de venta, libreta de fiados y presupuestos con seña anotada.
-                Diseñado para el comerciante, el instalador y la PyME. Ticket interno desde el día uno; factura ARCA cuando la pactés.
+                Arrancás con la libreta de fiados del local. Caja, stock y factura oficial (AFIP) los sumás después, cuando te hagan falta.
               </p>
+              <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+                <Button size="lg" className="min-h-12 bg-emerald-500 px-8 font-semibold text-slate-950 hover:bg-emerald-400" asChild>
+                  <Link href="/f">Empezar gratis<ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                <p className="text-xs text-slate-400">1 minuto · Sin tarjeta · Empezás por el fiado</p>
+              </div>
             </div>
 
             {/* ── Dos Puertas de Entrada Comerciales ── */}
@@ -169,7 +194,7 @@ export function LandingHomePuertas() {
                     asChild
                   >
                     <Link href="/f">
-                      Empezar con mi Local Gratis
+                      Empezar gratis
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
@@ -503,7 +528,7 @@ export function LandingHomePuertas() {
                 asChild
               >
                 <Link href="/f">
-                  Empezar gratis ahora
+                  Empezar gratis
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

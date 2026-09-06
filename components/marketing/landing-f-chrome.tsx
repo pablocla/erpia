@@ -14,7 +14,7 @@ export function LandingFChrome({
   extraFooter?: ReactNode
 }) {
   return (
-    <div data-page="landing" className="min-h-screen text-[var(--foreground)]">
+    <div data-page="landing" className="min-h-screen overflow-x-hidden text-[var(--foreground)]">
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6 lg:px-8">
           <Link href={homeHref} className="shrink-0" aria-label="Claver, inicio">
@@ -24,7 +24,7 @@ export function LandingFChrome({
             <p className="hidden text-xs font-medium text-[var(--muted-foreground)] sm:block">
               Argentina
             </p>
-            <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
+            <Button variant="ghost" size="lg" className="min-h-12 text-muted-foreground" asChild>
               <Link href="/login">Ya tengo cuenta</Link>
             </Button>
           </div>

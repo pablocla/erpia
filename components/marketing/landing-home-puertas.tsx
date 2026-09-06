@@ -19,8 +19,6 @@ import { PactarImplementacionArca } from "@/components/comercial/pactar-implemen
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { PUERTAS_ESCALA_RAPIDA } from "@/lib/comercial/puertas-catalog"
-import { PACKS_ESPECIALISTAS } from "@/lib/servicios-especialista/especialista-catalog"
 
 /**
  * Landing Home Corporativa para Comercios, Oficios y PyMEs de Argentina.

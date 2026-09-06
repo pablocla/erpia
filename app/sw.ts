@@ -24,7 +24,9 @@ const serwist = new Serwist({
           return true
         }
         if (url.pathname.startsWith("/api/")) return true
-        if (url.pathname.startsWith("/login")) return true
+        // Login navigations must use Serwist default page handling instead of
+        // NetworkOnly: a transient fetch failure otherwise surfaces as
+        // Uncaught (in promise) no-response and leaves auth UI spinning.
         if (
           request.mode === "navigate" &&
           url.pathname.startsWith("/dashboard") &&

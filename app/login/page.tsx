@@ -45,7 +45,9 @@ function LoginPageContent() {
       if (r.landingPath) dest = r.landingPath
     }
     const final = await resolvePostLoginPathAsync(sessionToken, rol, dest, email)
-    router.replace(final)
+    // Use a hard replace after auth so the fresh cookie is seen by middleware
+    // and a failed/stale RSC navigation cannot leave the login spinner mounted.
+    window.location.replace(final)
   }
 
   useEffect(() => {

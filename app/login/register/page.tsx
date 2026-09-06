@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { Suspense, useEffect, useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth/hooks"
@@ -14,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button"
 import { RUBROS_SIGNUP } from "@/lib/comercial/rubro-signup"
+import { trackMetaEvent } from "@/lib/analytics/meta-pixel"
 
 function RegisterPageContent() {
   const router = useRouter()
@@ -41,6 +43,35 @@ function RegisterPageContent() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const passwordMinLength = 8
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+  const passwordCorta = !googleUser && form.password.length > 0 && form.password.length < passwordMinLength
+  const passwordNoCoincide = !googleUser && form.confirmar.length > 0 && form.password !== form.confirmar
+
+  const trackSignupEvents = (activarKey: string | null | undefined) => {
+    trackMetaEvent("CompleteRegistration", { content_name: "Claver Fiado", status: true })
+    if (resolveActivarIntent(activarKey)?.engancheId === "pos.fiado_barrio") {
+      trackMetaEvent("StartTrial", { currency: "ARS" })
+    }
+  }
+
+  const submitDisabledReason = cargando
+    ? "Creando tu cuenta..."
+    : !form.empresa.trim()
+      ? "Completa el nombre de tu negocio"
+      : !form.nombre.trim()
+        ? "Completa tu nombre"
+        : !emailValido
+          ? "Ingresa un email valido"
+          : !googleUser && form.password.length < passwordMinLength
+            ? "La contrasena debe tener al menos 8 caracteres"
+            : !googleUser && form.password !== form.confirmar
+              ? "Las contrasenas no coinciden"
+              : !acceptTerms
+                ? "Acepta los Terminos y la Politica de privacidad"
+                : ""
 
   // Si viene de Google auth sin empresa, pre-cargar datos
   useEffect(() => {
@@ -83,7 +114,7 @@ function RegisterPageContent() {
         setError("Las contraseñas no coinciden")
         return
       }
-      if (form.password.length < 8) {
+      if (form.password.length < passwordMinLength) {
         setError("La contraseña debe tener al menos 8 caracteres")
         return
       }
@@ -106,6 +137,8 @@ function RegisterPageContent() {
           setError(result.error ?? "Error al crear la cuenta con Google")
           return
         }
+
+        trackSignupEvents(activarKey)
 
         let dest =
           result.onboarding?.landingPath ??
@@ -150,6 +183,7 @@ function RegisterPageContent() {
       }
 
       loginConToken(data.token, data.usuario)
+      trackSignupEvents(activarParam || selectedRubro || null)
 
       let dest = data.onboarding?.landingPath ?? "/dashboard"
 
@@ -229,6 +263,7 @@ function RegisterPageContent() {
                 value={form.empresa}
                 onChange={handleChange}
                 required
+                aria-invalid={form.empresa.length > 0 && !form.empresa.trim()}
                 placeholder="Ej: Kiosco Central / Taller San Martín"
                 autoComplete="organization"
               />
@@ -264,6 +299,7 @@ function RegisterPageContent() {
                 value={form.nombre}
                 onChange={handleChange}
                 required
+                aria-invalid={form.nombre.length > 0 && !form.nombre.trim()}
                 placeholder="Juan Pérez"
                 readOnly={!!googleUser}
                 className={googleUser ? "bg-muted" : ""}
@@ -280,6 +316,7 @@ function RegisterPageContent() {
                 value={form.email}
                 onChange={handleChange}
                 required
+                aria-invalid={form.email.length > 0 && !emailValido}
                 placeholder="juan@miempresa.com"
                 readOnly={!!googleUser}
                 className={googleUser ? "bg-muted" : ""}
@@ -290,17 +327,30 @@ function RegisterPageContent() {
             {!googleUser && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                    placeholder="Mínimo 8 caracteres"
-                    autoComplete="new-password"
-                  />
+                  <Label htmlFor="password">Contrase?a <span className="text-xs text-muted-foreground">(8+ caracteres)</span></Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={handleChange}
+                      required
+                      minLength={passwordMinLength}
+                      aria-invalid={passwordCorta}
+                      placeholder="M?nimo 8 caracteres"
+                      autoComplete="new-password"
+                      className="pr-11"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-2 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowPassword((value) => !value)}
+                      aria-label={showPassword ? "Ocultar contrase?a" : "Mostrar contrase?a"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -308,10 +358,12 @@ function RegisterPageContent() {
                   <Input
                     id="confirmar"
                     name="confirmar"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={form.confirmar}
                     onChange={handleChange}
                     required
+                    minLength={passwordMinLength}
+                    aria-invalid={passwordNoCoincide}
                     placeholder="Repetí la contraseña"
                     autoComplete="new-password"
                   />
@@ -324,6 +376,7 @@ function RegisterPageContent() {
                 type="checkbox"
                 className="mt-1 rounded border"
                 checked={acceptTerms}
+                aria-invalid={!acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
               />
               <span>
@@ -339,13 +392,18 @@ function RegisterPageContent() {
               </span>
             </label>
 
-            <Button type="submit" className="min-h-12 w-full" disabled={cargando || !acceptTerms}>
+            <Button type="submit" className="min-h-12 w-full" disabled={Boolean(submitDisabledReason)}>
               {cargando
                 ? "Creando cuenta..."
                 : activarIntent
                   ? `Empezar con ${activarIntent.marca}`
                   : "Crear cuenta"}
             </Button>
+            {submitDisabledReason && !cargando && (
+              <p className="text-center text-xs text-muted-foreground" role="status" aria-live="polite">
+                {submitDisabledReason}
+              </p>
+            )}
 
             <p className="text-center text-sm text-muted-foreground">
               ¿Ya tenés cuenta?{" "}

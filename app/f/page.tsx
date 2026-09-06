@@ -13,19 +13,23 @@ const siteUrl = getSiteUrl()
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: {
-      absolute: "Tu punto de venta y tu libreta de fiados, gratis | Claver",
-    },
+    title: { absolute: "Libreta de fiados gratis \u00b7 Claver" },
     description:
-      "Anotá ventas, controlá el stock y sabé quién te debe. Desde el celular o la compu. Sin tarjeta y sin vencimiento. Argentina.",
-    alternates: { canonical: `${siteUrl}/f` },
+      "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
+    alternates: { canonical: "https://claver.com.ar/f" },
     openGraph: {
-      title: "Tu punto de venta y tu libreta de fiados, gratis | Claver",
+      title: "Libreta de fiados gratis \u00b7 Claver",
       description:
-        "Libreta y caja para tu negocio, sin tarjeta. Los extras (WhatsApp, AFIP) se prenden cuando los necesites.",
-      url: `${siteUrl}/f`,
+        "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
+      url: "https://claver.com.ar/f",
       locale: "es_AR",
       siteName: CLAVER_GROUP.name,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Libreta de fiados gratis \u00b7 Claver",
+      description:
+        "Anot\u00e1 qui\u00e9n te debe, sin tarjeta. Caja y factura oficial las sum\u00e1s despu\u00e9s.",
     },
   }
 }
@@ -61,7 +65,7 @@ export default async function LandingFPage({
             </p>
             <div className="mt-6 space-y-3">
               <Button size="lg" className={LANDING_F_CTA_CLASS} asChild>
-                <Link href={registerHref}>Empezar gratis</Link>
+                <Link href={registerHref} data-meta-event="Lead">Empezar gratis</Link>
               </Button>
               <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">
                 Empezás con Claver Fiado (libreta). El resto, cuando el negocio lo pida.
@@ -229,7 +233,7 @@ export default async function LandingFPage({
 
         <LandingWrap className="mt-14 space-y-3 sm:mt-20">
           <Button size="lg" className={LANDING_F_CTA_CLASS} asChild>
-            <Link href={registerHref}>Empezar gratis</Link>
+            <Link href={registerHref} data-meta-event="Lead">Empezar gratis</Link>
           </Button>
           <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">1 minuto · Sin tarjeta · Empezás por el fiado</p>
         </LandingWrap>

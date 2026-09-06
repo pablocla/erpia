@@ -5,11 +5,9 @@
 import { generarTokenImpersonacion, type ImpersonationTokenPayload } from "@/lib/auth/impersonation"
 import { isPreviewActorCodigo, labelForPreviewActor } from "@/lib/auth/preview-experience-catalog"
 import { isClaverAnalyst } from "@/lib/auth/claver-analyst"
-import { canManageUsers } from "@/lib/auth/admin-roles"
 
 export function canPreviewExperience(opts: { email?: string | null; rol?: string | null }): boolean {
-  if (isClaverAnalyst(opts.email, opts.rol ?? undefined)) return true
-  return canManageUsers(opts.rol)
+  return isClaverAnalyst(opts.email, opts.rol ?? undefined)
 }
 
 export function canPreviewRubros(opts: { email?: string | null; rol?: string | null }): boolean {

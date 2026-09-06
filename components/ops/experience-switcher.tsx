@@ -29,7 +29,7 @@ import { launchIndustryDemo } from "@/components/onboarding/launch-industry-demo
 import { cn } from "@/lib/utils"
 
 type ExperienceSwitcherProps = {
-  /** Always show (Cloud). If false, only admin/analista. */
+  /** Always show (Cloud). If false, only Claver analysts. */
   forceShow?: boolean
   className?: string
 }

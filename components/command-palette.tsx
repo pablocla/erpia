@@ -64,6 +64,7 @@ import { useUIStore } from "@/lib/stores/ui-store"
 import { useAuthStore } from "@/lib/stores/auth-store"
 import { useTranslations } from "next-intl"
 import { getActiveProductShell } from "@/lib/comercial/product-shell"
+import { useAuthFetch } from "@/hooks/use-auth-fetch"
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -186,7 +187,11 @@ export function CommandPalette() {
   const { setTheme, theme } = useTheme()
   const { commandPaletteOpen, setCommandPaletteOpen, recentPages } = useUIStore()
   const userRol = useAuthStore((s) => s.user?.rol)
-  const canActores = canSeeActoresButton({ rol: userRol })
+  const { data: analystData } = useAuthFetch<{ isAnalyst?: boolean }>("/api/claver/analista/status")
+  const canActores = canSeeActoresButton({
+    rol: userRol,
+    isAnalyst: Boolean(analystData?.isAnalyst),
+  })
   const [docItems, setDocItems] = useState<any[]>([])
   const [modoLite, setModoLite] = useState<string>("completo")
 

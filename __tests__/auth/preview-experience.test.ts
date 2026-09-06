@@ -37,16 +37,19 @@ describe("preview experience catalog", () => {
 })
 
 describe("preview experience permissions", () => {
-  it("owner y admin de tenant pueden probar actores", () => {
+  it("solo analistas Claver pueden probar actores", () => {
     expect(canPreviewExperience({ email: CLAVER_OWNER_EMAIL, rol: "administrador" })).toBe(true)
-    expect(canPreviewExperience({ email: "dueño@local.com", rol: "dueno" })).toBe(true)
+    expect(canPreviewExperience({ email: "analista@claver.com", rol: "analista_claver" })).toBe(true)
+    expect(canPreviewExperience({ email: "dueno@local.com", rol: "dueno" })).toBe(false)
     expect(canPreviewExperience({ email: "caja@local.com", rol: "cajero" })).toBe(false)
   })
 
-  it("el botón Actores no lo ven cajero, mozo ni vendedor", () => {
-    expect(canSeeActoresButton({ rol: "administrador" })).toBe(true)
-    expect(canSeeActoresButton({ rol: "admin" })).toBe(true)
-    expect(canSeeActoresButton({ rol: "dueno" })).toBe(true)
+  it("el boton Actores solo lo ven analistas Claver", () => {
+    expect(canSeeActoresButton({ rol: "administrador" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "admin" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "dueno" })).toBe(false)
+    expect(canSeeActoresButton({ rol: "analista_claver" })).toBe(true)
+    expect(canSeeActoresButton({ rol: "ANALISTA_CLAVER" })).toBe(true)
     expect(canSeeActoresButton({ rol: "cajero" })).toBe(false)
     expect(canSeeActoresButton({ rol: "mozo" })).toBe(false)
     expect(canSeeActoresButton({ rol: "vendedor" })).toBe(false)
@@ -54,8 +57,8 @@ describe("preview experience permissions", () => {
     expect(canSeeActoresButton({ rol: "deposito" })).toBe(false)
     expect(canSeeActoresButton({ rol: null })).toBe(false)
     expect(canSeeActoresButton({ rol: "cajero", isAnalyst: true })).toBe(true)
+    expect(canSeeActoresButton({ rol: "dueno", forceShow: true })).toBe(true)
   })
-
   it("solo analistas/owner arman demo de rubro", () => {
     expect(canPreviewRubros({ email: CLAVER_OWNER_EMAIL, rol: "administrador" })).toBe(true)
     expect(canPreviewRubros({ email: "dueño@local.com", rol: "dueno" })).toBe(false)

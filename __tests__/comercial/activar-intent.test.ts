@@ -52,7 +52,7 @@ describe("activar-intent", () => {
   })
 
   it("fiado en registro no dice trial 14 días", () => {
-    expect(mensajeActivarTrial("pos.fiado_barrio")).toMatch(/gratis para siempre/i)
+    expect(mensajeActivarTrial("pos.fiado_barrio")).toBe("Activás la libreta de fiados. Caja y stock los sumás después.")
     expect(mensajeActivarTrial("pos.fiado_barrio")).not.toMatch(/14 d[ií]as/i)
     expect(mensajeActivarTrial("fiado")).not.toMatch(/14 d[ií]as/i)
   })

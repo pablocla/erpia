@@ -41,6 +41,16 @@ function fromSubSaas(sku: string, slug?: string): ActivarIntent | null {
     SUB_SAAS_APPS.find((a) => a.sku === sku || a.skusAdicionales?.includes(sku)) ??
     null
   if (!app) return null
+  if (app.sku === "pos.fiado_barrio") {
+    return {
+      engancheId: app.sku,
+      modoLite: app.modoLite,
+      landingPath: app.dashboardPath,
+      productName: "Libreta de fiados",
+      marca: "Claver Fiado",
+      lema: "Quién te debe, en pantalla",
+    }
+  }
   return {
     engancheId: app.sku,
     modoLite: app.modoLite,
@@ -134,7 +144,7 @@ export function mensajeActivarTrial(activar: string | null | undefined, market: 
   if (!intent) return isUs ? "Start your 14-day free trial" : "Trial 14 días gratis"
   
   if (intent.engancheId === "pos.fiado_barrio" || intent.modoLite === "fiado") {
-    return isUs ? "Free house tabs · no card, no trial clock" : "Libreta y caja, gratis para siempre. Sin tarjeta."
+    return isUs ? "Free house tabs · no card, no trial clock" : "Activás la libreta de fiados. Caja y stock los sumás después."
   }
   if (intent.engancheId === "niche.oficios" || activar === "oficios") {
     return isUs

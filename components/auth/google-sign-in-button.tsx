@@ -111,7 +111,7 @@ export function GoogleSignInButton({
       text,
       shape: "rectangular",
       logo_alignment: "left",
-      width: 400,
+      width: Math.min(400, Math.max(200, buttonRef.current.clientWidth || 400)),
       locale: "es_AR",
     })
   }, [clientId, text])
@@ -155,6 +155,9 @@ export function GoogleSignInButton({
       <div
         ref={buttonRef}
         style={{
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
           display: "flex",
           justifyContent: "center",
           minHeight: 44,

@@ -184,7 +184,7 @@ function RegisterPageContent() {
     : "/login"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen overflow-x-hidden flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>
@@ -197,13 +197,13 @@ function RegisterPageContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 [&_input]:min-h-12">
             {activarIntent && (
               <Alert className="border-emerald-500/30 bg-emerald-500/5">
                 <AlertDescription className="text-sm text-muted-foreground">
-                  Al crear la cuenta activamos solo{" "}
-                  <span className="font-medium text-foreground">{activarIntent.productName}</span>.
-                  No vas a ver el ERP completo.
+                  {activarIntent.engancheId === "pos.fiado_barrio"
+                    ? "Vas a activar la libreta de fiados. Caja, stock y factura oficial los podés sumar después."
+                    : <>Al crear la cuenta activamos solo <span className="font-medium text-foreground">{activarIntent.productName}</span>.</>}
                 </AlertDescription>
               </Alert>
             )}
@@ -339,7 +339,7 @@ function RegisterPageContent() {
               </span>
             </label>
 
-            <Button type="submit" className="w-full" disabled={cargando || !acceptTerms}>
+            <Button type="submit" className="min-h-12 w-full" disabled={cargando || !acceptTerms}>
               {cargando
                 ? "Creando cuenta..."
                 : activarIntent
@@ -365,6 +365,7 @@ function RegisterPageContent() {
                   </div>
                 </div>
                 <GoogleSignInButton
+                  className="w-full max-w-full overflow-hidden"
                   onError={setError}
                   onCredential={async (idToken) => {
                     setError("")
@@ -413,7 +414,7 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="min-h-screen overflow-x-hidden flex items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardDescription>Cargando…</CardDescription>

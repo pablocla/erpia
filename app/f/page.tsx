@@ -50,22 +50,21 @@ export default async function LandingFPage({
         <LandingWrap className="grid items-center gap-10 pt-8 sm:pt-12 lg:grid-cols-2 lg:gap-16 lg:pt-16">
           <div>
             <p className="mb-3 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-[var(--landing-badge-free)] text-[var(--landing-badge-free-fg)]">
-              Gratis para siempre · Sin tarjeta
+              Gratis · Sin tarjeta · Sin vencimiento del cuaderno
             </p>
             <h1 className="font-[var(--font-fraunces)] text-3xl font-semibold leading-[1.12] tracking-tight sm:text-5xl">
-              Tu negocio en el celular.
-              <span className="block">Caja, stock y fiado. Gratis.</span>
+              Tu libreta de fiados. En el celular.
             </h1>
             <p className="mt-4 max-w-xl text-base text-[var(--muted-foreground)] sm:text-lg">
-              Anotá ventas, controlá el stock y sabé quién te debe. Sin tarjeta, sin vencimiento. Hecho para
-              el kiosco y el almacén de acá.
+              Anotá quién te debe y cuánto. Chau cuaderno de papel.
+              Caja, stock y WhatsApp de cobro los activás después — no hace falta el día uno.
             </p>
             <div className="mt-6 space-y-3">
               <Button size="lg" className={LANDING_F_CTA_CLASS} asChild>
-                <Link href={registerHref}>Empezar gratis ahora</Link>
+                <Link href={registerHref}>Empezar gratis</Link>
               </Button>
               <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">
-                El ticket y la libreta no vencen. WhatsApp de cobro y factura AFIP se activan cuando te hagan falta.
+                Empezás con Claver Fiado (libreta). El resto, cuando el negocio lo pida.
               </p>
             </div>
           </div>
@@ -230,9 +229,9 @@ export default async function LandingFPage({
 
         <LandingWrap className="mt-14 space-y-3 sm:mt-20">
           <Button size="lg" className={LANDING_F_CTA_CLASS} asChild>
-            <Link href={registerHref}>Empezar gratis ahora</Link>
+            <Link href={registerHref}>Empezar gratis</Link>
           </Button>
-          <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">1 minuto. Sin descargar nada.</p>
+          <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">1 minuto · Sin tarjeta · Empezás por el fiado</p>
         </LandingWrap>
       </main>
     </LandingFChrome>

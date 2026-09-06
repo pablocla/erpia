@@ -23,12 +23,11 @@ export function ThemeToggle() {
     return (
       <Button
         variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 px-2.5 text-xs border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 font-medium"
+        size="icon"
+        className="h-8 w-8 p-0 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 font-medium"
         aria-label="Cambiando tema"
       >
         <Sun className="h-4 w-4" />
-        <span className="hidden sm:inline">Modo claro</span>
       </Button>
     )
   }
@@ -45,9 +44,9 @@ export function ThemeToggle() {
         <TooltipTrigger asChild>
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={toggleTheme}
-            className={`h-8 gap-1.5 px-2.5 text-xs font-semibold transition-all touch-target ${
+            className={`h-8 w-8 p-0 font-semibold transition-all touch-target ${
               isDark
                 ? "bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25 hover:text-amber-300"
                 : "bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100"
@@ -55,15 +54,9 @@ export function ThemeToggle() {
             aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
           >
             {isDark ? (
-              <>
-                <Sun className="h-4 w-4 text-amber-400 fill-amber-400/20" />
-                <span className="inline">Modo claro</span>
-              </>
+              <Sun className="h-4 w-4 text-amber-400 fill-amber-400/20" />
             ) : (
-              <>
-                <Moon className="h-4 w-4 text-slate-700 dark:text-slate-200" />
-                <span className="inline">Modo oscuro</span>
-              </>
+              <Moon className="h-4 w-4 text-slate-700 dark:text-slate-200" />
             )}
           </Button>
         </TooltipTrigger>

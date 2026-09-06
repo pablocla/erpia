@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -34,8 +35,8 @@ import {
   CheckSquare,
   Menu,
   Cloud,
-  HelpCircle,
-  Palette,
+  MoreHorizontal,
+  Drama,
 } from "lucide-react"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { useUIStore } from "@/lib/stores/ui-store"
@@ -181,19 +182,19 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
           <Search className="h-3.5 w-3.5" />
           {!onMenuClick && (
             <>
-              <span className="hidden md:inline">Buscar</span>
-              <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              <span className="hidden lg:inline">Buscar</span>
+              <kbd className="hidden lg:inline pointer-events-none h-5 select-none items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                 Ctrl K
               </kbd>
             </>
           )}
         </Button>
 
-        <div className="h-4 w-px bg-border mx-0.5 hidden md:block" />
+        <div className="h-4 w-px bg-border mx-0.5 hidden lg:block" />
 
-        <ExperienceSwitcher />
+        <ExperienceSwitcher className="hidden lg:inline-flex" />
 
-        <div className="hidden md:flex items-center gap-0.5 sm:gap-1">
+        <div className="hidden lg:flex items-center gap-0.5 sm:gap-1">
           {isClaverAnalyst && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -298,10 +299,111 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
           <LocaleFlagToggle />
           <ThemeCustomizer />
           <ContextualHelp />
+          <FontZoomToggle />
+          <ThemeToggle />
         </div>
 
-        <FontZoomToggle />
-        <ThemeToggle />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 touch-target lg:hidden"
+              aria-label="Más herramientas"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel>Más herramientas</DropdownMenuLabel>
+            {tieneModuloPosOCaja && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/caja" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Caja {cajaBadge}
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {tieneModuloAfip && afipLabel && afipLabel !== "AFIP OK" && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/configuracion?seccion=afip" className="gap-2">
+                  <Badge variant="outline" className="text-[10px]">{afipLabel}</Badge>
+                  Estado AFIP
+                </Link>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/mis-tareas" className="gap-2">
+                <CheckSquare className="h-4 w-4" />
+                Mis tareas {tareasPendientes > 0 ? "(" + tareasPendientes + ")" : ""}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/soporte" className="gap-2">
+                <TicketCheck className="h-4 w-4" />
+                Soporte {ticketsAbiertos > 0 ? "(" + ticketsAbiertos + ")" : ""}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="gap-2 cursor-pointer"
+              onSelect={() => toggleChatWidget()}
+            >
+              <Sparkles className="h-4 w-4 text-purple-500" />
+              Asistente IA
+            </DropdownMenuItem>
+            {isClaverAnalyst && (
+              <DropdownMenuItem asChild>
+                <Link href="/claver-cloud" className="gap-2 text-violet-600">
+                  <Cloud className="h-4 w-4" />
+                  Claver Cloud
+                </Link>
+              </DropdownMenuItem>
+            )}
+            {canSeeActoresButton({ rol: userRol, isAnalyst: isClaverAnalyst }) && (
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onSelect={() => window.dispatchEvent(new Event(PREVIEW_OPEN_EVENT))}
+              >
+                <Drama className="h-4 w-4 text-violet-600" />
+                Probar como actor / rubro
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Preferencias</DropdownMenuLabel>
+            <div
+              className="flex items-center justify-between gap-3 px-2 py-1"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <span className="text-sm">Idioma</span>
+              <LocaleFlagToggle />
+            </div>
+            <div
+              className="flex items-center justify-between gap-3 px-2 py-1"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <span className="text-sm">Apariencia</span>
+              <div className="flex items-center gap-1">
+                <ThemeCustomizer />
+                <ThemeToggle />
+              </div>
+            </div>
+            <div
+              className="flex items-center justify-between gap-3 px-2 py-1"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <span className="text-sm">Lectura</span>
+              <FontZoomToggle />
+            </div>
+            <div
+              className="flex items-center justify-between gap-3 px-2 py-1"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <span className="text-sm">Ayuda</span>
+              <ContextualHelp />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <NotificationCenter
           notifications={notifications}
@@ -333,67 +435,6 @@ export function Topbar({ onSearchClick, onMenuClick, modoLite, productosSku }: T
               </div>
             </div>
             <DropdownMenuSeparator />
-
-            <div className="md:hidden">
-              {tieneModuloPosOCaja && (
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/caja" className="gap-2">
-                    <Wallet className="h-4 w-4" />
-                    Caja {cajaAbierta ? "(abierta)" : cajaAbierta === false ? "(cerrada)" : ""}
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              {tieneModuloAfip && afipLabel && afipLabel !== "AFIP OK" && (
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/configuracion?seccion=afip" className="gap-2">
-                    <Badge variant="outline" className="text-[10px]">{afipLabel}</Badge>
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/mis-tareas" className="gap-2">
-                  <CheckSquare className="h-4 w-4" />
-                  Mis tareas{tareasPendientes > 0 ? ` (${tareasPendientes})` : ""}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/soporte" className="gap-2">
-                  <TicketCheck className="h-4 w-4" />
-                  Soporte{ticketsAbiertos > 0 ? ` (${ticketsAbiertos})` : ""}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-2 cursor-pointer"
-                onSelect={(e) => {
-                  e.preventDefault()
-                  toggleChatWidget()
-                }}
-              >
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                Asistente IA
-              </DropdownMenuItem>
-              {isClaverAnalyst && (
-                <DropdownMenuItem asChild>
-                  <Link href="/claver-cloud" className="gap-2 text-violet-600">
-                    <Cloud className="h-4 w-4" />
-                    Claver Cloud
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/configuracion" className="gap-2">
-                  <Palette className="h-4 w-4" />
-                  Tema y personalización
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/soporte" className="gap-2">
-                  <HelpCircle className="h-4 w-4" />
-                  Ayuda y soporte
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </div>
 
             <DropdownMenuItem asChild>
               <Link href="/dashboard/configuracion" className="gap-2">

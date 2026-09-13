@@ -1,4 +1,5 @@
--- Módulo Inmobiliaria — cartera de propiedades y contratos de alquiler
+﻿-- Modulo Inmobiliaria — cartera de propiedades y contratos de alquiler
+-- Idempotent: safe when tables/constraints already exist (partial prior apply).
 
 CREATE TABLE IF NOT EXISTS "propiedades" (
     "id" SERIAL NOT NULL,
@@ -21,11 +22,15 @@ CREATE TABLE IF NOT EXISTS "propiedades" (
 
 CREATE INDEX IF NOT EXISTS "propiedades_empresaId_estado_idx" ON "propiedades"("empresaId", "estado");
 
-ALTER TABLE "propiedades" ADD CONSTRAINT "propiedades_empresaId_fkey"
-    FOREIGN KEY ("empresaId") REFERENCES "empresas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "propiedades" ADD CONSTRAINT "propiedades_empresaId_fkey"
+        FOREIGN KEY ("empresaId") REFERENCES "empresas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "propiedades" ADD CONSTRAINT "propiedades_propietarioId_fkey"
-    FOREIGN KEY ("propietarioId") REFERENCES "clientes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "propiedades" ADD CONSTRAINT "propiedades_propietarioId_fkey"
+        FOREIGN KEY ("propietarioId") REFERENCES "clientes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS "contratos_alquiler" (
     "id" SERIAL NOT NULL,
@@ -53,14 +58,22 @@ CREATE INDEX IF NOT EXISTS "contratos_alquiler_propiedadId_idx" ON "contratos_al
 CREATE INDEX IF NOT EXISTS "contratos_alquiler_inquilinoId_idx" ON "contratos_alquiler"("inquilinoId");
 CREATE INDEX IF NOT EXISTS "contratos_alquiler_fechaFin_idx" ON "contratos_alquiler"("fechaFin");
 
-ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_empresaId_fkey"
-    FOREIGN KEY ("empresaId") REFERENCES "empresas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_empresaId_fkey"
+        FOREIGN KEY ("empresaId") REFERENCES "empresas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_propiedadId_fkey"
-    FOREIGN KEY ("propiedadId") REFERENCES "propiedades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_propiedadId_fkey"
+        FOREIGN KEY ("propiedadId") REFERENCES "propiedades"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_inquilinoId_fkey"
-    FOREIGN KEY ("inquilinoId") REFERENCES "clientes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_inquilinoId_fkey"
+        FOREIGN KEY ("inquilinoId") REFERENCES "clientes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_propietarioId_fkey"
-    FOREIGN KEY ("propietarioId") REFERENCES "clientes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "contratos_alquiler" ADD CONSTRAINT "contratos_alquiler_propietarioId_fkey"
+        FOREIGN KEY ("propietarioId") REFERENCES "clientes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

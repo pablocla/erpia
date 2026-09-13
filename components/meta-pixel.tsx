@@ -8,7 +8,7 @@ type PixelPack = { contentName: string; contentId: string; category: string }
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID
 const PIXEL_PATHS = new Set([
-  "/",
+  "/software",
   "/f",
   "/f/servicios",
   "/claver/apps/servicios",
@@ -28,6 +28,7 @@ const PIXEL_PACKS: Array<{ prefix: string; pack: PixelPack }> = [
   { prefix: "/claver/apps/cobra", pack: { contentName: "Claver Cobra WA", contentId: "cobra", category: "cobranzas" } },
   { prefix: "/claver/apps/pos", pack: { contentName: "Claver POS", contentId: "pos", category: "pos" } },
   { prefix: "/f", pack: { contentName: "Claver Fiado", contentId: "pos.fiado_barrio", category: "fiado" } },
+  { prefix: "/software", pack: { contentName: "Claver Soft", contentId: "ferreteria", category: "ferreteria" } },
 ]
 
 const DEFAULT_PACK: PixelPack = { contentName: "Claver", contentId: "claver", category: "claver" }
@@ -70,7 +71,7 @@ export function MetaPixel() {
     if (!PIXEL_ID || !isPixelPath(pathname)) return
     ensurePixel()
     window.fbq?.("track", "PageView")
-    if (pathname !== "/" && pathname !== "/login/register") {
+    if (pathname !== "/login/register") {
       const pack = getPixelPack(pathname)
       window.fbq?.("track", "ViewContent", {
         content_name: pack.contentName,

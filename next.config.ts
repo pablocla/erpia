@@ -30,14 +30,14 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Vercel Web Analytics injects va.vercel-scripts.com (debug + prod) + Google GSI + MapLibre workers
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com",
+      // Vercel Web Analytics + Google GSI + Meta Pixel (connect.facebook.net) + MapLibre workers
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://accounts.google.com https://connect.facebook.net",
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://accounts.google.com https://ssl.gstatic.com https://unpkg.com",
-      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://*.cartocdn.com https://*.cartodb.com https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://*.cartocdn.com https://*.cartodb.com https://va.vercel-scripts.com https://lh3.googleusercontent.com https://ssl.gstatic.com https://*.googleusercontent.com https://www.facebook.com https://*.facebook.com",
       "font-src 'self' https://fonts.gstatic.com",
-      // Analytics beacons + Supabase + Vercel insights + Google Auth + OpenStreetMap + Nominatim
-      "connect-src 'self' https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://nominatim.openstreetmap.org https://*.cartocdn.com https://*.cartodb.com https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com https://lh3.googleusercontent.com https://*.googleusercontent.com",
+      // Analytics beacons + Supabase + Vercel insights + Google Auth + Meta Pixel + OpenStreetMap + Nominatim
+      "connect-src 'self' https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://*.tile.osm.org https://nominatim.openstreetmap.org https://*.cartocdn.com https://*.cartodb.com https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://*.vercel-insights.com https://accounts.google.com https://lh3.googleusercontent.com https://*.googleusercontent.com https://connect.facebook.net https://www.facebook.com",
       "frame-src 'self' https://accounts.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",

@@ -8627,3 +8627,147 @@ model FunnelStep {
   @@index([createdAt])
   @@map("funnel_steps")
 }
+
+// ─── Claver Works Engine (Energy / Infra / Blockchain) ───────────────────────
+// Claver-internal orchestration — not Soft Tier A tenant-scoped.
+// See docs/comercial/CLAVER_WORKS_ENGINE_PRD.md
+
+enum WorksSegment {
+  software
+  energy
+  infra
+  blockchain
+  petrol
+  industry
+}
+
+enum WorksLeadFuente {
+  ads
+  wa
+  form
+  soft_upsell
+  manual
+}
+
+enum WorksProjectStatus {
+  Lead
+  Calificado
+  Presupuesto
+  Sena
+  MatchPartner
+  EnEjecucion
+  Entregado
+  Cobrado
+  Cancelado
+}
+
+enum WorksPartnerRubro {
+  epc_solar
+  civil
+  dc
+  solidity
+  audit
+  other
+}
+
+enum WorksMilestoneEstado {
+  pendiente
+  facturado
+  cobrado
+  pagado_partner
+}
+
+model WorksLead {
+  id          String         @id @default(cuid())
+  segmento    WorksSegment
+  fuente      WorksLeadFuente @default(form)
+  nombre      String
+  email       String?
+  telefono    String?
+  zona        String?
+  payload     Json?
+  ownerAgent  String         @default("comercial") // comercial|soporte|pablo
+  proyectoId  String?        @unique
+  proyecto    WorksProject?  @relation(fields: [proyectoId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([segmento, createdAt])
+  @@index([email])
+  @@map("works_leads")
+}
+
+model WorksProject {
+  id                String              @id @default(cuid())
+  segmento          WorksSegment
+  status            WorksProjectStatus  @default(Lead)
+  titulo            String
+  moneda            String              @default("USD") // USD|ARS
+  montoPresupuesto  Decimal?            @db.Decimal(14, 2)
+  montoSena         Decimal?            @db.Decimal(14, 2)
+  comisionPct       Decimal             @default(20) @db.Decimal(5, 2)
+  senaPagada        Boolean             @default(false)
+  senaPagadaAt      DateTime?
+  senaMontoManual   Decimal?            @db.Decimal(14, 2)
+  senaNota          String?
+  partnerId         String?
+  partner           WorksPartner?       @relation(fields: [partnerId], references: [id])
+  partnerAssignedAt DateTime?
+  partnerAssignedBy String?
+  checklist         Json?
+  softTenantId      Int?
+  presupuestoSoftId Int?
+  presupuestoSoftUrl String?
+  cxCIds            Json?
+  notas             String?
+  cancelReason      String?
+  lead              WorksLead?
+  milestones        WorksMilestone[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([segmento, status])
+  @@index([partnerId])
+  @@index([status, updatedAt])
+  @@map("works_projects")
+}
+
+model WorksPartner {
+  id                 String            @id @default(cuid())
+  empresa            String
+  rubro              WorksPartnerRubro @default(other)
+  zona               String?
+  matricula          String?
+  tarifaNetaNotas    String?
+  rcVigente          Boolean           @default(false)
+  rcVigenteHasta     DateTime?
+  contactoNombre     String?
+  contactoEmail      String?
+  contactoTel        String?
+  activo             Boolean           @default(true)
+  segmentoAllowlist  WorksSegment[]
+  proyectos          WorksProject[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([activo, rubro])
+  @@map("works_partners")
+}
+
+model WorksMilestone {
+  id        String               @id @default(cuid())
+  projectId String
+  project   WorksProject         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nombre    String
+  pct       Decimal?             @db.Decimal(5, 2)
+  monto     Decimal?             @db.Decimal(14, 2)
+  estado    WorksMilestoneEstado @default(pendiente)
+  dueAt     DateTime?
+  paidAt    DateTime?
+  notas     String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([projectId, estado])
+  @@map("works_milestones")
+}

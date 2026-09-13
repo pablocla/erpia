@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react"
+﻿import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
   BookOpen,
@@ -21,13 +21,14 @@ import {
   UserPlus,
   Users,
   Wrench,
+  Sun,
 } from "lucide-react"
 
 export type NavItem = {
   name: string
   href: string
   icon: LucideIcon
-  /** Rutas hijas que deben resaltar este ítem (ej. tenants bajo organizations) */
+  /** Rutas hijas que deben resaltar este Ã­tem (ej. tenants bajo organizations) */
   matchPrefixes?: string[]
   exact?: boolean
 }
@@ -50,6 +51,9 @@ export const navSections: NavSection[] = [
       { name: "billing", href: "/claver-cloud/billing", icon: CreditCard },
       { name: "partnersPayouts", href: "/claver-cloud/partners", icon: Users },
       { name: "facebookCampaigns", href: "/claver-cloud/campanas/facebook", icon: Megaphone },
+      { name: "worksBandeja", href: "/claver-cloud/works", icon: Sun,
+        matchPrefixes: ["/claver-cloud/works/partners"],
+      },
     ],
   },
   {

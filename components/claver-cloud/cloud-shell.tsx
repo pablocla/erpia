@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import Link from "next/link"
@@ -32,18 +32,18 @@ const SECTION_FALLBACKS: Record<string, string> = {
   negocio: "Negocio & Ventas",
   platform: "Plataforma & Operaciones",
   integraciones: "Integraciones & OPO",
-  admin: "Administración",
-  ceo: "Dirección General",
+  admin: "AdministraciÃ³n",
+  ceo: "DirecciÃ³n General",
   protheus: "Protheus / OPO",
 }
 
 const ITEM_FALLBACKS: Record<string, string> = {
   commandCenter: "Centro de Mando",
-  analytics: "Métricas & MRR",
+  analytics: "MÃ©tricas & MRR",
   webRegistrations: "Registros & Trials",
   salesPipeline: "Pipeline Ventas",
   upgradesArca: "Certificados ARCA",
-  billing: "Facturación Claver",
+  billing: "FacturaciÃ³n Claver",
   partnersPayouts: "Partners & Cash",
   fleet: "Flota de Tenants",
   tenants: "Tenants & Flota",
@@ -53,11 +53,11 @@ const ITEM_FALLBACKS: Record<string, string> = {
   platformHealth: "Salud de Plataforma",
   setupProtheus: "Setup Protheus",
   opoConsole: "Consola OPO",
-  settings: "Configuración",
-  facebookCampaigns: "Campañas Facebook",
+  settings: "ConfiguraciÃ³n",
+  facebookCampaigns: "CampaÃ±as Facebook",
   superAdmin: "Super Admin",
   operations: "Operaciones",
-  implementation: "Implementación",
+  implementation: "ImplementaciÃ³n",
 }
 
 function NavLinks({
@@ -131,7 +131,7 @@ function ShellFooterLinks() {
       <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8" asChild>
         <Link href="/claver-cloud/tenants">
           <Building2 className="h-3.5 w-3.5 text-violet-400" />
-          Flota Tenants · Impersonar
+          Flota Tenants Â· Impersonar
         </Link>
       </Button>
       <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs h-8 text-muted-foreground" asChild>
@@ -153,7 +153,7 @@ function ShellFooterLinks() {
         onClick={() => performLogoutAndRedirect("/login")}
       >
         <LogOut className="h-3.5 w-3.5" />
-        Cerrar sesión
+        Cerrar sesiÃ³n
       </Button>
     </div>
   )
@@ -172,7 +172,7 @@ export function CloudShell({ children }: { children: React.ReactNode }) {
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden shrink-0">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Abrir menú</span>
+                <span className="sr-only">Abrir menÃº</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs dark w-[280px] overflow-y-auto">

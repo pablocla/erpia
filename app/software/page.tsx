@@ -1,26 +1,30 @@
 import type { Metadata } from "next"
 import { LandingHomePuertas } from "@/components/marketing/landing-home-puertas"
 import { CLAVER_GROUP } from "@/lib/marketing/brand-system"
-import { getSiteUrl, LANDING_KEYWORDS } from "@/lib/marketing/landing-seo"
+import { getSiteUrl } from "@/lib/marketing/landing-seo"
 
 const siteUrl = getSiteUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: `${CLAVER_GROUP.name} — Sistema de Gestión y Cobro para Comercios, Talleres, Oficios y PyMEs`,
+    default: "Stock, venta y cobro para PyMEs · Claver",
     template: `%s | ${CLAVER_GROUP.name}`,
   },
-  description:
-    "Software de gestión comercial para Argentina: Punto de Venta (POS), Libreta de Fiados, Talleres Mecánicos por Patente, Gimnasios y Presupuestos con Seña. 100% gratis para arrancar sin tarjeta.",
+  description: "Ferretería, oficios y gym. Sin tarjeta para arrancar.",
   keywords: [
-    ...LANDING_KEYWORDS,
+    "stock venta cobro PyME",
+    "software ferretería Argentina",
+    "gestión oficios servicios",
+    "software gym socios",
+    "punto de venta Argentina",
     "sistema pos argentina",
-    "control de stock kiosco",
+    "control de stock ferretería",
     "taller mecanico software",
     "gestion gimnasio socios",
     "presupuestos con seña",
     "factura electronica afip arca",
+    "Claver",
   ],
   authors: [{ name: CLAVER_GROUP.name, url: siteUrl }],
   creator: CLAVER_GROUP.name,
@@ -28,9 +32,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   alternates: { canonical: "/software" },
   openGraph: {
-    title: `${CLAVER_GROUP.name} — Sistema de Gestión y Cobro para Comercios y PyMEs`,
-    description:
-      "Punto de venta, fiados con WhatsApp, órdenes de taller y presupuestos. Gratis para arrancar sin tarjeta de crédito.",
+    title: "Stock, venta y cobro para PyMEs · Claver",
+    description: "Ferretería, oficios y gym. Sin tarjeta para arrancar.",
     type: "website",
     url: `${siteUrl}/software`,
     locale: "es_AR",

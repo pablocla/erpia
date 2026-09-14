@@ -42,38 +42,44 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Claver ERP — Sistema de Gestión, POS y Facturación AFIP para PyMEs',
-  description: 'Sistema ERP & POS #1 de Argentina para Comercio de Calle, Kioscos, Ferreterías, Mercado de Frutas y Talleres. Libreta de fiado digital, cobro por WhatsApp, facturación ARCA/AFIP en contingencia y control de stock.',
+  // Holding-aware root defaults (Soft /software keeps its own Tier A overrides).
+  // Avoid Fiado-first / ERP residual so Soft Ads + Holding home aren't polluted.
+  title: {
+    default: 'Claver — Soft · Energy · Infra · Blockchain',
+    template: '%s | Claver',
+  },
+  description:
+    'Holding Claver: software de gestión (Soft) y orquestación Works (Energy, Infra, Blockchain).',
   keywords: [
-    'ERP Argentina',
+    'Claver',
+    'Claver Soft',
+    'software PyME Argentina',
     'POS Argentina',
-    'Facturación AFIP',
-    'Libreta Fiado Digital',
-    'Cobro WhatsApp MercadoPago',
-    'Sistema Kiosco Almacen',
-    'Sistema Mercado Central Rosario Buenos Aires',
-    'Factura Electronica ARCA CAEA',
-    'Software PyME Argentina',
+    'Energy solar partners',
+    'Infra obra partners',
+    'Blockchain partners',
   ],
-  authors: [{ name: 'Grupo Claver ERP' }],
+  authors: [{ name: 'Claver' }],
   openGraph: {
-    title: 'Claver ERP — Facturación AFIP, Libreta de Fiado y POS Móvil',
-    description: 'Optimizá tu comercio de calle en 60 segundos. Controlá el fiado, cobrá por WhatsApp con MercadoPago y emití facturas AFIP sin interrupciones.',
+    title: 'Claver — Soft · Energy · Infra · Blockchain',
+    description:
+      'Holding Claver: Soft (gestión) y Works (Energy, Infra, Blockchain) con partners.',
     url: 'https://claver.ar',
-    siteName: 'Claver ERP',
+    siteName: 'Claver',
     locale: 'es_AR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Claver ERP — El Sistema de Gestión que se paga solo',
-    description: 'Cobrá deudas morosas por WhatsApp y facturá en contingencia AFIP desde tu celular.',
+    title: 'Claver — Soft · Energy · Infra · Blockchain',
+    description:
+      'Soft para gestionar tu PyME. Works para proyectos con partners (Energy, Infra, Blockchain).',
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Claver ERP',
+    title: 'Claver',
   },
   icons: {
     icon: [

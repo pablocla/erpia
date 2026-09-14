@@ -61,11 +61,38 @@ function defaultMilestones(
   ]
 }
 
+/** Server-side required fields (mirrors WorksLeadForm client gates). */
+function assertCreateLeadRequired(input: CreateLeadInput, segmento: WorksSegment) {
+  const email = String(input.email ?? "").trim()
+  const telefono = String(input.telefono ?? "").trim()
+  if (!email && !telefono) {
+    throw new Error("email o teléfono es obligatorio")
+  }
+
+  const zona = String(input.zona ?? "").trim()
+  const payload = (input.payload ?? {}) as Record<string, unknown>
+  const kWpRaw = payload.kWp
+  const kWp = typeof kWpRaw === "number" ? kWpRaw : Number(kWpRaw)
+
+  // Energy/Infra: zona; Energy: kWp — harden beyond client-only
+  const requireZona = segmento === "energy" || segmento === "infra"
+  const requireKwp = segmento === "energy"
+
+  if (requireZona && !zona) {
+    throw new Error("zona es obligatoria")
+  }
+  if (requireKwp && (!Number.isFinite(kWp) || kWp < 0.1)) {
+    throw new Error("kWp es obligatorio (mínimo 0.1)")
+  }
+}
+
 /** Public + Cloud: create WorksLead + WorksProject(status=Lead) + default milestones */
 export async function createWorksLead(input: CreateLeadInput) {
   const segmento = parseSegment(input.segmento)
   const nombre = String(input.nombre ?? "").trim()
   if (!nombre) throw new Error("nombre es obligatorio")
+
+  assertCreateLeadRequired(input, segmento)
 
   const fuente = (input.fuente ?? "form") as WorksLeadFuente
   const titulo = input.titulo?.trim() || defaultTitulo(segmento, nombre, input.zona)

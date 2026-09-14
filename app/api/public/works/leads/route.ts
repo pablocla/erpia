@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createWorksLead } from "@/lib/works/works-service"
 
-/** Public intake — holding forms POST here. No auth. Soft paths untouched. */
+/** Public intake — holding forms POST here. No auth. Soft paths untouched.
+ * Required fields enforced in createWorksLead (email|tel + zona/kWp by segment).
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

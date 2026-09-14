@@ -13,6 +13,16 @@ export const metadata: Metadata = {
     absolute: pack.title,
   },
   description: pack.ogDescription,
+  // Explicit keywords so /energy does not inherit any Fiado/ERP root residual.
+  keywords: [
+    "Claver Energy",
+    "solar con partners",
+    "EPC solar Argentina",
+    "cotización solar kWp",
+    "instalación solar partners",
+    "seña proyecto solar",
+    "Works Energy Claver",
+  ],
   robots: { index: true, follow: true },
   alternates: { canonical: "/energy" },
   openGraph: {

@@ -34,6 +34,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Error al crear lead Works"
-    return NextResponse.json({ error: message }, { status: 400 })
+    return NextResponse.json({ error: message }, { status: 400 }) // validation errors from createWorksLead
   }
 }

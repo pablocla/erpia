@@ -13,6 +13,14 @@ export const metadata: Metadata = {
     absolute: pack.title,
   },
   description: pack.ogDescription,
+  keywords: [
+    "Claver Infra",
+    "obra con partners",
+    "naves industriales",
+    "colo liviano",
+    "match partner obra",
+    "Works Infra Claver",
+  ],
   robots: { index: true, follow: true },
   alternates: { canonical: "/infra" },
   openGraph: {

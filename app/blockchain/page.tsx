@@ -13,6 +13,14 @@ export const metadata: Metadata = {
     absolute: pack.title,
   },
   description: pack.ogDescription,
+  keywords: [
+    "Claver Blockchain",
+    "Solidity partners",
+    "smart contract audit",
+    "nodos blockchain",
+    "sin custody",
+    "Works Blockchain Claver",
+  ],
   robots: { index: true, follow: true },
   alternates: { canonical: "/blockchain" },
   openGraph: {

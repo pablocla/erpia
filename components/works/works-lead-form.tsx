@@ -1,20 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle2 } from "lucide-react"
+import {
+  getSegmentPack,
+  type WorksSegmentKey,
+} from "@/components/works/segment-packs"
 
 type Props = {
-  segmento: "energy" | "infra" | "blockchain"
+  segmento: WorksSegmentKey
+  /** Optional override; defaults to pack.formTitle */
   title?: string
-  showEnergyFields?: boolean
+  className?: string
+  id?: string
 }
 
-export function WorksLeadForm({ segmento, title, showEnergyFields }: Props) {
+const fieldClass =
+  "min-h-12 h-12 bg-slate-950/60 border-slate-700 text-slate-50 placeholder:text-slate-500"
+
+export function WorksLeadForm({ segmento, title, className, id }: Props) {
+  const pack = getSegmentPack(segmento)
   const [nombre, setNombre] = useState("")
   const [email, setEmail] = useState("")
   const [telefono, setTelefono] = useState("")
@@ -22,32 +32,66 @@ export function WorksLeadForm({ segmento, title, showEnergyFields }: Props) {
   const [kWp, setKWp] = useState("")
   const [techo, setTecho] = useState("")
   const [uso, setUso] = useState("casa")
+  const [m2, setM2] = useState("")
+  const [potenciaIt, setPotenciaIt] = useState("")
+  const [stack, setStack] = useState("")
   const [notas, setNotas] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
-  const [done, setDone] = useState<{ leadId: string; projectId: string; presupuestoSoftUrl?: string | null } | null>(null)
+  const [done, setDone] = useState<{
+    leadId: string
+    projectId: string
+    presupuestoSoftUrl?: string | null
+  } | null>(null)
+
+  const canSubmit = useMemo(() => {
+    if (!nombre.trim()) return false
+    if (!email.trim() && !telefono.trim()) return false
+    if (pack.requireZona && !zona.trim()) return false
+    if (pack.requireKwp) {
+      const n = Number(kWp)
+      if (!Number.isFinite(n) || n < 0.1) return false
+    }
+    if (pack.requireNotas && !notas.trim()) return false
+    return true
+  }, [nombre, email, telefono, zona, kWp, notas, pack])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSubmit) {
+      setError("Completá los campos obligatorios (contacto: email o teléfono).")
+      return
+    }
     setBusy(true)
     setError("")
     try {
+      const payload: Record<string, unknown> = {
+        notas: notas.trim() || undefined,
+      }
+      if (pack.showEnergyFields) {
+        payload.kWp = Number(kWp)
+        payload.techo = techo.trim() || undefined
+        payload.uso = uso || undefined
+      }
+      if (pack.showInfraExtras) {
+        if (m2.trim()) payload.m2 = Number(m2) || m2.trim()
+        if (potenciaIt.trim()) payload.potenciaIt = potenciaIt.trim()
+      }
+      if (segmento === "blockchain" && stack.trim()) {
+        payload.stack = stack.trim()
+      }
+
       const res = await fetch("/api/public/works/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           segmento,
           fuente: "form",
-          nombre,
-          email: email || undefined,
-          telefono: telefono || undefined,
-          zona: zona || undefined,
-          payload: {
-            kWp: kWp ? Number(kWp) : undefined,
-            techo: techo || undefined,
-            uso: uso || undefined,
-            notas: notas || undefined,
-          },
+          nombre: nombre.trim(),
+          email: email.trim() || undefined,
+          telefono: telefono.trim() || undefined,
+          zona: zona.trim() || undefined,
+          payload,
         }),
       })
       const data = await res.json()
@@ -66,63 +110,113 @@ export function WorksLeadForm({ segmento, title, showEnergyFields }: Props) {
 
   if (done) {
     return (
-      <Alert className="border-emerald-500/40 bg-emerald-500/10">
+      <Alert
+        id={id}
+        className={`border-emerald-500/40 bg-emerald-500/10 ${className ?? ""}`}
+      >
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-        <AlertDescription className="text-emerald-100 space-y-2">
-          <p className="font-medium">Lead registrado. Te contactamos a la brevedad.</p>
+        <AlertDescription className="space-y-2 text-emerald-100">
+          <p className="font-medium">{pack.formSuccess}</p>
           <p className="text-xs text-emerald-200/80">Ref: {done.projectId}</p>
-          {done.presupuestoSoftUrl ? (
-            <p className="text-xs">
-              Link presupuesto/seña (Soft stub):{" "}
-              <a className="underline" href={done.presupuestoSoftUrl}>
-                abrir
-              </a>
-            </p>
-          ) : null}
         </AlertDescription>
       </Alert>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-700/80 bg-slate-900/70 p-6 shadow-xl">
+    <form
+      id={id}
+      onSubmit={onSubmit}
+      className={`space-y-4 rounded-2xl border border-slate-700/80 bg-slate-900/80 p-5 shadow-xl backdrop-blur sm:p-6 ${className ?? ""}`}
+    >
       <div>
-        <h2 className="text-lg font-semibold text-white">{title ?? "Dejanos tus datos"}</h2>
-        <p className="text-sm text-slate-400">Segmento: {segmento}. Persistimos en el motor Works.</p>
+        <h2 className="text-lg font-semibold text-white">{title ?? pack.formTitle}</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          {pack.requireZona || pack.requireKwp
+            ? "Campos con * son obligatorios. Email o WhatsApp: al menos uno."
+            : "Campos con * son obligatorios. Email o WhatsApp: al menos uno."}
+        </p>
       </div>
+
       {error ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="nombre">Nombre *</Label>
-          <Input id="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido / empresa" />
+          <Label htmlFor={`nombre-${segmento}`}>Nombre *</Label>
+          <Input
+            id={`nombre-${segmento}`}
+            required
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Nombre y apellido / empresa"
+            className={fieldClass}
+            autoComplete="name"
+          />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vos@empresa.com" />
+          <Label htmlFor={`email-${segmento}`}>Email</Label>
+          <Input
+            id={`email-${segmento}`}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="vos@empresa.com"
+            className={fieldClass}
+            autoComplete="email"
+          />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="tel">Teléfono / WhatsApp</Label>
-          <Input id="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="+54 9 11 ..." />
+          <Label htmlFor={`tel-${segmento}`}>Teléfono / WhatsApp</Label>
+          <Input
+            id={`tel-${segmento}`}
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            placeholder="+54 9 11 …"
+            className={fieldClass}
+            autoComplete="tel"
+          />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="zona">Zona</Label>
-          <Input id="zona" value={zona} onChange={(e) => setZona(e.target.value)} placeholder="CABA / GBA Norte / Rosario..." />
-        </div>
-        {showEnergyFields || segmento === "energy" ? (
+        {(pack.requireZona || segmento !== "blockchain") && (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`zona-${segmento}`}>
+              Zona{pack.requireZona ? " *" : " (opcional)"}
+            </Label>
+            <Input
+              id={`zona-${segmento}`}
+              required={pack.requireZona}
+              value={zona}
+              onChange={(e) => setZona(e.target.value)}
+              placeholder="CABA / GBA Norte / Rosario…"
+              className={fieldClass}
+            />
+          </div>
+        )}
+
+        {pack.showEnergyFields ? (
           <>
             <div className="space-y-1.5">
-              <Label htmlFor="kwp">kWp estimado</Label>
-              <Input id="kwp" type="number" min={0} step="0.1" value={kWp} onChange={(e) => setKWp(e.target.value)} placeholder="5" />
+              <Label htmlFor={`kwp-${segmento}`}>kWp estimado *</Label>
+              <Input
+                id={`kwp-${segmento}`}
+                type="number"
+                min={0.1}
+                step="0.1"
+                required
+                value={kWp}
+                onChange={(e) => setKWp(e.target.value)}
+                placeholder="5"
+                className={fieldClass}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="uso">Uso</Label>
+              <Label htmlFor={`uso-${segmento}`}>Uso</Label>
               <select
-                id="uso"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                id={`uso-${segmento}`}
+                className={`flex w-full rounded-md border border-slate-700 px-3 text-sm ${fieldClass}`}
                 value={uso}
                 onChange={(e) => setUso(e.target.value)}
               >
@@ -132,20 +226,94 @@ export function WorksLeadForm({ segmento, title, showEnergyFields }: Props) {
               </select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="techo">Tipo de techo</Label>
-              <Input id="techo" value={techo} onChange={(e) => setTecho(e.target.value)} placeholder="Chapa / teja / losa..." />
+              <Label htmlFor={`techo-${segmento}`}>Tipo de techo</Label>
+              <Input
+                id={`techo-${segmento}`}
+                value={techo}
+                onChange={(e) => setTecho(e.target.value)}
+                placeholder="Chapa / teja / losa…"
+                className={fieldClass}
+              />
             </div>
           </>
         ) : null}
+
+        {pack.showInfraExtras ? (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor={`m2-${segmento}`}>m² (aprox.)</Label>
+              <Input
+                id={`m2-${segmento}`}
+                value={m2}
+                onChange={(e) => setM2(e.target.value)}
+                placeholder="500"
+                className={fieldClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`pot-${segmento}`}>Potencia IT (colo)</Label>
+              <Input
+                id={`pot-${segmento}`}
+                value={potenciaIt}
+                onChange={(e) => setPotenciaIt(e.target.value)}
+                placeholder="kW / racks"
+                className={fieldClass}
+              />
+            </div>
+          </>
+        ) : null}
+
+        {segmento === "blockchain" ? (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor={`stack-${segmento}`}>Stack (opcional)</Label>
+            <Input
+              id={`stack-${segmento}`}
+              value={stack}
+              onChange={(e) => setStack(e.target.value)}
+              placeholder="Solidity / EVM / nodos…"
+              className={fieldClass}
+            />
+          </div>
+        ) : null}
+
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="notas">Notas</Label>
-          <Textarea id="notas" value={notas} onChange={(e) => setNotas(e.target.value)} rows={3} placeholder="Contanos el alcance..." />
+          <Label htmlFor={`notas-${segmento}`}>
+            Notas{pack.requireNotas ? " *" : ""}
+          </Label>
+          <Textarea
+            id={`notas-${segmento}`}
+            required={pack.requireNotas}
+            value={notas}
+            onChange={(e) => setNotas(e.target.value)}
+            rows={3}
+            placeholder={
+              segmento === "infra"
+                ? "Alcance: civil / nave / colo…"
+                : segmento === "blockchain"
+                  ? "Solidity / audit / nodos / security…"
+                  : "Contanos el alcance…"
+            }
+            className="min-h-[96px] border-slate-700 bg-slate-950/60 text-slate-50 placeholder:text-slate-500"
+          />
         </div>
       </div>
-      <Button type="submit" disabled={busy || !nombre.trim()} className="w-full">
+
+      {pack.showBlockchainDisclaimer ? (
+        <p className="text-xs font-medium text-amber-300/90">
+          Sin custody · Sin exchange
+        </p>
+      ) : null}
+
+      <Button
+        type="submit"
+        disabled={busy || !canSubmit}
+        size="lg"
+        className="min-h-12 h-12 w-full bg-amber-400 font-semibold text-slate-950 hover:bg-amber-300"
+      >
         {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Enviar consulta {segmento}
+        {pack.ctaPrimary}
       </Button>
+      <p className="text-center text-xs leading-relaxed text-slate-400">{pack.ctaMicro}</p>
     </form>
   )
 }

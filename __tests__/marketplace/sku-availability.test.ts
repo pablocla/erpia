@@ -25,6 +25,26 @@ describe("sku-availability", () => {
     expect(() => assertSkuProvisionable("sec.mfa")).toThrow(/Próximamente/)
   })
 
+
+  it("ops.iot_kit no es provisionable y queda planned (T0 honest)", () => {
+    expect(SKUS_PLANNED_ONLY.has("ops.iot_kit")).toBe(true)
+    expect(isSkuProvisionable("ops.iot_kit")).toBe(false)
+    expect(effectiveSkuStatus("ops.iot_kit", "disponible")).toBe("planned")
+  })
+
+  it("ops.iot_kit catalog copy no promete MQTT live ni status disponible", async () => {
+    const { MARKETPLACE_CATALOG } = await import("@/lib/marketplace/marketplace-catalog")
+    const sku = MARKETPLACE_CATALOG.find((s) => s.sku === "ops.iot_kit")
+    expect(sku).toBeTruthy()
+    expect(sku!.status).not.toBe("disponible")
+    expect(sku!.status).toBe("planned")
+    const desc = sku!.i18n["es-AR"]?.descripcion ?? ""
+    const subject = sku!.i18n["es-AR"]?.packOnboardSubject ?? ""
+    expect(desc.toLowerCase()).not.toMatch(/mqtt/)
+    expect(subject.toLowerCase()).not.toMatch(/mqtt/)
+    expect(desc.toLowerCase()).toMatch(/roadmap|no disponible/)
+  })
+
   it("isPathAllowedInSidebarAllowlist respeta prefijos", () => {
     const allowed = ["/dashboard", "/dashboard/pos", "/dashboard/nicho"]
     expect(isPathAllowedInSidebarAllowlist("/dashboard", allowed)).toBe(true)

@@ -453,10 +453,10 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     tipoCobro: "recurrente",
     autoCertLevel: "GLOBAL_AUTO",
     paisesHabilitados: ["*"],
-    i18n: { "es-AR": { nombre: "Sensores IoT", descripcion: "Ingesta de datos MQTT", packOnboardSubject: "Credenciales MQTT" } },
+    i18n: { "es-AR": { nombre: "Sensores IoT", descripcion: "Kit IoT — ingest device-token en roadmap; no disponible para compra aún", packOnboardSubject: "Avisame cuando el kit IoT esté listo" } },
     segmentoAds: ["agro", "industria"],
     playbookId: "playbook.ops.iot_kit",
-    status: "disponible",
+    status: "planned",
   },
   {
     sku: "ops.qr_trace",

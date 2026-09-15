@@ -21,6 +21,8 @@ export const SKUS_PLANNED_ONLY = new Set([
   "mkt.pixel",
   "mkt.pixel_ads",
   "releva.formulario_web",
+  // T0: kit IoT sin ingest device-token vendible (session-only lecturas)
+  "ops.iot_kit",
 ])
 
 export function isSkuProvisionable(sku: string): boolean {

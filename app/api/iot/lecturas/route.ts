@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { iotService } from "@/lib/iot/iot-service"
 import { z } from "zod"
 
 const lecturaSchema = z.object({
@@ -13,23 +14,17 @@ const lecturaSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
-    const dispositivoId = searchParams.get("dispositivoId")
+    const dispositivoIdRaw = searchParams.get("dispositivoId")
     const limit = parseInt(searchParams.get("limit") || "50")
+    const dispositivoId = dispositivoIdRaw ? parseInt(dispositivoIdRaw) : undefined
 
-    const where: Record<string, unknown> = {}
-    if (dispositivoId) where.dispositivoId = parseInt(dispositivoId)
-
-    const lecturas = await prisma.lecturaIoT.findMany({
-      where,
-      include: {
-        dispositivo: { select: { id: true, nombre: true, codigo: true, tipo: true } },
-      },
-      orderBy: { timestamp: "desc" },
-      take: Math.min(limit, 200),
+    const lecturas = await iotService.listarLecturas(ctx.auth.empresaId, {
+      dispositivoId: Number.isFinite(dispositivoId) ? dispositivoId : undefined,
+      limit,
     })
 
     return NextResponse.json(lecturas)
@@ -41,14 +36,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Lecturas pueden venir de dispositivos sin usuario autenticado; usamos token o clave de dispositivo
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const parsed = lecturaSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: parsed.error.flatten() }, { status: 400 })
+    }
+
+    const dispositivo = await iotService.obtenerDispositivoDeEmpresa(
+      parsed.data.dispositivoId,
+      ctx.auth.empresaId,
+    )
+    if (!dispositivo) {
+      return NextResponse.json({ error: "Dispositivo no encontrado" }, { status: 404 })
     }
 
     const lectura = await prisma.lecturaIoT.create({

@@ -1,27 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { verificarToken } from "@/lib/auth/middleware"
+import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { iotService } from "@/lib/iot/iot-service"
 
 export async function GET(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const { searchParams } = new URL(request.url)
     const soloActivas = searchParams.get("soloActivas") !== "false"
     const nivel = searchParams.get("nivel") || ""
 
-    const where: Record<string, unknown> = {}
-    if (soloActivas) where.resuelta = false
-    if (nivel) where.nivel = nivel
-
-    const alertas = await prisma.alertaIoT.findMany({
-      where,
-      include: {
-        dispositivo: { select: { id: true, nombre: true, codigo: true, tipo: true } },
-      },
-      orderBy: [{ nivel: "desc" }, { createdAt: "desc" }],
-      take: 100,
+    const alertas = await iotService.listarAlertas(ctx.auth.empresaId, {
+      resuelta: soloActivas ? false : undefined,
+      nivel: nivel || undefined,
     })
 
     return NextResponse.json(alertas)
@@ -33,18 +25,18 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const usuario = await verificarToken(request)
-    if (!usuario) return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+    const ctx = await getAuthContext(request)
+    if (!ctx.ok) return ctx.response
 
     const body = await request.json()
     const { id } = body
 
     if (!id) return NextResponse.json({ error: "ID de alerta requerido" }, { status: 400 })
 
-    const alerta = await prisma.alertaIoT.update({
-      where: { id: parseInt(id) },
-      data: { resuelta: true, resolvedAt: new Date() },
-    })
+    const alerta = await iotService.resolverAlerta(parseInt(id), ctx.auth.empresaId)
+    if (!alerta) {
+      return NextResponse.json({ error: "Alerta no encontrada" }, { status: 404 })
+    }
 
     return NextResponse.json(alerta)
   } catch (error) {

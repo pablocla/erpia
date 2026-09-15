@@ -19,6 +19,25 @@ export class IoTService {
     })
   }
 
+  async listarLecturas(
+    empresaId: number,
+    filters: { dispositivoId?: number; limit?: number } = {},
+  ) {
+    const where: Record<string, unknown> = {
+      dispositivo: { empresaId },
+    }
+    if (filters.dispositivoId) where.dispositivoId = filters.dispositivoId
+
+    return prisma.lecturaIoT.findMany({
+      where,
+      include: {
+        dispositivo: { select: { id: true, nombre: true, codigo: true, tipo: true } },
+      },
+      orderBy: { timestamp: "desc" },
+      take: Math.min(filters.limit ?? 50, 200),
+    })
+  }
+
   async registrarLectura(dispositivoId: number, data: {
     tipo: string
     valor: number
@@ -67,24 +86,42 @@ export class IoTService {
     return lectura
   }
 
-  async listarAlertas(empresaId: number, filters: { resuelta?: boolean } = {}) {
+  /** Verify device belongs to empresa before insert/update. */
+  async obtenerDispositivoDeEmpresa(dispositivoId: number, empresaId: number) {
+    return prisma.dispositivoIoT.findFirst({
+      where: { id: dispositivoId, empresaId },
+    })
+  }
+
+  async listarAlertas(empresaId: number, filters: { resuelta?: boolean; nivel?: string } = {}) {
     const where: Record<string, unknown> = { dispositivo: { empresaId } }
     if (filters.resuelta !== undefined) where.resuelta = filters.resuelta
+    if (filters.nivel) where.nivel = filters.nivel
 
     return prisma.alertaIoT.findMany({
       where,
       include: {
-        dispositivo: { select: { id: true, nombre: true, tipo: true, ubicacion: true } },
+        dispositivo: { select: { id: true, nombre: true, codigo: true, tipo: true, ubicacion: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ nivel: "desc" }, { createdAt: "desc" }],
       take: 100,
     })
   }
 
-  async resolverAlerta(alertaId: number) {
+  /**
+   * Resolve alert only if it belongs to a device of the caller's empresa.
+   * Returns null when alerta is missing or cross-tenant.
+   */
+  async resolverAlerta(alertaId: number, empresaId: number) {
+    const alerta = await prisma.alertaIoT.findFirst({
+      where: { id: alertaId, dispositivo: { empresaId } },
+      select: { id: true },
+    })
+    if (!alerta) return null
+
     return prisma.alertaIoT.update({
       where: { id: alertaId },
-      data: { resuelta: true },
+      data: { resuelta: true, resolvedAt: new Date() },
     })
   }
 }

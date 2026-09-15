@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-22T23:00:00.000Z",
+  "updatedAt": "2026-09-15T01:20:00.000Z",
   "statuses": {
     "AUD-01": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Webhook HMAC baseline" },
     "AUD-02": { "status": "done", "updatedAt": "2026-07-22T00:00:00.000Z", "updatedBy": "system", "note": "Cron AFIP" },
@@ -48,6 +48,7 @@
     "ED-27": { "status": "done", "updatedAt": "2026-07-22T23:00:00.000Z", "updatedBy": "grok", "note": "product-registry + checkout SKU" },
     "ED-25": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Sofía v1: template + runEmpleado→agenda_reminder + WA pendiente al cliente" },
     "ED-26": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Ramiro v1: template + runEmpleado→stock_bajo (OC borrador)" },
-    "ED-29": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Ana/Clara/Pedro en catálogo + hooks SKU + despacho playbook" }
+    "ED-29": { "status": "done", "updatedAt": "2026-08-25T12:10:00.000Z", "updatedBy": "grok", "note": "Ana/Clara/Pedro en catálogo + hooks SKU + despacho playbook" },
+    "T0-iot-tenant": { "status": "done", "updatedAt": "2026-09-15T01:20:00.000Z", "updatedBy": "grok", "note": "IoT lecturas/alertas getAuthContext + empresaId scope" }
   }
 }

@@ -6,7 +6,7 @@
 
 import { vi } from "vitest"
 
-// ─── PRISMA MOCK ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ PRISMA MOCK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // All tests run against a mock prisma client. For integration tests that need
 // a real database, skip the mock and use a test database URL.
 
@@ -44,16 +44,16 @@ const prismaModels = [
   "entidadFinanciera", "sucursal", "cobrador", "tipoOperacionComercial",
   "cajaTipo", "campoPersonalizado", "valorCampoPersonalizado",
   "tablaAuxiliar", "valorAuxiliar", "configuracionCampo",
-  // Sprint impuestos — tax engineering models
+  // Sprint impuestos â€” tax engineering models
   "tributoFactura", "tributoCompra", "regimenPercepcion",
   "padronRegimenProveedor", "retencionRecibo", "declaracionJurada",
   "clasificacionFiscal", "actividadEconomica", "configFiscalEmpresa",
-  // Sprint mejoras — schema enrichment models
+  // Sprint mejoras â€” schema enrichment models
   "marca", "notaDebito", "lineaNotaCredito", "lineaNotaDebito", "feriado",
   "listaPrecio", "itemListaPrecio",
   // Sprint agentes IA
   "agenteLog",
-  // Sprint competitive gap — SAP/Tango/Colppy parity
+  // Sprint competitive gap â€” SAP/Tango/Colppy parity
   "cadenaAprobacion", "nivelAprobacion", "solicitudAprobacion", "pasoAprobacion",
   "presupuestoGasto", "lineaPresupuestoGasto", "proyeccionFlujoCaja",
   "lead", "oportunidad", "actividadCRM",
@@ -61,7 +61,7 @@ const prismaModels = [
   "plantillaInspeccion", "criterioInspeccion", "inspeccionCalidad", "resultadoInspeccion",
   "kPIDefinicion", "kPISnapshot",
   "gastoRecurrente", "ajusteInflacion", "coeficienteInflacion",
-  // Sprint competitive gap #2 — MercadoPago, CITI, RRHH, Mantenimiento, Alertas, etc.
+  // Sprint competitive gap #2 â€” MercadoPago, CITI, RRHH, Mantenimiento, Alertas, etc.
   "documentoAdjunto", "facturaRecurrente", "mercadoPagoConfig", "mercadoPagoTransaccion", "tiendaConfig",
   "reglaAlerta", "configuracionIANotificacion", "empleado", "generacionCITI", "cotizacionAutomatica",
   "planMantenimiento", "ordenTrabajo",
@@ -119,6 +119,7 @@ const prismaModels = [
   "propiedad",
   "contratoAlquiler",
   "ordenProvision",
+  "oficioTrabajo",
 ]
 
 for (const model of prismaModels) {

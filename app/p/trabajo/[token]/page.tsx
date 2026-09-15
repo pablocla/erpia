@@ -37,14 +37,30 @@ export default function PortalClienteTrabajoPage({ params }: { params: Promise<{
   async function cargarTrabajo() {
     setLoading(true)
     try {
-      // Si viene con ?pago=exitoso de Mercado Pago, registrar seña pagada
+      // Solo confirmar seña con payment_id real de MP (no flag-only / no aprobar)
       const urlParams = new URLSearchParams(window.location.search)
       if (urlParams.get("pago") === "exitoso") {
-        await fetch(`/api/oficios/publico/${resolvedParams.token}/aprobar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ opcionElegida: opcionSeleccionada }),
-        })
+        const paymentId = urlParams.get("payment_id") || urlParams.get("collection_id")
+        if (paymentId && paymentId !== "null") {
+          const conf = await fetch(`/api/oficios/publico/${resolvedParams.token}/confirmar-sena`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId }),
+          })
+          const confJson = await conf.json().catch(() => ({}))
+          if (!conf.ok) {
+            toast({
+              title: "Seña no confirmada",
+              description: confJson.error ?? "Esperá la confirmación de Mercado Pago (webhook).",
+              variant: "destructive",
+            })
+          }
+        } else {
+          toast({
+            title: "Pago en verificación",
+            description: "Mercado Pago no envió payment_id. La seña se confirmará por webhook.",
+          })
+        }
       }
 
       const res = await fetch(`/api/oficios/publico/${resolvedParams.token}`)
@@ -68,12 +84,16 @@ export default function PortalClienteTrabajoPage({ params }: { params: Promise<{
       const res = await fetch(`/api/oficios/publico/${resolvedParams.token}/pagar-sena`, {
         method: "POST",
       })
-      if (res.ok) {
-        const json = await res.json()
-        if (json.data?.initPoint) {
-          window.location.href = json.data.initPoint
-        }
+      const json = await res.json().catch(() => ({}))
+      if (res.ok && json.data?.initPoint) {
+        window.location.href = json.data.initPoint
+        return
       }
+      toast({
+        title: "No se pudo iniciar el cobro",
+        description: json.error ?? "Mercado Pago no disponible. No se simula cobro.",
+        variant: "destructive",
+      })
     } catch (e) {
       toast({ title: "Error al iniciar pago", variant: "destructive" })
     }

@@ -274,6 +274,27 @@ async function conciliarPagoMP(empresaId: number, transaccionId: number, externa
     return
   }
 
+  // Oficios seña → senaPagada + movimiento caja (T1)
+  const { isOficioSenaRef, aplicarSenaOficioDesdeMp } = await import("@/lib/oficios/aplicar-sena-mp")
+  if (isOficioSenaRef(externalRef)) {
+    const tx = await prisma.mercadoPagoTransaccion.findUnique({
+      where: { id: transaccionId },
+      select: { monto: true, mpPaymentId: true },
+    })
+    if (!tx) return
+    const result = await aplicarSenaOficioDesdeMp({
+      empresaId,
+      transaccionId,
+      externalRef,
+      monto: Number(tx.monto),
+      mpPaymentId: tx.mpPaymentId,
+    })
+    if (!result.ok) {
+      console.warn("[MP] aplicarSenaOficio:", result.error, externalRef)
+    }
+    return
+  }
+
   // Fiado / CxC / fac → emitir recibo y bajar deuda (P0-D)
   const { isDeudorPagoRef } = await import("@/lib/mercadopago/deudor-pago-ref")
   if (isDeudorPagoRef(externalRef)) {

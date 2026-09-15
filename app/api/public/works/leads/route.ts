@@ -1,11 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createWorksLead } from "@/lib/works/works-service"
+import { checkRateLimit } from "@/lib/auth/rate-limiter"
 
 /** Public intake — holding forms POST here. No auth. Soft paths untouched.
  * Required fields enforced in createWorksLead (email|tel + zona/kWp by segment).
+ * Rate limit: same in-memory helper as auth/public routes (per-IP).
  */
 export async function POST(request: NextRequest) {
   try {
+    const blocked = checkRateLimit(request, "works-leads", 5, 15 * 60 * 1000)
+    if (blocked) return blocked
+
     const body = await request.json()
     const result = await createWorksLead({
       segmento: body.segmento,

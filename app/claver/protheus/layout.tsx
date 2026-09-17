@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Claver Inversiones para TOTVS Protheus",
+  title: "Claver Inversiones × TOTVS Protheus — inteligencia sobre SIGAFIN",
   description:
-    "Entrá con tu usuario Claver. Cada tenant apunta al REST de su Protheus. SIGAFIN no se toca.",
+    "Overlay de tesorería: cartera, alertas WhatsApp/Telegram, IA (Grok, Claude, Gemini o local) y ontología REST sobre los datos de Protheus. SIGAFIN no se toca.",
   alternates: { canonical: "/claver/protheus" },
 }
 

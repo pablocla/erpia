@@ -24,6 +24,9 @@ function RegisterPageContent() {
   const refParam = searchParams.get("ref")
   const googleIdToken = searchParams.get("google")
   const activarIntent = resolveActivarIntent(activarParam)
+  const nextParam = searchParams.get("next")
+  const safeNext =
+    nextParam?.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null
   const { loginConToken, loginConGoogle } = useAuth()
 
   const [form, setForm] = useState({
@@ -145,6 +148,7 @@ function RegisterPageContent() {
         let dest =
           result.onboarding?.landingPath ??
           resolveActivarIntent(activarKey)?.landingPath ??
+          safeNext ??
           "/dashboard"
         if (activarIntent && activarParam && result.token && !result.onboarding?.landingPath) {
           const r = await activarProductoDesdeIntent(result.token, activarParam)
@@ -187,7 +191,7 @@ function RegisterPageContent() {
       loginConToken(data.token, data.usuario)
       trackSignupEvents(activarParam || selectedRubro || null)
 
-      let dest = data.onboarding?.landingPath ?? "/dashboard"
+      let dest = data.onboarding?.landingPath ?? safeNext ?? "/dashboard"
 
       if (activarIntent && activarParam && !data.onboarding?.landingPath) {
         const r = await activarProductoDesdeIntent(data.token, activarParam)
@@ -443,6 +447,7 @@ function RegisterPageContent() {
                         const dest =
                           result.onboarding?.landingPath ??
                           resolveActivarIntent(activarKey)?.landingPath ??
+                          safeNext ??
                           "/dashboard"
                         router.push(dest)
                       } else if (result.needsEmpresa) {

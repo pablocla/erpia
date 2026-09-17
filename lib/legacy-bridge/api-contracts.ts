@@ -155,6 +155,81 @@ export const CLAVER_APP_BRIDGE_CONTRACTS: ClaverAppBridgeContract[] = [
       },
     ],
   },
+  {
+    sku: "edge.investments",
+    nombre: "Claver Inversiones",
+    tagline: "Tesorería mark-to-market sobre SIGAFIN (Z02/Z03 + FINA100)",
+    requiredEndpoints: [
+      {
+        path: "/api/claver/v1/investments/health",
+        method: "GET",
+        description: "Ping del AppServer y flag MV_CLVINV",
+        responseShape: { ok: "boolean", sku: "string", tables: "string[]" },
+        protheusHint: "CLVINV01.PRW",
+      },
+      {
+        path: "/api/claver/v1/investments/instruments",
+        method: "GET",
+        description: "Maestro Z01 (tipos de instrumento)",
+        responseShape: { items: "Array<{ id, desc, renta, usaApi, natCap, natInt }>" },
+        protheusHint: "Z01",
+      },
+      {
+        path: "/api/claver/v1/investments/banks",
+        method: "GET",
+        description: "Cuentas SA6 usadas como origen/destino de fondos",
+        responseShape: { items: "Array<{ id, sa6, name, agencia, cuenta }>" },
+        protheusHint: "SA6",
+      },
+      {
+        path: "/api/claver/v1/investments/holdings",
+        method: "GET",
+        description: "Operaciones Z02 + último MTM Z03",
+        responseShape: { items: "Array<Investment>", total: "number" },
+        protheusHint: "Z02 + Z03",
+      },
+      {
+        path: "/api/claver/v1/investments/holdings",
+        method: "POST",
+        description: "Alta Z02 + ND FINA100 (no INSERT a SE5)",
+        requestBody: {
+          tipoId: "string",
+          ticker: "string",
+          bancoId: "string",
+          capital: "number",
+          cantidad: "number",
+          tasa: "number",
+          inicio: "YYYY-MM-DD",
+          vence: "YYYY-MM-DD?",
+          moneda: "1 | 2",
+        },
+        responseShape: { ok: "boolean", id: "string", estado: "activa" },
+        protheusHint: "FINZINV Z02Commit / MSExecAuto FINA100",
+      },
+      {
+        path: "/api/claver/v1/investments/holdings/{id}/rescue",
+        method: "POST",
+        description: "Rescate: NC capital + NC/ND interés",
+        requestBody: { fecha: "YYYY-MM-DD", total: "number" },
+        responseShape: { ok: "boolean", estado: "rescatada", resultado: "number" },
+        protheusHint: "U_FINZRES / FINA100",
+      },
+    ],
+    optionalEndpoints: [
+      {
+        path: "/api/claver/v1/investments/holdings/{id}/valuations",
+        method: "GET",
+        description: "Serie Z03 de una operación",
+        responseShape: { items: "Array<{ fecha, precio, valor, rtoDia, origen }>" },
+      },
+      {
+        path: "/api/claver/v1/investments/asientos",
+        method: "GET",
+        description: "SE5 de inversiones (histor Inversion/Rescate/Intereses)",
+        responseShape: { items: "Array<{ fecha, tipo, valor, naturaleza, histor }>" },
+      },
+    ],
+  },
 ]
 
 export function getBridgeContractBySku(sku: string): ClaverAppBridgeContract | undefined {

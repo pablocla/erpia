@@ -206,6 +206,9 @@ export function OpoStudioPanel() {
               App Store
             </Link>
           </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/protheus">Inversiones Protheus</Link>
+          </Button>
           <Button variant="outline" size="sm" onClick={() => void cargar()}>
             <RefreshCw className="h-4 w-4 mr-1" />
             Actualizar

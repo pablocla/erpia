@@ -105,6 +105,7 @@ const ROUTES: RouteItem[] = [
   // Financiero
   { href: "/dashboard/caja", label: "Caja", icon: Wallet, section: "Financiero", keywords: ["caja", "cash", "efectivo"] },
   { href: "/dashboard/banco", label: "Banco", icon: Landmark, section: "Financiero", keywords: ["banco", "transferencia", "CBU"] },
+  { href: "/dashboard/protheus", label: "Inversiones Protheus", icon: Landmark, section: "Financiero", keywords: ["protheus", "totvs", "inversiones", "sigafin", "tenencias"] },
   { href: "/dashboard/cuentas-cobrar", label: "Cuentas a Cobrar", icon: FileText, section: "Financiero", keywords: ["cobrar", "deuda", "CC"] },
   { href: "/dashboard/cuentas-pagar", label: "Cuentas a Pagar", icon: FileText, section: "Financiero", keywords: ["pagar", "deuda", "CP"] },
   { href: "/dashboard/cheques", label: "Cheques", icon: FileText, section: "Financiero", keywords: ["cheque"] },

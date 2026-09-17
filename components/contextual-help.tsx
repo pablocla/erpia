@@ -290,6 +290,37 @@ const TUTORIALES: Record<string, TutorialSeccion[]> = {
       ],
     },
   ],
+  "/dashboard/protheus": [
+    {
+      id: "protheus-operador",
+      titulo: "Inversiones Protheus — operador",
+      pasos: [
+        { titulo: "Entrá con Claver", descripcion: "Email o Google. No hay login aparte de Protheus en esta pantalla." },
+        { titulo: "Live SIGAFIN", descripcion: "Si el implementador ya cargó el REST del tenant, ves las tenencias Z02 de tu empresa." },
+        { titulo: "Constituir", descripcion: "Nueva inversión: sale ND por FINA100 de la cuenta SA6. No se inserta SE5 a mano." },
+        { titulo: "Rescatar", descripcion: "El tesorero carga el monto acreditado. El sistema separa capital e interés (dos naturalezas SED)." },
+      ],
+      tips: [
+        "La pestaña Ayuda de este módulo tiene el boletín de implementación.",
+        "Cada cliente TOTVS es un tenant Claver con su propia URL REST.",
+      ],
+      advertencias: [
+        "En claver.com.ar el REST tiene que ser HTTPS público (TOTVS Cloud). Un 10.x de LAN no llega a Vercel.",
+      ],
+      linkDoc: "funcional/inversiones-protheus",
+    },
+    {
+      id: "protheus-impl",
+      titulo: "Implementador — un cliente",
+      pasos: [
+        { titulo: "Diccionario Z01/Z02/Z03", descripcion: "Solo esas tres tablas. Reusá SA6, SED, SE5, CUIT de localización Argentina." },
+        { titulo: "Compilá los PRW", descripcion: "FINZINV → FINZRES → CLVINV01 → JOBFINZ03. Descargalos de la pestaña Boletín." },
+        { titulo: "Prendé HTTPREST", descripcion: "Health: GET {base}/api/claver/v1/investments/health" },
+        { titulo: "Legacy Bridge", descripcion: "Claver Cloud → tenant → URL REST HTTPS + usuario. El operador no carga claves." },
+      ],
+      tips: ["Checklist por cliente en docs/partners/BOLETIN_MVP_INVERSIONES_PROTHEUS.md"],
+    },
+  ],
   "/dashboard/banco": [
     {
       id: "banco",

@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/claver/marca`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     { url: `${base}/claver/almacen-rosario`, lastModified: now, changeFrequency: "monthly", priority: 0.75 },
     { url: `${base}/claver/agent-city`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/claver/protheus`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
   ]
 
   const demoRoutes: MetadataRoute.Sitemap = LANDING_FEATURED_DEMOS.map((pack) => ({

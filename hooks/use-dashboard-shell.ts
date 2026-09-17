@@ -122,7 +122,8 @@ export function useDashboardShell() {
     if (!mounted || !isHydrated) return
     const stored = getToken()
     if (!stored) {
-      router.replace("/login")
+      const next = pathname && pathname !== "/login" ? `?next=${encodeURIComponent(pathname)}` : ""
+      router.replace(`/login${next}`)
       return
     }
     fetch("/api/claver/analista/status", {
@@ -131,7 +132,7 @@ export function useDashboardShell() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setIsClaverAnalyst(Boolean(data?.isAnalyst)))
       .catch(() => setIsClaverAnalyst(false))
-  }, [mounted, isHydrated, token, router])
+  }, [mounted, isHydrated, token, router, pathname])
 
   useEffect(() => {
     if (!mounted || !isClaverAnalyst) return

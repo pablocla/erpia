@@ -35,6 +35,7 @@ export const DOC_ROUTE_MAP: DocRouteMapping[] = [
   // Financiero y Contabilidad
   { pathname: "/dashboard/caja", slug: "funcional/tesoreria", prefix: true },
   { pathname: "/dashboard/banco", slug: "funcional/tesoreria", prefix: true },
+  { pathname: "/dashboard/protheus", slug: "funcional/inversiones-protheus", prefix: true },
   { pathname: "/dashboard/cuentas-cobrar", slug: "funcional/tesoreria", prefix: true },
   { pathname: "/dashboard/cuentas-pagar", slug: "funcional/tesoreria", prefix: true },
   { pathname: "/dashboard/cheques", slug: "funcional/tesoreria", prefix: true },

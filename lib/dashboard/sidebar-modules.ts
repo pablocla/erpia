@@ -82,6 +82,7 @@ export const DASHBOARD_SIDEBAR_MODULOS: DashboardModuloSection[] = [
     items: [
       { href: "/dashboard/caja", icon: Wallet, label: "Caja y Arqueo" },
       { href: "/dashboard/banco", icon: Landmark, label: "Bancos & Cuentas" },
+      { href: "/dashboard/protheus", icon: Landmark, label: "Inversiones Protheus", badge: "TOTVS" },
       { href: "/dashboard/mercadopago", icon: CreditCard, label: "Mercado Pago", badge: "Extra" },
       { href: "/dashboard/cuentas-cobrar", icon: FilePlus, label: "Cuentas a Cobrar (CxC)" },
       { href: "/dashboard/cuentas-pagar", icon: FileText, label: "Cuentas a Pagar (CxP)" },

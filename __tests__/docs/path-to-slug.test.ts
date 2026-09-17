@@ -12,6 +12,7 @@ describe("resolveDocSlug", () => {
     expect(resolveDocSlug("/dashboard/pos")).toBe("funcional/sistema-pos")
     expect(resolveDocSlug("/dashboard/pos/ventas")).toBe("funcional/sistema-pos")
     expect(resolveDocSlug("/dashboard/caja")).toBe("funcional/tesoreria")
+    expect(resolveDocSlug("/dashboard/protheus")).toBe("funcional/inversiones-protheus")
     expect(resolveDocSlug("/dashboard/caja/movimientos")).toBe("funcional/tesoreria")
     expect(resolveDocSlug("/dashboard/contabilidad")).toBe("funcional/tesoreria")
     expect(resolveDocSlug("/dashboard/contabilidad/asiento/123")).toBe("funcional/tesoreria")

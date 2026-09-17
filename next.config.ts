@@ -50,6 +50,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Drivers SQL solo en runtime Node (Protheus introspection) — no bundlear en webpack
   serverExternalPackages: ["mssql", "tedious"],
+  outputFileTracingIncludes: {
+    "/api/public/protheus-invest": ["./data/protheus/advpl/edge/investments/**/*"],
+    "/api/legacy-bridge/contracts": ["./data/protheus/advpl/**/*"],
+  },
   eslint: {
     // ESLint not required for demo build
     ignoreDuringBuilds: true,

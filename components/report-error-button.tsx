@@ -22,8 +22,23 @@ const MODULOS = [
   "impuestos",
   "contabilidad",
   "caja",
+  "protheus",
   "soporte",
 ]
+
+/** Ocultar el FAB en landings públicas aunque quede un token viejo. */
+export function isMarketingLandingPath(pathname: string): boolean {
+  if (pathname === "/" || pathname === "") return true
+  if (pathname.startsWith("/login")) return true
+  if (pathname.startsWith("/demo")) return true
+  if (pathname.startsWith("/software")) return true
+  if (pathname.startsWith("/erp")) return true
+  if (pathname.startsWith("/f")) return true
+  if (pathname.startsWith("/marketing")) return true
+  if (pathname.startsWith("/modulos")) return true
+  if (pathname.startsWith("/claver") && !pathname.startsWith("/claver-cloud")) return true
+  return false
+}
 
 export function ReportErrorButton() {
   const pathname = usePathname()
@@ -36,6 +51,7 @@ export function ReportErrorButton() {
   const [prioridad, setPrioridad] = useState("media")
   const [hasToken, setHasToken] = useState(false)
   const chatOpen = useUIStore((s) => s.chatWidgetOpen)
+  const isMarketingLanding = isMarketingLandingPath(pathname)
 
   // Only show the button when the user is authenticated
   useEffect(() => {

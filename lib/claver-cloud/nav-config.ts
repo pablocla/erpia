@@ -22,6 +22,7 @@ import {
   Users,
   Wrench,
   Sun,
+  Radio,
 } from "lucide-react"
 
 export type NavItem = {
@@ -81,6 +82,9 @@ export const navSections: NavSection[] = [
       { name: "setupProtheus", href: "/claver-cloud/protheus-setup", icon: Wrench },
       { name: "opoConsole", href: "/claver-cloud/opo-console", icon: Network,
         matchPrefixes: ["/claver-cloud/protheus-api"],
+      },
+      { name: "protheusFleet", href: "/claver-cloud/protheus-fleet", icon: Radio,
+        matchPrefixes: ["/claver-cloud/protheus-fleet"],
       },
     ],
   },

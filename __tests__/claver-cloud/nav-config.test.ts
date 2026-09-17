@@ -55,6 +55,9 @@ describe("Claver Cloud Navigation Config & Localization Integrity", () => {
     expect(isNavItemActive("/claver-cloud/tenants/42", fleet)).toBe(true)
     expect(isNavItemActive("/claver-cloud/organizations", fleet)).toBe(true)
 
+    const fleetProtheus = allNavItems.find((i) => i.name === "protheusFleet")!
+    expect(isNavItemActive("/claver-cloud/protheus-fleet", fleetProtheus)).toBe(true)
+
     const goLive = allNavItems.find((i) => i.name === "goLive")!
     expect(isNavItemActive("/claver-cloud/go-live", goLive)).toBe(true)
     expect(isNavItemActive("/claver-cloud/implementation", goLive)).toBe(true)

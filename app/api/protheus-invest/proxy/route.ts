@@ -3,6 +3,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getOpoConfig } from "@/lib/opo/opo-config-service"
 import { credentialsFromOpo, forwardToProtheus, tenantRestReady } from "@/lib/protheus-invest/forward"
 import { getProtheusLicenseState, protheusAccessBlocked } from "@/lib/comercial/protheus-license"
+import { logProtheusProxy } from "@/lib/claver-cloud/protheus-fleet"
 
 /**
  * Proxy por tenant: cada empresa usa SU restDirectUrl de OpoTenantConfig.
@@ -41,11 +42,22 @@ export async function POST(request: NextRequest) {
   }
 
   const creds = credentialsFromOpo(config)
+  const method = payload.method ?? "GET"
+  const path = payload.path ?? ""
   const result = await forwardToProtheus({
     ...creds,
-    method: payload.method ?? "GET",
-    path: payload.path ?? "",
+    method,
+    path,
     body: payload.body,
+  })
+  await logProtheusProxy({
+    empresaId: auth.auth.empresaId,
+    method,
+    path,
+    ok: result.ok,
+    status: result.status,
+    ms: result.ms,
+    error: result.error,
   })
   return NextResponse.json(result)
 }

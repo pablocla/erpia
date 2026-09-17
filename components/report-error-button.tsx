@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useUIStore } from "@/lib/stores/ui-store"
+import { isProtheusDashboardPath } from "@/lib/comercial/protheus-license"
 
 const MODULOS = [
   "dashboard",
@@ -123,7 +124,7 @@ export function ReportErrorButton() {
     }
   }
 
-  if (!hasToken || chatOpen || isMarketingLanding) return null
+  if (!hasToken || chatOpen || isMarketingLanding || isProtheusDashboardPath(pathname)) return null
 
   return (
     <>

@@ -106,7 +106,7 @@ export function HelpScreen() {
 
       <p className="text-xs text-muted-foreground">
         <BookOpen className="mr-1 inline size-3.5" />
-        Boletín completo: pestaña Boletín (PRW) y el ? de la barra superior.
+        Boletín completo: menú Compilar (PRW) y Ayuda. El ERP Claver no se mezcla en esta pantalla.
       </p>
     </div>
   )

@@ -126,6 +126,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
+  // Add-on tesorería: auth/licencia Claver, UI propia (sin sidebar/topbar del ERP).
+  if (isProtheusDashboardPath(pathname)) {
+    return <div className="h-[100dvh] overflow-hidden bg-background">{children}</div>
+  }
+
   return (
     <div className="dashboard-canvas dashboard-shell flex h-[100dvh] relative overflow-hidden bg-background">
       <div className="theme-canvas-decor pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,color-mix(in_oklab,var(--primary)_6%,transparent),transparent)]" />

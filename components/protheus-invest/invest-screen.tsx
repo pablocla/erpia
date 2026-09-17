@@ -64,17 +64,16 @@ export function InvestScreen() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inversiones</h1>
-          <p className="mt-1 text-sm text-[#8fa3b3]">
-            Z02 contra SA6. Al confirmar, FINA100 genera la ND. Al rescatar, capital e interés salen por naturalezas
-            distintas.
+          <h2 className="text-xl font-semibold tracking-tight">Cartera</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Constitución y rescate impactan el banco del ERP. El detalle técnico está en Ayuda.
           </p>
         </div>
         <PiButton onClick={() => setOpen((v) => !v)}>{open ? "Cerrar" : "Nueva inversión"}</PiButton>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi label="Mark-to-market" value={money(mtm)} hint="Z03 del día · lo que vale hoy" />
+        <Kpi label="Mark-to-market" value={money(mtm)} hint="Valor de mercado al último cierre" />
         <Kpi
           label="Resultado no realizado"
           value={money(mtm - cap)}
@@ -111,13 +110,13 @@ export function InvestScreen() {
           />
         ))}
         {invests.length === 0 && (
-          <PiCard className="p-5 text-sm text-[#8fa3b3]">No hay Z02 en este Protheus (o el REST no devolvió items).</PiCard>
+          <PiCard className="p-5 text-sm text-[#8fa3b3]">No hay operaciones en este tenant (o el ERP no devolvió datos).</PiCard>
         )}
       </div>
 
       <PiCard className="overflow-hidden">
         <div className="border-b border-[rgb(232_238_242/0.1)] px-5 py-3">
-          <h2 className="text-sm font-medium">Asientos FINA100 (SE5)</h2>
+          <h2 className="text-sm font-medium">Movimientos bancarios</h2>
           <p className="text-xs text-[#8fa3b3]">ND al constituir · dos NC al rescatar. Nunca un INSERT directo.</p>
         </div>
         <div className="overflow-x-auto">
@@ -224,17 +223,17 @@ function InvestCard({
       {open && (
         <div className="border-t border-[rgb(232_238_242/0.1)] px-5 py-4">
           <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <Meta k="Nro. Z02" v={inv.id} />
+            <Meta k="Nro. operación" v={inv.id} />
             <Meta k="Moneda" v={MONEDA_LABEL[inv.moneda]} />
             <Meta k="Nominales" v={qty(inv.cantidad)} />
             <Meta k="Precio compra" v={price(inv.preCom)} />
             <Meta k="Capital inicial" v={money(inv.capital)} />
             <Meta k="TNA" v={inv.tasa ? pct(inv.tasa) : "—"} />
             <Meta k="Banco / agencia / cta." v={`${inv.bancoId.toUpperCase()} · ${inv.agencia} · ${inv.cuenta}`} />
-            <Meta k="Último Z03" v={last ? `${dmy(last.fecha)} · ${ORIGEN_LABEL[last.origen]}` : "—"} />
+            <Meta k="Última valuación" v={last ? `${dmy(last.fecha)} · ${ORIGEN_LABEL[last.origen]}` : "—"} />
           </dl>
 
-          <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-[#8fa3b3]">Valuación diaria (Z03)</h3>
+          <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-[#8fa3b3]">Valuación diaria</h3>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="text-xs uppercase tracking-wider text-[#8fa3b3]">
@@ -405,7 +404,7 @@ function NewInvestForm({
       <Field label="Nombre">
         <PiInput value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
       </Field>
-      <Field label="Banco SA6">
+      <Field label="Banco">
         <select className={SELECT_CLS} value={form.bancoId} onChange={(e) => setForm({ ...form, bancoId: e.target.value })}>
           {banks.map((b) => (
             <option key={b.id} value={b.id}>

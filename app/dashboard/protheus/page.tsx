@@ -1,7 +1,8 @@
 "use client"
 
-import { ProtheusInvestApp } from "@/components/protheus-invest/app"
+import { InvestScreen } from "@/components/protheus-invest/invest-screen"
 
 export default function DashboardProtheusPage() {
-  return <ProtheusInvestApp />
+  return <InvestScreen />
 }
+

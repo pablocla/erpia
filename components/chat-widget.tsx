@@ -39,6 +39,7 @@ export function ChatWidget() {
 
 
   if (pathname?.startsWith("/claver/agent-city/app")) return null
+  if (pathname?.startsWith("/dashboard/protheus")) return null
   if (!chatOpen) return null
 
   return (

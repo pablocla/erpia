@@ -2,10 +2,78 @@
 
 **SKU:** `edge.investments`  
 **Por cliente:** un tenant Claver = un AppServer.  
-**Producto:** `/dashboard/protheus` (login Claver).  
-**Fuentes:** `data/protheus/advpl/edge/investments/`
+**Producto:** `/dashboard/protheus` (login Claver, **UI propia**: no mezcla menú POS/fiado/AFIP).  
+**Fuentes:** `data/protheus/advpl/edge/investments/`  
+**Alineamientos socio TOTVS:** carpeta `alineamientos` (FINZINV MVC, Z01/Z02/Z03, FINA100, rescate, job Z03 / PPI).
 
 ---
+
+## Diagrama de flujo — qué es de Claver, qué es de Protheus, qué pidió el socio
+
+```mermaid
+flowchart TB
+  subgraph canal["Canal TOTVS + Claver"]
+    Socio["Socio TOTVS\nFINZINV / tesorería"]
+    ClaverProd["Claver Soft\nfront + SaaS + licencia anual"]
+  end
+
+  subgraph claverCore["Core Claver (se reusa, no se pisa el ERP)"]
+    Login["Login email / Google\nJWT + empresaId"]
+    Licencia["SKU edge.investments\n1 año — NO trial ni Mercado Pago"]
+    Tenant["OpoTenantConfig\nrestDirectUrl de ESE cliente"]
+    Front["UI Inversiones\nmenú propio: Cartera, Bancos, Conexión"]
+  end
+
+  subgraph totvs["Protheus = system of record"]
+    LocAR["Localización AR\nSA6 SED SE5 SA1 SM2 FINA100"]
+    Ztabs["Z01 tipos · Z02 operación · Z03 MTM\n(lo que no existe en SIGAFIN)"]
+    REST["CLVINV01 REST\n/api/claver/v1/investments/*"]
+    Jobs["JOBFINZ03 tasa fija\nPPI post-MVP"]
+  end
+
+  Socio --> Ztabs
+  Socio --> Jobs
+  ClaverProd --> Login
+  Login --> Licencia
+  Licencia --> Front
+  Front -->|"proxy autenticado\nsin claves en el browser"| Tenant
+  Tenant -->|"HTTPS público\nTOTVS Cloud"| REST
+  REST --> Ztabs
+  REST --> LocAR
+  Ztabs -->|"alta ND / rescate NC"| LocAR
+```
+
+### Qué pidió el socio (TOTVS investing) y cómo lo montamos
+
+| Pedido del socio | Dónde queda |
+|------------------|-------------|
+| Módulo inversiones con cotizaciones + tenencias del cliente | Front Claver **Cartera** + Z02/Z03 |
+| MVC cabecera/detalle (Z02 + grid Z03) | `FINZINV.PRW` — el tesorero Claver no ve esa pantalla AdvPL |
+| Alta que mueva banco en el momento Confirmar | Commit `FINA100` ND (nunca INSERT a SE5) |
+| Rescate separando capital e interés | `FINZRES.PRW` + POST `.../rescue` |
+| Job 18:30 mark-to-market / PPI | `JOBFINZ03.PRW` (tasa fija ya; PPI fase 2) |
+| Diccionario Z01/Z02/Z03 exacto (Excel alineamientos) | Sección 1 de este boletín |
+| Apps Claver empaquetables para el canal | `docs/partners/TOTVS_PROTHEUS_APPS.md` |
+| No canibalizar Protheus | SIGAFIN no se toca; Claver es overlay |
+
+### Quién ve qué (front no mezclado)
+
+```mermaid
+flowchart LR
+  User["Usuario"] --> Login
+  Login -->|"JWT Claver"| Gate{"¿ruta /dashboard/protheus?"}
+  Gate -->|"sí"| Shell["Shell Inversiones\nsidebar propia\nsin POS/fiado/AFIP/topbar ERP"]
+  Gate -->|"no"| ERP["Dashboard Claver completo"]
+  Shell --> Proxy["/api/protheus-invest/proxy"]
+  Proxy --> AppServer["REST de ESE tenant"]
+```
+
+Claver pone: identidad, tenant, licencia anual, proxy, UI tesorería.  
+Protheus pone: plata, bancos, naturalezas, asientos.  
+El menú del add-on habla de **Cartera / Bancos / Movimientos**, no de códigos SX3.
+
+---
+
 
 ## 0. Qué reusa localización Argentina (no crear)
 

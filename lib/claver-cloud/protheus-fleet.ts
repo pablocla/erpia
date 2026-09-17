@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { OPO_FEATURE, getOpoConfig, patchOpoConfig } from "@/lib/opo/opo-config-service"
 import { tenantRestReady, forwardToProtheus } from "@/lib/protheus-invest/forward"
 import { PROTHEUS_LICENSE_SKU } from "@/lib/comercial/protheus-license"
+import { cuitDigits, tenantLoginPath } from "@/lib/protheus-invest/tenant-url"
 
 export type FleetRow = {
   empresaId: number
@@ -16,6 +17,7 @@ export type FleetRow = {
   lastPingOk: boolean | null
   licenseActive: boolean
   licenseUntil: string | null
+  loginPath: string
 }
 
 function maskUrl(url: string) {
@@ -35,7 +37,7 @@ export async function listProtheusFleet(): Promise<FleetRow[]> {
       select: {
         empresaId: true,
         parametros: true,
-        empresa: { select: { id: true, nombre: true, razonSocial: true, cuit: true, modoLite: true } },
+        empresa: { select: { id: true, nombre: true, razonSocial: true, cuit: true, modoLite: true, temaConfig: true } },
       },
     }),
     prisma.suscripcionModulo.findMany({
@@ -44,7 +46,7 @@ export async function listProtheusFleet(): Promise<FleetRow[]> {
     }),
     prisma.empresa.findMany({
       where: { modoLite: "protheus" },
-      select: { id: true, nombre: true, razonSocial: true, cuit: true, modoLite: true },
+      select: { id: true, nombre: true, razonSocial: true, cuit: true, modoLite: true, temaConfig: true },
     }),
   ])
 
@@ -56,8 +58,12 @@ export async function listProtheusFleet(): Promise<FleetRow[]> {
     razonSocial: string
     cuit: string
     modoLite: string | null
+    temaConfig?: unknown
   }) {
     if (byId.has(e.id)) return
+    const tema = (e.temaConfig ?? {}) as Record<string, unknown>
+    const slug =
+      (typeof tema.protheusSlug === "string" && tema.protheusSlug) || cuitDigits(e.cuit) || String(e.id)
     byId.set(e.id, {
       empresaId: e.id,
       nombre: e.razonSocial || e.nombre,
@@ -71,6 +77,7 @@ export async function listProtheusFleet(): Promise<FleetRow[]> {
       lastPingOk: null,
       licenseActive: false,
       licenseUntil: null,
+      loginPath: tenantLoginPath(slug),
     })
   }
 

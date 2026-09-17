@@ -22,6 +22,7 @@ type Tenant = {
   lastPingOk: boolean | null
   licenseActive: boolean
   licenseUntil: string | null
+  loginPath: string
 }
 
 type Audit = {
@@ -101,7 +102,7 @@ export default function ProtheusFleetPage() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="text-xs uppercase text-muted-foreground">
               <tr>
-                {["Empresa", "REST", "Licencia", "Último ping", ""].map((h) => (
+                {["Empresa", "Login subusuarios", "REST", "Licencia", "Último ping", ""].map((h) => (
                   <th key={h} className="px-2 py-2 font-medium">{h}</th>
                 ))}
               </tr>
@@ -114,6 +115,11 @@ export default function ProtheusFleetPage() {
                       {t.nombre}
                     </Link>
                     <p className="text-xs text-muted-foreground">{t.cuit}</p>
+                  </td>
+                  <td className="px-2 py-2 font-mono text-xs">
+                    <a href={t.loginPath} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+                      {t.loginPath}
+                    </a>
                   </td>
                   <td className="px-2 py-2 font-mono text-xs">
                     {t.restReady ? t.restUrl : "sin URL"}
@@ -148,7 +154,7 @@ export default function ProtheusFleetPage() {
               ))}
               {tenants.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={5} className="px-2 py-6 text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-2 py-6 text-sm text-muted-foreground">
                     Todavía no hay tenants con origen Protheus. El alta con licencia o Legacy Bridge los lista acá.
                   </td>
                 </tr>

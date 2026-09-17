@@ -88,6 +88,14 @@ flowchart TD
   T1 -->|no| Demo["Demo hasta que el analista termine"]
 ```
 
+### URL fija del tenant y login de subusuarios
+
+Al crear el tenant se genera `https://claver.com.ar/p/{slug}/login`.
+
+Esa ruta **solo** autentica usuarios del AppServer (OAuth2 password grant o token Bearer; fallback Basic). No es el login email/Google de Claver. El JWT de Claver se emite después, JIT, con rol tesorero.
+
+El analista sigue usando `/login` de Claver para implementar. Los subusuarios Protheus entran por `/p/{slug}/login`.
+
 ---
 
 

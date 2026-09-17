@@ -4,6 +4,7 @@ import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getEmpresaNombre, getOpoConfig, patchOpoConfig } from "@/lib/opo/opo-config-service"
 import { tenantRestReady } from "@/lib/protheus-invest/forward"
 import { getUserOnboarding } from "@/lib/protheus-invest/onboarding"
+import { ensureProtheusTenantSlug, tenantLoginPath } from "@/lib/protheus-invest/tenant-url"
 
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext(request)
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
     getUserOnboarding(auth.auth.empresaId, auth.auth.userId),
   ])
   const configured = tenantRestReady(config)
+  const slug = await ensureProtheusTenantSlug(auth.auth.empresaId)
 
   return NextResponse.json({
     empresaId: auth.auth.empresaId,
@@ -28,6 +30,8 @@ export async function GET(request: NextRequest) {
     hasPassword: Boolean(config.restAuthPassword),
     origen: config.origen,
     accesoCanal: config.accesoCanal,
+    loginPath: tenantLoginPath(slug),
+    slug,
   })
 }
 

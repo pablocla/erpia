@@ -43,6 +43,8 @@ export interface OpoTenantConfig {
   /** Canal preferido para legacy: agente VPN, REST Protheus directo, o vistas SQL */
   accesoCanal?: AccesoCanal
   sqlModo?: SqlModo
+  /** URL pública fija del tenant: /p/{protheusSlug}/login */
+  protheusSlug?: string
   /** Base REST Protheus (ej. http://10.12.35.70:8073/rest) — sin agente intermedio */
   restDirectUrl?: string
   restAuthUser?: string

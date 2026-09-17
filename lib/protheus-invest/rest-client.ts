@@ -21,6 +21,8 @@ export type TenantConnection = {
   hasPassword: boolean
   origen: string
   accesoCanal?: string
+  loginPath?: string
+  slug?: string
 }
 
 async function proxyCall(

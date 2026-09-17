@@ -136,6 +136,14 @@ export function RestConfigPanel() {
           {source === "protheus" ? (tenant ? `Live · ${tenant.empresaNombre}` : "Live SIGAFIN") : "Demo"}
         </PiBadge>
       </div>
+      {tenant?.loginPath && (
+        <p className="mt-3 text-xs text-[#8fa3b3]">
+          Login subusuarios Protheus:{" "}
+          <a href={tenant.loginPath} className="text-[#3d9b8f] underline">
+            {tenant.loginPath}
+          </a>
+        </p>
+      )}
 
       {loggedIn && tenant && !tenant.configured && !tenant.canEdit && (
         <p className="mt-3 text-sm text-[#d4a45a]">

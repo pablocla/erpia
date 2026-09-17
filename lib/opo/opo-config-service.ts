@@ -22,6 +22,7 @@ const DEFAULT_CONFIG: OpoTenantConfig = {
   accesoCanal: "rest_directo",
   sqlModo: "direct",
   restDirectUrl: "",
+  protheusSlug: "",
   restAuthUser: "",
   restAuthPassword: "",
   sqlServer: "",
@@ -54,6 +55,7 @@ function mergeConfig(raw: Record<string, unknown> | undefined): OpoTenantConfig 
     sqlModo: (raw.sqlModo as OpoTenantConfig["sqlModo"]) ?? DEFAULT_CONFIG.sqlModo,
     restDirectUrl:
       typeof raw.restDirectUrl === "string" ? raw.restDirectUrl : DEFAULT_CONFIG.restDirectUrl,
+    protheusSlug: typeof raw.protheusSlug === "string" ? raw.protheusSlug : DEFAULT_CONFIG.protheusSlug,
     restAuthUser:
       typeof raw.restAuthUser === "string" ? raw.restAuthUser : DEFAULT_CONFIG.restAuthUser,
     restAuthPassword:
@@ -100,6 +102,7 @@ export async function patchOpoConfig(
       accesoCanal: next.accesoCanal,
       sqlModo: next.sqlModo,
       restDirectUrl: next.restDirectUrl ?? "",
+      protheusSlug: next.protheusSlug ?? "",
       restAuthUser: next.restAuthUser ?? "",
       restAuthPassword: next.restAuthPassword ?? "",
       entityMappings: next.entityMappings ?? PROTHEUS_DEFAULT_MAPPINGS,
@@ -119,6 +122,8 @@ export async function patchOpoConfig(
 }
 
 export async function provisionOpoDefaults(empresaId: number) {
+  const { ensureProtheusTenantSlug } = await import("@/lib/protheus-invest/tenant-url")
+  await ensureProtheusTenantSlug(empresaId)
   const baseUrl = await getFeatureParam(empresaId, OPO_FEATURE, "baseUrl", "")
   await setFeature(empresaId, OPO_FEATURE, {
     activado: true,

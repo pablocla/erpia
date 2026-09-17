@@ -106,7 +106,7 @@ export function HelpScreen() {
 
       <p className="text-xs text-muted-foreground">
         <BookOpen className="mr-1 inline size-3.5" />
-        Boletín completo: menú Compilar (PRW) y Ayuda. El ERP Claver no se mezcla en esta pantalla.
+        Primer ingreso: se elige analista (baja PRW y expone REST) o tesorero (usa la cartera). Compilar está en el menú del analista.
       </p>
     </div>
   )

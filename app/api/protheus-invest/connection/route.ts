@@ -3,14 +3,16 @@ import { canManageUsers } from "@/lib/auth/admin-roles"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getEmpresaNombre, getOpoConfig, patchOpoConfig } from "@/lib/opo/opo-config-service"
 import { tenantRestReady } from "@/lib/protheus-invest/forward"
+import { getUserOnboarding } from "@/lib/protheus-invest/onboarding"
 
 export async function GET(request: NextRequest) {
   const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
 
-  const [config, empresaNombre] = await Promise.all([
+  const [config, empresaNombre, onboarding] = await Promise.all([
     getOpoConfig(auth.auth.empresaId),
     getEmpresaNombre(auth.auth.empresaId),
+    getUserOnboarding(auth.auth.empresaId, auth.auth.userId),
   ])
   const configured = tenantRestReady(config)
 
@@ -18,7 +20,8 @@ export async function GET(request: NextRequest) {
     empresaId: auth.auth.empresaId,
     empresaNombre,
     rol: auth.auth.rol,
-    canEdit: canManageUsers(auth.auth.rol),
+    canEdit: canManageUsers(auth.auth.rol) || onboarding.perfil === "analista",
+    perfil: onboarding.perfil,
     configured,
     baseUrl: config.restDirectUrl ?? "",
     user: config.restAuthUser ?? "",
@@ -31,8 +34,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const auth = await getAuthContext(request)
   if (!auth.ok) return auth.response
-  if (!canManageUsers(auth.auth.rol)) {
-    return NextResponse.json({ error: "Solo dueño/admin parametriza el REST del tenant" }, { status: 403 })
+  const onboarding = await getUserOnboarding(auth.auth.empresaId, auth.auth.userId)
+  const puedeEditar = canManageUsers(auth.auth.rol) || onboarding.perfil === "analista"
+  if (!puedeEditar) {
+    return NextResponse.json({ error: "Solo el analista Protheus o un admin carga el REST" }, { status: 403 })
   }
 
   const body = (await request.json()) as {

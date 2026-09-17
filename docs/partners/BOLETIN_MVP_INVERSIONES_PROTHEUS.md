@@ -72,6 +72,22 @@ Claver pone: identidad, tenant, licencia anual, proxy, UI tesorería.
 Protheus pone: plata, bancos, naturalezas, asientos.  
 El menú del add-on habla de **Cartera / Bancos / Movimientos**, no de códigos SX3.
 
+### Primer ingreso (lineal)
+
+```mermaid
+flowchart TD
+  Login["Login Claver"] --> Quien{"¿Qué vas a hacer?"}
+  Quien -->|Analista Protheus| A1["1. Descargar 4 PRW"]
+  A1 --> A2["2. Diccionario Z01/Z02/Z03"]
+  A2 --> A3["3. Compilar TDS en orden"]
+  A3 --> A4["4. Exponer HTTPREST"]
+  A4 --> A5["5. URL HTTPS en el tenant"]
+  A5 --> App["Tesorero usa Cartera"]
+  Quien -->|Tesorero| T1["¿REST listo?"]
+  T1 -->|sí| App
+  T1 -->|no| Demo["Demo hasta que el analista termine"]
+```
+
 ---
 
 

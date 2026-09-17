@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -20,17 +20,25 @@ import { fetchTenantConnection, pullProtheusSnapshot } from "@/lib/protheus-inve
 import { getToken, useAuthStore } from "@/lib/stores/auth-store"
 import { performLogoutAndRedirect } from "@/lib/auth/session-client"
 import { cn } from "@/lib/utils"
+import { authFetch } from "@/lib/stores/auth-store"
+import { ProtheusOnboardingGate } from "./onboarding"
+import type { OnboardingState } from "@/lib/protheus-invest/onboarding"
 
 /** Nombres de negocio. Las tablas SIGA van en Ayuda / boletín, no en el menú. */
-const NAV = [
+const NAV_TESORERO = [
   { href: "/dashboard/protheus", label: "Cartera", icon: LineChart, exact: true },
   { href: "/dashboard/protheus/valuacion", label: "Valuación", icon: Table2 },
   { href: "/dashboard/protheus/bancos", label: "Bancos", icon: Landmark },
   { href: "/dashboard/protheus/asientos", label: "Movimientos", icon: ScrollText },
-  { href: "/dashboard/protheus/instrumentos", label: "Instrumentos", icon: BookOpen },
-  { href: "/dashboard/protheus/conexion", label: "Conexión", icon: Cable },
-  { href: "/dashboard/protheus/advpl", label: "Compilar", icon: BookOpen },
   { href: "/dashboard/protheus/ayuda", label: "Ayuda", icon: HelpCircle },
+] as const
+
+const NAV_ANALISTA = [
+  ...NAV_TESORERO.slice(0, 4),
+  { href: "/dashboard/protheus/instrumentos", label: "Instrumentos", icon: BookOpen, exact: false as const },
+  { href: "/dashboard/protheus/conexion", label: "Conexión", icon: Cable, exact: false as const },
+  { href: "/dashboard/protheus/advpl", label: "Compilar", icon: BookOpen, exact: false as const },
+  { href: "/dashboard/protheus/ayuda", label: "Ayuda", icon: HelpCircle, exact: false as const },
 ] as const
 
 export function ProtheusInvestShell({ children }: { children: React.ReactNode }) {
@@ -39,6 +47,41 @@ export function ProtheusInvestShell({ children }: { children: React.ReactNode })
   const toasts = useCaja((s) => s.toasts)
   const user = useAuthStore((s) => s.user)
   const modoLite = user?.empresaModoLite
+  const [gate, setGate] = useState<"load" | "onboarding" | "app">("load")
+  const [perfil, setPerfil] = useState<"analista" | "tesorero" | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    authFetch("/api/protheus-invest/onboarding")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: OnboardingState | null) => {
+        if (cancelled) return
+        setPerfil(data?.perfil ?? null)
+        setGate(data?.completed ? "app" : "onboarding")
+      })
+      .catch(() => {
+        if (!cancelled) setGate("onboarding")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (gate === "load") {
+    return <div className="flex h-[100dvh] items-center justify-center text-sm text-muted-foreground">Cargando…</div>
+  }
+  if (gate === "onboarding") {
+    return (
+      <ProtheusOnboardingGate
+        onDone={(p) => {
+          setPerfil(p)
+          setGate("app")
+        }}
+      />
+    )
+  }
+
+  const nav = perfil === "analista" ? NAV_ANALISTA : NAV_TESORERO
 
   return (
     <div className="flex h-[100dvh] bg-background text-foreground">
@@ -50,8 +93,8 @@ export function ProtheusInvestShell({ children }: { children: React.ReactNode })
           <p className="mt-0.5 text-xs text-muted-foreground">Add-on tesorería</p>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 p-2">
-          {NAV.map((item) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+          {nav.map((item) => {
+            const active = "exact" in item && item.exact ? pathname === item.href : pathname.startsWith(item.href)
             const Icon = item.icon
             return (
               <Link
@@ -104,8 +147,8 @@ export function ProtheusInvestShell({ children }: { children: React.ReactNode })
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b px-2 py-1 md:hidden">
-          {NAV.map((item) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+          {nav.map((item) => {
+            const active = "exact" in item && item.exact ? pathname === item.href : pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}

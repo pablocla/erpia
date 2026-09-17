@@ -35,6 +35,7 @@ const RUTAS_PUBLICAS = [
   "/api/webhooks/stripe",
   "/api/cron/",
   "/api/public/",
+  "/p/",
   "/api/agent-city",
   "/api/analytics/track",
 ]

@@ -134,6 +134,7 @@ const HOOKS: Record<string, { onActivate?: ProductHook; onDeactivate?: ProductHo
   "pos.cheques_cartera": { onActivate: activarChequesCartera },
   "pos.inventario_express": { onActivate: activarInventarioExpress },
   "bridge.opo_studio": { onActivate: provisionOpoDefaults },
+  "edge.investments": { onActivate: provisionOpoDefaults },
   "ECOM-B2C-01": { onActivate: activarTiendaOnline },
   ...Object.fromEntries(
     NICHE_APPS.map((app) => [app.sku, { onActivate: (empresaId: number) => activarNicheApp(empresaId, app.sku) }]),

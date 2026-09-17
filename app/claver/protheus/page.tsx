@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge"
 import { getToken, useAuthStore } from "@/lib/stores/auth-store"
 
 const NEXT = "/dashboard/protheus"
-const LOGIN_HREF = `/login?next=${encodeURIComponent(NEXT)}`
+const ACTIVAR = "edge.investments"
+const LOGIN_HREF = `/login?activar=${ACTIVAR}&next=${encodeURIComponent(NEXT)}`
+const REGISTER_HREF = `/login/register?activar=${ACTIVAR}&next=${encodeURIComponent(NEXT)}`
 
 export default function ClaverProtheusLandingPage() {
   const router = useRouter()
@@ -34,8 +36,8 @@ export default function ClaverProtheusLandingPage() {
             Inversiones sobre SIGAFIN
           </h1>
           <p className="mt-4 max-w-xl text-slate-300">
-            La app vive dentro de Claver: mismo login (email o Google), mismo tenant, el REST de{" "}
-            <strong className="text-white">tu</strong> Protheus. No hay usuario paralelo.
+            Licencia anual TOTVS, no trial de 14 días ni Mercado Pago del ERP. Al registrarte arranca el
+            perfil tesorería; si dan de baja la licencia, se corta este módulo.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" className="rounded-xl px-8" asChild>
@@ -46,7 +48,7 @@ export default function ClaverProtheusLandingPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="rounded-xl border-white/20 bg-white/5 px-8 text-white hover:bg-white/10" asChild>
-              <Link href="/login/register?next=/dashboard/protheus">Crear tenant</Link>
+              <Link href={REGISTER_HREF}>Alta con licencia Protheus</Link>
             </Button>
           </div>
           <ul className="mt-10 space-y-2 text-sm text-slate-400">

@@ -112,6 +112,10 @@ export const PRODUCTOS_HORIZONTALES: ProductoHorizontal[] = [
     ...fromEnganche(ENGANCHES.find((e) => e.sku === "bridge.opo_studio")!, ["/dashboard/apps/opo"]),
     featureKey: "bridge_opo_studio",
   },
+  {
+    ...fromEnganche(ENGANCHES.find((e) => e.sku === "edge.investments")!, ["/dashboard/protheus"]),
+    featureKey: "bridge_opo_studio",
+  },
   fromEnganche(ENGANCHES.find((e) => e.sku === "sec.backup")!, []),
   fromEnganche(ENGANCHES.find((e) => e.sku === "sec.mfa")!, []),
   fromEnganche(ENGANCHES.find((e) => e.sku === "intang.guardian_pos")!, PREMIUM_NAV["intang.guardian_pos"]),

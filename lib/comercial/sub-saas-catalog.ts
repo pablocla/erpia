@@ -54,6 +54,37 @@ export interface SubSaasApp {
 
 export const SUB_SAAS_APPS: SubSaasApp[] = [
   {
+    slug: "protheus",
+    marca: "Claver × TOTVS",
+    nombre: "Inversiones Protheus",
+    lema: "Licencia anual sobre SIGAFIN. Sin trial ni cobro Mercado Pago.",
+    descripcion:
+      "Front Claver para tesorería Protheus (Z02/Z03 + FINA100). Cada cliente TOTVS es un tenant con su REST. La baja de la licencia bloquea el módulo.",
+    sku: "edge.investments",
+    precioArs: 89000,
+    trialDias: 0,
+    modoLite: "protheus",
+    dashboardPath: "/dashboard/protheus",
+    publicPath: "/claver/protheus",
+    publicPathLabel: "Inversiones para Protheus",
+    procesosReciclados: ["Login Claver", "OPO / Legacy Bridge", "FINA100"],
+    serviciosBackend: ["/api/protheus-invest/proxy", "/api/opo/config"],
+    listoPct: 80,
+    estado: "disponible",
+    plataforma: "ambos",
+    redesScore: 7,
+    impactoScore: 9,
+    rubros: ["industria", "tesoreria", "totvs"],
+    reelHook: "El tesorero ve la cartera. Protheus sigue siendo el backoffice.",
+    pains: ["Trial de Claver ERP bloqueando un producto que se licencia por TOTVS"],
+    outcomes: ["Alta por perfil Protheus", "Baja de licencia corta el acceso"],
+    pasosActivacion: [
+      "Registro con ?activar=edge.investments",
+      "Compilar PRW y cargar REST HTTPS en Legacy Bridge",
+      "El tesorero entra a /dashboard/protheus",
+    ],
+  },
+  {
     slug: "clavergrow",
     marca: "Claver Grow",
     nombre: "Gestión Botánica & Asociaciones Medicinales",

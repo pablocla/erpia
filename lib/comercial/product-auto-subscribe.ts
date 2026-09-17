@@ -12,6 +12,7 @@ import { resolvePackCalle, type ModoLite } from "@/lib/comercial/pack-calle-cata
 import { getProductoHorizontal } from "@/lib/platform/product-registry"
 import { SETUP_FEE_SKU } from "@/lib/comercial/ofertas-comerciales"
 import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
+import { isProtheusLicenseSku } from "@/lib/comercial/protheus-license"
 
 export type SubscribeMode =
   | "auto_free" // permanente gratis (ancla)
@@ -84,6 +85,18 @@ export function resolveAutoSubscribe(
       canAutoActivate: false,
       reason: "SKU en catálogo como Próximamente — no se auto-activa",
       owner: "analista",
+      requiresPayment: false,
+      trialEligible: false,
+    }
+  }
+
+  if (isProtheusLicenseSku(sku)) {
+    return {
+      sku,
+      mode: "auto_paid",
+      canAutoActivate: true,
+      reason: "Licencia anual TOTVS — se activa en el alta, no pasa por trial ni Mercado Pago",
+      owner: "system",
       requiresPayment: false,
       trialEligible: false,
     }

@@ -36,6 +36,7 @@ import { TrialBanner } from "@/components/trial-banner"
 import { LiteBreadcrumb } from "@/components/dashboard/lite-breadcrumb"
 import { getSubSaasExperience } from "@/lib/comercial/app-experience"
 import { EspecialistaLaunchBanner } from "@/components/servicios-especialista/especialista-launch-banner"
+import { isProtheusDashboardPath, protheusAccessBlocked } from "@/lib/comercial/protheus-license"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const {
@@ -83,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!mounted || !user) return
     if (pathname === "/dashboard/trial-vencido") return
+    if (pathname.startsWith("/dashboard/protheus/licencia")) return
 
     const enAllowlist = isPathInAnclaFiadoAllowlist(pathname)
 
@@ -92,6 +94,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const tieneAncla = Boolean(data?.access?.tieneAnclaGratis)
         const trialExpirado = Boolean(data?.trial?.expirado)
         const bloqueoTotal = Boolean(data?.access?.bloqueoTotal)
+        const modoLite = data?.access?.modoLite as string | null | undefined
+        const licenseStatus = data?.protheus?.status as string | undefined
+
+        // Protheus no usa el trial ni Mercado Pago del ERP. Solo licencia anual TOTVS.
+        if (isProtheusDashboardPath(pathname)) {
+          if (protheusAccessBlocked(licenseStatus)) {
+            router.replace("/dashboard/protheus/licencia")
+          }
+          return
+        }
+
+        if (modoLite === "protheus") return
 
         // Ancla gratis: puede seguir en rutas lite aunque el trial de pago haya vencido
         if (tieneAncla && enAllowlist) return

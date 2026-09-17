@@ -129,6 +129,13 @@ export const LITE_MENU_PATHS: Record<ModoLite, string[]> = {
     "/dashboard/configuracion",
     ...LITE_SHARED,
   ],
+  protheus: [
+    "/dashboard",
+    "/dashboard/protheus",
+    "/dashboard/apps/opo",
+    "/dashboard/configuracion",
+    ...LITE_SHARED,
+  ],
 }
 
 export function isMenuItemAllowedInModoLite(href: string, modoLite: ModoLite): boolean {

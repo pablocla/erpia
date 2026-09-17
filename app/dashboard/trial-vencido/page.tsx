@@ -18,6 +18,7 @@ export default function TrialVencidoPage() {
     tieneAnclaGratis?: boolean
     precioUpgradeArs?: number
     ofertaLema?: string
+    modoLite?: string | null
   } | null>(null)
 
   useEffect(() => {
@@ -115,6 +116,9 @@ export default function TrialVencidoPage() {
               <Link href="/dashboard/fiado">Volver a mi libreta</Link>
             </Button>
           )}
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/dashboard/protheus">Ir a Inversiones Protheus (licencia TOTVS)</Link>
+          </Button>
           <Button asChild variant="outline" className="w-full">
             <Link href="/claver/contacto">
               <LifeBuoy className="mr-2 h-4 w-4" />

@@ -66,6 +66,7 @@ export const FRIENDLY_SKU_NAMES: Record<string, string> = {
   "channel.mercadopago": "Mercado Pago",
   "channel.mercadolibre": "Mercado Libre",
   "bridge.opo_studio": "Puente OPO / SQL",
+  "edge.investments": "Inversiones Protheus",
   "impl.parametrizacion_remota": "Parametrización Remota",
   "core.ia": "Asistente IA",
   "core.claver": "Claver Core",

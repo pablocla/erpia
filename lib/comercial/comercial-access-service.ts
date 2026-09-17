@@ -170,6 +170,7 @@ export async function getComercialAccessState(empresaId: number): Promise<Comerc
   )
 
   const bloqueoTotal =
+    empresa?.modoLite !== "protheus" &&
     !mpAutorizado &&
     !tieneAnclaGratis &&
     Boolean(trial?.expirado) &&

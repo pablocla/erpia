@@ -4,6 +4,7 @@
  */
 
 import type { ModoLite } from "@/lib/comercial/pack-calle-catalog"
+import { isProtheusLicenseSku, vigenciaHastaLicenciaProtheus } from "@/lib/comercial/protheus-license"
 import { resolvePackCalle } from "@/lib/comercial/pack-calle-catalog"
 import { getEngancheBySku } from "@/lib/marketplace/enganche-catalog"
 import { resolveSku } from "@/lib/marketplace/catalog-resolver"
@@ -74,6 +75,20 @@ export const OFERTA_OFICIOS_ANCLA: OfertaComercial = {
   engancheIds: ["niche.oficios", "oficios"],
 }
 
+export const OFERTA_PROTHEUS_LICENCIA: OfertaComercial = {
+  id: "protheus-licencia",
+  nombre: "Licencia Inversiones Protheus",
+  lema: "Año de uso sobre SIGAFIN. No pasa por el cobro ni el trial de 14 días de Claver ERP.",
+  anclaGratis: [],
+  monetizar: ["edge.investments"],
+  precioPackArs: 89000,
+  modoLiteEntrada: "protheus",
+  trialDias: 0,
+  trialScope: "nada",
+  autoActivarMonetizados: true,
+  engancheIds: ["edge.investments", "protheus", "bridge.opo_studio"],
+}
+
 export const OFERTA_POS_ANCLA: OfertaComercial = {
   id: "pos-ancla",
   nombre: "POS + Libreta Fiado",
@@ -137,6 +152,7 @@ export const OFERTA_COBRANZA_AAS: OfertaComercial = {
 export const OFERTAS_COMERCIALES: OfertaComercial[] = [
   OFERTA_FIADO_ANCLA,
   OFERTA_OFICIOS_ANCLA,
+  OFERTA_PROTHEUS_LICENCIA,
   OFERTA_POS_ANCLA,
   OFERTA_CONTADOR,
   OFERTA_HARDWARE_POS,
@@ -189,6 +205,7 @@ export function resolveOferta(engancheId: string, modoLite?: ModoLite): OfertaCo
 
   if (modoLite === "fiado") return OFERTA_FIADO_ANCLA
   if (modoLite === "pos") return OFERTA_POS_ANCLA
+  if (modoLite === "protheus") return OFERTA_PROTHEUS_LICENCIA
 
   return OFERTA_CLASICO
 }
@@ -209,6 +226,7 @@ export function vigenciaParaSku(
   trialExpiresAt: Date,
 ): Date | null {
   if (oferta.anclaGratis.includes(sku)) return null
+  if (isProtheusLicenseSku(sku)) return vigenciaHastaLicenciaProtheus()
 
   if (oferta.trialScope === "nada") return null
   if (oferta.trialScope === "todo") return trialExpiresAt

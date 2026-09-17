@@ -45,6 +45,16 @@ export const ENGANCHES: EngancheProducto[] = [
     dolorResuelve: "Pérdida de control del fiado en papel / WhatsApp suelto",
   },
   {
+    sku: "edge.investments",
+    nombre: "Claver Inversiones Protheus",
+    lema: "Tesorería mark-to-market sobre SIGAFIN. Licencia anual TOTVS, no trial Claver.",
+    tier: "implementado",
+    nichos: ["horizontal"],
+    precioArs: 89000,
+    upsellA: ["bridge.opo_studio"],
+    dolorResuelve: "FINA716 sin cartera en vivo ni UI moderna para el tesorero",
+  },
+  {
     sku: "intang.cobranzas_wa",
     nombre: "Secretaria de Cobranzas WA",
     lema: "El link cobra. Vos seguís vendiendo.",

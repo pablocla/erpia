@@ -23,7 +23,7 @@ export function HelpScreen() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Entrá a Claver → Inversiones Protheus. Si el implementador ya cargó el REST, ves Z02 de tu empresa.
+            Entrá a Claver → Inversiones Protheus. Licencia anual TOTVS (no trial ni Mercado Pago). Si el REST está cargado, ves Z02.
           </CardContent>
         </Card>
         <Card>
@@ -75,7 +75,7 @@ export function HelpScreen() {
         <AccordionItem value="compile">
           <AccordionTrigger>Compilar REST (TDS)</AccordionTrigger>
           <AccordionContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Orden: FINZINV.PRW → FINZRES.PRW → CLVINV01.PRW → JOBFINZ03.PRW (descargá los archivos en la pestaña Boletín).</p>
+            <p>Orden: FINZINV.PRW → FINZRES.PRW → CLVINV01.PRW → JOBFINZ03.PRW (están en ADVPL de esta app).</p>
             <p>appserver.ini: [HTTPV11] Enable=1, [HTTPREST] con CORSEnable=1, URL=/rest.</p>
             <p>Health: GET https://HOST:8404/rest/api/claver/v1/investments/health</p>
           </AccordionContent>

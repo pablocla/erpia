@@ -44,6 +44,25 @@ export const MARKETPLACE_CATALOG: MarketplaceSku[] = [
     segmentoAds: ["general"],
     status: "disponible",
   },
+  {
+    sku: "edge.investments",
+    nombre: "Claver Inversiones Protheus",
+    categoria: "TOTVS / Protheus",
+    precioArs: 89000,
+    tipoCobro: "recurrente",
+    autoCertLevel: "HUMAN_GATE",
+    paisesHabilitados: ["AR", "BR"],
+    i18n: {
+      "es-AR": {
+        nombre: "Inversiones Protheus",
+        descripcion: "Licencia anual TOTVS. No pasa por Mercado Pago ni trial de 14 días del ERP.",
+        packOnboardSubject: "Licencia Inversiones Protheus",
+      },
+    },
+    segmentoAds: ["industria", "tesoreria"],
+    status: "disponible",
+    trialDias: 0,
+  },
   
   // --- Ventas y Front-Office ---
   {

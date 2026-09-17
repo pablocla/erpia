@@ -8,6 +8,7 @@ import { getAuthHeaders, useAuthStore } from "@/lib/stores/auth-store"
 import { formatTrialCountdown, type TrialStatus } from "@/lib/comercial/trial-service"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { usePathname } from "next/navigation"
 
 interface TrialBannerProps {
   /** Slug del sub-SaaS activo para checkout MP (ej. fiado, cobra, turnos). */
@@ -21,10 +22,12 @@ interface AccessPayload {
   ofertaLema?: string | null
   bloqueoTotal?: boolean
   mpAutorizado?: boolean
+  modoLite?: string | null
 }
 
 export function TrialBanner({ subscribeSlug = "fiado" }: TrialBannerProps) {
   const token = useAuthStore((s) => s.token)
+  const pathname = usePathname()
   const { toast } = useToast()
   const [trial, setTrial] = useState<TrialStatus | null>(null)
   const [access, setAccess] = useState<AccessPayload | null>(null)
@@ -84,6 +87,7 @@ export function TrialBanner({ subscribeSlug = "fiado" }: TrialBannerProps) {
     }
   }
 
+  if (pathname.startsWith("/dashboard/protheus") || access?.modoLite === "protheus") return null
   if (!trial || dismissed || access?.mpAutorizado || access?.tieneAnclaGratis) return null
 
   const tieneAncla = Boolean(access?.tieneAnclaGratis)

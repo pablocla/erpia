@@ -9,7 +9,7 @@ import { ENGANCHE_POR_RUBRO } from "@/lib/ops/comercial-relevamiento-enganche"
 import { NICHE_APPS } from "@/lib/niche/niche-apps-catalog"
 import { MICRO_SAAS_PORTFOLIO } from "@/lib/comercial/micro-saas-portfolio"
 
-export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo" | "fumigacion" | "prestamista" | "asociacion"
+export type ModoLite = "fiado" | "cobranza" | "pos" | "completo" | "niche" | "servicios" | "leo" | "fumigacion" | "prestamista" | "asociacion" | "protheus"
 
 export interface PackCalle {
   id: string
@@ -35,6 +35,7 @@ const LANDING: Record<ModoLite, string> = {
   fumigacion: "/dashboard/fumigacion",
   prestamista: "/dashboard/prestamos",
   asociacion: "/dashboard/grow",
+  protheus: "/dashboard/protheus",
 }
 
 function packFromBundle(bundleId: string, modoLite: ModoLite, vendibleHoy = true): PackCalle | null {
@@ -97,6 +98,17 @@ export const PACKS_CALLE: PackCalle[] = [
     landingPath: LANDING.pos,
     vendibleHoy: true,
   },
+  {
+    id: "edge.investments",
+    nombre: "Inversiones Protheus",
+    lema: "Licencia anual TOTVS. Sin trial ni Mercado Pago.",
+    precioArs: 89000,
+    modoLite: "protheus",
+    tipo: "sku",
+    skus: ["edge.investments"],
+    landingPath: LANDING.protheus,
+    vendibleHoy: true,
+  },
 ].filter(Boolean) as PackCalle[]
 
 // Portfolio freemium 11 — solo SKUs aún no listados (evita duplicar fiado/cobrá)
@@ -137,6 +149,8 @@ const MODO_POR_ENGANCHE: Record<string, ModoLite> = {
   "pos.balanza_peso": "pos",
   "pos.core": "pos",
   "core.claver": "pos",
+  "edge.investments": "protheus",
+  "bridge.opo_studio": "protheus",
   ...Object.fromEntries(
     NICHE_APPS.map((a) => [a.sku, (a.engine === "libreta" ? "fiado" : "niche") as ModoLite]),
   ),

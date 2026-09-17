@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthContext } from "@/lib/auth/empresa-guard"
 import { getComercialAccessState } from "@/lib/comercial/comercial-access-service"
+import { getProtheusLicenseState } from "@/lib/comercial/protheus-license"
 
 export async function GET(request: NextRequest) {
   const ctx = await getAuthContext(request)
   if (!ctx.ok) return ctx.response
 
-  const access = await getComercialAccessState(ctx.auth.empresaId)
+  const [access, protheus] = await Promise.all([
+    getComercialAccessState(ctx.auth.empresaId),
+    getProtheusLicenseState(ctx.auth.empresaId),
+  ])
 
   return NextResponse.json({
     trial: access.trial,
@@ -23,5 +27,6 @@ export async function GET(request: NextRequest) {
       mpAutorizado: access.mpAutorizado,
       modoLite: access.modoLite,
     },
+    protheus,
   })
 }

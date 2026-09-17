@@ -18,6 +18,7 @@ import {
 import { getProductHooks } from "./product-hooks"
 import { prepararDependenciasNicho } from "@/lib/niche/niche-provision"
 import { assertSkuProvisionable } from "@/lib/marketplace/sku-availability"
+import { isProtheusLicenseSku, vigenciaHastaLicenciaProtheus } from "@/lib/comercial/protheus-license"
 import { precioCobrableSku } from "@/lib/comercial/precio-minimo"
 
 export interface ProductoEstado {
@@ -83,7 +84,12 @@ export async function activarProducto(empresaId: number, sku: string, origen = "
   await upsertSuscripcion(empresaId, {
     sku,
     activo: true,
-    metadata: { origen, activadoAt: new Date().toISOString() },
+    vigenciaHasta: isProtheusLicenseSku(sku) ? vigenciaHastaLicenciaProtheus() : undefined,
+    metadata: {
+      origen,
+      activadoAt: new Date().toISOString(),
+      ...(isProtheusLicenseSku(sku) ? { cobro: "licencia_anual_totvs" } : {}),
+    },
   })
 
   await setFeature(empresaId, producto?.featureKey ?? featureKeyForSku(sku), { activado: true })

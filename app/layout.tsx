@@ -132,8 +132,10 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.getRegistrations().then((regs) => {
+                  for (let reg of regs) {
+                    reg.unregister();
+                  }
                 });
               }
             `,

@@ -4,12 +4,20 @@ import { getPublicAppUrl } from "@/lib/config/public-app-url"
 /** URL canónica del sitio público (misma fuente que webhooks MP / billing) */
 export function getSiteUrl(): string {
   const fromPublic = getPublicAppUrl()
-  if (fromPublic && !fromPublic.includes("localhost")) return fromPublic
-  // Producción sin env: dominio de marca
+  if (fromPublic && !fromPublic.includes("localhost") && isHttpUrl(fromPublic)) return fromPublic
   if (!process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_BASE_URL && !process.env.VERCEL_URL) {
     return `https://${CLAVER_GROUP.domain}`
   }
-  return fromPublic
+  return isHttpUrl(fromPublic) ? fromPublic : `https://${CLAVER_GROUP.domain}`
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value)
+    return u.protocol === "http:" || u.protocol === "https:"
+  } catch {
+    return false
+  }
 }
 
 export const LANDING_KEYWORDS = [

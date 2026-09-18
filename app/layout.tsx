@@ -98,10 +98,11 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const locale = await getEffectiveLocale();
+  const messageKey = locale === "en" || locale === "en-US" ? "en-US" : locale === "es-MX" ? "es-MX" : "es-AR"
   let messages;
   try {
-    messages = (await import(`@/messages/${locale}.json`)).default;
-  } catch (error) {
+    messages = (await import(`@/messages/${messageKey}.json`)).default;
+  } catch {
     messages = (await import(`@/messages/es-AR.json`)).default;
   }
 

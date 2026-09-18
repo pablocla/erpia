@@ -25,6 +25,8 @@ const serwist = new Serwist({
         }
         if (url.pathname.startsWith("/api/")) return true
         if (url.pathname.startsWith("/login")) return true
+        if (url.pathname.startsWith("/_next/data/")) return true
+        if (request.mode === "navigate" && (url.pathname === "/" || url.pathname === "")) return true
         if (
           request.mode === "navigate" &&
           url.pathname.startsWith("/dashboard") &&

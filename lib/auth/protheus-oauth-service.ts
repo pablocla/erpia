@@ -222,7 +222,7 @@ export async function publicTenantCard(slug: string) {
   return {
     slug: slugFixed,
     nombre: empresa.razonSocial || empresa.nombre,
-    loginPath: `/p/${slugFixed}/login`,
+    loginPath: `/tenant/${slugFixed}/login`,
     restReady: tenantRestReady(config),
   }
 }

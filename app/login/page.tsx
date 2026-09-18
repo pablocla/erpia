@@ -279,16 +279,23 @@ function LoginPageContent() {
               {enviandoLogin ? "Ingresando…" : "Iniciar sesión"}
             </Button>
 
-            <div className="flex items-center justify-between text-sm gap-3">
-              <Link
-                href={activarRegisterHref(activarParam)}
-                className="text-primary hover:underline font-medium"
-              >
-                Crear cuenta
-              </Link>
-              <Link href="/login/forgot-password" className="text-muted-foreground hover:underline">
-                ¿Olvidaste la contraseña?
-              </Link>
+            <div className="flex flex-col gap-2 mt-4">
+              <div className="flex items-center justify-between text-sm gap-3">
+                <Link
+                  href={activarRegisterHref(activarParam)}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Crear cuenta
+                </Link>
+                <Link href="/login/forgot-password" className="text-muted-foreground hover:underline">
+                  ¿Olvidaste la contraseña?
+                </Link>
+              </div>
+              <div className="text-center mt-2">
+                <Link href="/tenant" className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-4">
+                  ¿Tenés un entorno Protheus? Ingresá acá
+                </Link>
+              </div>
             </div>
           </form>
         </CardContent>

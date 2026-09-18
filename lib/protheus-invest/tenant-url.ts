@@ -17,7 +17,7 @@ export function slugifyTenantName(nombre: string): string {
 }
 
 export function tenantLoginPath(slug: string): string {
-  return `/p/${slug}/login`
+  return `/tenant/${slug}/login`
 }
 
 export function tenantPublicUrl(slug: string, origin?: string): string {

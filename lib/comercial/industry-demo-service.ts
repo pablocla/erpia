@@ -233,6 +233,11 @@ export async function provisionIndustryDemo(
       skusRequiereAnalista = enganche.skusRequiereAnalista
       skusBloqueados = enganche.skusBloqueados
     }
+
+    if (template.id === "protheus") {
+      const { patchOpoConfig } = await import("@/lib/opo/opo-config-service")
+      await patchOpoConfig(empresaId, { origen: "protheus", activo: true, protheusSlug: "demo-protheus" })
+    }
   }
 
   // Retail ya sembró productos en onboarding — evitar catálogo duplicado DEMO-/ONB-

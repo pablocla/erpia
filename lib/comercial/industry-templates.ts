@@ -772,6 +772,19 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
     goldenPath: "/dashboard/ventas",
     menuLabels: {},
   }),
+  tpl({
+    id: "protheus",
+    rubro: "otro",
+    label: "Totvs Protheus",
+    emoji: "⚙️",
+    group: "Industria & especializados",
+    tagline: "Demostración de Claver con ERP Totvs Protheus (Mock Data).",
+    wowMoment: "Login unificado para vendedores y lectura rápida de clientes/productos Protheus.",
+    goldenPath: "/dashboard/protheus",
+    engancheId: "pos.core",
+    featured: true,
+    menuLabels: { "/dashboard/protheus": "Portal Protheus" },
+  }),
 ]
 
 const BY_ID = new Map(INDUSTRY_TEMPLATES.map((t) => [t.id, t]))

@@ -51,6 +51,9 @@ export function HoldingHome() {
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="text-slate-300">
+              <Link href="/tenant">Protheus</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="text-slate-300">
               <Link href="/login">Login</Link>
             </Button>
             <Button asChild size="sm">

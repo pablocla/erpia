@@ -88,7 +88,8 @@ export function InvestScreen() {
       </div>
 
       {vencen.length > 0 && (
-        <PiCard className="border-[#d4a45a]/40 bg-[rgb(212_164_90/0.16)] px-4 py-3 text-sm text-[#d4a45a]">
+        <PiCard className="px-4 py-3 text-sm">
+          <PiBadge tone="warn" className="mr-2">Aviso</PiBadge>
           Job de vencimientos: {vencen.map((v) => `${v.i.ticker} (${v.d === 0 ? "hoy" : `${v.d} d`})`).join(" · ")}
         </PiCard>
       )}
@@ -110,18 +111,18 @@ export function InvestScreen() {
           />
         ))}
         {invests.length === 0 && (
-          <PiCard className="p-5 text-sm text-[#8fa3b3]">No hay operaciones en este tenant (o el ERP no devolvió datos).</PiCard>
+          <PiCard className="p-5 text-sm text-muted-foreground">No hay operaciones en este tenant (o el ERP no devolvió datos).</PiCard>
         )}
       </div>
 
       <PiCard className="overflow-hidden">
-        <div className="border-b border-[rgb(232_238_242/0.1)] px-5 py-3">
+        <div className="border-b border-border px-5 py-3">
           <h2 className="text-sm font-medium">Movimientos bancarios</h2>
-          <p className="text-xs text-[#8fa3b3]">ND al constituir · dos NC al rescatar. Nunca un INSERT directo.</p>
+          <p className="text-xs text-muted-foreground">ND al constituir · dos NC al rescatar. Nunca un INSERT directo.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="text-xs uppercase tracking-wider text-[#8fa3b3]">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-5 py-2 font-medium">Fecha</th>
                 <th className="px-5 py-2 font-medium">Tipo</th>
@@ -132,13 +133,13 @@ export function InvestScreen() {
             </thead>
             <tbody>
               {[...asientos].reverse().map((a) => (
-                <tr key={a.id} className="border-t border-[rgb(232_238_242/0.1)]">
-                  <td className="px-5 py-2.5 text-[#8fa3b3]">{dmy(a.fecha)}</td>
+                <tr key={a.id} className="border-t border-border">
+                  <td className="px-5 py-2.5 text-muted-foreground">{dmy(a.fecha)}</td>
                   <td className="px-5 py-2.5">
                     <PiBadge tone={a.tipo === "ND" ? "warn" : "ok"}>{a.tipo}</PiBadge>
                   </td>
                   <td className="px-5 py-2.5 tabular-nums">{a.naturaleza}</td>
-                  <td className="px-5 py-2.5 text-[#8fa3b3]">{a.histor}</td>
+                  <td className="px-5 py-2.5 text-muted-foreground">{a.histor}</td>
                   <td className="px-5 py-2.5 text-right tabular-nums">{money(a.valor)}</td>
                 </tr>
               ))}
@@ -153,17 +154,17 @@ export function InvestScreen() {
 function Kpi({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: "ok" | "bad" }) {
   return (
     <PiCard className="p-5">
-      <div className="text-xs uppercase tracking-wider text-[#8fa3b3]">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div
         className={cn(
           "mt-2 font-medium tabular-nums text-2xl",
-          tone === "ok" && "text-[#7dba7a]",
-          tone === "bad" && "text-[#d07070]",
+          tone === "ok" && "text-[oklch(0.72_0.14_145)]",
+          tone === "bad" && "text-destructive",
         )}
       >
         {value}
       </div>
-      <p className="mt-2 text-xs text-[#8fa3b3]">{hint}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
     </PiCard>
   )
 }
@@ -198,7 +199,7 @@ function InvestCard({
 
   return (
     <PiCard className="overflow-hidden">
-      <button type="button" onClick={onToggle} className="flex w-full flex-col gap-3 p-5 text-left sm:flex-row sm:items-center sm:justify-between">
+      <button type="button" onClick={onToggle} className="flex w-full flex-col gap-3 p-5 text-left sm:flex-row sm:items-center sm:justify-between hover:bg-accent/50 transition-colors">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{inv.ticker}</span>
@@ -206,14 +207,14 @@ function InvestCard({
             {tipo && <PiBadge tone="neutral">{RENTA_LABEL[tipo.renta]}</PiBadge>}
             <PiBadge tone={activa ? "info" : "ok"}>{ESTADO_LABEL[inv.estado]}</PiBadge>
           </div>
-          <p className="mt-1 text-sm text-[#8fa3b3]">
+          <p className="mt-1 text-sm text-muted-foreground">
             {inv.nombre} · {bank?.name ?? inv.bancoId} · SA6 {bank?.sa6 ?? inv.bancoId}
             {inv.vence ? ` · vence ${dmy(inv.vence)}` : " · sin vencimiento"}
           </p>
         </div>
         <div className="text-left sm:text-right">
           <div className="tabular-nums text-lg">{money(valor)}</div>
-          <div className={cn("text-xs", pnl >= 0 ? "text-[#7dba7a]" : "text-[#d07070]")}>
+          <div className={cn("text-xs", pnl >= 0 ? "text-[oklch(0.72_0.14_145)]" : "text-destructive")}>
             {pnl >= 0 ? "+" : ""}
             {money(pnl)} vs capital {compact(inv.capital)}
           </div>
@@ -221,7 +222,7 @@ function InvestCard({
       </button>
 
       {open && (
-        <div className="border-t border-[rgb(232_238_242/0.1)] px-5 py-4">
+        <div className="border-t border-border px-5 py-4">
           <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <Meta k="Nro. operación" v={inv.id} />
             <Meta k="Moneda" v={MONEDA_LABEL[inv.moneda]} />
@@ -233,10 +234,10 @@ function InvestCard({
             <Meta k="Última valuación" v={last ? `${dmy(last.fecha)} · ${ORIGEN_LABEL[last.origen]}` : "—"} />
           </dl>
 
-          <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-[#8fa3b3]">Valuación diaria</h3>
+          <h3 className="mt-6 text-xs font-medium uppercase tracking-wider text-muted-foreground">Valuación diaria</h3>
           <div className="mt-2 overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider text-[#8fa3b3]">
+              <thead className="text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="py-2 pr-4 font-medium">Fecha</th>
                   <th className="py-2 pr-4 font-medium">Precio</th>
@@ -247,11 +248,11 @@ function InvestCard({
               </thead>
               <tbody>
                 {[...rows].reverse().map((r) => (
-                  <tr key={r.id} className="border-t border-[rgb(232_238_242/0.1)]">
-                    <td className="py-2 pr-4 text-[#8fa3b3]">{dmy(r.fecha)}</td>
+                  <tr key={r.id} className="border-t border-border">
+                    <td className="py-2 pr-4 text-muted-foreground">{dmy(r.fecha)}</td>
                     <td className="py-2 pr-4 tabular-nums">{price(r.precio)}</td>
                     <td className="py-2 pr-4 tabular-nums">{money(r.valor)}</td>
-                    <td className={cn("py-2 pr-4 tabular-nums", r.rtoDia >= 0 ? "text-[#7dba7a]" : "text-[#d07070]")}>
+                    <td className={cn("py-2 pr-4 tabular-nums", r.rtoDia >= 0 ? "text-[oklch(0.72_0.14_145)]" : "text-destructive")}>
                       {r.rtoDia >= 0 ? "+" : ""}
                       {money(r.rtoDia)}
                     </td>
@@ -267,7 +268,7 @@ function InvestCard({
           </div>
 
           {moves.length > 0 && (
-            <p className="mt-4 text-xs text-[#8fa3b3]">
+            <p className="mt-4 text-xs text-muted-foreground">
               SE5: {moves.map((m) => `${m.tipo} ${m.naturaleza} ${compact(m.valor)}`).join(" · ")}
             </p>
           )}
@@ -276,7 +277,7 @@ function InvestCard({
             <RescueBox inv={inv} natCap={tipo.natCap} natInt={tipo.natInt} suggested={valor} onRescue={onRescue} />
           )}
           {inv.resultado != null && (
-            <p className="mt-4 text-sm text-[#7dba7a]">Rescatada. Resultado {money(inv.resultado)} (interés / pérdida).</p>
+            <p className="mt-4 text-sm text-[oklch(0.72_0.14_145)]">Rescatada. Resultado {money(inv.resultado)} (interés / pérdida).</p>
           )}
         </div>
       )}
@@ -303,9 +304,9 @@ function RescueBox({
   const { capital, interes } = splitRescue(inv.capital, n)
 
   return (
-    <div className="mt-5 rounded-md border border-[rgb(232_238_242/0.1)] bg-[#182430] p-4">
+    <div className="mt-5 rounded-md border border-border bg-secondary p-4">
       <div className="text-sm font-medium">Rescatar (FINZRES)</div>
-      <p className="mt-1 text-xs text-[#8fa3b3]">
+      <p className="mt-1 text-xs text-muted-foreground">
         El tesorero carga el monto acreditado. El sistema separa capital ({natCap}) de interés ({natInt}).
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -317,13 +318,13 @@ function RescueBox({
         </Field>
       </div>
       <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-        <div className="rounded-md bg-[#1e2d3b] px-3 py-2">
+        <div className="rounded-md bg-muted px-3 py-2">
           NC capital · {natCap}
-          <div className="tabular-nums text-sm text-[#e8eef2]">{money(capital)}</div>
+          <div className="tabular-nums text-sm text-foreground">{money(capital)}</div>
         </div>
-        <div className="rounded-md bg-[#1e2d3b] px-3 py-2">
+        <div className="rounded-md bg-muted px-3 py-2">
           {interes >= 0 ? `NC intereses · ${natInt}` : `ND pérdida · ${natInt}`}
-          <div className={cn("tabular-nums text-sm", interes >= 0 ? "text-[#7dba7a]" : "text-[#d07070]")}>
+          <div className={cn("tabular-nums text-sm", interes >= 0 ? "text-[oklch(0.72_0.14_145)]" : "text-destructive")}>
             {money(Math.abs(interes))}
           </div>
         </div>
@@ -440,7 +441,7 @@ function NewInvestForm({
         <PiInput type="date" value={form.vence} onChange={(e) => setForm({ ...form, vence: e.target.value })} />
       </Field>
       {tipo && (
-        <p className="text-xs text-[#8fa3b3] sm:col-span-2 lg:col-span-3">
+        <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-3">
           Al confirmar: ND {tipo.natCap} por el capital.{" "}
           {tipo.usaApi ? "El job PPI (18:30) llena Z03." : "El devengamiento de tasa fija llena Z03."}
         </p>
@@ -474,7 +475,7 @@ function NewInvestForm({
 function Meta({ k, v }: { k: string; v: string }) {
   return (
     <div>
-      <dt className="text-xs text-[#8fa3b3]">{k}</dt>
+      <dt className="text-xs text-muted-foreground">{k}</dt>
       <dd className="mt-0.5 tabular-nums">{v}</dd>
     </div>
   )
@@ -483,7 +484,7 @@ function Meta({ k, v }: { k: string; v: string }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs text-[#8fa3b3]">{label}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
       {children}
     </label>
   )

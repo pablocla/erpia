@@ -24,7 +24,7 @@ export function CajaScreen({ onGo }: { onGo: (tab: string) => void }) {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Caja neta</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">
+        <p className="mt-1 text-sm text-muted-foreground">
           Lo que entra, lo que el fisco y las comisiones se llevan, lo que queda para girar. Saldos SA6.
         </p>
       </header>
@@ -39,7 +39,7 @@ export function CajaScreen({ onGo }: { onGo: (tab: string) => void }) {
         <PiCard className="p-5 lg:col-span-3">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="text-sm font-medium">Proyección 30 días</h2>
-            <span className="text-xs text-[#8fa3b3]">millones ARS</span>
+            <span className="text-xs text-muted-foreground">millones ARS</span>
           </div>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
@@ -65,20 +65,20 @@ export function CajaScreen({ onGo }: { onGo: (tab: string) => void }) {
         <PiCard className="flex flex-col gap-3 p-5 lg:col-span-2">
           <h2 className="text-sm font-medium">Posición SA6</h2>
           {s.banks.map((b) => (
-            <div key={b.id} className="flex items-start justify-between gap-3 border-t border-[rgb(232_238_242/0.1)] pt-3 first:border-0 first:pt-0">
+            <div key={b.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
               <div>
                 <div className="text-sm">{b.name}</div>
-                <div className="text-[11px] text-[#8fa3b3]">SA6 {b.sa6} · {b.cbu}</div>
+                <div className="text-[11px] text-muted-foreground">SA6 {b.sa6} · {b.cbu}</div>
               </div>
               <div className="text-right">
                 <div className="tabular-nums text-sm">{compact(b.saldo)}</div>
-                <div className="text-[11px] text-[#8fa3b3]">pend. {compact(b.pendiente)}</div>
+                <div className="text-[11px] text-muted-foreground">pend. {compact(b.pendiente)}</div>
               </div>
             </div>
           ))}
-          <div className="mt-auto border-t border-[rgb(232_238_242/0.1)] pt-3 text-xs text-[#8fa3b3]">
+          <div className="mt-auto border-t border-border pt-3 text-xs text-muted-foreground">
             Inversiones MTM {money(t.investVigente)}
-            <span className={t.pnlInvertido >= 0 ? " text-[#7dba7a]" : " text-[#d07070]"}>
+            <span className={t.pnlInvertido >= 0 ? " text-[oklch(0.72_0.14_145)]" : " text-destructive"}>
               {" "}
               ({t.pnlInvertido >= 0 ? "+" : ""}
               {compact(t.pnlInvertido)})
@@ -99,12 +99,12 @@ export function CajaScreen({ onGo }: { onGo: (tab: string) => void }) {
 }
 
 function Kpi({ label, value, hint, tone }: { label: string; value: number; hint: string; tone: "ok" | "bad" | "info" }) {
-  const color = tone === "ok" ? "text-[#7dba7a]" : tone === "bad" ? "text-[#d07070]" : "text-[#3d9b8f]"
+  const color = tone === "ok" ? "text-[oklch(0.72_0.14_145)]" : tone === "bad" ? "text-destructive" : "text-primary"
   return (
     <PiCard className="p-5">
-      <div className="text-xs uppercase tracking-wider text-[#8fa3b3]">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={`mt-2 tabular-nums text-2xl font-medium ${color}`}>{money(value)}</div>
-      <p className="mt-2 text-xs text-[#8fa3b3]">{hint}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
     </PiCard>
   )
 }
@@ -112,10 +112,10 @@ function Kpi({ label, value, hint, tone }: { label: string; value: number; hint:
 function Mini({ onClick, title, value, sub }: { onClick: () => void; title: string; value: string; sub: string }) {
   return (
     <button type="button" onClick={onClick} className="text-left">
-      <PiCard className="p-4 transition-colors hover:bg-[#182430]">
-        <div className="text-xs text-[#8fa3b3]">{title}</div>
+      <PiCard className="p-4 transition-colors hover:bg-secondary">
+        <div className="text-xs text-muted-foreground">{title}</div>
         <div className="mt-1 tabular-nums text-lg">{value}</div>
-        <div className="text-xs text-[#8fa3b3]">{sub}</div>
+        <div className="text-xs text-muted-foreground">{sub}</div>
       </PiCard>
     </button>
   )
@@ -137,11 +137,11 @@ export function CarteraScreen() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Cartera eCheq</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">Plata que todavía no es plata. En cartera {money(viva)}.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Plata que todavía no es plata. En cartera {money(viva)}.</p>
       </header>
-      <div className="overflow-x-auto rounded-xl border border-[rgb(232_238_242/0.1)]">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-[#182430] text-xs uppercase tracking-wide text-[#8fa3b3]">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               {["Valor", "Cliente", "Banco", "Vence", "Monto", "Estado", ""].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -152,16 +152,16 @@ export function CarteraScreen() {
             {valores.map((v) => {
               const bank = banks.find((b) => b.id === v.bancoId)
               return (
-                <tr key={v.id} className="border-t border-[rgb(232_238_242/0.1)]">
+                <tr key={v.id} className="border-t border-border">
                   <td className="px-4 py-3">
                     <div className="font-medium">{v.numero}</div>
-                    <div className="text-xs text-[#8fa3b3]">{v.tipo}</div>
+                    <div className="text-xs text-muted-foreground">{v.tipo}</div>
                   </td>
                   <td className="px-4 py-3">
                     {v.cliente}
-                    <div className="text-xs text-[#8fa3b3]">{v.cuit}</div>
+                    <div className="text-xs text-muted-foreground">{v.cuit}</div>
                   </td>
-                  <td className="px-4 py-3 text-[#8fa3b3]">{bank?.sa6}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{bank?.sa6}</td>
                   <td className="px-4 py-3 tabular-nums">{dmy(v.vence)}</td>
                   <td className="px-4 py-3 tabular-nums">{money(v.monto)}</td>
                   <td className="px-4 py-3">
@@ -192,25 +192,25 @@ export function FiscalScreen() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Caja fiscal</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">Facturaste más de lo que te dejan. El saldo a favor no es caja.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Facturaste más de lo que te dejan. El saldo a favor no es caja.</p>
       </header>
       <div className="grid gap-3 sm:grid-cols-3">
         <PiCard className="p-5">
-          <div className="text-xs uppercase tracking-wider text-[#8fa3b3]">Percibido esta semana</div>
-          <div className="mt-2 tabular-nums text-2xl text-[#d07070]">{money(t.percibido)}</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Percibido esta semana</div>
+          <div className="mt-2 tabular-nums text-2xl text-destructive">{money(t.percibido)}</div>
         </PiCard>
         <PiCard className="p-5">
-          <div className="text-xs uppercase tracking-wider text-[#8fa3b3]">Saldo a favor IIBB</div>
-          <div className="mt-2 tabular-nums text-2xl text-[#d4a45a]">{money(t.saldoFavor)}</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Saldo a favor IIBB</div>
+          <div className="mt-2 tabular-nums text-2xl text-[oklch(0.78_0.12_80)]">{money(t.saldoFavor)}</div>
         </PiCard>
         <PiCard className="p-5">
-          <div className="text-xs uppercase tracking-wider text-[#8fa3b3]">Caja neta post fisco</div>
-          <div className="mt-2 tabular-nums text-2xl text-[#7dba7a]">{money(t.queda)}</div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Caja neta post fisco</div>
+          <div className="mt-2 tabular-nums text-2xl text-[oklch(0.72_0.14_145)]">{money(t.queda)}</div>
         </PiCard>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-[rgb(232_238_242/0.1)]">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-[#182430] text-xs uppercase tracking-wide text-[#8fa3b3]">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               {["Fecha", "Impuesto", "Jurisdicción", "Tipo", "Origen", "Monto"].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -219,14 +219,14 @@ export function FiscalScreen() {
           </thead>
           <tbody>
             {s.fiscal.map((f) => (
-              <tr key={f.id} className="border-t border-[rgb(232_238_242/0.1)]">
+              <tr key={f.id} className="border-t border-border">
                 <td className="px-4 py-3 tabular-nums">{dmy(f.fecha)}</td>
                 <td className="px-4 py-3">{f.impuesto}</td>
                 <td className="px-4 py-3">{f.jur}</td>
                 <td className="px-4 py-3">
                   <PiBadge tone={f.tipo === "saldo" ? "warn" : f.tipo === "percepcion" ? "bad" : "info"}>{f.tipo}</PiBadge>
                 </td>
-                <td className="px-4 py-3 text-[#8fa3b3]">{f.origen}</td>
+                <td className="px-4 py-3 text-muted-foreground">{f.origen}</td>
                 <td className="px-4 py-3 tabular-nums">{money(f.monto)}</td>
               </tr>
             ))}
@@ -251,11 +251,11 @@ export function RiesgoScreen() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Riesgo al pedido</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">Consultá CUIT contra BCRA + constancia ARCA antes de confirmar SC5.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Consultá CUIT contra BCRA + constancia ARCA antes de confirmar SC5.</p>
       </header>
       <PiCard className="flex flex-col gap-3 p-5 sm:flex-row sm:items-end">
         <label className="flex-1">
-          <div className="mb-1.5 text-xs text-[#8fa3b3]">CUIT / cliente</div>
+          <div className="mb-1.5 text-xs text-muted-foreground">CUIT / cliente</div>
           <PiInput placeholder="30-55556666-7" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
         <PiButton
@@ -274,7 +274,7 @@ export function RiesgoScreen() {
         <PiCard className="grid gap-4 p-5 sm:grid-cols-2">
           <div>
             <div className="text-lg font-medium">{found.nombre}</div>
-            <div className="text-sm text-[#8fa3b3]">{found.cuit}</div>
+            <div className="text-sm text-muted-foreground">{found.cuit}</div>
           </div>
           <div className="flex flex-wrap gap-2">
             <PiBadge tone={found.bcra <= 2 ? "ok" : found.bcra === 3 ? "warn" : "bad"}>BCRA sit. {found.bcra}</PiBadge>
@@ -284,9 +284,9 @@ export function RiesgoScreen() {
           </div>
         </PiCard>
       )}
-      <div className="overflow-x-auto rounded-xl border border-[rgb(232_238_242/0.1)]">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-[#182430] text-xs uppercase tracking-wide text-[#8fa3b3]">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               {["Cliente", "CUIT", "BCRA", "Rechazos", "IVA", "Límite"].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -295,7 +295,7 @@ export function RiesgoScreen() {
           </thead>
           <tbody>
             {clientes.map((c) => (
-              <tr key={c.id} className="border-t border-[rgb(232_238_242/0.1)]">
+              <tr key={c.id} className="border-t border-border">
                 <td className="px-4 py-3">{c.nombre}</td>
                 <td className="px-4 py-3 tabular-nums">{c.cuit}</td>
                 <td className="px-4 py-3">{c.bcra}</td>
@@ -330,17 +330,17 @@ export function ConectoresScreen() {
                 <span className="font-medium">{c.name}</span>
                 <PiBadge tone={c.on ? "ok" : "neutral"}>{c.on ? "on" : "off"}</PiBadge>
               </div>
-              <p className="mt-1 text-xs text-[#8fa3b3]">{c.source}</p>
-              {c.lastSync && <p className="mt-2 text-xs text-[#8fa3b3]">Último sync {c.lastSync}</p>}
+              <p className="mt-1 text-xs text-muted-foreground">{c.source}</p>
+              {c.lastSync && <p className="mt-2 text-xs text-muted-foreground">Último sync {c.lastSync}</p>}
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={c.on}
               onClick={() => toggleConnector(c.id)}
-              className={cn("relative h-7 w-12 shrink-0 rounded-full", c.on ? "bg-[#3d9b8f]" : "bg-[#1e2d3b]")}
+              className={cn("relative h-7 w-12 shrink-0 rounded-full", c.on ? "bg-primary" : "bg-muted")}
             >
-              <span className={cn("absolute top-0.5 left-0.5 size-6 rounded-full bg-[#e8eef2] transition-transform", c.on && "translate-x-5")} />
+              <span className={cn("absolute top-0.5 left-0.5 size-6 rounded-full bg-foreground transition-transform", c.on && "translate-x-5")} />
             </button>
           </PiCard>
         ))}
@@ -362,13 +362,13 @@ export function BoletinScreen() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Boletín técnico</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">
+        <p className="mt-1 text-sm text-muted-foreground">
           Lo que el socio dejó en alineamientos, compilable. Protheus sigue siendo el system of record.
         </p>
       </header>
-      <div className="overflow-x-auto rounded-xl border border-[rgb(232_238_242/0.1)]">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-[#182430] text-xs uppercase tracking-wide text-[#8fa3b3]">
+          <thead className="bg-secondary text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               {["Tabla", "Rol", "Contrato"].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium">{h}</th>
@@ -377,18 +377,18 @@ export function BoletinScreen() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r[0]} className="border-t border-[rgb(232_238_242/0.1)]">
+              <tr key={r[0]} className="border-t border-border">
                 <td className="px-4 py-3 font-medium tabular-nums">{r[0]}</td>
                 <td className="px-4 py-3">{r[1]}</td>
-                <td className="px-4 py-3 text-[#8fa3b3]">{r[2]}</td>
+                <td className="px-4 py-3 text-muted-foreground">{r[2]}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <PiCard className="p-5 text-sm text-[#8fa3b3]">
-        REST: <code className="text-[#3d9b8f]">/api/claver/v1/investments/*</code> en CLVINV01.PRW. Compilar después de crear SX3.
-        Health: <code className="text-[#3d9b8f]">GET …/health</code>. Esta página lo prueba con el panel de arriba.
+      <PiCard className="p-5 text-sm text-muted-foreground">
+        REST: <code className="text-primary">/api/claver/v1/investments/*</code> en CLVINV01.PRW. Compilar después de crear SX3.
+        Health: <code className="text-primary">GET …/health</code>. Esta página lo prueba con el panel de arriba.
       </PiCard>
     </div>
   )

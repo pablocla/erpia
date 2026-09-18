@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 export function PiCard({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("rounded-xl border border-[rgb(232_238_242/0.1)] bg-[#121c26]", className)}
+      className={cn("rounded-xl border border-border bg-card text-card-foreground", className)}
       {...props}
     />
   )
@@ -15,11 +15,11 @@ export function PiBadge({
   ...props
 }: React.ComponentProps<"span"> & { tone?: "neutral" | "ok" | "warn" | "bad" | "info" }) {
   const tones = {
-    neutral: "bg-[#1e2d3b] text-[#8fa3b3]",
-    ok: "bg-[rgb(125_186_122/0.14)] text-[#7dba7a]",
-    warn: "bg-[rgb(212_164_90/0.16)] text-[#d4a45a]",
-    bad: "bg-[rgb(208_112_112/0.16)] text-[#d07070]",
-    info: "bg-[rgb(61_155_143/0.16)] text-[#3d9b8f]",
+    neutral: "bg-muted text-muted-foreground",
+    ok: "bg-[oklch(0.45_0.12_145/0.16)] text-[oklch(0.72_0.14_145)]",
+    warn: "bg-[oklch(0.65_0.12_80/0.16)] text-[oklch(0.78_0.12_80)]",
+    bad: "bg-destructive/16 text-destructive",
+    info: "bg-[oklch(0.55_0.1_185/0.16)] text-[oklch(0.68_0.1_185)]",
   }
   return (
     <span
@@ -37,7 +37,7 @@ export function PiInput({ className, ...props }: React.ComponentProps<"input">) 
   return (
     <input
       className={cn(
-        "h-10 w-full rounded-md border border-[rgb(232_238_242/0.1)] bg-[#182430] px-3 text-sm text-[#e8eef2] outline-none placeholder:text-[#6b7f90] focus:border-[#3d9b8f]",
+        "h-10 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring",
         className,
       )}
       {...props}
@@ -54,11 +54,11 @@ export function PiButton({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50",
         size === "sm" ? "h-8 px-3" : "h-10 px-4",
-        variant === "primary" && "bg-[#3d9b8f] text-[#07120f] hover:bg-[#4aaea1]",
-        variant === "secondary" && "border border-[rgb(232_238_242/0.1)] bg-[#1e2d3b] text-[#e8eef2] hover:bg-[#243644]",
-        variant === "ghost" && "text-[#8fa3b3] hover:bg-[#1e2d3b] hover:text-[#e8eef2]",
+        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
+        variant === "secondary" && "border border-border bg-secondary text-secondary-foreground hover:bg-accent",
+        variant === "ghost" && "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
         className,
       )}
       {...props}
@@ -67,4 +67,4 @@ export function PiButton({
 }
 
 export const SELECT_CLS =
-  "h-10 w-full rounded-md border border-[rgb(232_238_242/0.1)] bg-[#182430] px-3 text-sm text-[#e8eef2]"
+  "h-10 w-full rounded-md border border-input bg-secondary px-3 text-sm text-foreground"

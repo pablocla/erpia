@@ -1,0 +1,378 @@
+TESIS EXPANDIDA (pre-implementación, 2026-09-14):
+docs/conglomerado/TESIS_AIOT_CONGLOMERADO.md
+Este archivo queda como prompt-fuente. No implementar desde acá: implementar desde el corte Q1 de esa tesis.
+
+---
+
+Actuá como director de estrategia + diseño de negocio de un conglomerado con operaciones en Argentina y LatAm, capacidad industrial, red territorial, acceso a campo, fábricas, municipios, retail y servicios. Tu objetivo no es “innovar”. Es diseñar un portafolio AIoT (IA + IoT + soporte humano) que genere INGRESOS RECURRENTES, ALTA RETENCIÓN y DEMANDA CONSTANTE DE SOPORTE.
+
+CONTEXTO QUE DEBÉS USAR (no inventar otra tesis):
+
+1) Problema social-económico
+Hay gente ociosa, sin rol visible, con baja empleabilidad. Eso alimenta crisis sociales y delito. La respuesta comercialmente viable no es vigilancia predictiva como producto principal. Es crear CAPACIDAD + TRABAJO + SERVICIO CONTINUO: formación aplicada, matching de tareas, operación de dispositivos, mantenimiento, interpretación de alertas y proyectos comunitarios. La IA organiza; el humano del territorio ejecuta y cobra.
+
+2) Tesis tecnológica
+El valor no está en el sensor suelto ni en el chatbot. Está en AIoT / edge AI: el dispositivo mide, decide cerca del lugar y dispara una acción (regar, alertar merma de grano, parar máquina, mandar cuadrilla, reponer heladera, acompañar a un adulto mayor). El software sin hardware de campo se commoditiza. El hardware sin red de soporte no se renueva. El combo que se cobra todos los meses es: dispositivo + conectividad + plataforma + alertas accionables + gente que instala, calibra, capacita y atiende.
+
+3) Productos y verticales ya validados (usar como menú, no como lista de copy):
+AGRO ARGENTINA
+- Silobolsa inteligente (CO2, temp, humedad, satelital, QR, alertas, nexo a seguro/crédito/certificación). Merma de 50–55 Mt/año almacenadas.
+- Riego y suelo: sensores LoRaWAN + satélite + asistente por WhatsApp/voz.
+- Pulverización selectiva y drones con visión (ahorro 60–90% de químico).
+- Ganadería: IoT de agua, pasturómetro, RFID, registro por voz en manga, collares, score corporal.
+- Trazabilidad para precio premium.
+
+INDUSTRIA / RETAIL
+- Wearable IoT en máquinas + agente IA de mantenimiento predictivo, energía y agua.
+- Heladeras y expendedoras conectadas (stock, falla, consumo) para CPG.
+- IoT+IA en local físico (fila, inventario, ticket).
+- Tags de seguridad industrial (caídas, choque persona-vehículo).
+
+CIUDAD / CUIDADO / INCLUSIÓN
+- Drones+IA para basurales y cuadrillas municipales.
+- Dispositivo de compañía para adultos mayores.
+- Tutores y rutas de recapacitación + matching de empleo/tareas barriales.
+- Plataformas que convierten experiencia informal en perfil laboral.
+
+TENDENCIA GLOBAL A COPIAR CON LÓGICA LOCAL
+Edge AI en cámara, motor, wearable y válvula. Inferencia en el dispositivo. Menos nube, más contrato de uptime. Wearables con IA on-device. Agentes que no solo informan: ejecutan o despachan.
+
+REGLA DE ORO DEL CONGLOMERADO
+Solo proponé líneas que cumplan LAS TRES al mismo tiempo:
+A) Monetizable ahora (quién paga, cuánto, por qué no lo hace el cliente solo).
+B) Recurrente (suscripción, leasing, fee por activo/mes, conectividad, SLA, % sobre ahorro, seguro, recarga de insumos, recertificación).
+C) Necesita soporte constante (instalación, calibración, conectividad, batería, recambio, capacitación, mesa 24/7, técnico de campo, operador comunitario, actualización de modelos, cumplimiento).
+
+Si algo se vende una vez y se olvida, DESCARTALO o convertirlo en servicio (hardware-as-a-service).
+
+TAREA — ENTREGÁ ESTO, EN ESTE ORDEN:
+
+1) Tesis de 8 líneas: por qué un conglomerado gana más vendiendo “uptime + decisión + gente” que vendiendo gadgets.
+
+2) Portafolio de 6 a 8 productos-servicio. Para cada uno:
+   - Nombre comercial tentativo
+   - Buyer (quién firma el cheque: productor, acopio, industria, marca CPG, municipio, obra social, retailer, cooperativa)
+   - Unidad de cobro (por silobolsa/mes, por máquina/mes, por hectárea/campaña, por local, por adulto mayor, por nodo municipal)
+   - Precio de ancla (rango ARS y/o USD, realista LatAm 2026)
+   - Qué se cobra una vez vs todos los meses
+   - Por qué el cliente no puede darse de baja (switching cost, riesgo de merma, SLA, dato histórico, certificación)
+   - Soporte que justifica el fee: roles humanos concretos (técnico rural, instalador, analista de alertas, capacitador, operador 144/WhatsApp)
+   - KPI de valor que se le muestra al cliente a los 90 días
+
+3) Motor de empleo y “valor comunitario” que TAMBIÉN sea negocio:
+   Diseñá una red de operadores territoriales (jóvenes, oficios, ex desocupados) que instalan, recorren, enseñan y responden alertas. Explicá cómo se forma, cómo se paga (mix sueldo + comisión + microfranquicia) y cómo eso baja ociosidad sin ser RSE decorativa. El conglomerado vende el sistema; la red humana es el foso.
+
+4) Arquitectura de ingresos recurrentes (stack):
+   - Hardware en leasing / comodato
+   - Conectividad (LoRa, celular, satelital)
+   - Plataforma SaaS + app WhatsApp
+   - SLA y mesa de ayuda
+   - Seguros / crédito / certificación atados al dato
+   - Capacitación y recertificación anual
+   - Marketplace de insumos y cuadrillas
+   Poné mix estimado de margen: qué % viene de cada capa.
+
+5) Flywheel de datos:
+   Qué dato se acumula, de quién es, cómo se vuelve a vender SIN caer en vigilancia policial como producto. Ejemplos válidos: riesgo de merma, scoring de campo para crédito, huella de sustentabilidad, uptime industrial, cumplimiento municipal.
+
+6) Go-to-market Argentina primero:
+   3 cuñas de entrada en 12 meses (ej. silobolsa+seguro, riego WhatsApp, heladera CPG, municipio basura, geriátricos).
+   Qué empresa del conglomerado pone la red (distribución agro, telecom, seguros, energía, retail).
+   Qué NO hacer el año 1.
+
+7) Riesgos y cómo se cobran igual:
+   Brecha digital, robo de dispositivos, desconfianza al dato, sesgo, tipo de cambio, estacionalidad del campo.
+   Contratos, deposits, seguros del hardware, modo offline, cobro post-cosecha.
+
+8) Tablero para el directorio:
+   ARR, churn mensual, NRR, activos conectados, tickets de soporte por activo, tiempo medio de resolución, ahorro demostrado al cliente, operadores territoriales activos, NPS del que usa el WhatsApp (no del gerente).
+
+9) Prompt operativo corto (listo para dar al equipo de producto) que resuma la oferta en 12 viñetas vendibles.
+
+RESTRICCIONES:
+- Español claro, tono de negocio, sin jerga vacía.
+- Números con rangos y supuestos explícitos. Si no hay dato duro, marcar SUPUESTO.
+- Priorizá Argentina y copiabilidad a Uruguay, Paraguay, Brasil, interior de LatAm.
+- Nada de “IA para predecir delincuentes” como línea de revenue. Si hay seguridad, que sea prevención por oportunidad, uptime de alumbrado/cámaras municipales con mantenimiento, o safety industrial.
+- Cada idea tiene que sobrevivir esta pregunta: “¿el cliente nos paga el mes 18 aunque el hardware ya esté amortizado?” Si la respuesta es no, reescribila.
+
+Cerrá con un one-pager: la frase de posicionamiento del conglomerado + las 4 líneas de ARR que deberían explicar el 80% de la caja a 36 meses.
+
+
+Actuá en dos roles a la vez, sin mezclarlos en el mismo párrafo:
+A) Director de estrategia de un conglomerado en Argentina/LatAm (caja recurrente, soporte eterno, red territorial).
+B) Arquitecto de sistemas AIoT (ingeniería de orquestación, no paper académico).
+
+Objetivo: diseñar un portafolio vendible Y la ingeniería de una capa de conexión entre drones, dispositivos IoT e IAs. Esa capa no es “un framework para developers”. Es el sistema operativo del activo (lote, silobolsa, máquina, animal, local, barrio) que habilita cobro mensual, SLA y despacho humano.
+
+CONTEXTO OBLIGATORIO
+
+Problema social-económico
+Gente ociosa, sin rol, baja empleabilidad → crisis y delito. La línea comercial no es vigilancia predictiva de personas. Es capacidad + trabajo + servicio continuo: instalar, calibrar, interpretar alertas, ejecutar, formar. La IA organiza; el humano del territorio ejecuta y justifica el fee.
+
+Tesis de producto
+El valor no está en el sensor, el dron o el chatbot sueltos. Está en AIoT/edge: medir → decidir cerca del lugar → actuar → facturar. Hardware sin soporte no se renueva. Software sin activo en campo se commoditiza.
+
+Menú de verticales ya validadas (usar, no re-inventar):
+AGRO: silobolsa inteligente (CO2/temp/humedad/satelital/QR/seguro-crédito); riego/suelo LoRaWAN + satélite + WhatsApp; pulverización selectiva y drones con visión (ahorro 60–90% químico); ganadería (agua, pasturómetro, RFID, voz en manga, collares); trazabilidad premium.
+INDUSTRIA/RETAIL: wearable IoT en máquinas + agente de uptime/energía/agua; heladeras/expendedoras CPG; IoT+IA en local; tags de safety industrial.
+CIUDAD/CUIDADO: drones+IA para basurales/cuadrillas; dispositivo de compañía para adultos mayores; tutores + matching de oficios; alumbrado/activo municipal con mantenimiento.
+
+Regla de oro
+Toda línea debe ser a la vez: monetizable, recurrente, y con soporte constante. Si se vende una vez y se olvida, convertirla a hardware-as-a-service o descartarla.
+Pregunta de supervivencia: “¿el cliente paga el mes 18 aunque el hardware ya esté amortizado?”
+
+==================================================
+PARTE I — NEGOCIO (igual que el brief de conglomerado)
+==================================================
+
+Entregá:
+
+1) Tesis de 8 líneas: por qué se gana más vendiendo uptime + decisión + gente que vendiendo gadgets.
+
+2) Portafolio de 6–8 productos-servicio. Para cada uno:
+   - Nombre comercial
+   - Buyer
+   - Unidad de cobro (silobolsa/mes, máquina/mes, ha/campaña, local, adulto mayor, nodo municipal, vuelo despachado)
+   - Precio ancla ARS y/o USD (rango 2026 LatAm; marcar SUPUESTO)
+   - One-shot vs recurrente
+   - Switching cost
+   - Roles humanos de soporte
+   - KPI a 90 días
+
+3) Red de operadores territoriales (empleo que es foso, no RSE): formación, pago (sueldo + comisión + microfranquicia), cómo baja ociosidad y cómo se factura dentro del SLA.
+
+4) Stack de ingresos: leasing/comodato, conectividad (LoRa/celular/satelital), SaaS, SLA/mesa, seguro-crédito-certificación, capacitación/recertificación, marketplace de insumos y cuadrillas. Mix de margen por capa.
+
+5) Flywheel de datos: qué se acumula, de quién es, cómo se revende sin producto policial. Válido: merma, scoring de crédito de campo, sustentabilidad, uptime, cumplimiento municipal.
+
+6) GTM Argentina 12 meses: 3 cuñas. Qué empresa del conglomerado pone el canal. Qué NO hacer el año 1.
+
+7) Riesgos cobrables: brecha digital, robo, desconfianza, sesgo, FX, estacionalidad. Contratos, depósito, seguro de hardware, offline, cobro post-cosecha.
+
+8) Tablero directorio: ARR, churn, NRR, activos conectados, tickets/activo, MTTR, ahorro demostrado, operadores activos, NPS del usuario de WhatsApp.
+
+9) One-pager: frase de posicionamiento + 4 líneas de ARR que expliquen el 80% de la caja a 36 meses.
+
+==================================================
+PARTE II — INGENIERÍA DEL FRAMEWORK DE CONEXIÓN
+Drones + IoT + IAs
+==================================================
+
+Veredicto de diseño (obedecer):
+SÍ construir una capa de orquestación.
+NO construir un OS de drones propio, un foundation model, ni 40 conectores el año 1.
+Año 1 = 3 familias de IoT + 1 dron homologado + WhatsApp + ticket + factura.
+
+2.1 Problema de ingeniería que se resuelve
+Hoy cada dispositivo habla un idioma y la alerta muere en un PDF. El sistema debe garantizar:
+mismo ID de activo → mismo bus de eventos → misma política → misma acción humana → mismo ítem facturable.
+
+2.2 Arquitectura (6 capas, de abajo hacia arriba)
+Describí responsabilidades, qué entra/sale, y qué se COMPRA vs qué se CONSTRUYE.
+
+L0 Dispositivos
+Homologación máxima año 1:
+- IoT campo: silobolsa, suelo/riego, bebedero/collar
+- IoT planta/retail: wearable de máquina, cámara de línea o heladera
+- Dron: una marca/modelo + payload (RGB/multispectral o termal según vertical)
+Contrato de dispositivo: telemetría mínima, heartbeat, batería, firmware firmado, modo offline.
+
+L1 Edge
+Qué se infiere EN el dispositivo o en la gateway (maleza, merma, anomalía de vibración, persona en piso, basural).
+Qué NUNCA viaja crudo a la nube (video continuo, PII).
+Requisito: si no hay 4G, el nodo guarda y sincroniza; el dron deja el producto del vuelo (mapa/alerta), no la película.
+
+L2 Ingest y normalización
+Todo evento, un solo esquema:
+
+AssetEvent
+- asset_id
+- tenant_id
+- ts (UTC)
+- source (drone | iot | human | agent)
+- type (telemetry | inference | alert | action | ticket)
+- payload (valor, unidad, confianza 0-1)
+- geo (lat, lon, lote/poligono_id)
+- idempotency_key
+- schema_version
+
+Caños: MQTT + cola duradera. LoRa / celular / satelital / SD del dron son transportes, no productos.
+Definí retención, deduplicación y qué pasa con eventos fuera de orden.
+
+L3 Grafo del activo (el foso)
+Nodos: Tenant, Site, Asset (lote|silobolsa|máquina|animal|local|barrio), Device, Mission (vuelo), WorkOrder, PersonRole.
+Relaciones: Device—montado_en→Asset; Mission—cubre→Asset; Alert—abre→WorkOrder; WorkOrder—asignado_a→Operador.
+El lote/máquina tiene historial unificado (riego, vuelo, aplicación, clima, gente). Sin este grafo no hay switching cost.
+
+L4 Políticas + agentes (no un chat general)
+Agentes chicos, con herramienta y techo de autoridad. Ejemplos:
+- AgentSilo: si CO2/temp/humedad cruza umbral → alerta + WhatsApp + oferta de seguro. NO abre la bolsa.
+- AgentWeed: si cobertura de maleza > umbral → mapa de prescripción. NO dispara químico solo, salvo política explícita del cliente.
+- AgentUptime: anomalía de vibración → ticket de mantenimiento + ventana sugerida.
+- AgentMunicipal: polígono de basural nuevo → orden a cuadrilla.
+- AgentCare: caída/inactividad → contacto familiar/operador. Escalamiento humano obligatorio.
+
+Para cada agente: trigger, herramientas permitidas, lo que tiene PROHIBIDO, SLA, y cómo deja traza auditable.
+LLM solo para: priorizar, redactar mensaje, resumir misión. No para control en tiempo real del dron.
+
+L5 Acción + cobro
+Canales de acción: WhatsApp (usuario), válvula/PLC (si hay permiso), WorkOrder, despacho de operador, “pedir vuelo”.
+Toda acción cerrada genera un hecho de billing:
+- sensor_month
+- drone_mission
+- sla_credit (si se incumple)
+- add_on (seguro, certificación, químico, repuesto)
+
+2.3 Identidad
+Propuesta de asset_id estable (no el IMEI del sensor).
+Reglas de fusión: cambio de chip, cambio de bolsa, re-geofence del lote, venta del campo.
+Mapeo a IDs del mundo real cuando existan (partida rural, nro. de máquina, PAT/SENASA si aplica). Marcar SUPUESTO legal.
+
+2.4 Misiones de dron como ciudadano de primera
+Modelo:
+Mission { id, asset_ids[], purpose, payload, pilot|autonomy, window, result_artifacts[], derived_events[] }
+El dron no es un silo. Un vuelo DEBE escribir eventos sobre los mismos asset_id que los sensores.
+Regla económica: IoT vigila barato 24/7; el dron se despacha cuando la IA estima que el vuelo paga. Definí la política “¿cuándo vale volar?”.
+
+2.5 Stack de referencia año 1 (opiná y justificá, no armes NASA)
+- Mensajería: MQTT + broker + cola
+- DB: series de tiempo para telemetría + store relacional/grafo para activos
+- Object store: ortomosaicos, prescripciones, fotos de evidencia
+- Edge: gateway LoRa + inferencia chica (visión/anomalía)
+- Cloud: región compatible LatAm / opción on-prem liviana para industria
+- App usuario: WhatsApp Business + deep link; dashboard solo para admin
+- Identidad y roles: productor, capataz, técnico, operador, auditor
+- Observabilidad: heartbeat de device, cola, MTTR, % eventos sin acción
+Listá qué se compra (DJI/equivalente, LoRa, WhatsApp Cloud API, cola managed) vs qué se construye (grafo, políticas, billing, conectores).
+
+2.6 Contratos de integración (mínimo viable)
+Un conector = adaptador que SOLO traduce a AssetEvent.
+Año 1: máximo 5 conectores. Proponé cuáles.
+Versionado de schema. Firmware OTA firmado. Secretos por tenant. Kill switch por flota.
+
+2.7 Offline, campo argentino, seguridad
+- Store-and-forward 7–30 días
+- Voz/WhatsApp en manga sin depender de dashboard
+- Robo de dispositivo: asset sigue, device se denelist
+- No producto de “predecir delincuentes”
+- Minimización de PII; video con retención corta; consentimiento en cuidado de personas
+- Auditoría: quién autorizó pulverizar / abrir ticket / volar
+
+2.8 SRE y soporte (esto vende el fee)
+Definí:
+- Heartbeat esperado por tipo de device
+- Severidades (P1 merma inminente / parada de planta / caída de persona)
+- MTTR objetivo por vertical
+- Créditos de SLA
+- Runbook: qué hace el agente, qué hace el operador, cuándo escala a técnico de campo
+- Métrica de ingeniería ligada a caja: % de alertas con WorkOrder cerrado en SLA
+
+2.9 Plan de ingeniería 12 meses
+Q1: 1 vertical (recomendá silobolsa+alerta o riego WhatsApp o uptime de máquina), 1 dron, esquema de eventos, WhatsApp, 1 WorkOrder.
+Q2: grafo de activo + billing + 2º conector IoT.
+Q3: política “cuándo volar” + segundo vertical.
+Q4: red de operadores en app (asignación, foto de cierre, comisión).
+Criterio de no-go: si en 90 días el evento no produce acción humana facturable, se para el desarrollo de features y se arregla L5.
+
+2.10 Entregables de ingeniería (formato)
+- Diagrama de las 6 capas (texto/ASCII o mermaid)
+- Spec del AssetEvent
+- Tabla de agentes (trigger / tools / prohibiciones / SLA)
+- Lista de conectores año 1
+- Amenazas y controles
+- Estimación de equipo (roles y cantidad, no nombres de moda): backend eventos, firmware/gateway, visión/edge, fullstack WhatsApp, SRE, PM de vertical
+- Costo infra por 1.000 activos y por 100 misiones/mes (rango; SUPUESTO)
+
+==================================================
+RESTRICCIONES GENERALES
+==================================================
+- Español claro. Separá siempre “negocio” vs “ingeniería”.
+- Números con rango y supuesto.
+- Priorizá Argentina; copiable a UY/PY/BR/interior LatAm.
+- Nada de framework vanidoso ni OS de drones.
+- Seguridad, si aparece, es uptime de activo público o safety industrial, no scoring de personas.
+- Cerrá con:
+  a) frase de posicionamiento del conglomerado
+  b) 4 líneas de ARR (80% de la caja a 36 meses)
+  c) la frase de ingeniería en una línea: “qué es la capa y qué no es”
+  d) prompt operativo de 12 viñetas para el equipo de producto+platform
+
+Si un módulo de software no termina en WorkOrder, SLA o factura, no lo propongas.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+
+Sí hay más nichos con **la misma fórmula**: activo físico + sensor/dron + IA + gente en el territorio + cuota mensual. No son “otra app”. Son pérdidas que ya se pagan y que un conglomerado puede suscribir.
+
+Filtro que usé: ¿hay millón de activos análogos? ¿alguien tiene caja o regulación? ¿el mes 18 se sigue cobrando? ¿hace falta técnico?
+
+## Los que más se parecen a lo que ya armamos
+
+**1. Agua que se pierde (utilities + riego de distrito)**  
+Sabesp licitó IoT para cambiar **4,4 millones de medidores** (R$ 3.8 mil millones). En Córdoba, EPEC va por **200 mil** medidores AMI. El medidor de agua inteligente es el segmento que más crece en la región.  
+Producto: medidor/logger + detección de fuga + cuadrilla + fee por conexión. El municipio o la cooperativa no puede “darse de baja”: o cobra el agua o quiebra. Encaja con sequía, tarifas y conflicto social.
+
+**2. Cadena de frío (carne, fruta, vacuna, pescado)**  
+Sudamérica ya mueve más de USD 13 mil millones en cold chain; Brasil tiene ~48% y Argentina es de las que más crece. Exportación + farmacia no perdonan un corte de frío.  
+Logger + alerta + torre de control + seguro. Recurrencia por pallet/cámara/viaje. Soporte 24/7 cuando se corta un equipo a las 3 AM.
+
+**3. Flota, combustible y hurto en ruta**  
+Brasil: **+125 millones** de vehículos registrados. Logística, minería, agro, iFood, Mercado Libre. Argentina digitaliza flota por costo y distancia. El combo clásico: telemática + cámara + IA de conducción + sello de tanque.  
+Fee por vehículo/mes. El foso es el historial de siniestro y el descuento de seguro.
+
+**4. Pecuaria de precisión + trazabilidad de exportación (sobre todo Brasil)**  
+UE y compradores piden origen, bienestar y “no desmonte”. Hay plataforma nacional IoT (Embrapa + Taggen), brincos baratos (~R$ 45 + mensualidad) y collares contra hurto (pérdidas enormes). Aviarios ya meten IoT+IA de ambiencia.  
+Mismo grafo que el feedlot argentino: animal = activo. Escalado brutal en BR, copiable a PY/UY/AR.
+
+**5. Minería inteligente (litio/cobre AR, hierro BR, cobre CL/PE)**  
+Argentina: 56 proyectos de litio, pipeline de cobre, RIGI, sitios sin 4G. Brasil: Vale con flotas autónomas y planta con IA. Chile lidera camiones autónomos en la región. El mercado global de smart mining va a ~USD 32 mil millones en 2031.  
+Wearables de safety, relaves, agua de proceso, correas, drones de inspección, conectividad satelital. El buyer paga uptime y no matar gente. Contrato plurianual.
+
+**6. Oil & gas remoto (Vaca Muerta + pre-sal)**  
+Pozos, ductos, flares, flota de servicio, IoT satelital. Mismo patrón que minería: sitio hostil + SLA + noc. Argentina está armando conectividad multi-órbita justo para eso.
+
+**7. Energía: pérdidas, medidores, parques renovables**  
+Hurtos y pérdidas técnicas, AMI, transformadores que se queman, parques eólicos/solares que hay que mantener en la Patagonia o el Nordeste. El agro ya sufre cortes que paran riego, silos y tambos.  
+Fee por punto de medición / aerogenerador / inversor.
+
+## Segunda fila (igual de buenos, un poco más de timing)
+
+| Nicho | Por qué escala | Quién paga el mes 18 |
+|---|---|---|
+| **Contenedor / puerto / grano en tránsito** | Robo, aduana, frío, Santos–Rosario–Chile | Exportador + terminal + seguro |
+| **Residuos y saneamiento** | Basural + camión + relleno + lixiviado | Municipio / PPP |
+| **Obra y maquinaria** | Telemetría OEM de equipos de construcción crece ~11% anual | Constructor + alquiler de máquinas |
+| **Incendio + seguro paramétrico** | Bosque, caña, pastizal, cordillera | Aseguradora + provincia |
+| **MRV carbono / EUDR** | Soja, carne, café a Europa | Trader + frigorífico |
+| **Salud crónica y cold pharma last mile** | Diabetes, vacunas, interior | Prepaga / laboratorio / Estado |
+| **Adulto mayor + caída** | Envejecimiento + familias que pagan | Familia / obra social |
+| **Agua y energía de data centers** | Stargate/hyperscalers en AR/BR/CL | Operador del campus + utility |
+
+## Qué no perseguir (parece tech, no es el mismo negocio)
+
+- Chatbots de atención genéricos (churn alto, sin activo).  
+- “Smart city” de slide: semáforo lindo sin contrato de mantenimiento.  
+- Fintech pura, marketplace puro, otro LLM.  
+- Vigilancia predictiva de personas como producto.  
+- Fabricar el dron o el medidor si no tenés planta: homologá y orquestá.
+
+## Cómo elegir 3 para el conglomerado
+
+Mismo test que el framework:
+
+1. Hay un **ID de activo** (medidor, cámara de frío, vaca, camión, pozo, relave).  
+2. El IoT vigila barato; el dron o el técnico sale cuando la IA dice que paga.  
+3. Hay **regulación o merma** (agua, UE, ANMAT/ANVISA, relave, robo).  
+4. Podés poner **operadores** (oficio, no PhD).  
+5. El canal ya existe en el grupo (seguro, telco, energía, agroinsumo, logística).
+
+Prioridad realista 2026–2030 si ya estás en agro+AIoT:
+
+1. **Agua** (copia el modelo riego → utility).  
+2. **Frío exportador** (copia silobolsa → cámara y contenedor).  
+3. **Pecuaria BR + trazabilidad** (el animal es el silobolsa que camina).  
+4. **Minería/O&G NOA y Vaca Muerta** si el grupo tiene energía o seguros.  
+5. **Flota** si hay telco o aseguradora en el holding.
+
+Brasil da **volumen**. Argentina da **caso difícil** (campo, FX, satelital) que después se vende en PY, UY, interior de BR y Andes. Chile/Perú pagan ticket minero. No hace falta otro país el año 1.
+
+Si querés, el siguiente paso es meter **estos 5 nichos** como apéndice al prompt de ingeniería (mismos `AssetEvent`, otros `asset_type`, mismos agentes y la misma red de operadores).

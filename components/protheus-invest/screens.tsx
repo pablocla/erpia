@@ -312,17 +312,18 @@ export function RiesgoScreen() {
 }
 
 export function ConectoresScreen() {
-  const { connectors, toggleConnector, tc } = useCaja()
+  const { connectors, toggleConnector } = useCaja()
+  const onlyPpi = connectors.filter((c) => c.id === "ppi")
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Conectores API</h1>
-        <p className="mt-1 text-sm text-[#8fa3b3]">
-          Lo que el banco, ARBA, BCRA y PPI saben hoy, Protheus lo ve hoy. TC oficial {tc}.
+        <h2 className="text-xl font-semibold tracking-tight">Job PPI → Z03</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Instrumentos con Z01_USAAPI=1. El job de las 18:30 pisa precio de cierre; no genera SE5.
         </p>
       </header>
       <div className="grid gap-3 sm:grid-cols-2">
-        {connectors.map((c) => (
+        {onlyPpi.map((c) => (
           <PiCard key={c.id} className="flex items-start justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">

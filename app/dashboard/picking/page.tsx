@@ -306,10 +306,10 @@ export default function PickingPage() {
                     </div>
                     <div className="col-span-2 space-y-1">
                       {idx === 0 && <Label className="text-xs">Producto</Label>}
-                      <Select value={l.productoId} onValueChange={(v) => actualizarLinea(idx, "productoId", v)}>
+                      <Select value={l.productoId || "none"} onValueChange={(v) => actualizarLinea(idx, "productoId", v === "none" ? "" : v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular..." /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin vincular</SelectItem>
+                          <SelectItem value="none">Sin vincular</SelectItem>
                           {productos.map((p) => <SelectItem key={p.id} value={p.id.toString()}>{p.nombre}</SelectItem>)}
                         </SelectContent>
                       </Select>

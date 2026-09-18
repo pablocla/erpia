@@ -1,0 +1,69 @@
+
+flowchart TB
+  USER[Usuarios ERP] --> POUI[PO-UI opcional]
+  USER --> REST[API REST Protheus WSRESTFUL .PRW]
+  P[Servidores Protheus TOTVS AR<br/>AppServer + DBAccess + SQL + Login Core] --> REST
+
+  REST <--> CLAVER[claver.com.ar en Vercel<br/>Orquestador MVP + Auth reciclado<br/>Normaliza datos + genera .PRW]
+  CLAVER <--> SB[Supabase<br/>Postgres Auth Realtime Storage]
+  CLAVER <--> INV[APIs de Inversiones realtime]
+  REST -.-> INV
+  POUI <--> CLAVER
+  POUI <--> REST
+  CLAVER --> PACK[.PRW pack + endpoints]
+  PACK --> EMP[Empresas clientes / implementación] 
+
+  flowchart LR
+  %% ===== ESTILOS =====
+  classDef zona fill:#0b1220,stroke:#334155,color:#e2e8f0
+  classDef protheus fill:#083344,stroke:#22d3ee,color:#ecfeff
+  classDef claver fill:#2e1065,stroke:#c084fc,color:#f5d0fe
+  classDef data fill:#052e16,stroke:#34d399,color:#d1fae5
+  classDef inv fill:#422006,stroke:#fbbf24,color:#fef3c7
+  classDef opt fill:#083344,stroke:#67e8f9,color:#ecfeff,stroke-dasharray: 5 5
+
+  subgraph ZC["ZONA CLIENTE / TOTVS ARGENTINA"]
+    direction TB
+    P["Servidores Protheus<br/>TOTVS Argentina<br/>AppServer · DBAccess · Base ERP SQL<br/>Login Core reciclado"]
+    REST["API REST Protheus<br/>WSRESTFUL / AdvPL .PRW<br/>HTTPS + Auth"]
+    POUI["PO-UI opcional<br/>App extra embebida en menú<br/>Puente Protheus ↔ exterior"]
+    USER["Usuarios del ERP<br/>SmartClient / PO-UI"]
+    P --> REST
+    USER --> POUI
+    USER --> REST
+  end
+
+  subgraph CV["CLAVER PLATFORM · Vercel"]
+    direction TB
+    APP["claver.com.ar<br/>Orquestador MVP"]
+    AUTH["Auth / Login Core<br/>reutilizado del ERP"]
+    NORM["Normalización de datos<br/>de inversiones"]
+    GEN["Generador / ordenamiento<br/>de .PRW"]
+    PACK[".PRW pack para clientes<br/>compilable + endpoints"]
+    APP --> AUTH
+    APP --> NORM
+    APP --> GEN
+    GEN --> PACK
+  end
+
+  subgraph DX["DATOS Y EXTERIOR"]
+    direction TB
+    SB["Supabase<br/>Postgres · Auth · Realtime · Storage"]
+    API["APIs de Inversiones<br/>Mercado / posiciones / valuación realtime"]
+    EMP["Empresas clientes"]
+  end
+
+  REST <-->|"1 GET/POST HTTPS<br/>lectura y escritura de inversiones"| APP
+  APP <-->|"2 persistencia, tenants,<br/>cache, auditoría"| SB
+  APP <-->|"3 cotizaciones y posiciones<br/>en tiempo real"| API
+  REST -.->|"3 bis consume mercado<br/>si corre en el ERP"| API
+  PACK -->|"4 entrega .PRW + endpoints"| EMP
+  POUI <-->|"5 embed UI dentro del ERP"| APP
+  POUI <-->|"5 REST interno"| REST
+  USER -->|"6 ven seguimiento de inversiones"| APP
+
+  class P,REST,USER protheus
+  class POUI opt
+  class APP,AUTH,NORM,GEN,PACK claver
+  class SB data
+  class API,EMP inv

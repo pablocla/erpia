@@ -21,6 +21,19 @@ const DEMO_DATA: Record<OpoCanonicalEntity, Record<string, unknown>[]> = {
   Invoice: PROTHEUS_DEMO_INVOICES,
   Order: [],
   Supplier: [],
+  AccountsReceivable: [],
+  AccountsPayable: [],
+  BankStatement: [],
+  CashFlow: [],
+  TaxWithholding: [],
+  TaxEntry: [],
+  PurchaseInvoice: [],
+  StockMovement: [],
+  Warehouse: [],
+  PriceList: [],
+  JournalEntry: [],
+  ChartOfAccounts: [],
+  CostCenter: [],
 }
 
 /** Latencia simulada de Protheus WebApp para demos comerciales */

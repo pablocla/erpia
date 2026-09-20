@@ -7,7 +7,25 @@ export type AccesoCanal = "edge_agent" | "rest_directo" | "sql_vistas" | "sql_di
 export type IntrospectionCanal = "rest" | "sql" | "hybrid"
 export type DireccionDatos = "lectura" | "escritura" | "ambos"
 
-export type OpoCanonicalEntity = "Customer" | "Product" | "Invoice" | "Order" | "Supplier"
+export type OpoCanonicalEntity =
+  | "Customer"
+  | "Product"
+  | "Invoice"
+  | "Order"
+  | "Supplier"
+  | "AccountsReceivable"
+  | "AccountsPayable"
+  | "BankStatement"
+  | "CashFlow"
+  | "TaxWithholding"
+  | "TaxEntry"
+  | "PurchaseInvoice"
+  | "StockMovement"
+  | "Warehouse"
+  | "PriceList"
+  | "JournalEntry"
+  | "ChartOfAccounts"
+  | "CostCenter"
 
 export interface OpoEntityEndpoint {
   modo: OpoConector

@@ -27,6 +27,7 @@ import type { OnboardingState } from "@/lib/protheus-invest/onboarding"
 /** Nombres de negocio. Las tablas SIGA van en Ayuda / boletín, no en el menú. */
 const NAV_TESORERO = [
   { href: "/dashboard/protheus", label: "Cartera", icon: LineChart, exact: true },
+  { href: "/dashboard/protheus/auditoria", label: "Auditoría Fiscal", icon: ScrollText },
   { href: "/dashboard/protheus/valuacion", label: "Valuación", icon: Table2 },
   { href: "/dashboard/protheus/bancos", label: "Bancos", icon: Landmark },
   { href: "/dashboard/protheus/asientos", label: "Movimientos", icon: ScrollText },
@@ -35,6 +36,7 @@ const NAV_TESORERO = [
 
 const NAV_ANALISTA = [
   ...NAV_TESORERO.slice(0, 4),
+  { href: "/dashboard/protheus/auditoria", label: "Auditoría Fiscal", icon: ScrollText, exact: false as const },
   { href: "/dashboard/protheus/instrumentos", label: "Instrumentos", icon: BookOpen, exact: false as const },
   { href: "/dashboard/protheus/conexion", label: "Conexión", icon: Cable, exact: false as const },
   { href: "/dashboard/protheus/advpl", label: "Compilar", icon: BookOpen, exact: false as const },

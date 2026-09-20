@@ -249,6 +249,10 @@ export async function queryClaverEntity(empresaId: number, input: OpoQueryInput)
       }
     }
     default:
-      throw new Error(`Entidad no soportada: ${input.entity satisfies never}`)
+      return {
+        entity: input.entity,
+        count: 0,
+        data: [],
+      }
   }
 }

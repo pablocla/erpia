@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 1. Caja abierta (cajaId explícito o única abierta) ───
+    // ── 1. Caja abierta (cajaId explícito o findFirst abierta, como siempre) ───
     const cajaResuelta = await resolverCajaVenta(empresaId, data.cajaId)
     if (!cajaResuelta.ok) {
       return NextResponse.json(

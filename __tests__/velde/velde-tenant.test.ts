@@ -103,6 +103,7 @@ describe("provisionVelde", () => {
     ])
     expect(fake.table("featureEmpresa")).toEqual([
       expect.objectContaining({ empresaId: a.empresaId, featureKey: "facturacion_afip", activado: false }),
+      expect.objectContaining({ empresaId: a.empresaId, featureKey: "caja_seleccion_obligatoria", activado: true }),
     ])
     expect(fake.table("parametroFiscal").find((p) => p.clave === "fiscal_modo_comprobante")?.valor).toBe(3)
     expect(fake.table("suscripcionModulo")).toEqual([
@@ -147,7 +148,7 @@ describe("Velde happy path", () => {
     expect(solicitarCaeFactura).not.toHaveBeenCalled()
   })
 
-  it("con 2 cajas abiertas y sin cajaId → 409 (no elige al azar)", async () => {
+  it("Velde (flag on), 2 cajas abiertas y sin cajaId → 409 CAJA_REQUERIDA", async () => {
     await provisionarYAbrirCajas()
     const res = await venta(post("/api/pos/venta", ventaBody({})))
     expect(res.status).toBe(409)
@@ -211,6 +212,35 @@ describe("Velde happy path", () => {
 })
 
 describe("otros tenants sin cambios", () => {
+  it("REGRESIÓN: tenant SIN flag, 2 cajas abiertas, sin cajaId → 201 en la caja que da findFirst (como main)", async () => {
+    const primera = fake.insert("caja", { empresaId: 52 })
+    const segunda = fake.insert("caja", { empresaId: 52 })
+    fake.insert("cliente", { empresaId: 52, nombre: "Consumidor Final" })
+    fake.insert("producto", { empresaId: 52, nombre: "Producto", stock: 5 })
+    authAs(52)
+    const res = await venta(post("/api/pos/venta", ventaBody({})))
+    expect(res.status).toBe(201)
+    // misma query que main
+    expect(prisma.caja.findFirst).toHaveBeenCalledWith({ where: { empresaId: 52, estado: "abierta" } })
+    expect(prisma.caja.count).not.toHaveBeenCalled()
+    const movs = fake.table("movimientoCaja")
+    expect(movs).toHaveLength(1)
+    expect(movs[0]).toMatchObject({ cajaId: primera.id, tipo: "ingreso" })
+    expect(movs.some((m) => m.cajaId === segunda.id)).toBe(false)
+  })
+
+  it("tenant ticket_solo SIN flag, 2 cajas abiertas, sin cajaId → 201 (gate no atado a ticket_solo)", async () => {
+    fake.insert("parametroFiscal", { empresaId: 53, clave: "fiscal_modo_comprobante", valor: 3 })
+    const primera = fake.insert("caja", { empresaId: 53 })
+    fake.insert("caja", { empresaId: 53 })
+    fake.insert("cliente", { empresaId: 53, nombre: "Consumidor Final" })
+    fake.insert("producto", { empresaId: 53, nombre: "Producto", stock: 5 })
+    authAs(53)
+    const res = await venta(post("/api/pos/venta", ventaBody({})))
+    expect(res.status).toBe(201)
+    expect(fake.table("movimientoCaja")[0]).toMatchObject({ cajaId: primera.id })
+  })
+
   it("tenant con 1 caja y sin cajaId sigue vendiendo en esa caja", async () => {
     const caja = fake.insert("caja", { empresaId: 50 })
     fake.insert("cliente", { empresaId: 50, nombre: "Consumidor Final" })

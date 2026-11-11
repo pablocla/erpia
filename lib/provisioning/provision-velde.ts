@@ -8,6 +8,8 @@
  *   (api-sku-entitlements) y la 2ª caja abierta (caps-ancla segunda_caja).
  * - Plan tenant "Pro" (impersonacionErp=true) para entrar por Claver Cloud → "Ingresar ERP".
  * - CajaTipo CORRIENTE ("Corriente") y AHORRO ("Ahorro").
+ * - Opt-in FeatureEmpresa caja_seleccion_obligatoria=true: con 2+ cajas abiertas la venta
+ *   exige cajaId (409 CAJA_REQUERIDA). Ningún otro tenant lo tiene.
  * - Cliente "Consumidor Final" (el POS lo usa como fallback de cliente).
  *
  * NO crea usuarios. Acceso: el owner/analista Claver entra desde Claver Cloud con
@@ -22,6 +24,7 @@ import { saveFiscalEmissionConfig } from "@/lib/fiscal/emission-config"
 import { setFeature } from "@/lib/config/rubro-config-service"
 import { FEATURE_FACTURACION_AFIP } from "@/lib/fiscal/afip-off-guard"
 import { setTenantPlan } from "@/lib/ops/tenant-plan-service"
+import { FEATURE_CAJA_SELECCION_OBLIGATORIA } from "@/lib/caja/caja-seleccion"
 
 export const VELDE_CUIT = "DEMO-VELDE-0001"
 export const VELDE_NOMBRE = "Velde"
@@ -114,6 +117,9 @@ export async function provisionVelde(): Promise<ProvisionVeldeResult> {
     })
     cajaTipos.push(row)
   }
+
+  // ── Opt-in: venta exige cajaId con 2+ cajas abiertas ────
+  await setFeature(empresaId, FEATURE_CAJA_SELECCION_OBLIGATORIA, { activado: true })
 
   // ── Cliente fallback del POS ─────────────────────────────
   const cf = await prisma.cliente.findFirst({

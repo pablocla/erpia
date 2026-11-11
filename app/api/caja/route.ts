@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { logError } from "@/lib/monitoring/error-logger"
 import { z } from "zod"
 
@@ -8,6 +8,8 @@ const abrirCajaSchema = z.object({
   saldoInicial: z.number().min(0).default(0),
   observaciones: z.string().optional(),
   turno: z.enum(["mañana", "tarde", "noche"]).optional(),
+  /** Tipo de caja (p. ej. Corriente / Ahorro). Opcional: sin él, comportamiento histórico. */
+  cajaTipoId: z.number().int().positive().optional(),
 })
 
 const cerrarCajaSchema = z.object({
@@ -30,8 +32,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const estado = searchParams.get("estado")
 
-    const where: Record<string, unknown> = { empresaId: ctx.auth.empresaId }
-    if (estado) where.estado = estado
+    const where = whereEmpresa(ctx.auth.empresaId, estado ? { estado } : {})
 
     const cajas = await prisma.caja.findMany({
       where,
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
         movimientos: {
           orderBy: { createdAt: "desc" },
         },
+        cajaTipo: { select: { id: true, codigo: true, nombre: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 30,
@@ -62,8 +64,28 @@ export async function POST(request: NextRequest) {
     if (!validacion.success) {
       return NextResponse.json({ error: "Datos inválidos", detalles: validacion.error.errors }, { status: 400 })
     }
-    const { saldoInicial, observaciones } = validacion.data
+    const { saldoInicial, observaciones, cajaTipoId } = validacion.data
     const empresaId = ctx.auth.empresaId
+
+    if (cajaTipoId) {
+      const tipo = await prisma.cajaTipo.findFirst({
+        where: whereEmpresa(empresaId, { id: cajaTipoId, activo: true }),
+        select: { id: true, nombre: true },
+      })
+      if (!tipo) {
+        return NextResponse.json({ error: "Tipo de caja no encontrado en esta empresa" }, { status: 400 })
+      }
+      const yaAbierta = await prisma.caja.findFirst({
+        where: whereEmpresa(empresaId, { cajaTipoId, estado: "abierta" }),
+        select: { id: true },
+      })
+      if (yaAbierta) {
+        return NextResponse.json(
+          { error: `La caja ${tipo.nombre} ya está abierta`, cajaId: yaAbierta.id },
+          { status: 409 },
+        )
+      }
+    }
 
     const { anclaPuedeAbrirOtraCaja, PAYLOAD_CAP_CAJA } = await import("@/lib/comercial/caps-ancla")
     if (!(await anclaPuedeAbrirOtraCaja(empresaId))) {
@@ -71,8 +93,15 @@ export async function POST(request: NextRequest) {
     }
 
     const caja = await prisma.caja.create({
-      data: { saldoInicial, empresaId, observaciones, turno: body.turno, abiertoPor: ctx.auth.userId },
-      include: { movimientos: true },
+      data: {
+        saldoInicial,
+        empresaId,
+        observaciones,
+        turno: body.turno,
+        abiertoPor: ctx.auth.userId,
+        ...(cajaTipoId ? { cajaTipoId } : {}),
+      },
+      include: { movimientos: true, cajaTipo: { select: { id: true, codigo: true, nombre: true } } },
     })
 
     return NextResponse.json(caja, { status: 201 })

@@ -226,6 +226,10 @@ export default function POSPage() {
     }
   }, [searchParams])
   const [cajaId, setCajaId] = useState<number | null>(null)
+  /** Multi-caja (p. ej. Velde: Corriente / Ahorro). Vacío o 1 → comportamiento histórico. */
+  const [cajasAbiertas, setCajasAbiertas] = useState<Array<{ id: number; nombre: string }>>([])
+  const [cajaTiposPos, setCajaTiposPos] = useState<Array<{ id: number; nombre: string }>>([])
+  const [abrirCajaTipoId, setAbrirCajaTipoId] = useState("")
   const [cajaOk, setCajaOk] = useState<boolean | null>(null)
   const [cajaMotivo, setCajaMotivo] = useState<CajaMotivo | null>(null)
   const [fiadoActivo, setFiadoActivo] = useState(false)
@@ -409,6 +413,7 @@ export default function POSPage() {
           saldoInicial: parseFloat(abrirCajaSaldoInicial) || 0,
           turno: abrirCajaTurno,
           observaciones: "Apertura rápida desde POS",
+          cajaTipoId: abrirCajaTipoId ? Number(abrirCajaTipoId) : undefined,
         }),
       })
       const data = await res.json()
@@ -449,7 +454,13 @@ export default function POSPage() {
       const data = await res.json()
       setCajaOk(!!data.cajaAbierta)
       setCajaMotivo(data.cajaAbierta ? null : "cerrada")
-      setCajaId(data.cajaId ?? null)
+      const abiertas: Array<{ id: number; nombre: string }> = Array.isArray(data.cajasAbiertas)
+        ? data.cajasAbiertas
+        : []
+      setCajasAbiertas(abiertas)
+      setCajaId((prev) =>
+        prev != null && abiertas.some((c) => c.id === prev) ? prev : (data.cajaId ?? null),
+      )
       setAfipStatus(data.afip ?? null)
       setVentasHoy(data.ventasHoy ?? 0)
       setFiadoActivo(!!data.fiadoActivo)
@@ -501,6 +512,13 @@ export default function POSPage() {
       const data = await res.json()
       setMesas(data.mesas ?? [])
     } catch { /* silent */ }
+  }, [authH])
+
+  useEffect(() => {
+    fetch("/api/caja/tipos", { headers: authH() })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((tipos) => setCajaTiposPos(Array.isArray(tipos) ? tipos : []))
+      .catch(() => setCajaTiposPos([]))
   }, [authH])
 
   useEffect(() => {
@@ -1264,6 +1282,8 @@ export default function POSPage() {
       const body = {
         clienteId: clienteId ? Number(clienteId) : undefined,
         mesaId: indicesCobro ? undefined : (mesaId ? Number(mesaId) : undefined),
+        // Solo con 2+ cajas abiertas: sin esto la API usa la única abierta (comportamiento histórico)
+        ...(cajasAbiertas.length > 1 && cajaId ? { cajaId } : {}),
         tipoFactura,
         lineas: itemsVenta.map((i) => ({
           productoId: i.productoId ? Number(i.productoId) : undefined,
@@ -1696,6 +1716,22 @@ export default function POSPage() {
             )}
 
             <div className="space-y-3">
+              {cajaTiposPos.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="pos-caja-tipo" className="text-xs font-semibold">Caja</Label>
+                  <select
+                    id="pos-caja-tipo"
+                    className="w-full h-11 rounded-md border bg-background px-3 text-base"
+                    value={abrirCajaTipoId}
+                    onChange={(e) => setAbrirCajaTipoId(e.target.value)}
+                  >
+                    <option value="">Elegí qué caja abrir</option>
+                    {cajaTiposPos.map((t) => (
+                      <option key={t.id} value={t.id}>{t.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="pos-saldo-inicial" className="text-xs font-semibold">Fondo inicial en efectivo ($ ARS)</Label>
                 <Input
@@ -1741,7 +1777,7 @@ export default function POSPage() {
               size="lg"
               className="w-full h-12 text-sm font-bold shadow-lg shadow-primary/20"
               onClick={abrirCajaInSitu}
-              disabled={abrirCajaLoading}
+              disabled={abrirCajaLoading || (cajaTiposPos.length > 0 && !abrirCajaTipoId)}
             >
               {abrirCajaLoading ? "Abriendo caja..." : "Abrir Caja y Comenzar a Vender"}
             </Button>
@@ -1871,6 +1907,18 @@ export default function POSPage() {
               <Wifi className="h-3 w-3" />
               Online
             </Badge>
+          )}
+          {cajaOk && cajasAbiertas.length > 1 && (
+            <select
+              aria-label="Caja de la venta"
+              className="h-9 min-w-[7.5rem] max-w-[10rem] rounded-md border bg-background px-2 text-sm font-medium"
+              value={cajaId ?? ""}
+              onChange={(e) => setCajaId(Number(e.target.value))}
+            >
+              {cajasAbiertas.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
           )}
           {cajaOk === null ? (
             <Badge variant="outline" className="text-xs">Caja...</Badge>

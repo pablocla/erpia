@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   Wallet, Lock, Unlock, Plus, TrendingUp, TrendingDown,
   ArrowUpCircle, ArrowDownCircle, CheckCircle2, AlertTriangle,
-  ClipboardCheck, Calculator,
+  ClipboardCheck, Calculator, ArrowLeftRight,
 } from "lucide-react"
 import { DataTable, type DataTableColumn } from "@/components/data-table"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -46,7 +46,16 @@ interface Caja {
   diferencia?: number
   diferenciaJustif?: string
   movimientos: MovimientoCaja[]
+  cajaTipo?: CajaTipoRef | null
 }
+
+interface CajaTipoRef {
+  id: number
+  codigo: string
+  nombre: string
+}
+
+const nombreCaja = (c: Caja) => c.cajaTipo?.nombre ?? `Caja #${c.id}`
 
 const MEDIOS_PAGO = ["efectivo", "tarjeta_debito", "tarjeta_credito", "transferencia", "cheque", "qr"]
 const TURNOS = [
@@ -57,6 +66,11 @@ const TURNOS = [
 
 export default function CajaPage() {
   const [cajaActual, setCajaActual] = useState<Caja | null>(null)
+  const [cajasAbiertas, setCajasAbiertas] = useState<Caja[]>([])
+  const [cajaTipos, setCajaTipos] = useState<CajaTipoRef[]>([])
+  const [tipoAbrir, setTipoAbrir] = useState("")
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transfer, setTransfer] = useState({ destinoId: "", monto: "", concepto: "" })
   const [historial, setHistorial] = useState<Caja[]>([])
   const [loading, setLoading] = useState(true)
   const [abrirDialogOpen, setAbrirDialogOpen] = useState(false)
@@ -102,8 +116,13 @@ export default function CajaPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const cajas: Caja[] = await res.json()
-      const abierta = cajas.find((c) => c.estado === "abierta") || null
-      setCajaActual(abierta)
+      const abiertas = cajas.filter((c) => c.estado === "abierta")
+      setCajasAbiertas(abiertas)
+      setCajaActual((prev) => abiertas.find((c) => c.id === prev?.id) ?? abiertas[0] ?? null)
+      const resTipos = await fetch("/api/caja/tipos", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (resTipos.ok) setCajaTipos(await resTipos.json())
       setHistorial(cajas.filter((c) => c.estado === "cerrada").slice(0, 10))
     } catch {
       setError("Error al cargar caja")
@@ -129,6 +148,7 @@ export default function CajaPage() {
         body: JSON.stringify({
           saldoInicial: parseFloat(saldoInicial || "0"),
           turno: turno || undefined,
+          cajaTipoId: tipoAbrir ? Number(tipoAbrir) : undefined,
         }),
       })
       if (!res.ok) {
@@ -144,11 +164,47 @@ export default function CajaPage() {
       setAbrirDialogOpen(false)
       setSaldoInicial("0")
       setTurno("")
+      setTipoAbrir("")
       cargarCaja()
       toast({ title: "Caja abierta", description: "Se abrió la caja correctamente" })
     } catch {
       setError("Error de conexión")
       toast({ title: "Error al abrir caja", description: "No se pudo abrir la caja", variant: "destructive" })
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const tiposSinAbrir = cajaTipos.filter((t) => !cajasAbiertas.some((c) => c.cajaTipo?.id === t.id))
+  const destinosTransfer = cajasAbiertas.filter((c) => c.id !== cajaActual?.id)
+
+  const transferir = async () => {
+    if (!cajaActual) return
+    setGuardando(true)
+    setError("")
+    try {
+      const token = localStorage.getItem("token")
+      const res = await fetch("/api/caja/transferencia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          origenCajaId: cajaActual.id,
+          destinoCajaId: Number(transfer.destinoId),
+          monto: parseFloat(transfer.monto),
+          concepto: transfer.concepto || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "No se pudo transferir")
+        return
+      }
+      setTransferOpen(false)
+      setTransfer({ destinoId: "", monto: "", concepto: "" })
+      cargarCaja()
+      toast({ title: "Transferencia registrada", description: "Egreso e ingreso cargados en ambas cajas" })
+    } catch {
+      setError("Error de conexión")
     } finally {
       setGuardando(false)
     }
@@ -290,6 +346,7 @@ export default function CajaPage() {
           cajaActual ? (
             <div className="flex items-center gap-2">
               <StatusBadge variant={cajaEstadoVariant(cajaActual.estado)} label={cajaEstadoLabel(cajaActual.estado)} />
+              {cajaActual.cajaTipo && <Badge variant="secondary">{cajaActual.cajaTipo.nombre}</Badge>}
               {cajaActual.turno && <Badge variant="outline">{cajaActual.turno}</Badge>}
             </div>
           ) : (
@@ -303,6 +360,18 @@ export default function CajaPage() {
           </Button>
         ) : (
           <div className="flex flex-wrap gap-2">
+            {tiposSinAbrir.length > 0 && (
+              <Button variant="outline" onClick={() => setAbrirDialogOpen(true)} className="min-h-[40px]">
+                <Unlock className="h-4 w-4 mr-2" />
+                Abrir otra caja
+              </Button>
+            )}
+            {destinosTransfer.length > 0 && (
+              <Button variant="outline" onClick={() => setTransferOpen(true)} className="min-h-[40px]">
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Transferir
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setMovimientoDialogOpen(true)} className="min-h-[40px]">
               <Plus className="h-4 w-4 mr-2" />
               Movimiento
@@ -319,6 +388,23 @@ export default function CajaPage() {
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {cajasAbiertas.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Cajas abiertas">
+          {cajasAbiertas.map((c) => (
+            <Button
+              key={c.id}
+              role="tab"
+              aria-selected={c.id === cajaActual?.id}
+              variant={c.id === cajaActual?.id ? "default" : "outline"}
+              className="min-h-[44px] flex-1 sm:flex-none"
+              onClick={() => setCajaActual(c)}
+            >
+              {nombreCaja(c)}
+            </Button>
+          ))}
+        </div>
       )}
 
       {cierreMensaje && (
@@ -465,6 +551,21 @@ export default function CajaPage() {
             <DialogDescription>Ingresá el efectivo en caja y seleccioná el turno.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {cajaTipos.length > 0 && (
+              <div className="space-y-2">
+                <Label>Caja</Label>
+                <Select value={tipoAbrir} onValueChange={setTipoAbrir}>
+                  <SelectTrigger className="min-h-[44px]">
+                    <SelectValue placeholder="Elegí qué caja abrir" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tiposSinAbrir.map((t) => (
+                      <SelectItem key={t.id} value={String(t.id)}>{t.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Saldo inicial (efectivo en caja)</Label>
               <Input
@@ -492,9 +593,71 @@ export default function CajaPage() {
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setAbrirDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={abrirCaja} disabled={guardando}>
+            <Button onClick={abrirCaja} disabled={guardando || (cajaTipos.length > 0 && !tipoAbrir)}>
               <Unlock className="h-4 w-4 mr-2" />
               Abrir Caja
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog transferencia entre cajas */}
+      <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+        <DialogContent className="max-w-[calc(100vw-1.5rem)] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Transferir entre cajas</DialogTitle>
+            <DialogDescription>
+              Sale de {cajaActual ? nombreCaja(cajaActual) : "la caja actual"} y entra en la caja destino.
+            </DialogDescription>
+          </DialogHeader>
+          {error && transferOpen && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Caja destino</Label>
+              <Select value={transfer.destinoId} onValueChange={(v) => setTransfer({ ...transfer, destinoId: v })}>
+                <SelectTrigger className="min-h-[44px]">
+                  <SelectValue placeholder="Elegí destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  {destinosTransfer.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{nombreCaja(c)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Monto</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={transfer.monto}
+                onChange={(e) => setTransfer({ ...transfer, monto: e.target.value })}
+                className="min-h-[44px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Concepto (opcional)</Label>
+              <Input
+                value={transfer.concepto}
+                onChange={(e) => setTransfer({ ...transfer, concepto: e.target.value })}
+                className="min-h-[44px]"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setTransferOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={transferir}
+              disabled={guardando || !transfer.destinoId || !(parseFloat(transfer.monto) > 0)}
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              Transferir
             </Button>
           </div>
         </DialogContent>

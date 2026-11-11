@@ -13,7 +13,7 @@
  */
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAuthContext } from "@/lib/auth/empresa-guard"
+import { getAuthContext, whereEmpresa } from "@/lib/auth/empresa-guard"
 import { emitFacturaEmitidaLegacy } from "@/lib/events/emit-domain-event"
 import { resolverPreciosLineas } from "@/lib/precios/resolver-precios-lineas"
 import { solicitarCaeFactura } from "@/lib/afip/solicitar-cae-factura"
@@ -30,6 +30,8 @@ import { descontarStockCombo } from "@/lib/pos/pos-catalogo-grupos"
 import { registrarVentaStockCero } from "@/lib/almacen-rosario/stock-cero-service"
 import { buscarValeActivo, aplicarCobroVale } from "@/lib/almacen-rosario/vale-dinero-service"
 import { RETAIL_EXTENSION_SKUS } from "@/lib/almacen-rosario/retail-skus"
+import { resolverCajaVenta } from "@/lib/caja/caja-seleccion"
+import { afipDeshabilitadoParaEmpresa } from "@/lib/fiscal/afip-off-guard"
 import { z } from "zod"
 
 // ──────────────────────────────────────────────────────────────
@@ -69,6 +71,8 @@ const pagoSchema = z.object({
 const ventaPosSchema = z.object({
   clienteId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
   mesaId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
+  /** Caja destino (multi-caja). Sin cajaId: única caja abierta de la empresa. */
+  cajaId: z.preprocess(sanitizeId, z.number().int().positive().optional()),
   /** "A" | "B" | "C" | "ticket" (sin CAE) */
   tipoFactura: z.enum(["A", "B", "C", "ticket"]).default("B"),
   puntoVenta: z.coerce.number().int().positive().default(1),
@@ -127,16 +131,30 @@ export async function POST(request: NextRequest) {
     const data = parsed.data
     const { empresaId } = ctx.auth
 
-    // ── 1. Caja abierta ──────────────────────────────────────
-    const caja = await prisma.caja.findFirst({
-      where: { empresaId, estado: "abierta" },
-    })
-    if (!caja) {
+    // ── 0. Empresa sin AFIP (ticket_solo / facturacion_afip off) → solo ticket ──
+    if (data.tipoFactura !== "ticket") {
+      const afipOff = await afipDeshabilitadoParaEmpresa(empresaId)
+      if (afipOff.off) {
+        return NextResponse.json(
+          {
+            error: "Esta empresa no emite comprobantes AFIP. Registrá la venta como Ticket (comprobante interno).",
+            codigo: "AFIP_DESHABILITADO",
+            motivo: afipOff.motivo,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
+    // ── 1. Caja abierta (cajaId explícito o única abierta) ───
+    const cajaResuelta = await resolverCajaVenta(empresaId, data.cajaId)
+    if (!cajaResuelta.ok) {
       return NextResponse.json(
-        { error: "No hay caja abierta. Abrí la caja antes de facturar." },
-        { status: 400 },
+        { error: cajaResuelta.error, codigo: cajaResuelta.codigo },
+        { status: cajaResuelta.status },
       )
     }
+    const caja = { id: cajaResuelta.cajaId }
 
     // ── 2. Cliente fallback (consumidor final) ───────────────
     let clienteId = data.clienteId
@@ -575,7 +593,7 @@ export async function GET(request: NextRequest) {
 
     const empresaId = ctx.auth.empresaId
 
-    const [caja, afip, ventasHoy] = await Promise.all([
+    const [caja, afip, ventasHoy, cajasAbiertasRows] = await Promise.all([
       prisma.caja.findFirst({
         where: { empresaId, estado: "abierta" },
         include: {
@@ -592,7 +610,16 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         },
       }),
+      prisma.caja.findMany({
+        where: whereEmpresa(empresaId, { estado: "abierta" }),
+        select: { id: true, cajaTipo: { select: { nombre: true } } },
+        orderBy: { createdAt: "asc" },
+      }),
     ])
+    const cajasAbiertas = cajasAbiertasRows.map((c) => ({
+      id: c.id,
+      nombre: c.cajaTipo?.nombre ?? `Caja #${c.id}`,
+    }))
 
     const fiadoAcceso = await canUseSku(empresaId, "pos.fiado_barrio")
     const envasesAcceso = await canUseSku(empresaId, "pos.envases_gaseosas")
@@ -610,6 +637,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       cajaAbierta: !!caja,
       cajaId: caja?.id ?? null,
+      cajasAbiertas,
       turno: caja?.turno ?? null,
       saldoInicial: caja?.saldoInicial ?? 0,
       ultimosMovimientos: caja?.movimientos ?? [],
